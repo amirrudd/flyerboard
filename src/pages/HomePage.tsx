@@ -138,7 +138,7 @@ export function HomePage() {
     "Canberra, City Centre",
   ];
 
-  if (isInitializing || categories === undefined || ads === undefined) {
+  if (isInitializing || categories === undefined) {
     return <LoadingScreen />;
   }
 
@@ -178,8 +178,8 @@ export function HomePage() {
 
           {/* Sidebar */}
           <div className={`${sidebarCollapsed
-              ? 'hidden md:block'
-              : 'fixed left-0 top-0 h-full w-72 sm:w-80 z-50 md:relative md:w-80 md:z-auto bg-white md:bg-transparent p-3 sm:p-4 md:p-0 pt-16 sm:pt-20 md:pt-0'
+            ? 'hidden md:block'
+            : 'fixed left-0 top-0 h-full w-72 sm:w-80 z-50 md:relative md:w-80 md:z-auto bg-white md:bg-transparent p-3 sm:p-4 md:p-0 pt-16 sm:pt-20 md:pt-0'
             }`}>
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}

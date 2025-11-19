@@ -42,7 +42,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     incrementViews({ adId }).catch(() => {
       // Ignore errors for view counting
     });
-  }, [adId, incrementViews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adId]); // Only re-run if adId changes
 
   const handleSave = async () => {
     try {
@@ -183,8 +184,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                 <button
                   onClick={handleSave}
                   className={`p-2 rounded-lg transition-colors ${isAdSaved
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   title={isAdSaved ? "Remove from saved" : "Save ad"}
                 >
@@ -259,8 +260,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                            ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30'
-                            : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30'
+                          : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         <img
@@ -393,8 +394,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                            ? 'bg-[#FF6600] text-white'
-                            : 'bg-gray-100 text-gray-900'
+                          ? 'bg-[#FF6600] text-white'
+                          : 'bg-gray-100 text-gray-900'
                           }`}
                       >
                         <p className="text-sm">{message.content}</p>
@@ -437,8 +438,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   <button
                     onClick={handleSave}
                     className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
-                        ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                       }`}
                   >
                     <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">

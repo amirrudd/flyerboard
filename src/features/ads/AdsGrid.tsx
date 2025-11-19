@@ -74,7 +74,6 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         /* Ads Grid with Framer Motion */
         <motion.div
-          layout
           className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
             ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
             : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
@@ -83,9 +82,10 @@ export const AdsGrid = memo(function AdsGrid({
           <AnimatePresence mode="popLayout">
             {ads.map((ad) => (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
                 key={ad._id}
                 onClick={() => onAdClick(ad._id)}

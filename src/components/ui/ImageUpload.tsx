@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
 
@@ -14,7 +14,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -30,10 +30,10 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length > 0) {
       uploadFiles(imageFiles);
     }
@@ -53,7 +53,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
   const uploadFiles = async (files: File[]) => {
     const remainingSlots = maxImages - images.length;
     const filesToUpload = files.slice(0, remainingSlots);
-    
+
     if (files.length > remainingSlots) {
       toast.warning(`Only uploading first ${remainingSlots} images (${maxImages} max)`);
     }
@@ -70,7 +70,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
 
         // Generate upload URL
         const uploadUrl = await generateUploadUrl();
-        
+
         // Upload file
         const result = await fetch(uploadUrl, {
           method: "POST",
@@ -83,7 +83,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
         }
 
         const { storageId } = await result.json();
-        
+
         // Return the storage ID directly - we'll handle URL generation in the backend
         return storageId;
       } catch (error: any) {
@@ -96,7 +96,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
 
     const uploadedUrls = await Promise.all(uploadPromises);
     const validUrls = uploadedUrls.filter(url => url !== null) as string[];
-    
+
     if (validUrls.length > 0) {
       onImagesChange([...images, ...validUrls]);
       toast.success(`Successfully uploaded ${validUrls.length} image${validUrls.length > 1 ? 's' : ''}`);
@@ -117,8 +117,8 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
         <div
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
-            ${isDragging 
-              ? 'border-[#FF6600] bg-orange-50' 
+            ${isDragging
+              ? 'border-[#FF6600] bg-orange-50'
               : 'border-gray-300 hover:border-gray-400'
             }
             ${uploading.length > 0 ? 'opacity-50' : ''}
@@ -135,7 +135,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           <div className="space-y-4">
             <div className="text-4xl">📸</div>
             <div>

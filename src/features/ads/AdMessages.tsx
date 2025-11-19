@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -93,7 +93,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   Conversations ({(chats || []).length})
                 </h2>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto">
                 {(chats || []).length === 0 ? (
                   <div className="p-6 text-center">
@@ -109,36 +109,32 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                       <button
                         key={chat._id}
                         onClick={() => setSelectedChatId(chat._id)}
-                        className={`w-full text-left p-3 rounded-lg transition-colors ${
-                          selectedChatId === chat._id
+                        className={`w-full text-left p-3 rounded-lg transition-colors ${selectedChatId === chat._id
                             ? 'bg-[#FF6600] text-white'
                             : 'hover:bg-gray-100'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium">
                             {chat.buyer?.name || "Unknown User"}
                           </span>
                           {chat.unreadCount > 0 && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              selectedChatId === chat._id
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedChatId === chat._id
                                 ? 'bg-white text-[#FF6600]'
                                 : 'bg-[#FF6600] text-white'
-                            }`}>
+                              }`}>
                               {chat.unreadCount}
                             </span>
                           )}
                         </div>
                         {chat.latestMessage && (
-                          <p className={`text-sm truncate ${
-                            selectedChatId === chat._id ? 'text-white/80' : 'text-gray-600'
-                          }`}>
+                          <p className={`text-sm truncate ${selectedChatId === chat._id ? 'text-white/80' : 'text-gray-600'
+                            }`}>
                             {chat.latestMessage.content}
                           </p>
                         )}
-                        <p className={`text-xs mt-1 ${
-                          selectedChatId === chat._id ? 'text-white/60' : 'text-gray-500'
-                        }`}>
+                        <p className={`text-xs mt-1 ${selectedChatId === chat._id ? 'text-white/60' : 'text-gray-500'
+                          }`}>
                           {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
                         </p>
                       </button>
@@ -176,24 +172,21 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                     {(messages || []).map((message) => (
                       <div
                         key={message._id}
-                        className={`flex ${
-                          message.senderId === ad.userId ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.senderId === ad.userId ? 'justify-end' : 'justify-start'
+                          }`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                            message.senderId === ad.userId
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
                               ? 'bg-[#FF6600] text-white'
                               : 'bg-gray-100 text-gray-900'
-                          }`}
+                            }`}
                         >
                           <p className="text-sm">{message.content}</p>
                           <p
-                            className={`text-xs mt-1 ${
-                              message.senderId === ad.userId
+                            className={`text-xs mt-1 ${message.senderId === ad.userId
                                 ? 'text-white/70'
                                 : 'text-gray-500'
-                            }`}
+                              }`}
                           >
                             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                           </p>

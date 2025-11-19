@@ -1,20 +1,21 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { AdDetail } from "../AdDetail";
-import { PostAd } from "../PostAd";
-import { UserDashboard } from "../UserDashboard";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
-import { AdsGrid } from "./AdsGrid";
-import { AuthModal } from "./AuthModal";
-import { LoadingScreen } from "./LoadingScreen";
-import { useState, useEffect } from "react";
-import { useCallback } from "react";
+import { Header } from "../features/layout/Header";
+import { Sidebar } from "../features/layout/Sidebar";
+import { AdsGrid } from "../features/ads/AdsGrid";
+import { AuthModal } from "../features/auth/AuthModal";
+import { LoadingScreen } from "../components/ui/LoadingScreen";
+import { useState, useEffect, useCallback } from "react";
+
 import { toast } from "sonner";
 import Cookies from "js-cookie";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-export function DivarApp() {
+export function HomePage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Initialize sidebar state based on screen size
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -22,18 +23,16 @@ export function DivarApp() {
     }
     return false; // Default to expanded
   });
+
   const [selectedCategory, setSelectedCategory] = useState<Id<"categories"> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    // Get location from cookies, default to Melbourne if not found or first visit
     const savedLocation = Cookies.get("selectedLocation");
     return savedLocation !== undefined ? savedLocation : "Melbourne, CBD";
   });
+
   const [isInitializing, setIsInitializing] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [selectedAdId, setSelectedAdId] = useState<Id<"ads"> | null>(null);
-  const [currentView, setCurrentView] = useState<"marketplace" | "post" | "dashboard">("marketplace");
-  const [editingAd, setEditingAd] = useState<any>(null);
 
   const user = useQuery(api.auth.loggedInUser);
   const categories = useQuery(api.categories.getCategories);
@@ -82,20 +81,10 @@ export function DivarApp() {
     }
   }, [user, showAuthModal]);
 
-  // Redirect to marketplace when user signs out
-  useEffect(() => {
-    if (user === null && (currentView === "dashboard" || currentView === "post")) {
-      setCurrentView("marketplace");
-      setSelectedAdId(null);
-      setEditingAd(null);
-    }
-  }, [user, currentView]);
-
   // Handle location change and save to cookies
   const handleLocationChange = useCallback((location: string) => {
     setSelectedLocation(location);
-    // Always save the location to cookies, even if it's empty (All Locations)
-    Cookies.set("selectedLocation", location, { expires: 365 }); // Save for 1 year
+    Cookies.set("selectedLocation", location, { expires: 365 });
   }, []);
 
   const handleUpdateCategories = useCallback(async () => {
@@ -110,16 +99,35 @@ export function DivarApp() {
 
   const handleSetSelectedCategory = useCallback((categoryId: Id<"categories"> | null) => {
     setSelectedCategory(categoryId);
-  }, []);
+    if (categoryId && categories) {
+      const category = categories.find(c => c._id === categoryId);
+      if (category) {
+        setSearchParams({ category: category.slug });
+      }
+    } else {
+      setSearchParams({});
+    }
+  }, [categories, setSearchParams]);
 
-  const handleSetSelectedAdId = useCallback((adId: Id<"ads">) => {
-    setSelectedAdId(adId);
-  }, []);
+  // Initialize selectedCategory from URL param using slug lookup
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      const categorySlug = searchParams.get('category');
+      if (categorySlug && categorySlug !== 'all') {
+        const category = categories.find(c => c.slug === categorySlug);
+        if (category) {
+          setSelectedCategory(category._id);
+        }
+      } else {
+        setSelectedCategory(null);
+      }
+    }
+  }, [categories, searchParams]);
 
   const locations = [
     "Sydney, CBD",
     "Sydney, Northern Beaches",
-    "Melbourne, CBD", 
+    "Melbourne, CBD",
     "Melbourne, South Yarra",
     "Brisbane, South Bank",
     "Brisbane, Fortitude Valley",
@@ -130,48 +138,6 @@ export function DivarApp() {
     "Canberra, City Centre",
   ];
 
-  // Show ad detail if an ad is selected
-  if (selectedAdId) {
-    return (
-      <AdDetail 
-        adId={selectedAdId} 
-        onBack={() => setSelectedAdId(null)}
-        onShowAuth={() => setShowAuthModal(true)}
-      />
-    );
-  }
-
-  // Show post ad form
-  if (currentView === "post") {
-    return (
-      <PostAd 
-        onBack={() => {
-          setCurrentView("marketplace");
-          setEditingAd(null);
-        }}
-        editingAd={editingAd}
-      />
-    );
-  }
-
-  // Show user dashboard
-  if (currentView === "dashboard") {
-    return (
-      <UserDashboard 
-        onBack={() => setCurrentView("marketplace")}
-        onPostAd={() => {
-          setEditingAd(null);
-          setCurrentView("post");
-        }}
-        onEditAd={(ad) => {
-          setEditingAd(ad);
-          setCurrentView("post");
-        }}
-      />
-    );
-  }
-  
-  // Show loading screen while initializing
   if (isInitializing || categories === undefined || ads === undefined) {
     return <LoadingScreen />;
   }
@@ -179,44 +145,42 @@ export function DivarApp() {
   return (
     <div className="min-h-screen bg-white">
       {/* Temporary admin button for updating categories */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 hidden md:block">
         <button
           onClick={handleUpdateCategories}
-          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 opacity-50 hover:opacity-100 transition-opacity"
         >
           Update Categories
         </button>
       </div>
-      
+
       <Header
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         user={user}
-        setCurrentView={setCurrentView}
         setShowAuthModal={setShowAuthModal}
         selectedLocation={selectedLocation}
         setSelectedLocation={handleLocationChange}
         locations={locations}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className={`flex gap-6 ${sidebarCollapsed ? 'md:gap-6' : 'gap-6'}`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+        <div className={`flex gap-3 sm:gap-6 ${sidebarCollapsed ? 'md:gap-6' : 'gap-3 sm:gap-6'}`}>
           {/* Mobile sidebar overlay */}
           {!sidebarCollapsed && (
-            <div 
+            <div
               className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
               onClick={() => setSidebarCollapsed(true)}
             />
           )}
-          
+
           {/* Sidebar */}
-          <div className={`${
-            sidebarCollapsed 
-              ? 'hidden md:block' 
-              : 'fixed left-0 top-0 h-full w-80 z-50 md:relative md:w-80 md:z-auto bg-white md:bg-transparent p-4 md:p-0 pt-20 md:pt-0'
-          }`}>
+          <div className={`${sidebarCollapsed
+              ? 'hidden md:block'
+              : 'fixed left-0 top-0 h-full w-72 sm:w-80 z-50 md:relative md:w-80 md:z-auto bg-white md:bg-transparent p-3 sm:p-4 md:p-0 pt-16 sm:pt-20 md:pt-0'
+            }`}>
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}
               categories={categories || []}
@@ -231,7 +195,7 @@ export function DivarApp() {
             categories={categories || []}
             selectedCategory={selectedCategory}
             sidebarCollapsed={sidebarCollapsed}
-            setSelectedAdId={handleSetSelectedAdId}
+            onAdClick={(adId) => navigate(`/ad/${adId}`)}
           />
         </div>
       </div>

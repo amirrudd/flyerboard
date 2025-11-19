@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -21,7 +21,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
   const existingChat = useQuery(api.adDetail.getChatForAd, { adId });
   const messages = useQuery(
-    api.adDetail.getChatMessages, 
+    api.adDetail.getChatMessages,
     chatId ? { chatId } : "skip"
   );
 
@@ -182,17 +182,16 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               {user && ad.userId !== user._id && (
                 <button
                   onClick={handleSave}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isAdSaved 
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+                  className={`p-2 rounded-lg transition-colors ${isAdSaved
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                    }`}
                   title={isAdSaved ? "Remove from saved" : "Save ad"}
                 >
-                <svg className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
+                  <svg className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
               )}
               <button
                 onClick={handleShare}
@@ -220,7 +219,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   alt={`${ad.title} - Image ${currentImageIndex + 1}`}
                   className="w-full h-full object-cover"
                 />
-                
+
                 {/* Navigation arrows for multiple images */}
                 {images.length > 1 && (
                   <>
@@ -259,11 +258,10 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                          index === currentImageIndex 
-                            ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30' 
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                            ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30'
                             : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                          }`}
                       >
                         <img
                           src={image}
@@ -394,16 +392,14 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                       className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs px-3 py-2 rounded-lg ${
-                          message.isCurrentUser
+                        className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
                             ? 'bg-[#FF6600] text-white'
                             : 'bg-gray-100 text-gray-900'
-                        }`}
+                          }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.isCurrentUser ? 'text-orange-200' : 'text-gray-500'
-                        }`}>
+                        <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-gray-500'
+                          }`}>
                           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                         </p>
                       </div>
@@ -438,19 +434,18 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               <h3 className="text-lg font-semibold text-[#333333] mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 {user && ad.userId !== user._id && (
-                <button
-                  onClick={handleSave}
-                  className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${
-                    isAdSaved
-                      ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
-                </button>
+                  <button
+                    onClick={handleSave}
+                    className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
+                        ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                  >
+                    <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                  </button>
                 )}
                 <button
                   onClick={handleShare}

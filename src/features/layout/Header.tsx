@@ -1,6 +1,7 @@
-import { SignOutButton } from "../SignOutButton";
+import { SignOutButton } from "../auth/SignOutButton";
 import { useState, useEffect, memo, useCallback } from "react";
 import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   sidebarCollapsed: boolean;
@@ -8,7 +9,6 @@ interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   user: any;
-  setCurrentView: (view: "marketplace" | "post" | "dashboard") => void;
   setShowAuthModal: (show: boolean) => void;
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
@@ -31,7 +31,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
         (position) => {
           const { latitude, longitude } = position.coords;
           let detectedCity = "Melbourne, CBD"; // Default
-          
+
           // Sydney area
           if (latitude > -34.5 && latitude < -33.5 && longitude > 150.5 && longitude < 151.5) {
             detectedCity = "Sydney, CBD";
@@ -48,7 +48,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           else if (latitude > -32.5 && latitude < -31.5 && longitude > 115.5 && longitude < 116.5) {
             detectedCity = "Perth, Fremantle";
           }
-          
+
           setSelectedLocation(detectedCity);
           setIsDetectingLocation(false);
         },
@@ -80,7 +80,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 
   return (
     <div className="relative location-dropdown">
-      <button 
+      <button
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
@@ -94,7 +94,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      
+
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
           <div className="py-1">
@@ -152,23 +152,24 @@ export const Header = memo(function Header({
   searchQuery,
   setSearchQuery,
   user,
-  setCurrentView,
   setShowAuthModal,
   selectedLocation,
   setSelectedLocation,
   locations,
 }: HeaderProps) {
+  const navigate = useNavigate();
+
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
       <div className="max-w-7xl mx-auto">
         {/* Desktop Header */}
         <div className="hidden md:flex items-center h-14 px-4">
           {/* Left section - Logo and Location */}
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
-            
+            <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
+
             {/* Location Selector - Divar style */}
-            <LocationSelector 
+            <LocationSelector
               selectedLocation={selectedLocation}
               setSelectedLocation={setSelectedLocation}
               locations={locations}
@@ -177,7 +178,7 @@ export const Header = memo(function Header({
 
           {/* Center section - Search Bar */}
           <div className="flex-1 max-w-md mx-6">
-            <div className="relative">
+            <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
               <input
                 type="text"
                 placeholder="Search in listings..."
@@ -188,15 +189,15 @@ export const Header = memo(function Header({
               <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </div>
+            </form>
           </div>
 
           {/* Right section - Actions */}
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => {
                 if (user) {
-                  setCurrentView("post");
+                  navigate('/post');
                 } else {
                   setShowAuthModal(true);
                 }
@@ -205,10 +206,10 @@ export const Header = memo(function Header({
             >
               Post Listing
             </button>
-            
+
             {user ? (
               <button
-                onClick={() => setCurrentView("dashboard")}
+                onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,14 +250,14 @@ export const Header = memo(function Header({
                   </svg>
                 )}
               </button>
-              <h1 className="text-lg font-bold text-gray-900">FlyerBoard</h1>
+              <h1 className="text-lg font-bold text-gray-900" onClick={() => navigate('/')}>FlyerBoard</h1>
             </div>
 
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => {
                   if (user) {
-                    setCurrentView("post");
+                    navigate('/post');
                   } else {
                     setShowAuthModal(true);
                   }
@@ -267,7 +268,7 @@ export const Header = memo(function Header({
               </button>
               {user ? (
                 <button
-                  onClick={() => setCurrentView("dashboard")}
+                  onClick={() => navigate('/dashboard')}
                   className="flex items-center gap-1 px-2 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,7 +293,7 @@ export const Header = memo(function Header({
           {/* Mobile Search and Location */}
           <div className="px-4 pb-3 border-t border-gray-100">
             <div className="space-y-3">
-              <div className="relative">
+              <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
                 <input
                   type="text"
                   placeholder="Search in listings..."
@@ -303,10 +304,10 @@ export const Header = memo(function Header({
                 <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </div>
-              
+              </form>
+
               {/* Mobile Location Selector */}
-              <LocationSelector 
+              <LocationSelector
                 selectedLocation={selectedLocation}
                 setSelectedLocation={setSelectedLocation}
                 locations={locations}

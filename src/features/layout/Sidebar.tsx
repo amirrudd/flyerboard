@@ -1,4 +1,4 @@
-import { Id } from "../../convex/_generated/dataModel";
+import { Id } from "../../../convex/_generated/dataModel";
 import { memo } from "react";
 
 interface Category {
@@ -25,15 +25,13 @@ export const Sidebar = memo(function Sidebar({
   setSidebarCollapsed,
 }: SidebarProps) {
   return (
-    <div className={`sidebar-transition flex-shrink-0 ${
-      sidebarCollapsed 
-        ? 'w-0 md:w-16 overflow-hidden md:overflow-visible' 
+    <div className={`sidebar-transition flex-shrink-0 ${sidebarCollapsed
+        ? 'w-0 md:w-16 overflow-hidden md:overflow-visible'
         : 'w-full md:w-80'
-    }`}>
-      <div className={`bg-white border border-gray-200 rounded-lg sticky top-24 ${
-        sidebarCollapsed ? 'p-2 md:p-4' : 'p-4'
-      } ${!sidebarCollapsed ? 'md:border md:border-gray-200' : ''}`}>
-        
+      }`}>
+      <div className={`bg-white border border-gray-200 rounded-lg sticky top-20 sm:top-24 ${sidebarCollapsed ? 'p-2 md:p-4' : 'p-3 sm:p-4'
+        } ${!sidebarCollapsed ? 'md:border md:border-gray-200' : ''}`}>
+
         {/* Sidebar Toggle Button - Desktop Only */}
         <div className="hidden md:flex justify-end mb-4">
           <button
@@ -58,23 +56,27 @@ export const Sidebar = memo(function Sidebar({
             <h3 className="font-semibold text-[#333333] mb-4">Categories</h3>
             <div className="space-y-2 mb-6">
               <button
+                type="button"
                 onClick={() => setSelectedCategory(null)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                  !selectedCategory ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-                }`}
+                className={`w-full text-left px-3 py-2.5 sm:py-2 rounded-lg transition-colors duration-200 text-sm sm:text-base ${!selectedCategory
+                    ? 'bg-[#FF6600] text-white'
+                    : 'hover:bg-gray-100'
+                  }`}
               >
                 All Categories
               </button>
               {categories.map((category) => (
                 <button
+                  type="button"
                   key={category._id}
                   onClick={() => setSelectedCategory(category._id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-3 ${
-                    selectedCategory === category._id ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-                  }`}
+                  className={`w-full text-left px-3 py-2.5 sm:py-2 rounded-lg transition-colors duration-200 flex items-center gap-3 text-sm sm:text-base ${selectedCategory === category._id
+                      ? 'bg-[#FF6600] text-white'
+                      : 'hover:bg-gray-100'
+                    }`}
                 >
                   <span className="text-lg">{category.icon}</span>
-                  <span>{category.name}</span>
+                  <span className="truncate">{category.name}</span>
                 </button>
               ))}
             </div>
@@ -84,21 +86,25 @@ export const Sidebar = memo(function Sidebar({
         {sidebarCollapsed && (
           <div className="space-y-3">
             <button
+              type="button"
               onClick={() => setSelectedCategory(null)}
-              className={`w-full p-2 rounded-lg transition-colors ${
-                !selectedCategory ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-              }`}
+              className={`w-full p-2 rounded-lg transition-colors duration-200 ${!selectedCategory
+                  ? 'bg-[#FF6600] text-white'
+                  : 'hover:bg-gray-100'
+                }`}
               title="All Categories"
             >
               📋
             </button>
             {categories.map((category) => (
               <button
+                type="button"
                 key={category._id}
                 onClick={() => setSelectedCategory(category._id)}
-                className={`w-full p-2 rounded-lg transition-colors ${
-                  selectedCategory === category._id ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-                }`}
+                className={`w-full p-2 rounded-lg transition-colors duration-200 ${selectedCategory === category._id
+                    ? 'bg-[#FF6600] text-white'
+                    : 'hover:bg-gray-100'
+                  }`}
                 title={category.name}
               >
                 {category.icon}

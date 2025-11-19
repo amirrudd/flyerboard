@@ -2,211 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --color-light: #ffffff;
-  --color-dark: #333333;
-  --color-orange: #FF6600;
-}
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
 
-.accent-text {
-  @apply text-slate-600;
-}
-
-body {
-  font-family:
-    "Inter Variable",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    "Noto Sans",
-    sans-serif,
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    "Segoe UI Symbol",
-    "Noto Color Emoji";
-  color: var(--color-dark);
-  background: var(--color-light);
-  direction: ltr;
-}
-
-/* Line clamp utilities */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Smooth transitions */
-* {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Disable transitions on form inputs for better UX */
-input, textarea, select {
-  transition: none !important;
-}
-
-/* Re-enable specific transitions for form focus states */
-input:focus, textarea:focus, select:focus {
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
-}
-
-/* Auth styles */
-.auth-input-field {
-  @apply w-full px-4 py-3 rounded-lg bg-white border border-gray-200 focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-shadow shadow-sm hover:shadow;
-}
-
-.auth-button {
-  @apply w-full px-4 py-3 rounded-lg bg-[#FF6600] text-white font-semibold hover:bg-[#e55a00] transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-/* Responsive grid improvements */
-@media (max-width: 768px) {
   body {
-    direction: ltr;
-  }
-  
-  .grid {
-    gap: 1rem;
+    @apply bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900;
   }
 
-  /* Hide sidebar on mobile when collapsed */
-  .sidebar-mobile-hidden {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer components {
+  .auth-input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300;
+  }
+
+  .auth-button {
+    @apply w-full px-4 py-3 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+}
+
+@layer utilities {
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-sm;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/80 transition-all duration-300;
+  }
+
+  .glass-dark {
+    @apply bg-neutral-900/70 backdrop-blur-lg border border-white/10 shadow-sm;
+  }
+
+  /* Text Gradients */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+  }
+
+  /* Scrollbar */
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
 
-  /* Mobile header adjustments */
-  .mobile-header {
-    padding: 0.5rem 1rem;
-  }
-
-  /* Prevent horizontal scroll */
-  html, body {
-    overflow-x: hidden;
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
-/* Hover effects */
-.hover-lift {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
 
-/* Loading animation */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+::-webkit-scrollbar-thumb {
+  @apply bg-neutral-300 rounded-full hover:bg-neutral-400 transition-colors;
+}
+
+/* Smooth Transitions */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
   }
+
   50% {
-    opacity: 0.5;
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
   }
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
-/* Smooth fade-in animation for listings */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Form Elements Focus */
+input:focus,
+textarea:focus,
+select:focus {
+  @apply outline-none ring-2 ring-primary-500/20 border-primary-500;
 }
 
-/* Filtering transition effects */
-.filter-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Loading Shimmer */
+.shimmer {
+  @apply relative overflow-hidden bg-neutral-200;
 }
 
-.filter-transition.filtering {
-  opacity: 0.6;
-  transform: scale(0.98);
+.shimmer::after {
+  content: '';
+  @apply absolute inset-0 -translate-x-full;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.5),
+      transparent);
+  animation: shimmer 1.5s infinite;
 }
 
-/* Staggered animation for ads grid items only */
-.ads-grid > * {
-  animation: fadeInUp 0.5s ease-out forwards;
-}
-
-.ads-grid > *:nth-child(1) { animation-delay: 0ms; }
-.ads-grid > *:nth-child(2) { animation-delay: 50ms; }
-.ads-grid > *:nth-child(3) { animation-delay: 100ms; }
-.ads-grid > *:nth-child(4) { animation-delay: 150ms; }
-.ads-grid > *:nth-child(5) { animation-delay: 200ms; }
-.ads-grid > *:nth-child(6) { animation-delay: 250ms; }
-.ads-grid > *:nth-child(7) { animation-delay: 300ms; }
-.ads-grid > *:nth-child(8) { animation-delay: 350ms; }
-.ads-grid > *:nth-child(9) { animation-delay: 400ms; }
-
-/* Smooth category button transitions */
-.category-button {
-  transition: all 0.2s ease-in-out;
-}
-
-.category-button:hover {
-  transform: translateX(4px);
-}
-
-/* Search input focus effect */
-input[type="text"]:focus {
-  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
-}
-
-/* Loading state for content */
-.content-loading {
-  opacity: 0.7;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-/* Smooth sidebar collapse */
-.sidebar-transition {
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Mobile sidebar slide-in animation */
-@media (max-width: 767px) {
-  .sidebar-mobile-slide {
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .sidebar-mobile-slide.open {
-    transform: translateX(0);
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

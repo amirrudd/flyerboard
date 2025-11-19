@@ -1,4 +1,4 @@
-import { SignInForm } from "../SignInForm";
+import { SignInForm } from "./SignInForm";
 
 interface AuthModalProps {
   showAuthModal: boolean;

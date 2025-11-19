@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { ImageUpload } from "./components/ImageUpload";
-import { ImageDisplay } from "./components/ImageDisplay";
+import { ImageUpload } from "../../components/ui/ImageUpload";
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
 
 interface PostAdProps {
   onBack: () => void;
@@ -31,7 +31,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const locations = [
     "Sydney, CBD",
     "Sydney, Northern Beaches",
-    "Melbourne, CBD", 
+    "Melbourne, CBD",
     "Melbourne, South Yarra",
     "Brisbane, South Bank",
     "Brisbane, Fortitude Valley",
@@ -52,7 +52,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title || !formData.description || !formData.price || !formData.location || !formData.categoryId) {
       toast.error("Please fill in all required fields");
       return;
@@ -86,7 +86,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         await createAd(adData);
         toast.success("Ad posted successfully!");
       }
-      
+
       onBack();
     } catch (error: any) {
       toast.error(error.message || "Failed to save ad");
@@ -121,7 +121,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-[#333333] mb-4">Basic Information</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

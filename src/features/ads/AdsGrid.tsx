@@ -1,6 +1,7 @@
-import { Id } from "../../convex/_generated/dataModel";
-import { ImageDisplay } from "./ImageDisplay";
-import { memo, useState, useEffect } from "react";
+import { Id } from "../../../convex/_generated/dataModel";
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Ad {
   _id: Id<"ads">;
@@ -28,7 +29,7 @@ interface AdsGridProps {
   categories: Category[];
   selectedCategory: Id<"categories"> | null;
   sidebarCollapsed: boolean;
-  setSelectedAdId: (adId: Id<"ads">) => void;
+  onAdClick: (adId: Id<"ads">) => void;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -36,40 +37,40 @@ export const AdsGrid = memo(function AdsGrid({
   categories,
   selectedCategory,
   sidebarCollapsed,
-  setSelectedAdId,
+  onAdClick,
 }: AdsGridProps) {
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  // Handle filtering animation only when ads change
-  useEffect(() => {
-    setIsFiltering(true);
-    const timer = setTimeout(() => setIsFiltering(false), 200);
-    return () => clearTimeout(timer);
-  }, [ads.length, selectedCategory]);
   return (
     <div className="flex-1">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[#333333] mb-2">
-          {selectedCategory 
-            ? categories.find(c => c._id === selectedCategory)?.name 
+          {selectedCategory
+            ? categories.find(c => c._id === selectedCategory)?.name
             : 'All Listings'
           }
         </h2>
         <p className="text-gray-600">{ads.length} listings found</p>
       </div>
 
-      {/* Ads Grid with smooth transitions */}
-      <div className={`transition-all duration-300 ${isFiltering ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
-        <div className={`ads-grid grid gap-4 ${
-          sidebarCollapsed 
-            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3'
-        }`}>
-          {ads.map((ad, index) => (
-            <div
+      {/* Ads Grid with Framer Motion */}
+      <motion.div
+        layout
+        className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
+          ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          }`}
+      >
+        <AnimatePresence mode="popLayout">
+          {ads.map((ad) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
               key={ad._id}
-              onClick={() => setSelectedAdId(ad._id)}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-[#FF6600] cursor-pointer group"
+              onClick={() => onAdClick(ad._id)}
+              className="bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer group"
             >
               <div className="aspect-video bg-gray-100 overflow-hidden relative">
                 <ImageDisplay
@@ -83,7 +84,7 @@ export const AdsGrid = memo(function AdsGrid({
                   </div>
                 )}
               </div>
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <h3 className="font-semibold text-[#333333] mb-2 line-clamp-2 group-hover:text-[#FF6600] transition-colors">
                   {ad.title}
                 </h3>
@@ -98,17 +99,21 @@ export const AdsGrid = memo(function AdsGrid({
                   <span>{ad.views} views</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
-      </div>
+        </AnimatePresence>
+      </motion.div>
 
-      {ads.length === 0 && !isFiltering && (
-        <div className="text-center py-12">
+      {ads.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-12"
+        >
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold text-[#333333] mb-2">No listings found</h3>
           <p className="text-gray-600">Please adjust your filters or try a new search</p>
-        </div>
+        </motion.div>
       )}
     </div>
   );

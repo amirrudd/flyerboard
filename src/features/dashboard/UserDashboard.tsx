@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { Id } from "../convex/_generated/dataModel";
-import { AdDetail } from "./AdDetail";
-import { AdMessages } from "./AdMessages";
-import { SignOutButton } from "./SignOutButton";
+import { Id } from "../../../convex/_generated/dataModel";
+import { AdDetail } from "../ads/AdDetail";
+import { AdMessages } from "../ads/AdMessages";
+import { SignOutButton } from "../auth/SignOutButton";
 
 interface UserDashboardProps {
   onBack: () => void;
@@ -37,13 +37,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     api.messages.getArchivedChats,
     user && activeTab === "archived" ? {} : "skip"
   );
-  
+
   // Get messages for expanded chat
   const chatMessages = useQuery(
     api.messages.getChatMessages,
     expandedChatId ? { chatId: expandedChatId } : "skip"
   );
-  
+
   // Get unread counts for all user ads
   const unreadCounts = useQuery(
     api.messages.getUnreadCounts,
@@ -152,7 +152,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const handleDeleteArchivedChats = async () => {
     if (selectedArchivedChats.size === 0) return;
-    
+
     try {
       await deleteArchivedChats({ chatIds: Array.from(selectedArchivedChats) });
       toast.success("Selected chats deleted successfully");
@@ -199,8 +199,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Show ad messages if selected
   if (showMessagesForAd) {
     return (
-      <AdMessages 
-        adId={showMessagesForAd} 
+      <AdMessages
+        adId={showMessagesForAd}
         onBack={() => setShowMessagesForAd(null)}
       />
     );
@@ -209,10 +209,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Show ad detail if an ad is selected
   if (selectedAdId) {
     return (
-      <AdDetail 
-        adId={selectedAdId} 
+      <AdDetail
+        adId={selectedAdId}
         onBack={() => setSelectedAdId(null)}
-        onShowAuth={() => {}}
+        onShowAuth={() => { }}
       />
     );
   }
@@ -234,7 +234,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               </button>
               <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <SignOutButton onSignOut={onBack} />
             </div>
@@ -275,9 +275,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               <div className="space-y-2">
                 {[
                   { id: "ads", label: "My Ads", icon: "📝" },
-                  { 
-                    id: "chats", 
-                    label: "Messages", 
+                  {
+                    id: "chats",
+                    label: "Messages",
                     icon: "💬",
                     badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                   },
@@ -288,20 +288,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                      activeTab === tab.id ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-                    }`}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${activeTab === tab.id ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span>{tab.icon}</span>
                       <span>{tab.label}</span>
                     </div>
                     {tab.badge && tab.badge > 0 && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        activeTab === tab.id
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${activeTab === tab.id
                           ? 'bg-white text-[#FF6600]'
                           : 'bg-[#FF6600] text-white'
-                      }`}>
+                        }`}>
                         {tab.badge}
                       </span>
                     )}
@@ -343,9 +341,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </p>
                               <div className="flex items-center gap-4 text-sm text-gray-500">
                                 <span>{ad.views} views</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                }`}>
+                                <span className={`px-2 py-1 rounded-full text-xs ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
                                   {ad.isActive ? 'Active' : 'Inactive'}
                                 </span>
                               </div>
@@ -364,11 +361,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </button>
                               <button
                                 onClick={() => handleToggleStatus(ad._id)}
-                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                  ad.isActive 
-                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ad.isActive
+                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }`}
+                                  }`}
                               >
                                 {ad.isActive ? 'Deactivate' : 'Activate'}
                               </button>
@@ -412,12 +408,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <h2 className="text-xl font-semibold text-[#333333] mb-6">My Messages</h2>
                 <p className="text-gray-600 mb-6">Conversations for listings you're interested in</p>
-                
+
                 <div className="space-y-4">
                   {(buyerChats || []).map((chat: any) => (
                     <div key={chat._id} className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Chat Header */}
-                      <div 
+                      <div
                         onClick={() => handleChatClick(chat._id)}
                         className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                       >
@@ -497,24 +493,21 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             {(chatMessages || []).map((message) => (
                               <div
                                 key={message._id}
-                                className={`flex ${
-                                  message.senderId === user._id ? 'justify-end' : 'justify-start'
-                                }`}
+                                className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'
+                                  }`}
                               >
                                 <div
-                                  className={`max-w-xs px-3 py-2 rounded-lg ${
-                                    message.senderId === user._id
+                                  className={`max-w-xs px-3 py-2 rounded-lg ${message.senderId === user._id
                                       ? 'bg-[#FF6600] text-white'
                                       : 'bg-white text-gray-900 border border-gray-200'
-                                  }`}
+                                    }`}
                                 >
                                   <p className="text-sm">{message.content}</p>
                                   <p
-                                    className={`text-xs mt-1 ${
-                                      message.senderId === user._id
+                                    className={`text-xs mt-1 ${message.senderId === user._id
                                         ? 'text-white/70'
                                         : 'text-gray-500'
-                                    }`}
+                                      }`}
                                   >
                                     {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                                   </p>
@@ -568,11 +561,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             {activeTab === "saved" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <h2 className="text-xl font-semibold text-[#333333] mb-6">Saved Ads</h2>
-                
+
                 <div className="grid gap-4">
                   {(savedAds || []).filter(savedAd => savedAd.ad).map((savedAd) => (
-                    <div 
-                      key={savedAd._id} 
+                    <div
+                      key={savedAd._id}
                       onClick={() => setSelectedAdId(savedAd.ad!._id)}
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-[#FF6600] cursor-pointer group"
                     >
@@ -615,7 +608,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             {activeTab === "profile" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <h2 className="text-xl font-semibold text-[#333333] mb-6">Profile Settings</h2>
-                
+
                 <form onSubmit={handleUpdateProfile} className="space-y-4 mb-8">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -685,7 +678,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-4">
                   {(archivedChats || []).length === 0 ? (
                     <div className="text-center py-12">

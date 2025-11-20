@@ -54,6 +54,28 @@ export const Sidebar = memo(function Sidebar({
           </button>
         ))}
       </div>
+
+      <div className="my-4 border-t border-gray-200"></div>
+
+      <div className="flex flex-wrap gap-x-4 gap-y-2 px-2">
+        {[
+          { label: "About Us", href: "#" },
+          { label: "Support", href: "#" },
+          { label: "Terms & Conditions", href: "#" },
+          { label: "Contact", href: "#" },
+        ].map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+      <div className="px-2 pt-4 text-[10px] text-gray-400">
+        © 2025 FlyerBoard
+      </div>
     </div>
   );
 });

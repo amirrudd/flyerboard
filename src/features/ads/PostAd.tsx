@@ -96,20 +96,20 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-neutral-100">
+      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
-            <h1 className="text-xl font-semibold text-[#333333]">
+            <h1 className="text-xl font-semibold text-neutral-800">
               {editingAd ? "Edit Listing" : "Post New Listing"}
             </h1>
             <div className="w-20"></div>
@@ -120,11 +120,11 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#333333] mb-4">Basic Information</h2>
+            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Title *
                 </label>
                 <input
@@ -132,21 +132,21 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   placeholder="Enter a descriptive title"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Category *
                 </label>
                 <select
                   name="categoryId"
                   value={formData.categoryId}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   required
                 >
                   <option value="">Select a category</option>
@@ -159,7 +159,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Price (AUD) *
                 </label>
                 <input
@@ -167,7 +167,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                   name="price"
                   value={formData.price}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -176,14 +176,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Location *
                 </label>
                 <select
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   required
                 >
                   <option value="">Select a location</option>
@@ -197,7 +197,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 Description *
               </label>
               <textarea
@@ -205,14 +205,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Describe your item..."
                 required
               />
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 Extended Description
               </label>
               <textarea
@@ -220,14 +220,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 value={formData.extendedDescription}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] outline-none transition-colors"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Additional details (optional)..."
               />
             </div>
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#333333] mb-4">Images *</h2>
+            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Images *</h2>
             <ImageUpload
               images={images}
               onImagesChange={setImages}
@@ -239,14 +239,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             <button
               type="button"
               onClick={onBack}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || images.length === 0}
-              className="flex-1 bg-[#FF6600] text-white px-6 py-3 rounded-lg hover:bg-[#e55a00] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? "Saving..." : (editingAd ? "Update Listing" : "Post Listing")}
             </button>

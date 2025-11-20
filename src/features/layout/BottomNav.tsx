@@ -6,11 +6,11 @@ export function BottomNav() {
     const isActive = (path: string) => location.pathname === path;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 md:hidden z-50 pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-4 py-2 md:hidden z-50 pb-safe">
             <div className="flex justify-around items-center">
                 <Link
                     to="/"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-[#FF6600]" : "text-gray-500 hover:text-gray-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <Home size={24} />
@@ -19,7 +19,7 @@ export function BottomNav() {
 
                 <Link
                     to="/saved"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/saved") ? "text-[#FF6600]" : "text-gray-500 hover:text-gray-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/saved") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <Heart size={24} />
@@ -30,15 +30,15 @@ export function BottomNav() {
                     to="/post"
                     className="flex flex-col items-center gap-1 p-2 -mt-6"
                 >
-                    <div className="bg-[#FF6600] text-white p-3 rounded-full shadow-lg hover:bg-[#e55a00] transition-colors">
+                    <div className="bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors">
                         <PlusCircle size={28} />
                     </div>
-                    <span className="text-xs font-medium text-gray-500">Post</span>
+                    <span className="text-xs font-medium text-neutral-500">Post</span>
                 </Link>
 
                 <Link
                     to="/messages"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/messages") ? "text-[#FF6600]" : "text-gray-500 hover:text-gray-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/messages") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <MessageCircle size={24} />
@@ -47,7 +47,7 @@ export function BottomNav() {
 
                 <Link
                     to="/dashboard"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard") ? "text-[#FF6600]" : "text-gray-500 hover:text-gray-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <User size={24} />

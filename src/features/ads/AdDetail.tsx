@@ -112,21 +112,21 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
   if (!ad) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-neutral-100">
         {/* Header skeleton */}
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to listings
               </button>
-              <h1 className="text-xl font-semibold text-[#333333]">Loading...</h1>
+              <h1 className="text-xl font-semibold text-neutral-800">Loading...</h1>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                 <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -164,28 +164,28 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   const images = ad.images.length > 0 ? ad.images : ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop'];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-100">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back to listings
             </button>
-            <h1 className="text-xl font-semibold text-[#333333]">{ad.title}</h1>
+            <h1 className="text-xl font-semibold text-neutral-800">{ad.title}</h1>
             <div className="flex items-center gap-3">
               {user && ad.userId !== user._id && (
                 <button
                   onClick={handleSave}
                   className={`p-2 rounded-lg transition-colors ${isAdSaved
                     ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-gray-200'
                     }`}
                   title={isAdSaved ? "Remove from saved" : "Save ad"}
                 >
@@ -196,7 +196,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               )}
               <button
                 onClick={handleShare}
-                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
                 title="Share ad"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
-              <div className="relative aspect-video bg-gray-100">
+              <div className="relative aspect-video bg-neutral-100">
                 <img
                   src={images[currentImageIndex]}
                   alt={`${ad.title} - Image ${currentImageIndex + 1}`}
@@ -253,15 +253,15 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
               {/* Thumbnail strip for multiple images */}
               {images.length > 1 && (
-                <div className="p-4 bg-gray-50">
+                <div className="p-4 bg-neutral-100">
                   <div className="flex gap-2 overflow-x-auto">
                     {images.map((image, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                          ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary-600 ring-2 ring-primary-600 ring-opacity-30'
+                          : 'border-neutral-200 hover:border-neutral-300'
                           }`}
                       >
                         <img
@@ -280,27 +280,27 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-[#333333] mb-2">{ad.title}</h1>
-                  <p className="text-3xl font-bold text-[#FF6600]">${ad.price.toLocaleString()} AUD</p>
+                  <h1 className="text-2xl font-bold text-neutral-800 mb-2">{ad.title}</h1>
+                  <p className="text-3xl font-bold text-primary-600">${ad.price.toLocaleString()} AUD</p>
                 </div>
-                <div className="text-right text-sm text-gray-500">
+                <div className="text-right text-sm text-neutral-500">
                   <p>{ad.views} views</p>
                   <p>Posted {timeAgo}</p>
                 </div>
               </div>
 
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-[#333333] mb-3">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{ad.description}</p>
+                <h3 className="text-lg font-semibold text-neutral-800 mb-3">Description</h3>
+                <p className="text-neutral-700 leading-relaxed">{ad.description}</p>
                 {ad.extendedDescription && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-medium text-[#333333] mb-2">Additional Details</h4>
-                    <p className="text-gray-700 leading-relaxed">{ad.extendedDescription}</p>
+                  <div className="mt-4 pt-4 border-t border-neutral-200">
+                    <h4 className="font-medium text-neutral-800 mb-2">Additional Details</h4>
+                    <p className="text-neutral-700 leading-relaxed">{ad.extendedDescription}</p>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-4 text-sm text-neutral-600">
                 <div className="flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -313,9 +313,9 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
             {/* Map */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Location</h3>
-              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                <div className="text-center text-gray-500">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Location</h3>
+              <div className="h-64 bg-neutral-100 rounded-lg flex items-center justify-center">
+                <div className="text-center text-neutral-500">
                   <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -331,30 +331,30 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
           <div className="space-y-6">
             {/* Seller Info */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Seller Information</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium text-[#333333]">{ad.seller?.name || "Anonymous"}</p>
-                  <p className="text-sm text-gray-500">Seller</p>
+                  <p className="font-medium text-neutral-800">{ad.seller?.name || "Anonymous"}</p>
+                  <p className="text-sm text-neutral-500">Seller</p>
                 </div>
               </div>
 
               {user && ad.userId !== user._id && (
                 <button
                   onClick={handleStartChat}
-                  className="w-full bg-[#FF6600] text-white py-3 px-4 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                 >
                   Contact Seller
                 </button>
               )}
 
               {user && ad.userId === user._id && (
-                <div className="text-center py-3 text-gray-500">
+                <div className="text-center py-3 text-neutral-500">
                   <p>This is your listing</p>
                 </div>
               )}
@@ -362,7 +362,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               {!user && (
                 <button
                   onClick={onShowAuth}
-                  className="w-full bg-[#FF6600] text-white py-3 px-4 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                 >
                   Sign in to contact seller
                 </button>
@@ -372,12 +372,12 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             {/* Chat Section */}
             {showChat && chatId && (
               <div className="bg-white rounded-lg shadow-sm">
-                <div className="p-4 border-b border-gray-200">
+                <div className="p-4 border-b border-neutral-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-[#333333]">Chat with Seller</h3>
+                    <h3 className="text-lg font-semibold text-neutral-800">Chat with Seller</h3>
                     <button
                       onClick={() => setShowChat(false)}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-neutral-500 hover:text-neutral-700"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -394,12 +394,12 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                          ? 'bg-[#FF6600] text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-neutral-100 text-neutral-900'
                           }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-gray-500'
+                        <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
                           }`}>
                           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                         </p>
@@ -408,7 +408,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   ))}
                 </div>
 
-                <div className="p-4 border-t border-gray-200">
+                <div className="p-4 border-t border-neutral-200">
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -416,12 +416,12 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                       onChange={(e) => setMessageText(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6600] focus:border-transparent outline-none"
+                      className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={!messageText.trim()}
-                      className="bg-[#FF6600] text-white px-4 py-2 rounded-lg hover:bg-[#e55a00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send
                     </button>
@@ -432,14 +432,14 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 {user && ad.userId !== user._id && (
                   <button
                     onClick={handleSave}
                     className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
                       ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
                       }`}
                   >
                     <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -450,7 +450,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                 )}
                 <button
                   onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />

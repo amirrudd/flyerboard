@@ -9,38 +9,62 @@ module.exports = {
         display: ["Plus Jakarta Sans", ...fontFamily.sans],
       },
       colors: {
-        // Divar-inspired Brand Colors
+        // Divar-inspired Primary Brand Color (Red)
         primary: {
           50: '#fef2f2',
           100: '#fee2e2',
           200: '#fecaca',
           300: '#fca5a5',
           400: '#f87171',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c', // Divar Red-ish
+          500: '#ef4444',  // Bright red - main brand color
+          600: '#dc2626',  // Slightly darker for hover
+          700: '#b91c1c',  // Darker red for active/pressed states
           800: '#991b1b',
           900: '#7f1d1d',
-          DEFAULT: "#A62626", // Main Brand Color
+          DEFAULT: '#ef4444', // Main Brand Color (bright red)
         },
-        // Neutral Grays
+        // Neutral Grays (Divar-inspired)
         neutral: {
-          50: '#f9fafb', // Very light gray background
-          100: '#f3f4f6',
-          200: '#e5e7eb', // Borders
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280', // Secondary text
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937', // Primary text
-          900: '#111827',
+          50: '#FFFFFF',   // Pure white - backgrounds, cards
+          100: '#F5F5F5',  // Light gray - secondary backgrounds
+          200: '#DBDBE4',  // Medium light - borders, dividers
+          300: '#C4C4D0',  // Subtle borders
+          400: '#9CA3AF',  // Disabled states
+          500: '#71717A',  // Secondary text (Divar gray)
+          600: '#52525B',  // Medium emphasis text
+          700: '#3F3F46',  // High emphasis text
+          800: '#242428',  // Primary text (Divar dark)
+          900: '#18181B',  // Darkest text
+        },
+        // Accent Blue (for links, info)
+        accent: {
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#2385F2',  // Divar blue for links
+          600: '#1D6FCC',
+          700: '#1E40AF',
+          800: '#1E3A8A',
+          900: '#1E3A8A',
         },
         // Semantic Colors
-        success: "#10B981",
-        warning: "#F59E0B",
-        error: "#EF4444",
-        info: "#3B82F6",
+        success: '#10B981',
+        warning: '#F59E0B',
+        error: '#EF4444',
+        info: '#2385F2',
+
+        // Alpha overlays (for shadows, disabled states, etc.)
+        'black-alpha': {
+          8: 'rgba(0, 0, 0, 0.08)',   // Hover states
+          12: 'rgba(0, 0, 0, 0.12)',  // Subtle borders
+          24: 'rgba(0, 0, 0, 0.24)',  // Dividers
+          32: 'rgba(0, 0, 0, 0.32)',  // Disabled text
+          48: 'rgba(0, 0, 0, 0.48)',  // Overlays
+          56: 'rgba(0, 0, 0, 0.56)',  // Medium emphasis
+          87: 'rgba(0, 0, 0, 0.87)',  // High emphasis
+        },
       },
       borderRadius: {
         DEFAULT: "8px",

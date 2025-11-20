@@ -118,8 +118,8 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
             ${isDragging
-              ? 'border-[#FF6600] bg-orange-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary-600 bg-orange-50'
+              : 'border-neutral-300 hover:border-gray-400'
             }
             ${uploading.length > 0 ? 'opacity-50' : ''}
           `}
@@ -139,17 +139,17 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
           <div className="space-y-4">
             <div className="text-4xl">📸</div>
             <div>
-              <p className="text-lg font-medium text-gray-700 mb-2">
+              <p className="text-lg font-medium text-neutral-700 mb-2">
                 {isDragging ? 'Drop images here' : 'Upload Images'}
               </p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-neutral-500 mb-4">
                 Drag and drop images here, or click to select files
               </p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading.length > 0}
-                className="bg-[#FF6600] text-white px-6 py-2 rounded-lg hover:bg-[#e55a00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {uploading.length > 0 ? 'Uploading...' : 'Choose Files'}
               </button>
@@ -175,7 +175,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
 
       {/* Image Counter */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-neutral-600">
           {images.length}/{maxImages} images added
         </p>
         {images.length >= maxImages && (
@@ -191,7 +191,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
               <ImageDisplay
                 src={imageId}
                 alt={`Preview ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                className="w-full h-24 object-cover rounded-lg border border-neutral-200"
               />
               <button
                 type="button"
@@ -214,7 +214,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
       {/* Empty State */}
       {images.length === 0 && uploading.length === 0 && (
         <div className="text-center py-4">
-          <p className="text-gray-500 text-sm">No images added yet</p>
+          <p className="text-neutral-500 text-sm">No images added yet</p>
         </div>
       )}
     </div>

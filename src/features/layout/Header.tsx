@@ -202,7 +202,7 @@ export const Header = memo(function Header({
                   setShowAuthModal(true);
                 }
               }}
-              className="h-10 px-4 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+              className="h-10 px-4 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
             >
               Post Listing
             </button>
@@ -262,7 +262,7 @@ export const Header = memo(function Header({
                     setShowAuthModal(true);
                   }
                 }}
-                className="h-9 px-3 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+                className="h-9 px-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Post
               </button>

@@ -161,11 +161,11 @@ export const Header = memo(function Header({
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1440px] mx-auto">
         {/* Desktop Header */}
-        <div className="hidden md:flex items-center h-14 px-4">
+        <div className="hidden md:flex items-center justify-between h-14 px-4">
           {/* Left section - Logo and Location */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-shrink-0">
             <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
 
             {/* Location Selector - Divar style */}
@@ -177,8 +177,8 @@ export const Header = memo(function Header({
           </div>
 
           {/* Center section - Search Bar */}
-          <div className="flex-1 max-w-md mx-6">
-            <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
+          <div className="flex-1 flex justify-center px-8">
+            <form className="relative w-full max-w-2xl" onSubmit={e => e.preventDefault()} autoComplete="off">
               <input
                 type="text"
                 placeholder="Search in listings..."
@@ -193,7 +193,7 @@ export const Header = memo(function Header({
           </div>
 
           {/* Right section - Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-shrink-0">
             <button
               onClick={() => {
                 if (user) {

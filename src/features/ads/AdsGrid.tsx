@@ -58,7 +58,7 @@ export const AdsGrid = memo(function AdsGrid({
       {ads === undefined ? (
         <div className={`grid gap-3 sm:gap-4 ${sidebarCollapsed
           ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
           }`}>
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm h-[300px] animate-pulse">
@@ -73,67 +73,62 @@ export const AdsGrid = memo(function AdsGrid({
         </div>
       ) : (
         /* Ads Grid with Framer Motion */
-        <motion.div
-          className="ads-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        <div
+          className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
+            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            }`}
         >
-          <AnimatePresence mode="popLayout">
-            {ads.map((ad) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                key={ad._id}
-                onClick={() => onAdClick(ad._id)}
-                className="bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-colors cursor-pointer group"
-              >
-                <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
-                  <ImageDisplay
-                    src={ad.images[0] || ''}
-                    alt={ad.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {ad.images.length > 1 && (
-                    <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">
-                      {ad.images.length}
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-base">
-                    {ad.title}
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500">
-                      {/* Condition or status could go here, e.g., "New" */}
-                      {ad.location}
-                    </p>
-                    <p className="text-sm font-medium text-gray-900">
-                      ${ad.price.toLocaleString()}
-                    </p>
+          {ads.map((ad) => (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+              key={ad._id}
+              onClick={() => onAdClick(ad._id)}
+              className="bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-colors cursor-pointer group"
+            >
+              <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                <ImageDisplay
+                  src={ad.images[0] || ''}
+                  alt={ad.title}
+                  className="w-full h-full object-cover"
+                />
+                {ad.images.length > 1 && (
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">
+                    {ad.images.length}
                   </div>
-                  <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
-                    <span>{ad.views} views</span>
-                    {/* Time ago could go here */}
-                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-base">
+                  {ad.title}
+                </h3>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    {/* Condition or status could go here, e.g., "New" */}
+                    {ad.location}
+                  </p>
+                  <p className="text-sm font-medium text-gray-900">
+                    ${ad.price.toLocaleString()}
+                  </p>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
+                  <span>{ad.views} views</span>
+                  {/* Time ago could go here */}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       )}
 
       {ads && ads.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12"
-        >
+        <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold text-[#333333] mb-2">No listings found</h3>
           <p className="text-gray-600">Please adjust your filters or try a new search</p>
-        </motion.div>
+        </div>
       )}
     </div>
   );

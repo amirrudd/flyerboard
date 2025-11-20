@@ -159,11 +159,11 @@ export function HomePage() {
       />
 
       <div className="max-w-[1440px] mx-auto px-4 py-6">
-        <div className="flex gap-8 items-start">
+        <div className="flex gap-8 items-start min-h-screen">
           {/* Sidebar - Sticky on Desktop */}
           <div className={`
             ${sidebarCollapsed ? 'hidden' : 'hidden md:block'}
-            w-64 flex-shrink-0 sticky top-24 h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide
+            w-64 flex-shrink-0 sticky top-[84px] h-[calc(100vh-84px)] overflow-y-auto scrollbar-hide
           `}>
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}

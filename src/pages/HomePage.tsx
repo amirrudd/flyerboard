@@ -166,21 +166,13 @@ export function HomePage() {
         locations={locations}
       />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
-        <div className={`flex gap-3 sm:gap-6 ${sidebarCollapsed ? 'md:gap-6' : 'gap-3 sm:gap-6'}`}>
-          {/* Mobile sidebar overlay */}
-          {!sidebarCollapsed && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-              onClick={() => setSidebarCollapsed(true)}
-            />
-          )}
-
-          {/* Sidebar */}
-          <div className={`${sidebarCollapsed
-            ? 'hidden md:block'
-            : 'fixed left-0 top-0 h-full w-72 sm:w-80 z-50 md:relative md:w-80 md:z-auto bg-white md:bg-transparent p-3 sm:p-4 md:p-0 pt-16 sm:pt-20 md:pt-0'
-            }`}>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex gap-8 items-start">
+          {/* Sidebar - Sticky on Desktop */}
+          <div className={`
+            ${sidebarCollapsed ? 'hidden' : 'hidden md:block'}
+            w-64 flex-shrink-0 sticky top-24 h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide
+          `}>
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}
               categories={categories || []}
@@ -190,13 +182,21 @@ export function HomePage() {
             />
           </div>
 
-          <AdsGrid
-            ads={ads || []}
-            categories={categories || []}
-            selectedCategory={selectedCategory}
-            sidebarCollapsed={sidebarCollapsed}
-            onAdClick={(adId) => navigate(`/ad/${adId}`)}
-          />
+          {/* Main Content - Feed */}
+          <div className="flex-1 min-w-0">
+            {/* Mobile Category Toggle (if needed, or keep existing mobile logic) */}
+            <div className="md:hidden mb-4">
+              {/* We can add a mobile category filter button here later if needed */}
+            </div>
+
+            <AdsGrid
+              ads={ads || []}
+              categories={categories || []}
+              selectedCategory={selectedCategory}
+              sidebarCollapsed={sidebarCollapsed}
+              onAdClick={(adId) => navigate(`/ad/${adId}`)}
+            />
+          </div>
         </div>
       </div>
 

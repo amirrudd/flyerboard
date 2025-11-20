@@ -2,6 +2,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -11,7 +12,7 @@ export function SignInForm() {
   return (
     <div className="w-full">
       <form
-        className="flex flex-col gap-form-field"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
@@ -32,24 +33,45 @@ export function SignInForm() {
           });
         }}
       >
-        <input
-          className="auth-input-field"
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-        />
-        <input
-          className="auth-input-field"
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-        />
-        <button className="auth-button" type="submit" disabled={submitting}>
-          {flow === "signIn" ? "Sign in" : "Sign up"}
+        <div className="space-y-4">
+          <div className="relative group">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+            <input
+              className="auth-input-field pl-12"
+              type="email"
+              name="email"
+              placeholder="Email address"
+              required
+            />
+          </div>
+          <div className="relative group">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+            <input
+              className="auth-input-field pl-12"
+              type="password"
+              name="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+        </div>
+
+        <button
+          className="auth-button flex items-center justify-center gap-2 mt-2 group"
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              {flow === "signIn" ? "Sign in" : "Create account"}
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </>
+          )}
         </button>
-        <div className="text-center text-sm text-neutral-500">
+
+        <div className="text-center text-sm text-neutral-500 mt-4">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
@@ -57,10 +79,10 @@ export function SignInForm() {
           </span>
           <button
             type="button"
-            className="text-primary-500 hover:text-primary-600 hover:underline font-medium cursor-pointer transition-colors"
+            className="text-primary-600 hover:text-primary-700 font-semibold hover:underline cursor-pointer transition-colors ml-1"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
+            {flow === "signIn" ? "Sign up" : "Sign in"}
           </button>
         </div>
       </form>

@@ -5,8 +5,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter var", ...fontFamily.sans],
-        display: ["Outfit", ...fontFamily.sans], // Optional: for headings if we add the font
+        sans: ["Plus Jakarta Sans", ...fontFamily.sans],
+        display: ["Plus Jakarta Sans", ...fontFamily.sans],
       },
       colors: {
         // Divar-inspired Brand Colors

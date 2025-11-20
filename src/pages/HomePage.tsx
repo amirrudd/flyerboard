@@ -144,15 +144,7 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Temporary admin button for updating categories */}
-      <div className="fixed top-4 right-4 z-50 hidden md:block">
-        <button
-          onClick={handleUpdateCategories}
-          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 opacity-50 hover:opacity-100 transition-opacity"
-        >
-          Update Categories
-        </button>
-      </div>
+
 
       <Header
         sidebarCollapsed={sidebarCollapsed}

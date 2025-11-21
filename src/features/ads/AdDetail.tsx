@@ -117,7 +117,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
       <div className="min-h-screen bg-neutral-100">
         {/* Header skeleton */}
         <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
                 onClick={onBack}
@@ -138,7 +138,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
         </header>
 
         {/* Loading content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-lg overflow-hidden shadow-sm">
@@ -169,7 +169,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     <div className="min-h-screen bg-neutral-100">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={onBack}
@@ -210,7 +210,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">

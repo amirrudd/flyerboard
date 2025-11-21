@@ -55,19 +55,21 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   };
 
   const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/ad/${adId}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: ad?.title,
           text: ad?.description,
-          url: window.location.href,
+          url: shareUrl,
         });
       } catch (error) {
         // User cancelled sharing
       }
     } else {
       // Fallback to copying URL
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(shareUrl);
       toast.success("Link copied to clipboard!");
     }
   };
@@ -450,7 +452,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                 )}
                 <button
                   onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />

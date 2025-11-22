@@ -4,9 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
-export function SignInForm() {
+interface SignInFormProps {
+  flow: "signIn" | "signUp";
+  setFlow: (flow: "signIn" | "signUp") => void;
+}
+
+export function SignInForm({ flow, setFlow }: SignInFormProps) {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -19,13 +23,20 @@ export function SignInForm() {
           const formData = new FormData(e.target as HTMLFormElement);
           formData.set("flow", flow);
           void signIn("password", formData).catch((error) => {
+            console.error("Sign in/up error:", error);
             let toastTitle = "";
-            if (error.message.includes("Invalid password")) {
-              toastTitle = "Invalid password. Please try again.";
+            if (error.message.includes("A user with this email already exists")) {
+              toastTitle = "A user with this email already exists. Please sign in.";
+            } else if (error.message.includes("Invalid password")) {
+              if (flow === "signUp") {
+                toastTitle = "Account may already exist. Please try signing in.";
+              } else {
+                toastTitle = "Invalid password. Please try again.";
+              }
             } else {
               toastTitle =
                 flow === "signIn"
-                  ? "Could not sign in, did you mean to sign up?"
+                  ? "Incorrect email or password. Please try again."
                   : "Could not sign up, did you mean to sign in?";
             }
             toast.error(toastTitle);

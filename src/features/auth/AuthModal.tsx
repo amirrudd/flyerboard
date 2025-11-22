@@ -1,11 +1,15 @@
 import { SignInForm } from "./SignInForm";
 
+import { useState } from "react";
+
 interface AuthModalProps {
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
 }
 
 export function AuthModal({ showAuthModal, setShowAuthModal }: AuthModalProps) {
+  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+
   if (!showAuthModal) return null;
 
   return (
@@ -17,7 +21,11 @@ export function AuthModal({ showAuthModal, setShowAuthModal }: AuthModalProps) {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-2xl font-bold text-neutral-900">Welcome</h2>
-            <p className="text-neutral-500 text-sm mt-1">Please sign in to continue</p>
+            <p className="text-neutral-500 text-sm mt-1">
+              {flow === "signIn"
+                ? "Please sign in to continue"
+                : "Create an account to get started"}
+            </p>
           </div>
           <button
             onClick={() => setShowAuthModal(false)}
@@ -29,7 +37,7 @@ export function AuthModal({ showAuthModal, setShowAuthModal }: AuthModalProps) {
             </svg>
           </button>
         </div>
-        <SignInForm />
+        <SignInForm flow={flow} setFlow={setFlow} />
       </div>
     </div>
   );

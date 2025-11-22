@@ -6,6 +6,7 @@ import { AdDetailPage } from "./pages/AdDetailPage";
 import { PostAdPage } from "./pages/PostAdPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { TermsPage } from "./pages/TermsPage";
+import { CommunityGuidelinesPage } from "./pages/CommunityGuidelinesPage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/post" element={<PostAdPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
           {/* Add other routes as needed */}
         </Route>
       </Routes>

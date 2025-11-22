@@ -1,8 +1,9 @@
 import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, memo, useCallback, useRef } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 
 interface HeaderProps {
   sidebarCollapsed?: boolean;
@@ -13,20 +14,22 @@ interface HeaderProps {
   setShowAuthModal?: (show: boolean) => void;
   selectedLocation?: string;
   setSelectedLocation?: (location: string) => void;
-  locations?: string[];
   leftNode?: React.ReactNode;
   centerNode?: React.ReactNode;
   rightNode?: React.ReactNode;
 }
 
 // Location selector component
-const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, locations }: {
+const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation }: {
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
-  locations: string[];
 }) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<LocationData[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const detectLocation = () => {
     setIsDetectingLocation(true);
@@ -55,15 +58,18 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 
           setSelectedLocation(detectedCity);
           setIsDetectingLocation(false);
+          setIsOpen(false);
         },
         () => {
           setSelectedLocation("Melbourne, CBD");
           setIsDetectingLocation(false);
+          setIsOpen(false);
         }
       );
     } else {
       setSelectedLocation("Melbourne, CBD");
       setIsDetectingLocation(false);
+      setIsOpen(false);
     }
   };
 
@@ -78,9 +84,33 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 
     if (isOpen) {
       document.addEventListener('click', handleClickOutside);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [isOpen]);
+
+  // Search locations
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (query.length >= 2) {
+        setIsSearching(true);
+        try {
+          const results = await searchLocations(query);
+          setSuggestions(results);
+        } catch (error) {
+          console.error("Failed to search locations", error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSuggestions([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   return (
     <div className="relative location-dropdown">
@@ -93,44 +123,68 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        <span>{selectedLocation || "All Locations"}</span>
+        <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="py-1">
-            <button
-              onClick={() => {
-                setSelectedLocation("");
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-            >
-              All Locations
-            </button>
-            {locations.map((location) => (
+        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Enter suburb or postcode..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div className="max-h-60 overflow-y-auto py-1">
+            {isSearching ? (
+              <div className="px-4 py-2 text-sm text-gray-500 flex items-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Searching...
+              </div>
+            ) : suggestions.length > 0 ? (
+              suggestions.map((loc) => (
+                <button
+                  key={loc.id}
+                  onClick={() => {
+                    setSelectedLocation(formatLocation(loc));
+                    setIsOpen(false);
+                    setQuery("");
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors flex flex-col"
+                >
+                  <span className="font-medium text-gray-900">{loc.locality}</span>
+                  <span className="text-xs text-gray-500">{loc.state} {loc.postcode}</span>
+                </button>
+              ))
+            ) : query.length >= 2 ? (
+              <div className="px-4 py-2 text-sm text-gray-500">No locations found</div>
+            ) : (
               <button
-                key={location}
                 onClick={() => {
-                  setSelectedLocation(location);
+                  setSelectedLocation("");
                   setIsOpen(false);
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
               >
-                {location}
+                All Locations
               </button>
-            ))}
-            <hr className="my-1" />
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 p-1">
             <button
-              onClick={() => {
-                detectLocation();
-                setIsOpen(false);
-              }}
+              onClick={detectLocation}
               disabled={isDetectingLocation}
-              className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center gap-2"
             >
               {isDetectingLocation ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,7 +213,6 @@ export const Header = memo(function Header({
   setShowAuthModal = () => { },
   selectedLocation = "",
   setSelectedLocation = () => { },
-  locations = [],
   leftNode,
   centerNode,
   rightNode,
@@ -181,7 +234,6 @@ export const Header = memo(function Header({
                 <LocationSelector
                   selectedLocation={selectedLocation}
                   setSelectedLocation={setSelectedLocation}
-                  locations={locations}
                 />
               </>
             )}
@@ -303,7 +355,6 @@ export const Header = memo(function Header({
               <LocationSelector
                 selectedLocation={selectedLocation}
                 setSelectedLocation={setSelectedLocation}
-                locations={locations}
               />
             </div>
           </div>

@@ -155,7 +155,6 @@ export function HomePage() {
         setShowAuthModal={setShowAuthModal}
         selectedLocation={selectedLocation}
         setSelectedLocation={handleLocationChange}
-        locations={locations}
       />
 
       <div className="max-w-[1440px] mx-auto px-4 py-6">

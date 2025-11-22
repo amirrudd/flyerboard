@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
-import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 
 interface PostAdProps {
   onBack: () => void;
@@ -24,23 +24,60 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const [images, setImages] = useState<string[]>(editingAd?.images || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Location search state
+  const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationData[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const locationWrapperRef = useRef<HTMLDivElement>(null);
+
   const categories = useQuery(api.categories.getCategories);
   const createAd = useMutation(api.posts.createAd);
   const updateAd = useMutation(api.posts.updateAd);
 
-  const locations = [
-    "Sydney, CBD",
-    "Sydney, Northern Beaches",
-    "Melbourne, CBD",
-    "Melbourne, South Yarra",
-    "Brisbane, South Bank",
-    "Brisbane, Fortitude Valley",
-    "Perth, Fremantle",
-    "Perth, Subiaco",
-    "Adelaide, CBD",
-    "Gold Coast, Surfers Paradise",
-    "Canberra, City Centre",
-  ];
+  // Handle location search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (locationQuery.length >= 2) {
+        setIsSearchingLocation(true);
+        try {
+          const results = await searchLocations(locationQuery);
+          setLocationSuggestions(results);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error("Failed to search locations", error);
+        } finally {
+          setIsSearchingLocation(false);
+        }
+      } else {
+        setLocationSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [locationQuery]);
+
+  // Close suggestions on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationWrapperRef.current && !locationWrapperRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLocationSelect = (location: LocationData) => {
+    const formatted = formatLocation(location);
+    setFormData(prev => ({ ...prev, location: formatted }));
+    setLocationQuery(formatted);
+    setShowSuggestions(false);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,6 +93,28 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
     if (!formData.title || !formData.description || !formData.price || !formData.location || !formData.categoryId) {
       toast.error("Please fill in all required fields");
       return;
+    }
+
+    // Validate that location is selected from list (or at least matches the format roughly, though strict validation is better)
+    // For now, we rely on the user selecting from the list or typing a valid string. 
+    // To enforce selection, we could clear formData.location if it doesn't match a selection, 
+    // but since we allow free text in the original requirement "type in their suburb", 
+    // we should probably allow it but strongly encourage selection.
+    // However, the requirement says "User must select from list to be able to proceed."
+    // So we should probably enforce that the current query matches the selected location.
+    // But since we store it as a string, it's hard to enforce without keeping the selected object.
+    // Let's assume if they typed it and it's in the input, it's fine, but the UI encourages selection.
+    // Actually, let's enforce it by checking if the current query matches the stored location.
+    if (formData.location !== locationQuery) {
+      // This happens if they typed something but didn't select. 
+      // Or if they modified it after selecting.
+      // We should probably force them to select.
+      // But for better UX, if they typed a valid location manually, maybe let it slide?
+      // "User must select from list to be able to proceed." -> Strict requirement.
+      // So we should clear location if they type something new.
+      // Let's implement a check: if locationQuery is not equal to formData.location, it means they changed it without selecting.
+      // So we set location to empty string in that case? 
+      // Better: update formData.location only on select.
     }
 
     if (images.length === 0) {
@@ -175,24 +234,56 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 />
               </div>
 
-              <div>
+              <div className="relative" ref={locationWrapperRef}>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Location *
                 </label>
-                <select
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                <input
+                  type="text"
+                  value={locationQuery}
+                  onChange={(e) => {
+                    setLocationQuery(e.target.value);
+                    // If user types, invalidate the selected location until they select again
+                    // But we keep the formData.location as is until submit check? 
+                    // Or we clear it? Let's clear it to enforce selection.
+                    if (formData.location && e.target.value !== formData.location) {
+                      setFormData(prev => ({ ...prev, location: "" }));
+                    }
+                  }}
+                  onFocus={() => {
+                    if (locationSuggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg outline-none transition-colors ${!formData.location && locationQuery.length > 0 ? "border-amber-500 focus:border-amber-500 focus:ring-amber-500" : "border-neutral-300 focus:border-primary-600 focus:ring-primary-600"
+                    }`}
+                  placeholder="Enter suburb or postcode"
                   required
-                >
-                  <option value="">Select a location</option>
-                  {locations.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
+                />
+                {isSearchingLocation && (
+                  <div className="absolute right-3 top-[38px]">
+                    <svg className="w-4 h-4 animate-spin text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                )}
+
+                {showSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {locationSuggestions.map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => handleLocationSelect(loc)}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center justify-between group"
+                      >
+                        <span className="font-medium text-neutral-700 group-hover:text-neutral-900">{loc.locality}</span>
+                        <span className="text-neutral-400 text-xs group-hover:text-neutral-500">{loc.state} {loc.postcode}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!formData.location && locationQuery.length > 0 && !isSearchingLocation && (
+                  <p className="text-xs text-amber-600 mt-1">Please select a location from the list</p>
+                )}
               </div>
             </div>
 
@@ -245,7 +336,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || images.length === 0}
+              disabled={isSubmitting || images.length === 0 || !formData.location}
               className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? "Saving..." : (editingAd ? "Update Listing" : "Post Listing")}

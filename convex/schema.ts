@@ -5,7 +5,6 @@ import { authTables } from "@convex-dev/auth/server";
 const applicationTables = {
   categories: defineTable({
     name: v.string(),
-    icon: v.string(),
     slug: v.string(),
     parentId: v.optional(v.id("categories")),
   }).index("by_slug", ["slug"]),

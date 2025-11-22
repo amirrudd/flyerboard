@@ -19,7 +19,6 @@ interface Ad {
 interface Category {
   _id: Id<"categories">;
   name: string;
-  icon: string;
   slug: string;
   parentId?: Id<"categories">;
 }

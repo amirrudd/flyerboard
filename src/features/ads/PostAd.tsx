@@ -5,6 +5,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
+import { getCategoryIcon } from "../../lib/categoryIcons";
 
 interface PostAdProps {
   onBack: () => void;
@@ -28,8 +29,10 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
   const [locationSuggestions, setLocationSuggestions] = useState<LocationData[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const locationWrapperRef = useRef<HTMLDivElement>(null);
+  const categoryWrapperRef = useRef<HTMLDivElement>(null);
 
   const categories = useQuery(api.categories.getCategories);
   const createAd = useMutation(api.posts.createAd);
@@ -63,6 +66,9 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
     const handleClickOutside = (event: MouseEvent) => {
       if (locationWrapperRef.current && !locationWrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (categoryWrapperRef.current && !categoryWrapperRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
       }
     };
 
@@ -201,20 +207,56 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Category *
                 </label>
-                <select
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {(categories || []).map((category: any) => (
-                    <option key={category._id} value={category._id}>
-                      {category.icon} {category.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" ref={categoryWrapperRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors text-left flex items-center justify-between bg-white"
+                  >
+                    {formData.categoryId ? (
+                      <span className="flex items-center gap-2">
+                        {(() => {
+                          const cat = categories?.find(c => c._id === formData.categoryId);
+                          if (!cat) return "Select a category";
+                          const Icon = getCategoryIcon(cat.slug);
+                          return (
+                            <>
+                              <Icon className="w-4 h-4 text-neutral-500" />
+                              {cat.name}
+                            </>
+                          );
+                        })()}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-500">Select a category</span>
+                    )}
+                    <svg className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showCategoryDropdown && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {(categories || []).map((category: any) => {
+                        const Icon = getCategoryIcon(category.slug);
+                        return (
+                          <button
+                            key={category._id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, categoryId: category._id }));
+                              setShowCategoryDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center gap-3"
+                          >
+                            <Icon className="w-4 h-4 text-neutral-500" />
+                            <span className="font-medium text-neutral-700">{category.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

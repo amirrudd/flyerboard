@@ -1,18 +1,22 @@
 import { SignOutButton } from "../auth/SignOutButton";
+import { HeaderRightActions } from "./HeaderRightActions";
 import { useState, useEffect, memo, useCallback } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
-  sidebarCollapsed: boolean;
-  setSidebarCollapsed: (collapsed: boolean) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  user: any;
-  setShowAuthModal: (show: boolean) => void;
-  selectedLocation: string;
-  setSelectedLocation: (location: string) => void;
-  locations: string[];
+  sidebarCollapsed?: boolean;
+  setSidebarCollapsed?: (collapsed: boolean) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
+  user?: any;
+  setShowAuthModal?: (show: boolean) => void;
+  selectedLocation?: string;
+  setSelectedLocation?: (location: string) => void;
+  locations?: string[];
+  leftNode?: React.ReactNode;
+  centerNode?: React.ReactNode;
+  rightNode?: React.ReactNode;
 }
 
 // Location selector component
@@ -147,15 +151,18 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 });
 
 export const Header = memo(function Header({
-  sidebarCollapsed,
-  setSidebarCollapsed,
-  searchQuery,
-  setSearchQuery,
+  sidebarCollapsed = false,
+  setSidebarCollapsed = () => { },
+  searchQuery = "",
+  setSearchQuery = () => { },
   user,
-  setShowAuthModal,
-  selectedLocation,
-  setSelectedLocation,
-  locations,
+  setShowAuthModal = () => { },
+  selectedLocation = "",
+  setSelectedLocation = () => { },
+  locations = [],
+  leftNode,
+  centerNode,
+  rightNode,
 }: HeaderProps) {
   const navigate = useNavigate();
 
@@ -166,67 +173,53 @@ export const Header = memo(function Header({
         <div className="hidden md:flex items-center justify-between h-14 px-4">
           {/* Left section - Logo and Location */}
           <div className="flex items-center gap-6 flex-shrink-0">
-            <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
+            {leftNode ? leftNode : (
+              <>
+                <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
 
-            {/* Location Selector - Divar style */}
-            <LocationSelector
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              locations={locations}
-            />
+                {/* Location Selector - Divar style */}
+                <LocationSelector
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  locations={locations}
+                />
+              </>
+            )}
           </div>
 
           {/* Center section - Search Bar */}
           <div className="flex-1 flex justify-center px-8">
-            <form className="relative w-full max-w-2xl" onSubmit={e => e.preventDefault()} autoComplete="off">
-              <input
-                type="text"
-                placeholder="Search in listings..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              />
-              <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </form>
+            {centerNode ? centerNode : (
+              <form className="relative w-full max-w-2xl" onSubmit={e => e.preventDefault()} autoComplete="off">
+                <input
+                  type="text"
+                  placeholder="Search in listings..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                />
+                <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </form>
+            )}
           </div>
 
           {/* Right section - Actions */}
           <div className="flex items-center gap-4 flex-shrink-0">
-            <button
-              onClick={() => {
-                if (user) {
-                  navigate('/post');
-                } else {
-                  setShowAuthModal(true);
-                }
-              }}
-              className="h-10 px-4 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Post Listing
-            </button>
-
-            {user ? (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                My Dashboard
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                Sign In
-              </button>
+            {rightNode ? rightNode : (
+              <HeaderRightActions
+                user={user}
+                onPostClick={() => {
+                  if (user) {
+                    navigate('/post');
+                  } else {
+                    setShowAuthModal(true);
+                  }
+                }}
+                onDashboardClick={() => navigate('/dashboard')}
+                onSignInClick={() => setShowAuthModal(true)}
+              />
             )}
           </div>
         </div>

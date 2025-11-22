@@ -1,9 +1,13 @@
+
 import { useQuery, useMutation } from "convex/react";
+import { Header } from "../layout/Header";
+import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -12,6 +16,7 @@ interface AdDetailProps {
 }
 
 export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
+  const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [chatId, setChatId] = useState<Id<"chats"> | null>(null);
@@ -55,7 +60,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   };
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/ad/${adId}`;
+    const shareUrl = `${window.location.origin} /ad/${adId} `;
 
     if (navigator.share) {
       try {
@@ -114,11 +119,11 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
   if (!ad) {
     return (
-      <div className="min-h-screen bg-neutral-100">
+      <div className="min-h-screen bg-gray-50">
         {/* Header skeleton */}
         <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-14">
               <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
@@ -166,11 +171,11 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   const images = ad.images.length > 0 ? ad.images : ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop'];
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <Header
+        leftNode={
+          <div className="flex items-center gap-6 flex-shrink-0">
             <button
               onClick={onBack}
               className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
@@ -180,8 +185,23 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               </svg>
               Back to listings
             </button>
-            <h1 className="text-xl font-semibold text-neutral-800">{ad.title}</h1>
-            <div className="flex items-center gap-3">
+          </div>
+        }
+        centerNode={
+          <h1 className="text-xl font-semibold text-neutral-800">{ad.title}</h1>
+        }
+        rightNode={
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
+                title="Share ad"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+              </button>
               {user && ad.userId !== user._id && (
                 <button
                   onClick={handleSave}
@@ -196,19 +216,27 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   </svg>
                 </button>
               )}
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
-                title="Share ad"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                </svg>
-              </button>
+            </div>
+
+            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+
+            <div className="hidden sm:flex items-center gap-4">
+              <HeaderRightActions
+                user={user}
+                onPostClick={() => {
+                  if (user) {
+                    navigate('/post');
+                  } else {
+                    onShowAuth();
+                  }
+                }}
+                onDashboardClick={() => navigate('/dashboard')}
+                onSignInClick={onShowAuth}
+              />
             </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -219,7 +247,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               <div className="relative aspect-video bg-neutral-100">
                 <img
                   src={images[currentImageIndex]}
-                  alt={`${ad.title} - Image ${currentImageIndex + 1}`}
+                  alt={`${ad.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-cover"
                 />
 
@@ -268,7 +296,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                       >
                         <img
                           src={image}
-                          alt={`Thumbnail ${index + 1}`}
+                          alt={`Thumbnail ${index + 1} `}
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -392,7 +420,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   {messages?.map((message) => (
                     <div
                       key={message._id}
-                      className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
@@ -464,6 +492,6 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

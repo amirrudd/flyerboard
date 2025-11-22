@@ -85,6 +85,11 @@ export function SignInForm() {
             {flow === "signIn" ? "Sign up" : "Sign in"}
           </button>
         </div>
+        {flow === "signUp" && (
+          <p className="text-xs text-neutral-500 mt-2">
+            By signing up you agree to our <a href="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</a> and <a href="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</a>.
+          </p>
+        )}
       </form>
 
     </div>

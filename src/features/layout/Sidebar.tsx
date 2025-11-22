@@ -66,7 +66,7 @@ export const Sidebar = memo(function Sidebar({
         {[
           { label: "About Us", href: "#" },
           { label: "Support", href: "#" },
-          { label: "Terms & Conditions", href: "/terms#terms" },
+          { label: "Terms & Conditions", href: "/terms" },
           { label: "Privacy Policy", href: "/terms#privacy" },
           { label: "Community Guidelines", href: "/community-guidelines" },
           { label: "Contact", href: "#" },

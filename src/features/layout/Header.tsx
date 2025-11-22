@@ -31,46 +31,84 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const detectLocation = () => {
+  const detectLocation = async () => {
     setIsDetectingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          let detectedCity = "Melbourne, CBD"; // Default
 
-          // Sydney area
-          if (latitude > -34.5 && latitude < -33.5 && longitude > 150.5 && longitude < 151.5) {
-            detectedCity = "Sydney, CBD";
-          }
-          // Melbourne area  
-          else if (latitude > -38.5 && latitude < -37.5 && longitude > 144.5 && longitude < 145.5) {
-            detectedCity = "Melbourne, CBD";
-          }
-          // Brisbane area
-          else if (latitude > -28 && latitude < -27 && longitude > 152.5 && longitude < 153.5) {
-            detectedCity = "Brisbane, South Bank";
-          }
-          // Perth area
-          else if (latitude > -32.5 && latitude < -31.5 && longitude > 115.5 && longitude < 116.5) {
-            detectedCity = "Perth, Fremantle";
-          }
-
-          setSelectedLocation(detectedCity);
-          setIsDetectingLocation(false);
-          setIsOpen(false);
-        },
-        () => {
-          setSelectedLocation("Melbourne, CBD");
-          setIsDetectingLocation(false);
-          setIsOpen(false);
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       setSelectedLocation("Melbourne, CBD");
       setIsDetectingLocation(false);
       setIsOpen(false);
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          // Use Nominatim (OpenStreetMap) reverse geocoding - free service
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'FlyerBoard/1.0' // Required by Nominatim usage policy
+              }
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Geocoding failed");
+          }
+
+          const data = await response.json();
+          const address = data.address;
+
+          // Extract suburb/locality and postcode
+          const suburb = address.suburb || address.city || address.town || address.village || address.locality;
+          const postcode = address.postcode;
+
+          if (suburb && postcode) {
+            // Search for matching location in Australian postcode database
+            const results = await searchLocations(`${suburb} ${postcode}`);
+
+            if (results.length > 0) {
+              // Use the first (most relevant) match
+              setSelectedLocation(formatLocation(results[0]));
+              setIsDetectingLocation(false);
+              setIsOpen(false);
+              return;
+            }
+          }
+
+          // Fallback: try searching by suburb name only
+          if (suburb) {
+            const results = await searchLocations(suburb);
+            if (results.length > 0) {
+              setSelectedLocation(formatLocation(results[0]));
+              setIsDetectingLocation(false);
+              setIsOpen(false);
+              return;
+            }
+          }
+
+          // If no match found, use a sensible default
+          setSelectedLocation("Melbourne, CBD");
+        } catch (error) {
+          console.error("Failed to detect location:", error);
+          // Fallback to default
+          setSelectedLocation("Melbourne, CBD");
+        } finally {
+          setIsDetectingLocation(false);
+          setIsOpen(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setSelectedLocation("Melbourne, CBD");
+        setIsDetectingLocation(false);
+        setIsOpen(false);
+      }
+    );
   };
 
   // Close dropdown when clicking outside

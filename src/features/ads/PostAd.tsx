@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
+import { Header } from "../layout/Header";
 
 interface PostAdProps {
   onBack: () => void;
@@ -162,25 +163,27 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-            <h1 className="text-xl font-semibold text-neutral-800">
-              {editingAd ? "Edit Listing" : "Post New Listing"}
-            </h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
+      <Header
+        leftNode={
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+        }
+        centerNode={
+          <h1 className="text-xl font-semibold text-neutral-800">
+            {editingAd ? "Edit Listing" : "Post New Listing"}
+          </h1>
+        }
+        rightNode={
+          <div className="w-20"></div>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">

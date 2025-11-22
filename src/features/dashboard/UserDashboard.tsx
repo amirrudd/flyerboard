@@ -7,6 +7,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { AdDetail } from "../ads/AdDetail";
 import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
+import { Header } from "../layout/Header";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -237,27 +238,23 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative flex items-center justify-between h-14">
-            <div className="flex items-center gap-6">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                Back to marketplace
-              </button>
-            </div>
-
-            <h1 className="absolute left-1/2 -translate-x-1/2 text-xl font-bold text-gray-900">FlyerBoard</h1>
-
-            <div className="flex items-center gap-3">
-              <SignOutButton onSignOut={onBack} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        leftNode={
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to marketplace
+          </button>
+        }
+        centerNode={
+          <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
+        }
+        rightNode={
+          <SignOutButton onSignOut={onBack} />
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

@@ -4,6 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ReportModal } from "../../components/ReportModal";
 
 interface AdMessagesProps {
   adId: Id<"ads">;
@@ -13,6 +14,7 @@ interface AdMessagesProps {
 export function AdMessages({ adId, onBack }: AdMessagesProps) {
   const [selectedChatId, setSelectedChatId] = useState<Id<"chats"> | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
@@ -110,8 +112,8 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         key={chat._id}
                         onClick={() => setSelectedChatId(chat._id)}
                         className={`w-full text-left p-3 rounded-lg transition-colors ${selectedChatId === chat._id
-                            ? 'bg-primary-600 text-white'
-                            : 'hover:bg-neutral-100'
+                          ? 'bg-primary-600 text-white'
+                          : 'hover:bg-neutral-100'
                           }`}
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -120,8 +122,8 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                           </span>
                           {chat.unreadCount > 0 && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedChatId === chat._id
-                                ? 'bg-white text-primary-600'
-                                : 'bg-primary-600 text-white'
+                              ? 'bg-white text-primary-600'
+                              : 'bg-primary-600 text-white'
                               }`}>
                               {chat.unreadCount}
                             </span>
@@ -152,18 +154,31 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                 <>
                   {/* Chat Header */}
                   <div className="p-4 border-b border-neutral-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {selectedChat.buyer?.name?.charAt(0) || "U"}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {selectedChat.buyer?.name?.charAt(0) || "U"}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-neutral-800">
+                            {selectedChat.buyer?.name || "Unknown User"}
+                          </h3>
+                          <p className="text-sm text-neutral-500">
+                            {selectedChat.buyer?.email}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-neutral-800">
-                          {selectedChat.buyer?.name || "Unknown User"}
-                        </h3>
-                        <p className="text-sm text-neutral-500">
-                          {selectedChat.buyer?.email}
-                        </p>
-                      </div>
+
+                      {/* Report Button */}
+                      <button
+                        onClick={() => setShowReportModal(true)}
+                        className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                        title="Report conversation"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
@@ -177,15 +192,15 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                       >
                         <div
                           className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-neutral-100 text-neutral-900'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-neutral-100 text-neutral-900'
                             }`}
                         >
                           <p className="text-sm">{message.content}</p>
                           <p
                             className={`text-xs mt-1 ${message.senderId === ad.userId
-                                ? 'text-white/70'
-                                : 'text-neutral-500'
+                              ? 'text-white/70'
+                              : 'text-neutral-500'
                               }`}
                           >
                             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
@@ -233,6 +248,17 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
           </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      {selectedChatId && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportType="chat"
+          reportedEntityId={selectedChatId}
+          reportedEntityName={`Conversation with ${selectedChat?.buyer?.name || 'Unknown User'}`}
+        />
+      )}
     </div>
   );
 }

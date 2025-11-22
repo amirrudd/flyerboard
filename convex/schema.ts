@@ -67,6 +67,20 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_ad", ["userId", "adId"]),
+
+  reports: defineTable({
+    reporterId: v.id("users"),          // User submitting the report
+    reportType: v.string(),              // "ad", "profile", or "chat"
+    reportedEntityId: v.string(),        // ID of the reported item (ad, user, or chat)
+    reason: v.string(),                  // Report reason category
+    description: v.optional(v.string()), // Optional detailed description
+    status: v.string(),                  // "pending", "reviewed", "resolved"
+    createdAt: v.number(),               // Timestamp
+  })
+    .index("by_reporter", ["reporterId"])
+    .index("by_entity", ["reportedEntityId"])
+    .index("by_status", ["status"])
+    .index("by_type", ["reportType"]),
 };
 
 // Extend the auth tables to add custom fields

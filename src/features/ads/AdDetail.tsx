@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { ReportModal } from "../../components/ReportModal";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -21,6 +22,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   const [messageText, setMessageText] = useState("");
   const [chatId, setChatId] = useState<Id<"chats"> | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showReportProfileModal, setShowReportProfileModal] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
@@ -368,10 +371,21 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-neutral-800">{ad.seller?.name || "Anonymous"}</p>
                   <p className="text-sm text-neutral-500">Seller</p>
                 </div>
+                {user && ad.userId !== user._id && (
+                  <button
+                    onClick={() => setShowReportProfileModal(true)}
+                    className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                    title="Report seller"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {user && ad.userId !== user._id && (
@@ -487,11 +501,40 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   </svg>
                   Share Ad
                 </button>
+                {user && ad.userId !== user._id && (
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    </svg>
+                    Report Listing
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        reportType="ad"
+        reportedEntityId={adId}
+        reportedEntityName={ad.title}
+      />
+
+      {/* Report Profile Modal */}
+      <ReportModal
+        isOpen={showReportProfileModal}
+        onClose={() => setShowReportProfileModal(false)}
+        reportType="profile"
+        reportedEntityId={ad.userId}
+        reportedEntityName={ad.seller?.name || "User"}
+      />
     </div >
   );
 }

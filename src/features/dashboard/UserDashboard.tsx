@@ -8,6 +8,7 @@ import { AdDetail } from "../ads/AdDetail";
 import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -44,7 +45,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [expandedChatId, setExpandedChatId] = useState<Id<"chats"> | null>(null);
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
   const [newMessage, setNewMessage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
   const user = useQuery(api.auth.loggedInUser);
   const userAds = useQuery(api.posts.getUserAds);
@@ -77,6 +80,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const markAsRead = useMutation(api.messages.markChatAsRead);
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
+  const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -199,6 +203,59 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
+  const handleProfileImageClick = () => {
+    profileImageInputRef.current?.click();
+  };
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // Generate upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // Upload file
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!result.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const { storageId } = await result.json();
+
+      // Update profile with new image
+      await updateProfile({ image: storageId });
+      toast.success("Profile picture updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload profile picture");
+    } finally {
+      setUploadingImage(false);
+      // Reset input
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = '';
+      }
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -261,9 +318,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+              <input
+                ref={profileImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageUpload}
+                className="hidden"
+              />
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                <div
+                  onClick={handleProfileImageClick}
+                  className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
+                  title="Click to upload profile picture"
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  ) : user.image ? (
+                    <ImageDisplay
+                      src={user.image}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user.name?.charAt(0) || user.email?.charAt(0) || "U"
+                  )}
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
@@ -302,16 +380,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${activeTab === tab.id ? 'bg-primary-600 text-white' : 'hover:bg-gray-100 text-gray-700'
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <tab.icon className="w-5 h-5" />
+                      <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary-700" : "text-gray-500"}`} />
                       <span>{tab.label}</span>
                     </div>
                     {tab.badge && tab.badge > 0 && (
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${activeTab === tab.id
-                        ? 'bg-white text-primary-600'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-primary-600 text-white'
                         }`}>
                         {tab.badge}

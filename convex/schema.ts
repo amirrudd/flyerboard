@@ -6,6 +6,7 @@ const applicationTables = {
   categories: defineTable({
     name: v.string(),
     slug: v.string(),
+    icon: v.optional(v.string()),
     parentId: v.optional(v.id("categories")),
   }).index("by_slug", ["slug"]),
 
@@ -68,7 +69,19 @@ const applicationTables = {
     .index("by_user_and_ad", ["userId", "adId"]),
 };
 
-export default defineSchema({
+// Extend the auth tables to add custom fields
+const schema = defineSchema({
   ...authTables,
   ...applicationTables,
 });
+
+// Extend users table with custom fields
+export default schema.tables.users
+  ? defineSchema({
+    ...schema.tables,
+    users: defineTable({
+      ...schema.tables.users.validator.fields,
+      image: v.optional(v.string()),
+    }).index("email", ["email"]),
+  })
+  : schema;

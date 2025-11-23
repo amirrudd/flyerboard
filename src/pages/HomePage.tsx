@@ -28,7 +28,7 @@ export function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(() => {
     const savedLocation = Cookies.get("selectedLocation");
-    return savedLocation !== undefined ? savedLocation : "Melbourne, CBD";
+    return savedLocation !== undefined ? savedLocation : "";
   });
 
 

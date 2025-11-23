@@ -35,7 +35,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     setIsDetectingLocation(true);
 
     if (!navigator.geolocation) {
-      setSelectedLocation("Melbourne, CBD");
+      setSelectedLocation("");
       setIsDetectingLocation(false);
       setIsOpen(false);
       return;
@@ -92,11 +92,11 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           }
 
           // If no match found, use a sensible default
-          setSelectedLocation("Melbourne, CBD");
+          setSelectedLocation("");
         } catch (error) {
           console.error("Failed to detect location:", error);
           // Fallback to default
-          setSelectedLocation("Melbourne, CBD");
+          setSelectedLocation("");
         } finally {
           setIsDetectingLocation(false);
           setIsOpen(false);
@@ -104,7 +104,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       },
       (error) => {
         console.error("Geolocation error:", error);
-        setSelectedLocation("Melbourne, CBD");
+        setSelectedLocation("");
         setIsDetectingLocation(false);
         setIsOpen(false);
       }

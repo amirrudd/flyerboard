@@ -12,11 +12,12 @@ import { ReportModal } from "../../components/ReportModal";
 
 interface AdDetailProps {
   adId: Id<"ads">;
+  initialAd?: any; // Using any to avoid strict type matching issues with partial data
   onBack: () => void;
   onShowAuth: () => void;
 }
 
-export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
+export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -120,7 +121,9 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     }
   };
 
-  if (!ad) {
+  const displayAd = ad || initialAd;
+
+  if (!displayAd) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header skeleton */}
@@ -170,8 +173,10 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     );
   }
 
-  const timeAgo = formatDistanceToNow(new Date(ad._creationTime), { addSuffix: true });
-  const images = ad.images.length > 0 ? ad.images : ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop'];
+  const timeAgo = displayAd._creationTime
+    ? formatDistanceToNow(new Date(displayAd._creationTime), { addSuffix: true })
+    : 'recently';
+  const images = displayAd.images.length > 0 ? displayAd.images : ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -191,7 +196,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
           </div>
         }
         centerNode={
-          <h1 className="text-xl font-semibold text-neutral-800">{ad.title}</h1>
+          <h1 className="text-xl font-semibold text-neutral-800">{displayAd.title}</h1>
         }
         rightNode={
           <div className="flex items-center gap-4 flex-shrink-0">
@@ -205,7 +210,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
               </button>
-              {user && ad.userId !== user._id && (
+              {user && displayAd.userId !== user._id && (
                 <button
                   onClick={handleSave}
                   className={`p-2 rounded-lg transition-colors ${isAdSaved
@@ -250,7 +255,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               <div className="relative aspect-video bg-neutral-100">
                 <img
                   src={images[currentImageIndex]}
-                  alt={`${ad.title} - Image ${currentImageIndex + 1} `}
+                  alt={`${displayAd.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-cover"
                 />
 
@@ -313,22 +318,22 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-neutral-800 mb-2">{ad.title}</h1>
-                  <p className="text-3xl font-bold text-primary-600">${ad.price.toLocaleString()} AUD</p>
+                  <h1 className="text-2xl font-bold text-neutral-800 mb-2">{displayAd.title}</h1>
+                  <p className="text-3xl font-bold text-primary-600">${displayAd.price.toLocaleString()} AUD</p>
                 </div>
                 <div className="text-right text-sm text-neutral-500">
-                  <p>{ad.views} views</p>
+                  <p>{displayAd.views} views</p>
                   <p>Posted {timeAgo}</p>
                 </div>
               </div>
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-neutral-800 mb-3">Description</h3>
-                <p className="text-neutral-700 leading-relaxed">{ad.description}</p>
-                {ad.extendedDescription && (
+                <p className="text-neutral-700 leading-relaxed">{displayAd.description}</p>
+                {displayAd.extendedDescription && (
                   <div className="mt-4 pt-4 border-t border-neutral-200">
                     <h4 className="font-medium text-neutral-800 mb-2">Additional Details</h4>
-                    <p className="text-neutral-700 leading-relaxed">{ad.extendedDescription}</p>
+                    <p className="text-neutral-700 leading-relaxed">{displayAd.extendedDescription}</p>
                   </div>
                 )}
               </div>
@@ -339,7 +344,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>{ad.location}</span>
+                  <span>{displayAd.location}</span>
                 </div>
               </div>
             </div>
@@ -353,7 +358,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <p>Map showing {ad.location}</p>
+                  <p>Map showing {displayAd.location}</p>
                   <p className="text-sm">(Map integration coming soon)</p>
                 </div>
               </div>
@@ -372,10 +377,10 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-neutral-800">{ad.seller?.name || "Anonymous"}</p>
+                  <p className="font-medium text-neutral-800">{displayAd.seller?.name || "Loading..."}</p>
                   <p className="text-sm text-neutral-500">Seller</p>
                 </div>
-                {user && ad.userId !== user._id && (
+                {user && displayAd.userId !== user._id && (
                   <button
                     onClick={() => setShowReportProfileModal(true)}
                     className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
@@ -388,7 +393,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                 )}
               </div>
 
-              {user && ad.userId !== user._id && (
+              {user && displayAd.userId !== user._id && (
                 <button
                   onClick={handleStartChat}
                   className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
@@ -397,7 +402,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                 </button>
               )}
 
-              {user && ad.userId === user._id && (
+              {user && displayAd.userId === user._id && (
                 <div className="text-center py-3 text-neutral-500">
                   <p>This is your listing</p>
                 </div>
@@ -478,7 +483,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                {user && ad.userId !== user._id && (
+                {user && displayAd.userId !== user._id && (
                   <button
                     onClick={handleSave}
                     className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
@@ -501,7 +506,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   </svg>
                   Share Ad
                 </button>
-                {user && ad.userId !== user._id && (
+                {user && displayAd.userId !== user._id && (
                   <button
                     onClick={() => setShowReportModal(true)}
                     className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
@@ -524,7 +529,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
         onClose={() => setShowReportModal(false)}
         reportType="ad"
         reportedEntityId={adId}
-        reportedEntityName={ad.title}
+        reportedEntityName={displayAd.title}
       />
 
       {/* Report Profile Modal */}
@@ -532,8 +537,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
         isOpen={showReportProfileModal}
         onClose={() => setShowReportProfileModal(false)}
         reportType="profile"
-        reportedEntityId={ad.userId}
-        reportedEntityName={ad.seller?.name || "User"}
+        reportedEntityId={displayAd.userId}
+        reportedEntityName={displayAd.seller?.name || "User"}
       />
     </div >
   );

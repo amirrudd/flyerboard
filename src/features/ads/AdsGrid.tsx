@@ -28,7 +28,7 @@ interface AdsGridProps {
   categories: Category[];
   selectedCategory: Id<"categories"> | null;
   sidebarCollapsed: boolean;
-  onAdClick: (adId: Id<"ads">) => void;
+  onAdClick: (ad: Ad) => void;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -84,7 +84,7 @@ export const AdsGrid = memo(function AdsGrid({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.15 }}
               key={ad._id}
-              onClick={() => onAdClick(ad._id)}
+              onClick={() => onAdClick(ad)}
               className="bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-colors cursor-pointer group"
             >
               <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">

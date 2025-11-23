@@ -1,7 +1,6 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
-import { memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { memo, useCallback } from "react";
 
 interface Ad {
   _id: Id<"ads">;
@@ -40,6 +39,10 @@ export const AdsGrid = memo(function AdsGrid({
   onAdClick,
   isLoading = false,
 }: AdsGridProps) {
+  // Optimize onClick handler with useCallback
+  const handleAdClick = useCallback((ad: Ad) => {
+    onAdClick(ad);
+  }, [onAdClick]);
 
   return (
     <div className="flex-1">
@@ -73,7 +76,7 @@ export const AdsGrid = memo(function AdsGrid({
           ))}
         </div>
       ) : (
-        /* Ads Grid with Framer Motion */
+        /* Ads Grid with CSS transitions for better performance */
         <div
           className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
             ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -81,13 +84,10 @@ export const AdsGrid = memo(function AdsGrid({
             }`}
         >
           {ads.map((ad) => (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
+            <div
               key={ad._id}
-              onClick={() => onAdClick(ad)}
-              className="bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-colors cursor-pointer group"
+              onClick={() => handleAdClick(ad)}
+              className="ad-card bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group"
             >
               <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
                 <ImageDisplay
@@ -119,7 +119,7 @@ export const AdsGrid = memo(function AdsGrid({
                   {/* Time ago could go here */}
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

@@ -1,5 +1,5 @@
 import { Id } from "../../../convex/_generated/dataModel";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { LayoutGrid } from "lucide-react";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 
@@ -27,13 +27,22 @@ export const Sidebar = memo(function Sidebar({
   setSidebarCollapsed,
   isLoading,
 }: SidebarProps) {
+  // Optimize category selection handlers
+  const handleSelectAllCategories = useCallback(() => {
+    setSelectedCategory(null);
+  }, [setSelectedCategory]);
+
+  const handleSelectCategory = useCallback((categoryId: Id<"categories">) => {
+    setSelectedCategory(categoryId);
+  }, [setSelectedCategory]);
+
   return (
     <div className="w-full">
       <h3 className="font-medium text-sm text-gray-500 mb-4 px-2">Categories</h3>
       <div className="space-y-1">
         <button
           type="button"
-          onClick={() => setSelectedCategory(null)}
+          onClick={handleSelectAllCategories}
           className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${!selectedCategory
             ? 'text-primary-700 bg-primary-50'
             : 'text-gray-700 hover:bg-gray-100'
@@ -59,7 +68,7 @@ export const Sidebar = memo(function Sidebar({
               <button
                 type="button"
                 key={category._id}
-                onClick={() => setSelectedCategory(category._id)}
+                onClick={() => handleSelectCategory(category._id)}
                 className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${isSelected
                   ? 'text-primary-700 bg-primary-50'
                   : 'text-gray-700 hover:bg-gray-100'

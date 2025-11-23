@@ -1,9 +1,10 @@
 import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
-import { useState, useEffect, memo, useCallback, useRef } from "react";
+import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
+import { debounce } from "../../lib/performanceUtils";
 
 interface HeaderProps {
   sidebarCollapsed?: boolean;
@@ -129,13 +130,13 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     }
   }, [isOpen]);
 
-  // Search locations
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (query.length >= 2) {
+  // Optimized location search with debouncing
+  const debouncedSearch = useMemo(
+    () => debounce(async (searchQuery: string) => {
+      if (searchQuery.length >= 2) {
         setIsSearching(true);
         try {
-          const results = await searchLocations(query);
+          const results = await searchLocations(searchQuery);
           setSuggestions(results);
         } catch (error) {
           console.error("Failed to search locations", error);
@@ -145,9 +146,13 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       } else {
         setSuggestions([]);
       }
-    }, 300);
+    }, 300),
+    []
+  );
 
-    return () => clearTimeout(delayDebounceFn);
+  useEffect(() => {
+    debouncedSearch(query);
+    return () => { }; // Cleanup handled by debounce function
   }, [query]);
 
   return (
@@ -257,6 +262,18 @@ export const Header = memo(function Header({
 }: HeaderProps) {
   const navigate = useNavigate();
 
+  // Debounced search handler to prevent excessive re-renders
+  const debouncedSetSearchQuery = useMemo(
+    () => debounce((value: string) => {
+      setSearchQuery(value);
+    }, 500),
+    [setSearchQuery]
+  );
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSetSearchQuery(e.target.value);
+  }, [debouncedSetSearchQuery]);
+
   return (
     <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
       <div className="max-w-[1440px] mx-auto">
@@ -284,8 +301,8 @@ export const Header = memo(function Header({
                 <input
                   type="text"
                   placeholder="Search in listings..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  defaultValue={searchQuery}
+                  onChange={handleSearchChange}
                   className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                 />
                 <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -394,8 +411,8 @@ export const Header = memo(function Header({
                     <input
                       type="text"
                       placeholder="Search in listings..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      defaultValue={searchQuery}
+                      onChange={handleSearchChange}
                       className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                     />
                     <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">

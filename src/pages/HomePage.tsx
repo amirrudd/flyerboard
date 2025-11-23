@@ -28,18 +28,15 @@ export function HomePage() {
     sidebarCollapsed,
     setSidebarCollapsed,
     isCategoriesLoading,
+    ads,
+    loadMore,
+    status,
   } = useMarketplace();
 
 
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const user = useQuery(api.auth.loggedInUser);
-
-  const ads = useQuery(api.ads.getAds, {
-    categoryId: selectedCategory ?? undefined,
-    search: searchQuery || undefined,
-    location: selectedLocation && selectedLocation !== "" ? selectedLocation : undefined,
-  });
 
   // Stale-while-revalidate pattern for ads
   // This ensures we keep showing the old ads while fetching new ones, avoiding a flash of loading state
@@ -165,6 +162,27 @@ export function HomePage() {
               sidebarCollapsed={sidebarCollapsed}
               onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
             />
+
+            {/* Load More / Loading Status */}
+            <div className="mt-8 flex justify-center">
+              {status === "LoadingMore" && (
+                <div className="flex items-center gap-2 text-neutral-500">
+                  <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading more ads...</span>
+                </div>
+              )}
+              {status === "CanLoadMore" && (
+                <button
+                  onClick={() => loadMore(30)}
+                  className="px-6 py-2 bg-white border border-neutral-200 text-neutral-600 rounded-full hover:bg-neutral-50 hover:border-neutral-300 transition-all shadow-sm"
+                >
+                  Load More Ads
+                </button>
+              )}
+              {status === "Exhausted" && ads && ads.length > 0 && (
+                <p className="text-neutral-400 text-sm">No more ads to load</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

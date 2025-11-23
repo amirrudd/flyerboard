@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
@@ -23,6 +23,9 @@ interface MarketplaceContextType {
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     isCategoriesLoading: boolean;
+    ads: any; // Ideally import { Doc } from ...
+    loadMore: (numItems: number) => void;
+    status: "CanLoadMore" | "LoadingMore" | "Exhausted" | "LoadingFirstPage";
 }
 
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
@@ -46,6 +49,26 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // --- Data Fetching ---
     const categories = useQuery(api.categories.getCategories);
+
+    // Stable pagination: freeze the timestamp when the component mounts (or when filters change)
+    const [initialLoadTimestamp, setInitialLoadTimestamp] = useState(Date.now());
+
+    // Reset timestamp when filters change to "refresh" the feed
+    useEffect(() => {
+        setInitialLoadTimestamp(Date.now());
+    }, [selectedCategory, searchQuery, selectedLocation]);
+
+    const { results: ads, status, loadMore } = usePaginatedQuery(
+        api.ads.getAds,
+        {
+            categoryId: selectedCategory ?? undefined,
+            search: searchQuery || undefined,
+            location: selectedLocation || undefined,
+            maxCreationTime: initialLoadTimestamp,
+        },
+        { initialNumItems: 30 }
+    );
+
     const clearAndCreateSampleData = useMutation(api.sampleData.clearAndCreateSampleData);
 
     // --- Effects ---
@@ -90,6 +113,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         sidebarCollapsed,
         setSidebarCollapsed,
         isCategoriesLoading: categories === undefined,
+        ads,
+        loadMore,
+        status,
     };
 
     return (

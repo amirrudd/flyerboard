@@ -42,6 +42,16 @@ export function HomePage() {
     location: selectedLocation && selectedLocation !== "" ? selectedLocation : undefined,
   });
 
+  // Stale-while-revalidate pattern for ads
+  // This ensures we keep showing the old ads while fetching new ones, avoiding a flash of loading state
+  const [displayedAds, setDisplayedAds] = useState<typeof ads>(undefined);
+
+  useEffect(() => {
+    if (ads !== undefined) {
+      setDisplayedAds(ads);
+    }
+  }, [ads]);
+
   const clearAndCreateSampleData = useMutation(api.sampleData.clearAndCreateSampleData);
   const updateCategories = useMutation(api.categories.updateCategories);
 
@@ -174,11 +184,11 @@ export function HomePage() {
             </div>
 
             <AdsGrid
-              ads={ads || []}
+              ads={displayedAds}
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
-              onAdClick={(adId) => navigate(`/ad/${adId}`)}
+              onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
             />
           </div>
         </div>

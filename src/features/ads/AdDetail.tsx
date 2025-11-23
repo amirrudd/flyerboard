@@ -1,9 +1,14 @@
+
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Header } from "../layout/Header";
+import { HeaderRightActions } from "../layout/HeaderRightActions";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { ReportModal } from "../../components/ReportModal";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -12,16 +17,19 @@ interface AdDetailProps {
 }
 
 export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
+  const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [chatId, setChatId] = useState<Id<"chats"> | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showReportProfileModal, setShowReportProfileModal] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
   const existingChat = useQuery(api.adDetail.getChatForAd, { adId });
   const messages = useQuery(
-    api.adDetail.getChatMessages, 
+    api.adDetail.getChatMessages,
     chatId ? { chatId } : "skip"
   );
 
@@ -42,7 +50,8 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     incrementViews({ adId }).catch(() => {
       // Ignore errors for view counting
     });
-  }, [adId, incrementViews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adId]); // Only re-run if adId changes
 
   const handleSave = async () => {
     try {
@@ -54,19 +63,21 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   };
 
   const handleShare = async () => {
+    const shareUrl = `${window.location.origin} /ad/${adId} `;
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: ad?.title,
           text: ad?.description,
-          url: window.location.href,
+          url: shareUrl,
         });
       } catch (error) {
         // User cancelled sharing
       }
     } else {
       // Fallback to copying URL
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(shareUrl);
       toast.success("Link copied to clipboard!");
     }
   };
@@ -113,19 +124,19 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header skeleton */}
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+        <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to listings
               </button>
-              <h1 className="text-xl font-semibold text-[#333333]">Loading...</h1>
+              <h1 className="text-xl font-semibold text-neutral-800">Loading...</h1>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                 <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -135,7 +146,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
         </header>
 
         {/* Loading content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-lg overflow-hidden shadow-sm">
@@ -165,62 +176,84 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <Header
+        leftNode={
+          <div className="flex items-center gap-6 flex-shrink-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back to listings
             </button>
-            <h1 className="text-xl font-semibold text-[#333333]">{ad.title}</h1>
-            <div className="flex items-center gap-3">
-              {user && ad.userId !== user._id && (
-                <button
-                  onClick={handleSave}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isAdSaved 
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title={isAdSaved ? "Remove from saved" : "Save ad"}
-                >
-                <svg className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
-              )}
+          </div>
+        }
+        centerNode={
+          <h1 className="text-xl font-semibold text-neutral-800">{ad.title}</h1>
+        }
+        rightNode={
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleShare}
-                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
                 title="Share ad"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
               </button>
+              {user && ad.userId !== user._id && (
+                <button
+                  onClick={handleSave}
+                  className={`p-2 rounded-lg transition-colors ${isAdSaved
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-gray-200'
+                    }`}
+                  title={isAdSaved ? "Remove from saved" : "Save ad"}
+                >
+                  <svg className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+
+            <div className="hidden sm:flex items-center gap-4">
+              <HeaderRightActions
+                user={user}
+                onPostClick={() => {
+                  if (user) {
+                    navigate('/post');
+                  } else {
+                    onShowAuth();
+                  }
+                }}
+                onDashboardClick={() => navigate('/dashboard')}
+                onSignInClick={onShowAuth}
+              />
             </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
-              <div className="relative aspect-video bg-gray-100">
+              <div className="relative aspect-video bg-neutral-100">
                 <img
                   src={images[currentImageIndex]}
-                  alt={`${ad.title} - Image ${currentImageIndex + 1}`}
+                  alt={`${ad.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-cover"
                 />
-                
+
                 {/* Navigation arrows for multiple images */}
                 {images.length > 1 && (
                   <>
@@ -253,21 +286,20 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
               {/* Thumbnail strip for multiple images */}
               {images.length > 1 && (
-                <div className="p-4 bg-gray-50">
+                <div className="p-4 bg-neutral-100">
                   <div className="flex gap-2 overflow-x-auto">
                     {images.map((image, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                          index === currentImageIndex 
-                            ? 'border-[#FF6600] ring-2 ring-[#FF6600] ring-opacity-30' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                          ? 'border-primary-600 ring-2 ring-primary-600 ring-opacity-30'
+                          : 'border-neutral-200 hover:border-neutral-300'
+                          }`}
                       >
                         <img
                           src={image}
-                          alt={`Thumbnail ${index + 1}`}
+                          alt={`Thumbnail ${index + 1} `}
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -281,27 +313,27 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-[#333333] mb-2">{ad.title}</h1>
-                  <p className="text-3xl font-bold text-[#FF6600]">${ad.price.toLocaleString()} AUD</p>
+                  <h1 className="text-2xl font-bold text-neutral-800 mb-2">{ad.title}</h1>
+                  <p className="text-3xl font-bold text-primary-600">${ad.price.toLocaleString()} AUD</p>
                 </div>
-                <div className="text-right text-sm text-gray-500">
+                <div className="text-right text-sm text-neutral-500">
                   <p>{ad.views} views</p>
                   <p>Posted {timeAgo}</p>
                 </div>
               </div>
 
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-[#333333] mb-3">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{ad.description}</p>
+                <h3 className="text-lg font-semibold text-neutral-800 mb-3">Description</h3>
+                <p className="text-neutral-700 leading-relaxed">{ad.description}</p>
                 {ad.extendedDescription && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-medium text-[#333333] mb-2">Additional Details</h4>
-                    <p className="text-gray-700 leading-relaxed">{ad.extendedDescription}</p>
+                  <div className="mt-4 pt-4 border-t border-neutral-200">
+                    <h4 className="font-medium text-neutral-800 mb-2">Additional Details</h4>
+                    <p className="text-neutral-700 leading-relaxed">{ad.extendedDescription}</p>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-4 text-sm text-neutral-600">
                 <div className="flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -314,9 +346,9 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
             {/* Map */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Location</h3>
-              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                <div className="text-center text-gray-500">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Location</h3>
+              <div className="h-64 bg-neutral-100 rounded-lg flex items-center justify-center">
+                <div className="text-center text-neutral-500">
                   <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -332,30 +364,41 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
           <div className="space-y-6">
             {/* Seller Info */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Seller Information</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <div>
-                  <p className="font-medium text-[#333333]">{ad.seller?.name || "Anonymous"}</p>
-                  <p className="text-sm text-gray-500">Seller</p>
+                <div className="flex-1">
+                  <p className="font-medium text-neutral-800">{ad.seller?.name || "Anonymous"}</p>
+                  <p className="text-sm text-neutral-500">Seller</p>
                 </div>
+                {user && ad.userId !== user._id && (
+                  <button
+                    onClick={() => setShowReportProfileModal(true)}
+                    className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                    title="Report seller"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {user && ad.userId !== user._id && (
                 <button
                   onClick={handleStartChat}
-                  className="w-full bg-[#FF6600] text-white py-3 px-4 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                 >
                   Contact Seller
                 </button>
               )}
 
               {user && ad.userId === user._id && (
-                <div className="text-center py-3 text-gray-500">
+                <div className="text-center py-3 text-neutral-500">
                   <p>This is your listing</p>
                 </div>
               )}
@@ -363,7 +406,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
               {!user && (
                 <button
                   onClick={onShowAuth}
-                  className="w-full bg-[#FF6600] text-white py-3 px-4 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                 >
                   Sign in to contact seller
                 </button>
@@ -373,12 +416,12 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
             {/* Chat Section */}
             {showChat && chatId && (
               <div className="bg-white rounded-lg shadow-sm">
-                <div className="p-4 border-b border-gray-200">
+                <div className="p-4 border-b border-neutral-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-[#333333]">Chat with Seller</h3>
+                    <h3 className="text-lg font-semibold text-neutral-800">Chat with Seller</h3>
                     <button
                       onClick={() => setShowChat(false)}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-neutral-500 hover:text-neutral-700"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -391,19 +434,17 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   {messages?.map((message) => (
                     <div
                       key={message._id}
-                      className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
                     >
                       <div
-                        className={`max-w-xs px-3 py-2 rounded-lg ${
-                          message.isCurrentUser
-                            ? 'bg-[#FF6600] text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
+                        className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-neutral-100 text-neutral-900'
+                          }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.isCurrentUser ? 'text-orange-200' : 'text-gray-500'
-                        }`}>
+                        <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
+                          }`}>
                           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                         </p>
                       </div>
@@ -411,7 +452,7 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                   ))}
                 </div>
 
-                <div className="p-4 border-t border-gray-200">
+                <div className="p-4 border-t border-neutral-200">
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -419,12 +460,12 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
                       onChange={(e) => setMessageText(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6600] focus:border-transparent outline-none"
+                      className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={!messageText.trim()}
-                      className="bg-[#FF6600] text-white px-4 py-2 rounded-lg hover:bg-[#e55a00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send
                     </button>
@@ -435,37 +476,65 @@ export function AdDetail({ adId, onBack, onShowAuth }: AdDetailProps) {
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 {user && ad.userId !== user._id && (
-                <button
-                  onClick={handleSave}
-                  className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${
-                    isAdSaved
+                  <button
+                    onClick={handleSave}
+                    className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
                       ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
-                </button>
+                      : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                      }`}
+                  >
+                    <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                  </button>
                 )}
                 <button
                   onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                   </svg>
                   Share Ad
                 </button>
+                {user && ad.userId !== user._id && (
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    </svg>
+                    Report Listing
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        reportType="ad"
+        reportedEntityId={adId}
+        reportedEntityName={ad.title}
+      />
+
+      {/* Report Profile Modal */}
+      <ReportModal
+        isOpen={showReportProfileModal}
+        onClose={() => setShowReportProfileModal(false)}
+        reportType="profile"
+        reportedEntityId={ad.userId}
+        reportedEntityName={ad.seller?.name || "User"}
+      />
+    </div >
   );
 }

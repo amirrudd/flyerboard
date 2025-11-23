@@ -13,7 +13,7 @@ export const updateCategories = mutation({
   handler: async (ctx) => {
     // Get all existing categories
     const existingCategories = await ctx.db.query("categories").collect();
-    
+
     // Delete all existing categories
     for (const category of existingCategories) {
       await ctx.db.delete(category._id);
@@ -21,17 +21,17 @@ export const updateCategories = mutation({
 
     // Create updated categories with proper names and slugs
     const categories = [
-      { name: "Vehicles", icon: "🚗", slug: "vehicles" },
-      { name: "Real Estate", icon: "🏠", slug: "real-estate" },
-      { name: "Electronics", icon: "📱", slug: "electronics" },
-      { name: "Home & Garden", icon: "🏡", slug: "home-garden" },
-      { name: "Services", icon: "🔧", slug: "services" },
-      { name: "Fashion", icon: "👕", slug: "fashion" },
-      { name: "Sports & Recreation", icon: "🎮", slug: "sports" },
-      { name: "Jobs", icon: "💼", slug: "jobs" },
-      { name: "Personal Items", icon: "🎒", slug: "personal-items" },
-      { name: "Books & Media", icon: "📚", slug: "books-media" },
-      { name: "Pets & Animals", icon: "🐕", slug: "pets-animals" },
+      { name: "Vehicles", slug: "vehicles" },
+      { name: "Real Estate", slug: "real-estate" },
+      { name: "Electronics", slug: "electronics" },
+      { name: "Home & Garden", slug: "home-garden" },
+      { name: "Services", slug: "services" },
+      { name: "Fashion", slug: "fashion" },
+      { name: "Sports & Recreation", slug: "sports" },
+      { name: "Jobs", slug: "jobs" },
+      { name: "Personal Items", slug: "personal-items" },
+      { name: "Books & Media", slug: "books-media" },
+      { name: "Pets & Animals", slug: "pets-animals" },
     ];
 
     const categoryIds = [];

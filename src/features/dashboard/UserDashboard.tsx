@@ -1,12 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { Id } from "../convex/_generated/dataModel";
-import { AdDetail } from "./AdDetail";
-import { AdMessages } from "./AdMessages";
-import { SignOutButton } from "./SignOutButton";
+import { Id } from "../../../convex/_generated/dataModel";
+import { AdDetail } from "../ads/AdDetail";
+import { AdMessages } from "../ads/AdMessages";
+import { SignOutButton } from "../auth/SignOutButton";
+import { Header } from "../layout/Header";
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Heart,
+  Archive,
+  User,
+  Plus,
+  LogOut,
+  ChevronLeft,
+  Trash2,
+  Edit,
+  Eye,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  Search,
+  Filter
+} from "lucide-react";
 
 interface UserDashboardProps {
   onBack: () => void;
@@ -25,7 +45,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [expandedChatId, setExpandedChatId] = useState<Id<"chats"> | null>(null);
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
   const [newMessage, setNewMessage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
   const user = useQuery(api.auth.loggedInUser);
   const userAds = useQuery(api.posts.getUserAds);
@@ -37,13 +59,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     api.messages.getArchivedChats,
     user && activeTab === "archived" ? {} : "skip"
   );
-  
+
   // Get messages for expanded chat
   const chatMessages = useQuery(
     api.messages.getChatMessages,
     expandedChatId ? { chatId: expandedChatId } : "skip"
   );
-  
+
   // Get unread counts for all user ads
   const unreadCounts = useQuery(
     api.messages.getUnreadCounts,
@@ -58,6 +80,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const markAsRead = useMutation(api.messages.markChatAsRead);
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
+  const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -152,7 +175,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const handleDeleteArchivedChats = async () => {
     if (selectedArchivedChats.size === 0) return;
-    
+
     try {
       await deleteArchivedChats({ chatIds: Array.from(selectedArchivedChats) });
       toast.success("Selected chats deleted successfully");
@@ -180,14 +203,67 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
+  const handleProfileImageClick = () => {
+    profileImageInputRef.current?.click();
+  };
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // Generate upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // Upload file
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!result.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const { storageId } = await result.json();
+
+      // Update profile with new image
+      await updateProfile({ image: storageId });
+      toast.success("Profile picture updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload profile picture");
+    } finally {
+      setUploadingImage(false);
+      // Reset input
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = '';
+      }
+    }
+  };
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-[#333333] mb-2">Please sign in</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Please sign in</h2>
           <button
             onClick={onBack}
-            className="text-[#FF6600] hover:underline"
+            className="text-primary-600 hover:underline"
           >
             Go back
           </button>
@@ -199,8 +275,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Show ad messages if selected
   if (showMessagesForAd) {
     return (
-      <AdMessages 
-        adId={showMessagesForAd} 
+      <AdMessages
+        adId={showMessagesForAd}
         onBack={() => setShowMessagesForAd(null)}
       />
     );
@@ -209,50 +285,66 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Show ad detail if an ad is selected
   if (selectedAdId) {
     return (
-      <AdDetail 
-        adId={selectedAdId} 
+      <AdDetail
+        adId={selectedAdId}
         onBack={() => setSelectedAdId(null)}
-        onShowAuth={() => {}}
+        onShowAuth={() => { }}
       />
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-6">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to marketplace
-              </button>
-              <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <SignOutButton onSignOut={onBack} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        leftNode={
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to marketplace
+          </button>
+        }
+        centerNode={
+          <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
+        }
+        rightNode={
+          <SignOutButton onSignOut={onBack} />
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+              <input
+                ref={profileImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageUpload}
+                className="hidden"
+              />
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#FF6600] rounded-full flex items-center justify-center text-white font-semibold">
-                  {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                <div
+                  onClick={handleProfileImageClick}
+                  className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
+                  title="Click to upload profile picture"
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  ) : user.image ? (
+                    <ImageDisplay
+                      src={user.image}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user.name?.charAt(0) || user.email?.charAt(0) || "U"
+                  )}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#333333]">{user.name || "User"}</h3>
+                  <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
                   <p className="text-sm text-gray-500">{user.email}</p>
                 </div>
               </div>
@@ -260,11 +352,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               {userStats && (
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#FF6600]">{userStats.totalAds}</div>
+                    <div className="text-2xl font-bold text-primary-600">{userStats.totalAds}</div>
                     <div className="text-xs text-gray-500">Total Ads</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#FF6600]">{userStats.totalViews}</div>
+                    <div className="text-2xl font-bold text-primary-600">{userStats.totalViews}</div>
                     <div className="text-xs text-gray-500">Total Views</div>
                   </div>
                 </div>
@@ -274,34 +366,32 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             <nav className="bg-white rounded-lg p-4 shadow-sm">
               <div className="space-y-2">
                 {[
-                  { id: "ads", label: "My Ads", icon: "📝" },
-                  { 
-                    id: "chats", 
-                    label: "Messages", 
-                    icon: "💬",
+                  { id: "ads", label: "My Ads", icon: LayoutDashboard },
+                  {
+                    id: "chats",
+                    label: "Messages",
+                    icon: MessageSquare,
                     badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                   },
-                  { id: "saved", label: "Saved Ads", icon: "❤️" },
-                  { id: "archived", label: "Archived", icon: "📦" },
-                  { id: "profile", label: "Profile", icon: "👤" },
+                  { id: "saved", label: "Saved Ads", icon: Heart },
+                  { id: "archived", label: "Archived", icon: Archive },
+                  { id: "profile", label: "Profile", icon: User },
                 ].map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                      activeTab === tab.id ? 'bg-[#FF6600] text-white' : 'hover:bg-gray-100'
-                    }`}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span>{tab.icon}</span>
+                      <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary-700" : "text-gray-500"}`} />
                       <span>{tab.label}</span>
                     </div>
                     {tab.badge && tab.badge > 0 && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        activeTab === tab.id
-                          ? 'bg-white text-[#FF6600]'
-                          : 'bg-[#FF6600] text-white'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${activeTab === tab.id
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-primary-600 text-white'
+                        }`}>
                         {tab.badge}
                       </span>
                     )}
@@ -316,10 +406,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             {activeTab === "ads" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-[#333333]">My Listings</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">My Listings</h2>
                   <button
                     onClick={onPostAd}
-                    className="bg-[#FF6600] text-white px-4 py-2 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                    className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                   >
                     Post New Ad
                   </button>
@@ -337,15 +427,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         <div className="flex-1">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-semibold text-[#333333] mb-1">{ad.title}</h3>
-                              <p className="text-lg font-bold text-[#FF6600] mb-2">
+                              <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
+                              <p className="text-lg font-bold text-primary-600 mb-2">
                                 ${ad.price.toLocaleString()} AUD
                               </p>
                               <div className="flex items-center gap-4 text-sm text-gray-500">
-                                <span>{ad.views} views</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                }`}>
+                                <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views} views</span>
+                                <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                  {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                                   {ad.isActive ? 'Active' : 'Inactive'}
                                 </span>
                               </div>
@@ -355,7 +445,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 onClick={() => setShowMessagesForAd(ad._id)}
                                 className="relative px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors flex items-center gap-1"
                               >
-                                💬 Messages
+                                <MessageSquare className="w-4 h-4" /> Messages
                                 {unreadCounts && unreadCounts[ad._id] > 0 && (
                                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                                     {unreadCounts[ad._id]}
@@ -364,11 +454,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </button>
                               <button
                                 onClick={() => handleToggleStatus(ad._id)}
-                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                  ad.isActive 
-                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }`}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ad.isActive
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  }`}
                               >
                                 {ad.isActive ? 'Deactivate' : 'Activate'}
                               </button>
@@ -393,12 +482,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   {(userAds || []).length === 0 && (
                     <div className="text-center py-12">
-                      <div className="text-6xl mb-4">📝</div>
-                      <h3 className="text-xl font-semibold text-[#333333] mb-2">No ads yet</h3>
+                      <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-gray-300" /></div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No ads yet</h3>
                       <p className="text-gray-600 mb-4">Start by posting your first listing</p>
                       <button
                         onClick={onPostAd}
-                        className="bg-[#FF6600] text-white px-6 py-3 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                        className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                       >
                         Post Your First Ad
                       </button>
@@ -410,16 +499,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
             {activeTab === "chats" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-[#333333] mb-6">My Messages</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">My Messages</h2>
                 <p className="text-gray-600 mb-6">Conversations for listings you're interested in</p>
-                
+
                 <div className="space-y-4">
                   {(buyerChats || []).map((chat: any) => (
                     <div key={chat._id} className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Chat Header */}
-                      <div 
+                      <div
                         onClick={() => handleChatClick(chat._id)}
-                        className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="p-4 hover:bg-gray-100 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4 flex-1">
@@ -431,7 +520,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
-                                  <h3 className="font-semibold text-[#333333] mb-1">
+                                  <h3 className="font-semibold text-gray-800 mb-1">
                                     {chat.ad?.title || "Deleted Ad"}
                                   </h3>
                                   {!chat.ad?.isActive && chat.ad && (
@@ -450,7 +539,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         e.stopPropagation();
                                         handleViewListing(chat.ad!._id);
                                       }}
-                                      className="px-3 py-1 bg-[#FF6600] text-white rounded-lg text-sm font-medium hover:bg-[#e55a00] transition-colors"
+                                      className="px-3 py-1 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                                     >
                                       View Listing
                                     </button>
@@ -465,7 +554,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     Archive
                                   </button>
                                   {chat.unreadCount > 0 && (
-                                    <span className="bg-[#FF6600] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
+                                    <span className="bg-primary-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
                                       {chat.unreadCount}
                                     </span>
                                   )}
@@ -480,7 +569,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 <p className="text-xs text-gray-400">
                                   {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
                                 </p>
-                                <div className="text-lg font-bold text-[#FF6600]">
+                                <div className="text-lg font-bold text-primary-600">
                                   ${chat.ad?.price?.toLocaleString() || 0} AUD
                                 </div>
                               </div>
@@ -493,28 +582,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       {expandedChatId === chat._id && (
                         <div className="border-t border-gray-200">
                           {/* Messages */}
-                          <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                          <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-100">
                             {(chatMessages || []).map((message) => (
                               <div
                                 key={message._id}
-                                className={`flex ${
-                                  message.senderId === user._id ? 'justify-end' : 'justify-start'
-                                }`}
+                                className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'
+                                  }`}
                               >
                                 <div
-                                  className={`max-w-xs px-3 py-2 rounded-lg ${
-                                    message.senderId === user._id
-                                      ? 'bg-[#FF6600] text-white'
-                                      : 'bg-white text-gray-900 border border-gray-200'
-                                  }`}
+                                  className={`max-w-xs px-3 py-2 rounded-lg ${message.senderId === user._id
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-white text-gray-900 border border-gray-200'
+                                    }`}
                                 >
                                   <p className="text-sm">{message.content}</p>
                                   <p
-                                    className={`text-xs mt-1 ${
-                                      message.senderId === user._id
-                                        ? 'text-white/70'
-                                        : 'text-gray-500'
-                                    }`}
+                                    className={`text-xs mt-1 ${message.senderId === user._id
+                                      ? 'text-white/70'
+                                      : 'text-gray-500'
+                                      }`}
                                   >
                                     {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                                   </p>
@@ -532,13 +618,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 placeholder="Type your message..."
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6600] focus:border-transparent outline-none"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                                 disabled={!chat.ad?.isActive}
                               />
                               <button
                                 type="submit"
                                 disabled={!newMessage.trim() || !chat.ad?.isActive}
-                                className="bg-[#FF6600] text-white px-4 py-2 rounded-lg hover:bg-[#e55a00] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Send
                               </button>
@@ -556,8 +642,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   {(buyerChats || []).length === 0 && (
                     <div className="text-center py-12">
-                      <div className="text-6xl mb-4">💬</div>
-                      <h3 className="text-xl font-semibold text-[#333333] mb-2">No messages yet</h3>
+                      <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-gray-300" /></div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No messages yet</h3>
                       <p className="text-gray-600">Start a conversation by messaging sellers on listings you're interested in</p>
                     </div>
                   )}
@@ -567,14 +653,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
             {activeTab === "saved" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-[#333333] mb-6">Saved Ads</h2>
-                
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Saved Ads</h2>
+
                 <div className="grid gap-4">
                   {(savedAds || []).filter(savedAd => savedAd.ad).map((savedAd) => (
-                    <div 
-                      key={savedAd._id} 
+                    <div
+                      key={savedAd._id}
                       onClick={() => setSelectedAdId(savedAd.ad!._id)}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-[#FF6600] cursor-pointer group"
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-primary-600 cursor-pointer group"
                     >
                       <div className="flex items-start gap-4">
                         <img
@@ -583,10 +669,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="flex-1">
-                          <h3 className="font-semibold text-[#333333] mb-1 group-hover:text-[#FF6600] transition-colors">
+                          <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-primary-600 transition-colors">
                             {savedAd.ad!.title}
                           </h3>
-                          <p className="text-lg font-bold text-[#FF6600] mb-2">
+                          <p className="text-lg font-bold text-primary-600 mb-2">
                             ${savedAd.ad!.price.toLocaleString()} AUD
                           </p>
                           <p className="text-sm text-gray-600 mb-2 line-clamp-2">
@@ -603,8 +689,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   {(savedAds || []).length === 0 && (
                     <div className="text-center py-12">
-                      <div className="text-6xl mb-4">❤️</div>
-                      <h3 className="text-xl font-semibold text-[#333333] mb-2">No saved ads</h3>
+                      <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-gray-300" /></div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No saved ads</h3>
                       <p className="text-gray-600">Save ads you're interested in to view them here</p>
                     </div>
                   )}
@@ -614,8 +700,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
             {activeTab === "profile" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-[#333333] mb-6">Profile Settings</h2>
-                
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Profile Settings</h2>
+
                 <form onSubmit={handleUpdateProfile} className="space-y-4 mb-8">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -623,7 +709,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       type="text"
                       value={profileData.name}
                       onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6600] focus:border-transparent outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                       placeholder={user.name || "Enter your name"}
                     />
                   </div>
@@ -634,14 +720,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6600] focus:border-transparent outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                       placeholder={user.email || "Enter your email"}
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="bg-[#FF6600] text-white px-6 py-2 rounded-lg hover:bg-[#e55a00] transition-colors font-medium"
+                    className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                   >
                     Update Profile
                   </button>
@@ -665,7 +751,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             {activeTab === "archived" && (
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-[#333333]">Archived Messages</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">Archived Messages</h2>
                   {(archivedChats || []).length > 0 && (
                     <div className="flex items-center gap-2">
                       <button
@@ -685,12 +771,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-4">
                   {(archivedChats || []).length === 0 ? (
                     <div className="text-center py-12">
-                      <div className="text-6xl mb-4">📦</div>
-                      <h3 className="text-xl font-semibold text-[#333333] mb-2">No archived messages</h3>
+                      <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-gray-300" /></div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No archived messages</h3>
                       <p className="text-gray-600">Archived conversations will appear here</p>
                     </div>
                   ) : (
@@ -707,14 +793,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-[#333333] mb-4">Delete Ad</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Delete Ad</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this ad? This action cannot be undone.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Cancel
               </button>
@@ -740,7 +826,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             <div className="flex gap-4">
               <button
                 onClick={() => setShowAccountDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Cancel
               </button>

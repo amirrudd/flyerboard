@@ -1,11 +1,14 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+// Support profile image updates
+
 
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    image: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -16,6 +19,7 @@ export const updateProfile = mutation({
     const updateData: any = {};
     if (args.name !== undefined) updateData.name = args.name;
     if (args.email !== undefined) updateData.email = args.email;
+    if (args.image !== undefined) updateData.image = args.image;
 
     await ctx.db.patch(userId, updateData);
 
@@ -49,11 +53,11 @@ export const deleteAccount = mutation({
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
           .collect();
-        
+
         for (const message of messages) {
           await ctx.db.delete(message._id);
         }
-        
+
         await ctx.db.delete(chat._id);
       }
 
@@ -91,11 +95,11 @@ export const deleteAccount = mutation({
         .query("messages")
         .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
         .collect();
-      
+
       for (const message of messages) {
         await ctx.db.delete(message._id);
       }
-      
+
       await ctx.db.delete(chat._id);
     }
 

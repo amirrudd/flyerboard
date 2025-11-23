@@ -5,8 +5,8 @@ import { authTables } from "@convex-dev/auth/server";
 const applicationTables = {
   categories: defineTable({
     name: v.string(),
-    icon: v.string(),
     slug: v.string(),
+    icon: v.optional(v.string()),
     parentId: v.optional(v.id("categories")),
   }).index("by_slug", ["slug"]),
 
@@ -67,9 +67,35 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_ad", ["userId", "adId"]),
+
+  reports: defineTable({
+    reporterId: v.id("users"),          // User submitting the report
+    reportType: v.string(),              // "ad", "profile", or "chat"
+    reportedEntityId: v.string(),        // ID of the reported item (ad, user, or chat)
+    reason: v.string(),                  // Report reason category
+    description: v.optional(v.string()), // Optional detailed description
+    status: v.string(),                  // "pending", "reviewed", "resolved"
+    createdAt: v.number(),               // Timestamp
+  })
+    .index("by_reporter", ["reporterId"])
+    .index("by_entity", ["reportedEntityId"])
+    .index("by_status", ["status"])
+    .index("by_type", ["reportType"]),
 };
 
-export default defineSchema({
+// Extend the auth tables to add custom fields
+const schema = defineSchema({
   ...authTables,
   ...applicationTables,
 });
+
+// Extend users table with custom fields
+export default schema.tables.users
+  ? defineSchema({
+    ...schema.tables,
+    users: defineTable({
+      ...schema.tables.users.validator.fields,
+      image: v.optional(v.string()),
+    }).index("email", ["email"]),
+  })
+  : schema;

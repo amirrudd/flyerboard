@@ -11,31 +11,30 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMarketplace } from "../context/MarketplaceContext";
 
 export function HomePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize sidebar state based on screen size
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 768; // Collapsed on mobile, expanded on desktop
-    }
-    return false; // Default to expanded
-  });
-
-  const [selectedCategory, setSelectedCategory] = useState<Id<"categories"> | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState(() => {
-    const savedLocation = Cookies.get("selectedLocation");
-    return savedLocation !== undefined ? savedLocation : "";
-  });
+  const {
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    searchQuery,
+    setSearchQuery,
+    selectedLocation,
+    setSelectedLocation,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    isCategoriesLoading,
+  } = useMarketplace();
 
 
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const user = useQuery(api.auth.loggedInUser);
-  const categories = useQuery(api.categories.getCategories);
+
   const ads = useQuery(api.ads.getAds, {
     categoryId: selectedCategory ?? undefined,
     search: searchQuery || undefined,
@@ -52,30 +51,7 @@ export function HomePage() {
     }
   }, [ads]);
 
-  const clearAndCreateSampleData = useMutation(api.sampleData.clearAndCreateSampleData);
-  const updateCategories = useMutation(api.categories.updateCategories);
 
-  useEffect(() => {
-    if (categories !== undefined && categories.length === 0) {
-      clearAndCreateSampleData().then(() => {
-        toast.success("Sample data created");
-      }).catch((error) => {
-        console.error("Error creating sample data:", error);
-      });
-    }
-  }, [categories, clearAndCreateSampleData]);
-
-  // Handle responsive sidebar behavior
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarCollapsed(true); // Always collapsed on mobile
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Close auth modal when user logs in
   useEffect(() => {
@@ -86,10 +62,9 @@ export function HomePage() {
   }, [user, showAuthModal]);
 
   // Handle location change and save to cookies
-  const handleLocationChange = useCallback((location: string) => {
-    setSelectedLocation(location);
-    Cookies.set("selectedLocation", location, { expires: 365 });
-  }, []);
+
+
+  const updateCategories = useMutation(api.categories.updateCategories);
 
   const handleUpdateCategories = useCallback(async () => {
     try {
@@ -156,7 +131,7 @@ export function HomePage() {
         user={user}
         setShowAuthModal={setShowAuthModal}
         selectedLocation={selectedLocation}
-        setSelectedLocation={handleLocationChange}
+        setSelectedLocation={setSelectedLocation}
       />
 
       <div className="max-w-[1440px] mx-auto px-4 py-6">
@@ -172,7 +147,7 @@ export function HomePage() {
               selectedCategory={selectedCategory}
               setSelectedCategory={handleSetSelectedCategory}
               setSidebarCollapsed={setSidebarCollapsed}
-              isLoading={categories === undefined}
+              isLoading={isCategoriesLoading}
             />
           </div>
 

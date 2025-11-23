@@ -161,6 +161,7 @@ export function HomePage() {
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
               onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
+              isLoading={status === "LoadingFirstPage"}
             />
 
             {/* Load More / Loading Status */}

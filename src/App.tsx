@@ -9,10 +9,13 @@ import { TermsPage } from "./pages/TermsPage";
 import { CommunityGuidelinesPage } from "./pages/CommunityGuidelinesPage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
 
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
 export default function App() {
   return (
     <MarketplaceProvider>
       <BrowserRouter>
+        <SpeedInsights />
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />

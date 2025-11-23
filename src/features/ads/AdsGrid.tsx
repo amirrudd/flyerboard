@@ -29,6 +29,7 @@ interface AdsGridProps {
   selectedCategory: Id<"categories"> | null;
   sidebarCollapsed: boolean;
   onAdClick: (ad: Ad) => void;
+  isLoading?: boolean;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -37,6 +38,7 @@ export const AdsGrid = memo(function AdsGrid({
   selectedCategory,
   sidebarCollapsed,
   onAdClick,
+  isLoading = false,
 }: AdsGridProps) {
 
   return (
@@ -54,7 +56,7 @@ export const AdsGrid = memo(function AdsGrid({
       </div>
 
       {/* Loading Skeleton */}
-      {ads === undefined ? (
+      {isLoading || ads === undefined ? (
         <div className={`grid gap-3 sm:gap-4 ${sidebarCollapsed
           ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
           : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'

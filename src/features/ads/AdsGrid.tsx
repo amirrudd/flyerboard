@@ -91,7 +91,7 @@ export const AdsGrid = memo(function AdsGrid({
                 <ImageDisplay
                   src={ad.images[0] || ''}
                   alt={ad.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 {ad.images.length > 1 && (
                   <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">

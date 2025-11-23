@@ -7,22 +7,25 @@ import { PostAdPage } from "./pages/PostAdPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { TermsPage } from "./pages/TermsPage";
 import { CommunityGuidelinesPage } from "./pages/CommunityGuidelinesPage";
+import { MarketplaceProvider } from "./context/MarketplaceContext";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/ad/:id" element={<AdDetailPage />} />
-          <Route path="/post" element={<PostAdPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
-          {/* Add other routes as needed */}
-        </Route>
-      </Routes>
-      <Toaster />
-    </BrowserRouter>
+    <MarketplaceProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/ad/:id" element={<AdDetailPage />} />
+            <Route path="/post" element={<PostAdPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
+            {/* Add other routes as needed */}
+          </Route>
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
+    </MarketplaceProvider>
   );
 }

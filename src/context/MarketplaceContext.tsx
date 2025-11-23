@@ -50,13 +50,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // --- Data Fetching ---
     const categories = useQuery(api.categories.getCategories);
 
-    // Stable pagination: freeze the timestamp when the component mounts (or when filters change)
-    const [initialLoadTimestamp, setInitialLoadTimestamp] = useState(Date.now());
-
-    // Reset timestamp when filters change to "refresh" the feed
-    useEffect(() => {
-        setInitialLoadTimestamp(Date.now());
-    }, [selectedCategory, searchQuery, selectedLocation]);
+    // Stable pagination: freeze the timestamp when the component mounts
+    // We do NOT reset this when filters change, to allow caching of previous results.
+    // The user can manually refresh the page to get the absolute latest ads.
+    const [initialLoadTimestamp] = useState(Date.now());
 
     const { results: ads, status, loadMore } = usePaginatedQuery(
         api.ads.getAds,

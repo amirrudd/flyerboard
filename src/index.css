@@ -61,6 +61,51 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Performance Optimizations for INP */
+
+  /* Ad card optimizations - hardware-accelerated transitions */
+  .ad-card {
+    /* Use transform instead of other properties for better performance */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    /* Hint to browser about what will change */
+    will-change: transform, box-shadow;
+    /* Contain layout calculations to this element */
+    contain: layout style paint;
+  }
+
+  .ad-card:hover {
+    /* Hardware-accelerated transform for smooth hover effect */
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Optimize image rendering */
+  .ad-card img {
+    /* Prevent layout shift during image load */
+    content-visibility: auto;
+    /* Smooth image rendering */
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  /* Grid performance optimization */
+  .ads-grid {
+    /* Contain layout calculations */
+    contain: layout style;
+  }
+
+  /* Optimize transitions globally */
+  * {
+    /* Use GPU acceleration for all transitions */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Remove will-change after animation completes to free up resources */
+  .ad-card:not(:hover) {
+    will-change: auto;
+  }
 }
 
 /* Custom Scrollbar */

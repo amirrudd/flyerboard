@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
+import { throttle } from "../lib/performanceUtils";
 
 interface Category {
     _id: Id<"categories">;
@@ -70,7 +71,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // --- Effects ---
 
-    // Handle responsive sidebar behavior
+    // Handle responsive sidebar behavior with throttled resize
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 768) {
@@ -78,8 +79,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // Throttle resize handler to fire at most every 150ms
+        const throttledResize = throttle(handleResize, 150);
+
+        window.addEventListener('resize', throttledResize);
+        return () => window.removeEventListener('resize', throttledResize);
     }, []);
 
     // Handle location change and save to cookies

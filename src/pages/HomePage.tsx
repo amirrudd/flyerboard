@@ -5,7 +5,7 @@ import { Header } from "../features/layout/Header";
 import { Sidebar } from "../features/layout/Sidebar";
 import { AdsGrid } from "../features/ads/AdsGrid";
 import { AuthModal } from "../features/auth/AuthModal";
-import { LoadingScreen } from "../components/ui/LoadingScreen";
+
 import { useState, useEffect, useCallback } from "react";
 
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ export function HomePage() {
     return savedLocation !== undefined ? savedLocation : "Melbourne, CBD";
   });
 
-  const [isInitializing, setIsInitializing] = useState(true);
+
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const user = useQuery(api.auth.loggedInUser);
@@ -46,18 +46,12 @@ export function HomePage() {
   const updateCategories = useMutation(api.categories.updateCategories);
 
   useEffect(() => {
-    if (categories !== undefined) {
-      if (categories.length === 0) {
-        clearAndCreateSampleData().then(() => {
-          toast.success("Sample data created");
-          setIsInitializing(false);
-        }).catch((error) => {
-          console.error("Error creating sample data:", error);
-          setIsInitializing(false);
-        });
-      } else {
-        setIsInitializing(false);
-      }
+    if (categories !== undefined && categories.length === 0) {
+      clearAndCreateSampleData().then(() => {
+        toast.success("Sample data created");
+      }).catch((error) => {
+        console.error("Error creating sample data:", error);
+      });
     }
   }, [categories, clearAndCreateSampleData]);
 
@@ -138,9 +132,7 @@ export function HomePage() {
     "Canberra, City Centre",
   ];
 
-  if (isInitializing || categories === undefined) {
-    return <LoadingScreen />;
-  }
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -170,6 +162,7 @@ export function HomePage() {
               selectedCategory={selectedCategory}
               setSelectedCategory={handleSetSelectedCategory}
               setSidebarCollapsed={setSidebarCollapsed}
+              isLoading={categories === undefined}
             />
           </div>
 

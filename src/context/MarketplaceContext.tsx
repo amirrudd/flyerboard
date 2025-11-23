@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -48,6 +48,16 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         return false; // Default to expanded
     });
 
+    // --- Client-Side Cache ---
+    // Cache ads by filter combination to prevent reloads when switching categories
+    const adsCache = useRef<Map<string, any[]>>(new Map());
+    const [cachedAds, setCachedAds] = useState<any[] | undefined>(undefined);
+
+    // Generate cache key from current filters
+    const cacheKey = useMemo(() => {
+        return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}`;
+    }, [selectedCategory, searchQuery, selectedLocation]);
+
     // --- Data Fetching ---
     const categories = useQuery(api.categories.getCategories);
 
@@ -66,6 +76,29 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         },
         { initialNumItems: 30 }
     );
+
+    // Update cache when new ads are loaded
+    useEffect(() => {
+        if (ads && ads.length > 0) {
+            adsCache.current.set(cacheKey, ads);
+            setCachedAds(ads);
+        }
+    }, [ads, cacheKey]);
+
+    // Load from cache when filters change
+    useEffect(() => {
+        const cached = adsCache.current.get(cacheKey);
+        if (cached) {
+            // Show cached data immediately
+            setCachedAds(cached);
+        } else {
+            // No cache, show loading state
+            setCachedAds(undefined);
+        }
+    }, [cacheKey]);
+
+    // Use cached ads if available, otherwise use fresh ads
+    const displayAds = cachedAds || ads;
 
     const clearAndCreateSampleData = useMutation(api.sampleData.clearAndCreateSampleData);
 
@@ -114,7 +147,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         sidebarCollapsed,
         setSidebarCollapsed,
         isCategoriesLoading: categories === undefined,
-        ads,
+        ads: displayAds, // Use cached ads for instant display
         loadMore,
         status,
     };

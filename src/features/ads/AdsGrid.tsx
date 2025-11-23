@@ -124,7 +124,7 @@ export const AdsGrid = memo(function AdsGrid({
         </div>
       )}
 
-      {ads && ads.length === 0 && (
+      {!isLoading && ads && ads.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold text-[#333333] mb-2">No listings found</h3>

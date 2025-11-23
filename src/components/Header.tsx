@@ -31,7 +31,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
         (position) => {
           const { latitude, longitude } = position.coords;
           let detectedCity = "Melbourne, CBD"; // Default
-          
+
           // Sydney area
           if (latitude > -34.5 && latitude < -33.5 && longitude > 150.5 && longitude < 151.5) {
             detectedCity = "Sydney, CBD";
@@ -48,7 +48,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           else if (latitude > -32.5 && latitude < -31.5 && longitude > 115.5 && longitude < 116.5) {
             detectedCity = "Perth, Fremantle";
           }
-          
+
           setSelectedLocation(detectedCity);
           setIsDetectingLocation(false);
         },
@@ -80,7 +80,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 
   return (
     <div className="relative location-dropdown">
-      <button 
+      <button
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
@@ -94,7 +94,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      
+
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
           <div className="py-1">
@@ -166,9 +166,9 @@ export const Header = memo(function Header({
           {/* Left section - Logo and Location */}
           <div className="flex items-center gap-6">
             <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
-            
-            {/* Location Selector - Divar style */}
-            <LocationSelector 
+
+            {/* Location Selector */}
+            <LocationSelector
               selectedLocation={selectedLocation}
               setSelectedLocation={setSelectedLocation}
               locations={locations}
@@ -193,7 +193,7 @@ export const Header = memo(function Header({
 
           {/* Right section - Actions */}
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => {
                 if (user) {
                   setCurrentView("post");
@@ -205,7 +205,7 @@ export const Header = memo(function Header({
             >
               Post Listing
             </button>
-            
+
             {user ? (
               <button
                 onClick={() => setCurrentView("dashboard")}
@@ -253,7 +253,7 @@ export const Header = memo(function Header({
             </div>
 
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => {
                   if (user) {
                     setCurrentView("post");
@@ -304,9 +304,9 @@ export const Header = memo(function Header({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              
+
               {/* Mobile Location Selector */}
-              <LocationSelector 
+              <LocationSelector
                 selectedLocation={selectedLocation}
                 setSelectedLocation={setSelectedLocation}
                 locations={locations}

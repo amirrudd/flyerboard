@@ -51,34 +51,6 @@ describe('UserDashboard', () => {
     });
 
     it('should render dashboard tabs when user is logged in', () => {
-        vi.mocked(useQuery).mockImplementation((query: any) => {
-            // Since we can't easily import the api object, we'll just return a "happy path" object
-            // that satisfies all queries.
-            // Or checking if query is a function or object and has a name property?
-            // Convex query objects usually have a name or similar.
-            // But simpler: just return a merged object or check if we can differentiate.
-            // If we return the SAME object for all queries, it might work if the component handles extra fields gracefully.
-
-            // Let's try to return a user object if it looks like auth, or empty array if it looks like list.
-            // But we don't know which is which easily.
-            // However, `useQuery` is called with `api.auth.loggedInUser`, `api.posts.getUserAds`, etc.
-            // These are distinct objects.
-            // In the test environment, they are just objects.
-
-            // Let's just return a "User" object for the first call (usually user), and [] for others?
-            // No, hooks order matters.
-            // 1. loggedInUser
-            // 2. getUserAds
-            // 3. getUserStats
-            // 4. getSellerChats
-            // 5. getBuyerChats
-            // 6. getSavedAds
-            // 7. getArchivedChats
-
-            // We can use mockReturnValueOnce!
-            return null;
-        });
-
         vi.mocked(useQuery)
             .mockReturnValueOnce({ name: 'Test User', email: 'test@example.com' }) // loggedInUser
             .mockReturnValueOnce([]) // getUserAds
@@ -108,8 +80,8 @@ describe('UserDashboard', () => {
 
         renderDashboard();
 
-        expect(screen.getByText('No ads yet')).toBeInTheDocument();
-        expect(screen.getByText('Post Your First Ad')).toBeInTheDocument();
+        expect(screen.getByText('No Flyers Yet')).toBeInTheDocument();
+        expect(screen.getByText('Pin Your First Flyer')).toBeInTheDocument();
     });
 
     it('should call onPostAd when button is clicked', () => {
@@ -124,7 +96,7 @@ describe('UserDashboard', () => {
 
         renderDashboard();
 
-        const postButton = screen.getByText('Post New Ad');
+        const postButton = screen.getByText('Pin Next Flyer');
         fireEvent.click(postButton);
 
         expect(mockOnPostAd).toHaveBeenCalled();

@@ -9,6 +9,7 @@ import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -35,7 +36,10 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "profile" | "archived">("ads");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+
+  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "profile" | "archived">(tabParam || "ads");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -379,7 +383,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 ].map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => {
+                      setActiveTab(tab.id as any);
+                      setSearchParams({ tab: tab.id });
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                   >

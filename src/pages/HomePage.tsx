@@ -4,18 +4,22 @@ import { Id } from "../../convex/_generated/dataModel";
 import { Header } from "../features/layout/Header";
 import { Sidebar } from "../features/layout/Sidebar";
 import { AdsGrid } from "../features/ads/AdsGrid";
-import { AuthModal } from "../features/auth/AuthModal";
+// AuthModal removed, using global one from Layout
 
 import { useState, useEffect, useCallback } from "react";
 
 import { toast } from "sonner";
-import Cookies from "js-cookie";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
+
+interface LayoutContext {
+  setShowAuthModal: (show: boolean) => void;
+}
 
 export function HomePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setShowAuthModal } = useOutletContext<LayoutContext>();
 
   const {
     categories,
@@ -33,9 +37,6 @@ export function HomePage() {
     status,
   } = useMarketplace();
 
-
-  const [showAuthModal, setShowAuthModal] = useState(false);
-
   const user = useQuery(api.auth.loggedInUser);
 
   // Stale-while-revalidate pattern for ads
@@ -47,16 +48,6 @@ export function HomePage() {
       setDisplayedAds(ads);
     }
   }, [ads]);
-
-
-
-  // Close auth modal when user logs in
-  useEffect(() => {
-    if (user && showAuthModal) {
-      setShowAuthModal(false);
-      toast.success("Successfully signed in");
-    }
-  }, [user, showAuthModal]);
 
   // Handle location change and save to cookies
 
@@ -100,22 +91,6 @@ export function HomePage() {
     }
   }, [categories, searchParams]);
 
-  const locations = [
-    "Sydney, CBD",
-    "Sydney, Northern Beaches",
-    "Melbourne, CBD",
-    "Melbourne, South Yarra",
-    "Brisbane, South Bank",
-    "Brisbane, Fortitude Valley",
-    "Perth, Fremantle",
-    "Perth, Subiaco",
-    "Adelaide, CBD",
-    "Gold Coast, Surfers Paradise",
-    "Canberra, City Centre",
-  ];
-
-
-
   return (
     <div className="min-h-screen bg-white">
 
@@ -132,29 +107,43 @@ export function HomePage() {
       />
 
       <div className="max-w-[1440px] mx-auto px-4 py-6">
-        <div className="flex gap-8 items-start min-h-screen">
-          {/* Sidebar - Sticky on Desktop */}
-          <div className={`
-            ${sidebarCollapsed ? 'hidden' : 'hidden md:block'}
-            w-64 flex-shrink-0 sticky top-[84px] h-[calc(100vh-84px)] overflow-y-auto scrollbar-hide
-          `}>
-            <Sidebar
-              sidebarCollapsed={sidebarCollapsed}
-              categories={categories || []}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={handleSetSelectedCategory}
-              setSidebarCollapsed={setSidebarCollapsed}
-              isLoading={isCategoriesLoading}
-            />
-          </div>
+        <div className="flex gap-8 items-start">
+          {/* Sidebar - Sticky on Desktop, Fixed Overlay on Mobile */}
+          {!sidebarCollapsed && (
+            <>
+              {/* Mobile Overlay Backdrop */}
+              <div
+                className="md:hidden fixed inset-0 bg-black/50 z-[60]"
+                onClick={() => setSidebarCollapsed(true)}
+              />
+
+              {/* Sidebar */}
+              <div className={`
+                fixed md:sticky top-0 md:top-[84px] left-0 md:left-auto
+                h-screen md:h-[calc(100vh-84px)]
+                w-64 md:w-64
+                bg-white md:bg-transparent
+                shadow-2xl md:shadow-none
+                overflow-y-auto scrollbar-hide
+                z-[70] md:z-auto
+                flex-shrink-0
+                transition-transform duration-300
+                pt-4 md:pt-0
+              `}>
+                <Sidebar
+                  sidebarCollapsed={sidebarCollapsed}
+                  categories={categories || []}
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={handleSetSelectedCategory}
+                  setSidebarCollapsed={setSidebarCollapsed}
+                  isLoading={isCategoriesLoading}
+                />
+              </div>
+            </>
+          )}
 
           {/* Main Content - Feed */}
-          <div className="flex-1 min-w-0">
-            {/* Mobile Category Toggle (if needed, or keep existing mobile logic) */}
-            <div className="md:hidden mb-4">
-              {/* We can add a mobile category filter button here later if needed */}
-            </div>
-
+          <div className="flex-1 min-w-0 pb-20 md:pb-0">
             <AdsGrid
               ads={displayedAds}
               categories={categories || []}
@@ -187,11 +176,6 @@ export function HomePage() {
           </div>
         </div>
       </div>
-
-      <AuthModal
-        showAuthModal={showAuthModal}
-        setShowAuthModal={setShowAuthModal}
-      />
     </div>
   );
 }

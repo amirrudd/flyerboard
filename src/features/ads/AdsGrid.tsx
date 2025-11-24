@@ -61,8 +61,8 @@ export const AdsGrid = memo(function AdsGrid({
       {/* Loading Skeleton */}
       {isLoading || ads === undefined ? (
         <div className={`grid gap-3 sm:gap-4 ${sidebarCollapsed
-          ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
           }`}>
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm h-[300px] animate-pulse">
@@ -79,8 +79,8 @@ export const AdsGrid = memo(function AdsGrid({
         /* Ads Grid with CSS transitions for better performance */
         <div
           className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
-            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             }`}
         >
           {ads.map((ad) => (
@@ -102,12 +102,11 @@ export const AdsGrid = memo(function AdsGrid({
                 )}
               </div>
               <div className="p-3">
-                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-base">
+                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-sm sm:text-base">
                   {ad.title}
                 </h3>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500">
-                    {/* Condition or status could go here, e.g., "New" */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
+                  <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
                     {ad.location}
                   </p>
                   <p className="text-sm font-medium text-gray-900">
@@ -116,7 +115,6 @@ export const AdsGrid = memo(function AdsGrid({
                 </div>
                 <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
                   <span>{ad.views} views</span>
-                  {/* Time ago could go here */}
                 </div>
               </div>
             </div>

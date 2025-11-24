@@ -170,7 +170,9 @@ export function HomePage() {
                 </button>
               )}
               {status === "Exhausted" && ads && ads.length > 0 && (
-                <p className="text-neutral-400 text-sm">No more ads to load</p>
+                <div className="text-center py-8">
+                  <p className="text-neutral-400 text-sm">End of the Board</p>
+                </div>
               )}
             </div>
           </div>

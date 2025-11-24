@@ -108,7 +108,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 768) {
+                // Mobile: collapse sidebar
                 setSidebarCollapsed(true);
+            } else {
+                // Desktop: expand sidebar
+                setSidebarCollapsed(false);
             }
         };
 

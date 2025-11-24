@@ -17,9 +17,9 @@ export const HeaderRightActions = memo(function HeaderRightActions({
         <>
             <button
                 onClick={onPostClick}
-                className="h-10 px-4 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                className="h-10 px-4 text-base font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-none"
             >
-                Post Listing
+                Pin Your Flyer
             </button>
 
             {user ? (

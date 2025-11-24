@@ -13,9 +13,12 @@ export function AuthModal({ showAuthModal, setShowAuthModal }: AuthModalProps) {
   if (!showAuthModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div
+      className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto"
+      onClick={() => setShowAuthModal(false)}
+    >
       <div
-        className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-white/20"
+        className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-white/20 my-8 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-8">

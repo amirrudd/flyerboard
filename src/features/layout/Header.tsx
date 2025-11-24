@@ -1,6 +1,7 @@
 import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
 import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
+import { Menu } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
@@ -247,6 +248,150 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
   );
 });
 
+// Mobile Header Component with expandable search
+const MobileHeader = memo(function MobileHeader({
+  sidebarCollapsed,
+  setSidebarCollapsed,
+  searchQuery,
+  setSearchQuery,
+  selectedLocation,
+  setSelectedLocation,
+  user,
+  setShowAuthModal,
+  navigate,
+}: {
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  selectedLocation: string;
+  setSelectedLocation: (location: string) => void;
+  user: any;
+  setShowAuthModal: (show: boolean) => void;
+  navigate: (path: string) => void;
+}) {
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
+
+  // Sync local state with prop when prop changes (e.g. clear search)
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery || "");
+  }, [searchQuery]);
+
+  // Debounced search handler
+  const debouncedSetSearchQuery = useMemo(
+    () => debounce((value: string) => {
+      setSearchQuery(value);
+    }, 500),
+    [setSearchQuery]
+  );
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalSearchQuery(newValue);
+    debouncedSetSearchQuery(newValue);
+
+    // Navigate to home if not already there and search is not empty
+    if (newValue.trim() !== "" && window.location.pathname !== "/") {
+      navigate('/');
+    }
+  }, [debouncedSetSearchQuery, navigate]);
+
+  // Focus search input when expanded
+  useEffect(() => {
+    if (searchExpanded && searchInputRef.current) {
+      // Small timeout to ensure element is rendered and transition started
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [searchExpanded]);
+
+  // Close search on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Ignore if clicking the search toggle button (to prevent conflict with its onClick)
+      if (target.closest('button[title="Search"]')) return;
+
+      if (searchExpanded && !target.closest('.mobile-search-container')) {
+        setSearchExpanded(false);
+      }
+    };
+
+    if (searchExpanded) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [searchExpanded]);
+
+  return (
+    <>
+
+
+      {/* Main Mobile Header Bar */}
+      <div className="flex items-center justify-between h-14 px-4 gap-2">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+            title={sidebarCollapsed ? "Open menu" : "Close menu"}
+          >
+            <Menu className="w-6 h-6 text-gray-700" />
+          </button>
+          <h1 className="text-lg font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+          {/* Location Selector */}
+          <div className="flex-shrink-1 min-w-0">
+            <LocationSelector
+              selectedLocation={selectedLocation}
+              setSelectedLocation={setSelectedLocation}
+            />
+          </div>
+
+          {/* Search Icon Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSearchExpanded(!searchExpanded);
+            }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            title="Search"
+          >
+            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable Search Overlay */}
+      {searchExpanded && (
+        <div className="mobile-search-container border-t border-gray-100 bg-white px-4 py-3 animate-fade-in">
+          <div className="space-y-3">
+            <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search in listings..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              />
+              <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+});
+
 export const Header = memo(function Header({
   sidebarCollapsed = false,
   setSidebarCollapsed = () => { },
@@ -272,7 +417,12 @@ export const Header = memo(function Header({
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSetSearchQuery(e.target.value);
-  }, [debouncedSetSearchQuery]);
+
+    // Navigate to home if not already there and search is not empty
+    if (e.target.value.trim() !== "" && window.location.pathname !== "/") {
+      navigate('/');
+    }
+  }, [debouncedSetSearchQuery, navigate]);
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
@@ -346,88 +496,17 @@ export const Header = memo(function Header({
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between h-14 px-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title={sidebarCollapsed ? "Show filters" : "Hide filters"}
-                  >
-                    {sidebarCollapsed ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </button>
-                  <h1 className="text-lg font-bold text-gray-900" onClick={() => navigate('/')}>FlyerBoard</h1>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      if (user) {
-                        navigate('/post');
-                      } else {
-                        setShowAuthModal(true);
-                      }
-                    }}
-                    className="h-9 px-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Post
-                  </button>
-                  {user ? (
-                    <button
-                      onClick={() => navigate('/dashboard')}
-                      className="flex items-center gap-1 px-2 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Dashboard
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowAuthModal(true)}
-                      className="flex items-center gap-1 px-2 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                      </svg>
-                      Sign In
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Mobile Search and Location */}
-              <div className="px-4 pb-3 border-t border-gray-100">
-                <div className="space-y-3">
-                  <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
-                    <input
-                      type="text"
-                      placeholder="Search in listings..."
-                      defaultValue={searchQuery}
-                      onChange={handleSearchChange}
-                      className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                    />
-                    <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </form>
-
-                  {/* Mobile Location Selector */}
-                  <LocationSelector
-                    selectedLocation={selectedLocation}
-                    setSelectedLocation={setSelectedLocation}
-                  />
-                </div>
-              </div>
-            </>
+            <MobileHeader
+              sidebarCollapsed={sidebarCollapsed}
+              setSidebarCollapsed={setSidebarCollapsed}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              selectedLocation={selectedLocation}
+              setSelectedLocation={setSelectedLocation}
+              user={user}
+              setShowAuthModal={setShowAuthModal}
+              navigate={navigate}
+            />
           )}
         </div>
       </div>

@@ -38,7 +38,7 @@ export const Sidebar = memo(function Sidebar({
 
   return (
     <div className="h-full flex flex-col bg-white">
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-medium text-sm text-gray-500">Categories</h3>
         {/* Mobile Close Button */}
         <button

@@ -306,14 +306,24 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
-            Back to marketplace
+            <span className="hidden md:inline">back</span>
           </button>
         }
         centerNode={
-          <h1 className="text-xl font-bold text-gray-900">FlyerBoard</h1>
+          <h1 className="text-xl font-bold text-gray-900">
+            <span className="md:hidden">My dashboard</span>
+            <span className="hidden md:inline">FlyerBoard</span>
+          </h1>
         }
         rightNode={
-          <SignOutButton onSignOut={onBack} />
+          <>
+            <div className="md:hidden">
+              <SignOutButton onSignOut={onBack} iconOnly />
+            </div>
+            <div className="hidden md:block">
+              <SignOutButton onSignOut={onBack} />
+            </div>
+          </>
         }
       />
 
@@ -418,7 +428,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     onClick={onPostAd}
                     className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                   >
-                    Post New Ad
+                    Pin Next Flyer
                   </button>
                 </div>
 
@@ -490,13 +500,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   {(userAds || []).length === 0 && (
                     <div className="text-center py-12">
                       <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-gray-300" /></div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No ads yet</h3>
-                      <p className="text-gray-600 mb-4">Start by posting your first listing</p>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Flyers Yet</h3>
+                      <p className="text-gray-600 mb-4">Start by pinning your first flyer</p>
                       <button
                         onClick={onPostAd}
                         className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                       >
-                        Post Your First Ad
+                        Pin Your First Flyer
                       </button>
                     </div>
                   )}

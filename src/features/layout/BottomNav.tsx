@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, PlusCircle, User, MessageSquare, Heart, LayoutDashboard } from "lucide-react";
+import { Home, Plus, User, MessageSquare, Heart, LayoutDashboard } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
@@ -23,8 +23,8 @@ export function BottomNav({ setShowAuthModal }: BottomNavProps) {
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-4 py-2 md:hidden z-50 pb-safe">
-            <div className="flex justify-around items-center">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 md:hidden z-50 pb-safe">
+            <div className="grid grid-cols-5 items-end px-4 py-2">
                 <Link
                     to="/"
                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
@@ -45,12 +45,12 @@ export function BottomNav({ setShowAuthModal }: BottomNavProps) {
 
                 <button
                     onClick={() => handleAuthGuard("/post")}
-                    className="flex flex-col items-center gap-1 p-2 -mt-6"
+                    className="flex flex-col items-center gap-1 -mt-6"
                 >
                     <div className="bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors">
-                        <PlusCircle size={28} />
+                        <Plus size={28} />
                     </div>
-                    <span className="text-xs font-medium text-neutral-500">Post</span>
+                    <span className="text-xs font-medium text-neutral-500">PIN</span>
                 </button>
 
                 <button

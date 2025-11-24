@@ -22,9 +22,10 @@ interface HeaderProps {
 }
 
 // Location selector component
-const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation }: {
+const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, align = 'left' }: {
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
+  align?: 'left' | 'right';
 }) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -174,7 +175,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className={`absolute top-full mt-1 w-72 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <div className="p-2 border-b border-gray-100">
             <input
               ref={inputRef}
@@ -340,31 +341,40 @@ const MobileHeader = memo(function MobileHeader({
           >
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
+          <h1 className="text-lg font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>
+            {window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}
+          </h1>
         </div>
 
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-          {/* Location Selector */}
-          <div className="flex-shrink-1 min-w-0">
-            <LocationSelector
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-            />
-          </div>
+          {window.location.pathname === '/dashboard' ? (
+            <SignOutButton onSignOut={() => navigate('/')} iconOnly />
+          ) : (
+            <>
+              {/* Location Selector */}
+              <div className="flex-shrink-1 min-w-0">
+                <LocationSelector
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  align="right"
+                />
+              </div>
 
-          {/* Search Icon Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSearchExpanded(!searchExpanded);
-            }}
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
-            title="Search"
-          >
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
+              {/* Search Icon Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchExpanded(!searchExpanded);
+                }}
+                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+                title="Search"
+              >
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

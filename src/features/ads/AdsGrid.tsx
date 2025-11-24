@@ -47,14 +47,19 @@ export const AdsGrid = memo(function AdsGrid({
   return (
     <div className="flex-1">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#333333] mb-2">
+        <h2 className="text-2xl font-bold text-[#333333] mb-6">
           {selectedCategory
-            ? categories.find(c => c._id === selectedCategory)?.name
-            : 'All Listings'
-          }
+            ? `${categories?.find(c => c._id === selectedCategory)?.name} Flyers`
+            : 'All Flyers'}
         </h2>
-        <p className="text-gray-600">
-          {ads ? `${ads.length} listings found` : 'Loading...'}
+        <p className="text-neutral-500 text-sm mb-4">
+          {ads
+            ? ads.length === 0
+              ? 'No flyers'
+              : ads.length === 1
+                ? '1 flyer'
+                : `${ads.length} flyers`
+            : 'Loading...'}
         </p>
       </div>
 
@@ -125,8 +130,8 @@ export const AdsGrid = memo(function AdsGrid({
       {!isLoading && ads && ads.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold text-[#333333] mb-2">No listings found</h3>
-          <p className="text-gray-600">Please adjust your filters or try a new search</p>
+          <h3 className="text-xl font-semibold text-[#333333] mb-2">No Flyers Found</h3>
+          <p className="text-neutral-500">Try adjusting your search or filters</p>
         </div>
       )}
     </div>

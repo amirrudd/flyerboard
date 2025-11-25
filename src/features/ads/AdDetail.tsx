@@ -202,7 +202,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           </div>
         }
         centerNode={
-          <h1 className="text-xl font-semibold text-neutral-800">{displayAd.title}</h1>
+          <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={onBack}>FlyerBoard</h1>
         }
         rightNode={
           <div className="flex items-center gap-4 flex-shrink-0">

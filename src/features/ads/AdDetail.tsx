@@ -64,7 +64,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   };
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin} /ad/${adId} `;
+    const shareUrl = `${window.location.origin}/ad/${adId}`;
 
     if (navigator.share) {
       try {
@@ -73,13 +73,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           text: ad?.description,
           url: shareUrl,
         });
+        toast.success("Flyer shared successfully!");
       } catch (error) {
-        // User cancelled sharing
+        // User cancelled sharing - don't show error
+        if (error instanceof Error && error.name !== 'AbortError') {
+          // If sharing failed for another reason, fall back to clipboard
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link to this flyer copied to clipboard");
+        }
       }
     } else {
       // Fallback to copying URL
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Link copied to clipboard!");
+      toast.success("Link to this flyer copied to clipboard");
     }
   };
 

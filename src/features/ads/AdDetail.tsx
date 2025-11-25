@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { ReportModal } from "../../components/ReportModal";
+import { SEOHead } from "../../components/seo/SEOHead";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -64,13 +65,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   };
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/ad/${adId}`;
+    const shareUrl = window.location.href;
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: ad?.title,
-          text: ad?.description,
           url: shareUrl,
         });
         toast.success("Flyer shared successfully!");
@@ -186,6 +186,26 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead
+        title={displayAd.title}
+        description={displayAd.description.substring(0, 160)}
+        ogImage={displayAd.images[0]}
+        ogType="product"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": displayAd.title,
+          "description": displayAd.description,
+          "image": displayAd.images,
+          "offers": {
+            "@type": "Offer",
+            "price": displayAd.price,
+            "priceCurrency": "AUD",
+            "availability": "https://schema.org/InStock",
+            "itemCondition": "https://schema.org/UsedCondition"
+          }
+        }}
+      />
       {/* Header */}
       <Header
         leftNode={
@@ -299,7 +319,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               {images.length > 1 && (
                 <div className="p-4 bg-neutral-100">
                   <div className="flex gap-2 overflow-x-auto">
-                    {images.map((image, index) => (
+                    {images.map((image: string, index: number) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}

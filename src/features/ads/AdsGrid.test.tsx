@@ -72,7 +72,7 @@ describe('AdsGrid', () => {
 
         expect(screen.getByText('iPhone 13')).toBeInTheDocument();
         expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-        expect(screen.getByText('2 listings found')).toBeInTheDocument();
+        expect(screen.getByText('2 flyers')).toBeInTheDocument();
     });
 
     it('should render category name when selected', () => {
@@ -86,7 +86,7 @@ describe('AdsGrid', () => {
             />
         );
 
-        expect(screen.getByText('Electronics')).toBeInTheDocument();
+        expect(screen.getByText('Electronics Flyers')).toBeInTheDocument();
     });
 
     it('should call onAdClick when an ad is clicked', () => {
@@ -116,6 +116,6 @@ describe('AdsGrid', () => {
             />
         );
 
-        expect(screen.getByText('No listings found')).toBeInTheDocument();
+        expect(screen.getByText('No Flyers Found')).toBeInTheDocument();
     });
 });

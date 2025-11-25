@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
+import { generateAdUrl } from "../utils/slugs";
 
 interface LayoutContext {
   setShowAuthModal: (show: boolean) => void;
@@ -149,7 +150,12 @@ export function HomePage() {
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
-              onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
+              onAdClick={(ad) => {
+                const category = categories?.find(c => c._id === ad.categoryId);
+                const categorySlug = category?.slug || 'general';
+                const url = generateAdUrl(ad, categorySlug);
+                navigate(url, { state: { initialAd: ad } });
+              }}
               isLoading={status === "LoadingFirstPage"}
             />
 

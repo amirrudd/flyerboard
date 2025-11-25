@@ -13,6 +13,7 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@auth/core": "0.30.0",
     "@convex-dev/auth": "^0.0.80",
     "@types/js-cookie": "^3.0.6",
     "@vercel/speed-insights": "^1.2.0",

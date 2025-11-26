@@ -76,6 +76,5 @@ We may change this Privacy Policy from time to time and will update the “Last 
 
 If you have questions about this Policy or your personal information, contact:
 
-[Your name / company]  
-Email: [email@example.com]  
-Address: [Postal address]
+FlyerBoard  
+Email: support@flyerboard.com.au 

@@ -4,7 +4,7 @@
 
 *Operator: [Your name / company], ABN [xxxxxx], trading as FlyerBoard ("we", "our", "us", "Platform")*
 
-*Website: https://[your-domain].com.au ("Website")*
+*Website: https://flyerboard.com.au , https://flyerboard.au ("Website")*
 
 *Users: Anyone who registers, posts, browses, or uses the Website ("User", "you", "your").*
 

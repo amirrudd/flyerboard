@@ -3,6 +3,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface SignInFormProps {
   flow: "signIn" | "signUp";
@@ -98,7 +99,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
         </div>
         {flow === "signUp" && (
           <p className="text-xs text-neutral-500 mt-2">
-            By signing up you agree to our <a href="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</a> and <a href="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</a>.
+            By signing up you agree to our <Link to="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.
           </p>
         )}
       </form>

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Id } from "../../../convex/_generated/dataModel";
 import { memo, useCallback } from "react";
 import { LayoutGrid, X } from "lucide-react";
@@ -103,13 +104,23 @@ export const Sidebar = memo(function Sidebar({
           { label: "Community Guidelines", href: "/community-guidelines" },
           { label: "Contact", href: "#" },
         ].map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
-          >
-            {link.label}
-          </a>
+          link.href.startsWith("#") ? (
+            <a
+              key={link.label}
+              href={link.href}
+              className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
+            >
+              {link.label}
+            </a>
+          ) : (
+            <Link
+              key={link.label}
+              to={link.href}
+              className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
+            >
+              {link.label}
+            </Link>
+          )
         ))}
       </div>
       <div className="px-2 pt-4 text-[10px] text-gray-400">

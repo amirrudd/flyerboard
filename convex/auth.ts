@@ -3,7 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
 import { query } from "./_generated/server";
 
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+export const { auth, signIn, signOut, store } = convexAuth({
   providers: [Password, Anonymous],
   callbacks: {
     async createOrUpdateUser(ctx, args) {

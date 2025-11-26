@@ -67,8 +67,8 @@
 
   /* Performance Optimizations for INP */
 
-  /* Ad card optimizations - hardware-accelerated transitions */
-  .ad-card {
+  /* Listing card optimizations - hardware-accelerated transitions */
+  .listing-card {
     /* Use transform instead of other properties for better performance */
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -78,14 +78,14 @@
     contain: layout style paint;
   }
 
-  .ad-card:hover {
+  .listing-card:hover {
     /* Hardware-accelerated transform for smooth hover effect */
     transform: translateY(-2px) translateZ(0);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   /* Optimize image rendering */
-  .ad-card img {
+  .listing-card img {
     /* Prevent layout shift during image load */
     content-visibility: auto;
     /* Smooth image rendering */
@@ -93,7 +93,7 @@
   }
 
   /* Grid performance optimization */
-  .ads-grid {
+  .listings-grid {
     /* Contain layout calculations */
     contain: layout style;
   }
@@ -104,7 +104,7 @@
   }
 
   /* Remove will-change after animation completes to free up resources */
-  .ad-card:not(:hover) {
+  .listing-card:not(:hover) {
     will-change: auto;
   }
 }

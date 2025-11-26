@@ -81,9 +81,9 @@ export const AdsGrid = memo(function AdsGrid({
           ))}
         </div>
       ) : (
-        /* Ads Grid with CSS transitions for better performance */
+        /* Listings Grid with CSS transitions for better performance */
         <div
-          className={`ads-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
+          className={`listings-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
             ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
             : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             }`}
@@ -92,7 +92,7 @@ export const AdsGrid = memo(function AdsGrid({
             <div
               key={ad._id}
               onClick={() => handleAdClick(ad)}
-              className="ad-card bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group"
+              className="listing-card bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group"
             >
               <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
                 <ImageDisplay

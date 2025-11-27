@@ -52,15 +52,21 @@ export const AdsGrid = memo(function AdsGrid({
             ? `${categories?.find(c => c._id === selectedCategory)?.name} Flyers`
             : 'All Flyers'}
         </h2>
-        <p className="text-neutral-500 text-sm mb-4">
-          {ads
-            ? ads.length === 0
-              ? 'No flyers'
-              : ads.length === 1
-                ? '1 flyer'
-                : `${ads.length} flyers`
-            : 'Loading...'}
-        </p>
+        <div className="text-neutral-500 text-sm mb-4">
+          <div className="h-5 flex items-center">
+            {ads ? (
+              <>
+                {ads.length === 0
+                  ? 'No flyers'
+                  : ads.length === 1
+                    ? '1 flyer'
+                    : `${ads.length} flyers`}
+              </>
+            ) : (
+              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Loading Skeleton */}

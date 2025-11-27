@@ -127,6 +127,48 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     }
   };
 
+  // If ad is explicitly null (loaded but not found), show not found state
+  if (ad === null) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header
+          leftNode={
+            <div className="flex items-center gap-6 flex-shrink-0">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to listings
+              </button>
+            </div>
+          }
+          centerNode={
+            <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={onBack}>FlyerBoard</h1>
+          }
+          rightNode={<div />}
+        />
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <div className="bg-white rounded-lg p-12 shadow-sm max-w-lg mx-auto">
+            <svg className="w-16 h-16 text-neutral-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">Ad Not Found</h2>
+            <p className="text-neutral-600 mb-6">This ad may have been deleted or removed.</p>
+            <button
+              onClick={onBack}
+              className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Return to Listings
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const displayAd = ad || initialAd;
 
   if (!displayAd) {
@@ -299,7 +341,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               {images.length > 1 && (
                 <div className="p-4 bg-neutral-100">
                   <div className="flex gap-2 overflow-x-auto">
-                    {images.map((image, index) => (
+                    {images.map((image: string, index: number) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}

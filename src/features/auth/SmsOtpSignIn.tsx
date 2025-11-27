@@ -206,7 +206,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
             <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : handleVerifyOtp} className="flex flex-col gap-3">
                 {/* Sliding content container - needs overflow hidden for the slide effect */}
-                <div className="relative h-[220px] overflow-hidden">
+                <div className="relative h-[190px] overflow-hidden">
                     {/* Step 1: Phone Number */}
                     <div
                         className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 1

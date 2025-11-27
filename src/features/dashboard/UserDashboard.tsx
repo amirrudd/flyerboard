@@ -359,8 +359,20 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     user.name?.charAt(0) || user.email?.charAt(0) || "U"
                   )}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
+                    <button
+                      onClick={() => {
+                        setActiveTab("profile");
+                        setSearchParams({ tab: "profile" });
+                      }}
+                      className="p-1 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-colors"
+                      title="Edit profile"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className="text-sm text-gray-500">{user.email}</p>
                 </div>
               </div>

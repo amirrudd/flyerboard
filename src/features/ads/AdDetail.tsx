@@ -28,6 +28,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showReportModal, setShowReportModal] = useState(false);
   const [showReportProfileModal, setShowReportProfileModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [avatarImageError, setAvatarImageError] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
@@ -411,18 +412,26 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
+                {displayAd.seller?.image && !avatarImageError ? (
+                  <img
+                    src={displayAd.seller.image}
+                    alt={displayAd.seller.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={() => setAvatarImageError(true)}
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
                 <div className="flex-1">
                   {displayAd.seller ? (
                     <p className="font-medium text-neutral-800">{displayAd.seller.name}</p>
                   ) : (
-                    <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
                   )}
-                  <p className="text-sm text-neutral-500">Seller</p>
                   {displayAd.seller ? (
                     <StarRating
                       rating={displayAd.seller.averageRating || 0}
@@ -465,9 +474,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               )}
 
               {user && displayAd.userId === user._id && (
-                <div className="text-center py-3 text-neutral-500">
-                  <p>This is your listing</p>
-                </div>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                >
+                  Manage Your Flyer
+                </button>
               )}
 
               {!user && (

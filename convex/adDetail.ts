@@ -6,7 +6,7 @@ export const getAdById = query({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
     const ad = await ctx.db.get(args.adId);
-    
+
     // Return null if ad is deleted or doesn't exist
     if (!ad || ad.isDeleted) {
       return null;
@@ -17,7 +17,13 @@ export const getAdById = query({
 
     return {
       ...ad,
-      seller: seller ? { name: seller.name, email: seller.email } : null,
+      seller: seller ? {
+        name: seller.name,
+        email: seller.email,
+        averageRating: seller.averageRating || 0,
+        ratingCount: seller.ratingCount || 0,
+        image: seller.image,
+      } : null,
     };
   },
 });
@@ -55,7 +61,7 @@ export const saveAd = mutation({
     // Check if already saved
     const existing = await ctx.db
       .query("savedAds")
-      .withIndex("by_user_and_ad", (q) => 
+      .withIndex("by_user_and_ad", (q) =>
         q.eq("userId", userId).eq("adId", args.adId)
       )
       .unique();
@@ -85,7 +91,7 @@ export const isAdSaved = query({
 
     const saved = await ctx.db
       .query("savedAds")
-      .withIndex("by_user_and_ad", (q) => 
+      .withIndex("by_user_and_ad", (q) =>
         q.eq("userId", userId).eq("adId", args.adId)
       )
       .unique();
@@ -114,7 +120,7 @@ export const getOrCreateChat = mutation({
     // Check if chat already exists
     const existingChat = await ctx.db
       .query("chats")
-      .withIndex("by_ad_and_buyer", (q) => 
+      .withIndex("by_ad_and_buyer", (q) =>
         q.eq("adId", args.adId).eq("buyerId", userId)
       )
       .unique();
@@ -136,9 +142,9 @@ export const getOrCreateChat = mutation({
 });
 
 export const sendMessage = mutation({
-  args: { 
-    chatId: v.id("chats"), 
-    content: v.string() 
+  args: {
+    chatId: v.id("chats"),
+    content: v.string()
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -227,7 +233,7 @@ export const getChatForAd = query({
 
     const chat = await ctx.db
       .query("chats")
-      .withIndex("by_ad_and_buyer", (q) => 
+      .withIndex("by_ad_and_buyer", (q) =>
         q.eq("adId", args.adId).eq("buyerId", userId)
       )
       .unique();

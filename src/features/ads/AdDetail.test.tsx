@@ -110,9 +110,8 @@ describe('AdDetail - Share Functionality', () => {
         );
     };
 
-    describe('Share URL Construction', () => {
-        it('should construct URL without extra spaces', async () => {
-            // Mock navigator without share API (fallback to clipboard)
+    describe('Share Functionality', () => {
+        it('should copy URL to clipboard when share button is clicked', async () => {
             Object.defineProperty(global, 'navigator', {
                 value: {
                     clipboard: mockClipboard,
@@ -144,40 +143,8 @@ describe('AdDetail - Share Functionality', () => {
             const calledUrl = mockClipboard.writeText.mock.calls[0][0];
             expect(calledUrl).not.toMatch(/\s/); // No whitespace in URL
         });
-    });
 
-    describe('Clipboard Fallback', () => {
-        it('should copy to clipboard when navigator.share is not available', async () => {
-            // Mock navigator without share API
-            Object.defineProperty(global, 'navigator', {
-                value: {
-                    clipboard: mockClipboard,
-                },
-                writable: true,
-                configurable: true,
-            });
-
-            renderAdDetail();
-
-            await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
-                expect(titles[0]).toBeInTheDocument();
-            });
-
-            // Click share button
-            const shareButtons = screen.getAllByTitle('Share ad');
-            fireEvent.click(shareButtons[0]);
-
-            // Verify clipboard was called
-            await waitFor(() => {
-                expect(mockClipboard.writeText).toHaveBeenCalled();
-            });
-
-            // Verify toast message with branding
-            expect(toast.success).toHaveBeenCalledWith('Link to this flyer copied to clipboard');
-        });
-
-        it('should show toast notification after copying to clipboard', async () => {
+        it('should show success toast with correct message', async () => {
             Object.defineProperty(global, 'navigator', {
                 value: {
                     clipboard: mockClipboard,
@@ -197,110 +164,8 @@ describe('AdDetail - Share Functionality', () => {
             fireEvent.click(shareButtons[0]);
 
             await waitFor(() => {
-                expect(toast.success).toHaveBeenCalledWith('Link to this flyer copied to clipboard');
+                expect(toast.success).toHaveBeenCalledWith('Link to flyer copied to clipboard');
             });
-        });
-    });
-
-    describe('Native Share API', () => {
-        it('should use native share API when available', async () => {
-            mockShare = vi.fn().mockResolvedValue(undefined);
-
-            Object.defineProperty(global, 'navigator', {
-                value: {
-                    share: mockShare,
-                    clipboard: mockClipboard,
-                },
-                writable: true,
-                configurable: true,
-            });
-
-            renderAdDetail();
-
-            await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
-                expect(titles[0]).toBeInTheDocument();
-            });
-
-            const shareButtons = screen.getAllByTitle('Share ad');
-            fireEvent.click(shareButtons[0]);
-
-            await waitFor(() => {
-                expect(mockShare).toHaveBeenCalledWith({
-                    title: 'Test Ad Title',
-                    text: 'Test ad description',
-                    url: expect.stringMatching(/^http:\/\/localhost:\d+\/ad\/test-ad-id$/),
-                });
-            });
-
-            // Verify success toast is shown
-            expect(toast.success).toHaveBeenCalledWith('Flyer shared successfully!');
-        });
-
-        it('should not show error when user cancels native share', async () => {
-            const abortError = new Error('User cancelled');
-            abortError.name = 'AbortError';
-            mockShare = vi.fn().mockRejectedValue(abortError);
-
-            Object.defineProperty(global, 'navigator', {
-                value: {
-                    share: mockShare,
-                    clipboard: mockClipboard,
-                },
-                writable: true,
-                configurable: true,
-            });
-
-            renderAdDetail();
-
-            await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
-                expect(titles[0]).toBeInTheDocument();
-            });
-
-            const shareButtons = screen.getAllByTitle('Share ad');
-            fireEvent.click(shareButtons[0]);
-
-            await waitFor(() => {
-                expect(mockShare).toHaveBeenCalled();
-            });
-
-            // Verify no toast was shown (user cancelled)
-            expect(toast.success).not.toHaveBeenCalled();
-            expect(toast.error).not.toHaveBeenCalled();
-        });
-
-        it('should fallback to clipboard when native share fails', async () => {
-            const shareError = new Error('Share failed');
-            shareError.name = 'ShareError';
-            mockShare = vi.fn().mockRejectedValue(shareError);
-
-            Object.defineProperty(global, 'navigator', {
-                value: {
-                    share: mockShare,
-                    clipboard: mockClipboard,
-                },
-                writable: true,
-                configurable: true,
-            });
-
-            renderAdDetail();
-
-            await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
-                expect(titles[0]).toBeInTheDocument();
-            });
-
-            const shareButtons = screen.getAllByTitle('Share ad');
-            fireEvent.click(shareButtons[0]);
-
-            // Wait for share to fail and fallback to clipboard
-            await waitFor(() => {
-                expect(mockClipboard.writeText).toHaveBeenCalled();
-            });
-
-            // Verify clipboard fallback toast is shown
-            expect(toast.success).toHaveBeenCalledWith('Link to this flyer copied to clipboard');
         });
     });
 
@@ -368,7 +233,7 @@ describe('AdDetail - Share Functionality', () => {
 
             await waitFor(() => {
                 expect(mockClipboard.writeText).toHaveBeenCalled();
-                expect(toast.success).toHaveBeenCalledWith('Link to this flyer copied to clipboard');
+                expect(toast.success).toHaveBeenCalledWith('Link to flyer copied to clipboard');
             });
         });
     });

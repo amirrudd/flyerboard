@@ -68,28 +68,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/ad/${adId}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: ad?.title,
-          text: ad?.description,
-          url: shareUrl,
-        });
-        toast.success("Flyer shared successfully!");
-      } catch (error) {
-        // User cancelled sharing - don't show error
-        if (error instanceof Error && error.name !== 'AbortError') {
-          // If sharing failed for another reason, fall back to clipboard
-          await navigator.clipboard.writeText(shareUrl);
-          toast.success("Link to this flyer copied to clipboard");
-        }
-      }
-    } else {
-      // Fallback to copying URL
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success("Link to this flyer copied to clipboard");
-    }
+    await navigator.clipboard.writeText(shareUrl);
+    toast.success("Link to flyer copied to clipboard");
   };
 
   const handleStartChat = async () => {

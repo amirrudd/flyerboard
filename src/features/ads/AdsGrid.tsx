@@ -1,5 +1,7 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { SkeletonCard } from "../../components/ui/SkeletonCard";
+import { Search } from "lucide-react";
 import { memo, useCallback } from "react";
 
 interface Ad {
@@ -29,6 +31,7 @@ interface AdsGridProps {
   sidebarCollapsed: boolean;
   onAdClick: (ad: Ad) => void;
   isLoading?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -38,11 +41,17 @@ export const AdsGrid = memo(function AdsGrid({
   sidebarCollapsed,
   onAdClick,
   isLoading = false,
+  isLoadingMore = false,
 }: AdsGridProps) {
   // Optimize onClick handler with useCallback
   const handleAdClick = useCallback((ad: Ad) => {
     onAdClick(ad);
   }, [onAdClick]);
+
+  const gridClasses = `grid gap-3 sm:gap-4 ${sidebarCollapsed
+    ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+    : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+    }`;
 
   return (
     <div className="flex-1">
@@ -63,37 +72,22 @@ export const AdsGrid = memo(function AdsGrid({
                     : `${ads.length} flyers`}
               </>
             ) : (
-              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-20 rounded shimmer" />
             )}
           </div>
         </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* Loading Skeleton (Initial Load) */}
       {isLoading || ads === undefined ? (
-        <div className={`grid gap-3 sm:gap-4 ${sidebarCollapsed
-          ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-          }`}>
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm h-[300px] animate-pulse">
-              <div className="h-48 bg-gray-200" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-              </div>
-            </div>
+        <div className={gridClasses}>
+          {[...Array(12)].map((_, i) => (
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : (
         /* Listings Grid with CSS transitions for better performance */
-        <div
-          className={`listings-grid grid gap-3 sm:gap-4 ${sidebarCollapsed
-            ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-            : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-            }`}
-        >
+        <div className={`listings-grid ${gridClasses}`}>
           {ads.map((ad) => (
             <div
               key={ad._id}
@@ -130,12 +124,21 @@ export const AdsGrid = memo(function AdsGrid({
               </div>
             </div>
           ))}
+
+          {/* Loading More Skeletons */}
+          {isLoadingMore && (
+            [...Array(4)].map((_, i) => (
+              <SkeletonCard key={`skeleton-more-${i}`} />
+            ))
+          )}
         </div>
       )}
 
       {!isLoading && ads && ads.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔍</div>
+          <div className="flex justify-center mb-4">
+            <Search className="w-16 h-16 text-gray-300" strokeWidth={1.5} />
+          </div>
           <h3 className="text-xl font-semibold text-[#333333] mb-2">No Flyers Found</h3>
           <p className="text-neutral-500">Try adjusting your search or filters</p>
         </div>

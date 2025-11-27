@@ -54,8 +54,8 @@ describe('AdsGrid', () => {
                 isLoading={true}
             />
         );
-        // Check for the skeleton loader (animate-pulse)
-        const skeletons = document.getElementsByClassName('animate-pulse');
+        // Check for the skeleton loader (shimmer)
+        const skeletons = document.getElementsByClassName('shimmer');
         expect(skeletons.length).toBeGreaterThan(0);
     });
 

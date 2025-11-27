@@ -39,16 +39,6 @@ export function HomePage() {
 
   const user = useQuery(api.auth.loggedInUser);
 
-  // Stale-while-revalidate pattern for ads
-  // This ensures we keep showing the old ads while fetching new ones, avoiding a flash of loading state
-  const [displayedAds, setDisplayedAds] = useState<typeof ads>(undefined);
-
-  useEffect(() => {
-    if (ads !== undefined) {
-      setDisplayedAds(ads);
-    }
-  }, [ads]);
-
   // Handle location change and save to cookies
 
 
@@ -145,22 +135,18 @@ export function HomePage() {
           {/* Main Content - Feed */}
           <div className="flex-1 min-w-0 pb-20 md:pb-0">
             <AdsGrid
-              ads={displayedAds}
+              ads={ads}
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
               onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
-              isLoading={status === "LoadingFirstPage" && displayedAds === undefined}
+              isLoading={status === "LoadingFirstPage"}
+              isLoadingMore={status === "LoadingMore"}
             />
 
             {/* Load More / Loading Status */}
             <div className="mt-8 flex justify-center">
-              {status === "LoadingMore" && (
-                <div className="flex items-center gap-2 text-neutral-500">
-                  <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Loading more ads...</span>
-                </div>
-              )}
+
               {status === "CanLoadMore" && (
                 <button
                   onClick={() => loadMore(30)}

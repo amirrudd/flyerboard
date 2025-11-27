@@ -49,6 +49,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     }
   }, [existingChat]);
 
+  // Scroll to top when component mounts or adId changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [adId]);
+
   useEffect(() => {
     // Increment views when component mounts
     incrementViews({ adId }).catch(() => {

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { ReportModal } from "../../components/ReportModal";
+import { StarRating } from "../../components/ui/StarRating";
+import { RatingModal } from "../../components/RatingModal";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -25,6 +27,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showReportProfileModal, setShowReportProfileModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
@@ -427,6 +430,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <div className="flex-1">
                   <p className="font-medium text-neutral-800">{displayAd.seller?.name || "Loading..."}</p>
                   <p className="text-sm text-neutral-500">Seller</p>
+                  {displayAd.seller && (
+                    <StarRating
+                      rating={displayAd.seller.averageRating || 0}
+                      count={displayAd.seller.ratingCount || 0}
+                      size="sm"
+                      showCount={true}
+                    />
+                  )}
                 </div>
                 {user && displayAd.userId !== user._id && (
                   <button
@@ -442,12 +453,20 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               </div>
 
               {user && displayAd.userId !== user._id && (
-                <button
-                  onClick={handleStartChat}
-                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                >
-                  Contact Seller
-                </button>
+                <>
+                  <button
+                    onClick={handleStartChat}
+                    className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium mb-2"
+                  >
+                    Contact Seller
+                  </button>
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="w-full bg-white text-primary-600 border border-primary-600 py-2 px-4 rounded-lg hover:bg-primary-50 transition-colors font-medium"
+                  >
+                    Rate Seller
+                  </button>
+                </>
               )}
 
               {user && displayAd.userId === user._id && (
@@ -588,6 +607,17 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         reportedEntityId={displayAd.userId}
         reportedEntityName={displayAd.seller?.name || "User"}
       />
+
+      {/* Rating Modal */}
+      {displayAd.seller && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          userId={displayAd.userId}
+          userName={displayAd.seller.name || "User"}
+          chatId={chatId || undefined}
+        />
+      )}
     </div >
   );
 }

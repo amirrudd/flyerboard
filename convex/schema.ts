@@ -81,21 +81,30 @@ const applicationTables = {
     .index("by_entity", ["reportedEntityId"])
     .index("by_status", ["status"])
     .index("by_type", ["reportType"]),
+
+  ratings: defineTable({
+    raterId: v.id("users"),              // User who submitted the rating
+    ratedUserId: v.id("users"),          // User being rated
+    rating: v.number(),                  // Rating value (0-5, supports 0.5 increments)
+    chatId: v.optional(v.id("chats")),   // Optional reference to chat context
+    comment: v.optional(v.string()),     // Optional text feedback
+    createdAt: v.number(),               // Timestamp
+  })
+    .index("by_rater", ["raterId"])
+    .index("by_rated_user", ["ratedUserId"])
+    .index("by_rater_and_rated", ["raterId", "ratedUserId"])
+    .index("by_chat", ["chatId"]),
 };
 
 // Extend the auth tables to add custom fields
-const schema = defineSchema({
+export default defineSchema({
   ...authTables,
   ...applicationTables,
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    image: v.optional(v.string()),
+    totalRating: v.optional(v.number()),      // Sum of all ratings received
+    ratingCount: v.optional(v.number()),      // Number of ratings received
+    averageRating: v.optional(v.number()),    // Average rating (totalRating / ratingCount)
+  }).index("email", ["email"]),
 });
-
-// Extend users table with custom fields
-export default schema.tables.users
-  ? defineSchema({
-    ...schema.tables,
-    users: defineTable({
-      ...schema.tables.users.validator.fields,
-      image: v.optional(v.string()),
-    }).index("email", ["email"]),
-  })
-  : schema;

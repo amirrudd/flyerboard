@@ -169,12 +169,12 @@ export const getSellerChats = query({
       chats.map(async (chat) => {
         const ad = await ctx.db.get(chat.adId);
         const buyer = await ctx.db.get(chat.buyerId);
-        
+
         // Get unread message count
         const unreadCount = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) => 
+          .filter((q) =>
             q.and(
               q.neq(q.field("senderId"), userId),
               q.gt(q.field("timestamp"), chat.lastReadBySeller || 0)
@@ -185,7 +185,11 @@ export const getSellerChats = query({
         return {
           ...chat,
           ad,
-          buyer,
+          buyer: buyer ? {
+            ...buyer,
+            averageRating: buyer.averageRating || 0,
+            ratingCount: buyer.ratingCount || 0,
+          } : null,
           unreadCount: unreadCount.length,
         };
       })
@@ -214,12 +218,12 @@ export const getBuyerChats = query({
       chats.map(async (chat) => {
         const ad = await ctx.db.get(chat.adId);
         const seller = await ctx.db.get(chat.sellerId);
-        
+
         // Get unread message count
         const unreadCount = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) => 
+          .filter((q) =>
             q.and(
               q.neq(q.field("senderId"), userId),
               q.gt(q.field("timestamp"), chat.lastReadByBuyer || 0)
@@ -230,7 +234,11 @@ export const getBuyerChats = query({
         return {
           ...chat,
           ad,
-          seller,
+          seller: seller ? {
+            ...seller,
+            averageRating: seller.averageRating || 0,
+            ratingCount: seller.ratingCount || 0,
+          } : null,
           unreadCount: unreadCount.length,
         };
       })
@@ -247,7 +255,7 @@ export const generateUploadUrl = mutation({
     if (!userId) {
       throw new Error("Must be logged in to upload files");
     }
-    
+
     return await ctx.storage.generateUploadUrl();
   },
 });

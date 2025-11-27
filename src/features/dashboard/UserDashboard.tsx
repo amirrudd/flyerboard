@@ -26,8 +26,10 @@ import {
   XCircle,
   MapPin,
   Search,
-  Filter
+  Filter,
+  Star
 } from "lucide-react";
+import { StarRating } from "../../components/ui/StarRating";
 
 interface UserDashboardProps {
   onBack: () => void;
@@ -375,6 +377,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </div>
                 </div>
               )}
+
+              {user && (
+                <div className="pt-3 border-t border-gray-200">
+                  <StarRating
+                    rating={userStats?.averageRating || 0}
+                    count={userStats?.ratingCount || 0}
+                    size="sm"
+                    showCount={true}
+                  />
+                </div>
+              )}
             </div>
 
             <nav className="bg-white rounded-lg p-4 shadow-sm">
@@ -545,9 +558,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                       Listing Inactive
                                     </span>
                                   )}
-                                  <p className="text-sm text-gray-600">
+                                  <p className="text-sm text-gray-600 mb-1">
                                     Seller: {chat.seller?.name || "Unknown User"}
                                   </p>
+                                  {chat.seller && (
+                                    <StarRating
+                                      rating={chat.seller.averageRating || 0}
+                                      count={chat.seller.ratingCount || 0}
+                                      size="sm"
+                                      showCount={false}
+                                    />
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {chat.ad && (

@@ -136,12 +136,16 @@ export const getUserStats = query({
       .withIndex("by_seller", (q) => q.eq("sellerId", userId))
       .collect();
 
+    const user = await ctx.db.get(userId);
+
     return {
       totalAds: ads.length,
       activeAds,
       totalViews,
       savedAds: savedAds.length,
       chats: chats.length,
+      averageRating: user?.averageRating || 0,
+      ratingCount: user?.ratingCount || 0,
     };
   },
 });

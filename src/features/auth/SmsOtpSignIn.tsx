@@ -191,10 +191,22 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         : otpDigits.every(d => d !== "");
 
     return (
-        <div className="w-full overflow-hidden">
+        <div className="w-full relative">
+            {/* Back button - positioned to align with close button in parent */}
+            {step === 2 && (
+                <button
+                    type="button"
+                    onClick={handleBackToPhone}
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors z-50"
+                    aria-label="Go back to phone number"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+            )}
+
             <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : handleVerifyOtp} className="flex flex-col gap-3">
-                {/* Sliding content container */}
-                <div className="relative h-[220px]">
+                {/* Sliding content container - needs overflow hidden for the slide effect */}
+                <div className="relative h-[220px] overflow-hidden">
                     {/* Step 1: Phone Number */}
                     <div
                         className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 1
@@ -247,17 +259,6 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                             }`}
                     >
                         <div className="space-y-3">
-                            {/* Back button - positioned to align with close button */}
-                            <div className="flex justify-start -mt-12 mb-2">
-                                <button
-                                    type="button"
-                                    onClick={handleBackToPhone}
-                                    className="p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
-                                >
-                                    <ArrowLeft className="w-6 h-6" />
-                                </button>
-                            </div>
-
                             <div>
                                 <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
                                     Enter Your Verification Code

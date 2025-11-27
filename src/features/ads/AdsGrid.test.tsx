@@ -54,9 +54,9 @@ describe('AdsGrid', () => {
                 isLoading={true}
             />
         );
-        // Skeleton usually doesn't have text, but we can check for structure or class
-        // In this case, we can check if "Loading..." text is present in the header section
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        // Check for the skeleton loader (animate-pulse)
+        const skeletons = document.getElementsByClassName('animate-pulse');
+        expect(skeletons.length).toBeGreaterThan(0);
     });
 
     it('should render ads when data is provided', () => {
@@ -72,7 +72,7 @@ describe('AdsGrid', () => {
 
         expect(screen.getByText('iPhone 13')).toBeInTheDocument();
         expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-        expect(screen.getByText('2 listings found')).toBeInTheDocument();
+        expect(screen.getByText('2 flyers')).toBeInTheDocument();
     });
 
     it('should render category name when selected', () => {
@@ -86,7 +86,7 @@ describe('AdsGrid', () => {
             />
         );
 
-        expect(screen.getByText('Electronics')).toBeInTheDocument();
+        expect(screen.getByText('Electronics Flyers')).toBeInTheDocument();
     });
 
     it('should call onAdClick when an ad is clicked', () => {
@@ -116,6 +116,6 @@ describe('AdsGrid', () => {
             />
         );
 
-        expect(screen.getByText('No listings found')).toBeInTheDocument();
+        expect(screen.getByText('No Flyers Found')).toBeInTheDocument();
     });
 });

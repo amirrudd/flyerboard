@@ -373,7 +373,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <p className="text-3xl font-bold text-primary-600">${displayAd.price.toLocaleString()} AUD</p>
                 </div>
                 <div className="text-right text-sm text-neutral-500">
-                  <p>{displayAd.views} views</p>
+                  {ad ? (
+                    <p>{ad.views} views</p>
+                  ) : (
+                    <div className="h-5 w-16 bg-gray-200 rounded animate-pulse ml-auto" />
+                  )}
                   <p>Posted {timeAgo}</p>
                 </div>
               </div>
@@ -428,15 +432,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-neutral-800">{displayAd.seller?.name || "Loading..."}</p>
+                  {displayAd.seller ? (
+                    <p className="font-medium text-neutral-800">{displayAd.seller.name}</p>
+                  ) : (
+                    <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
+                  )}
                   <p className="text-sm text-neutral-500">Seller</p>
-                  {displayAd.seller && (
+                  {displayAd.seller ? (
                     <StarRating
                       rating={displayAd.seller.averageRating || 0}
                       count={displayAd.seller.ratingCount || 0}
                       size="sm"
                       showCount={true}
                     />
+                  ) : (
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
                   )}
                 </div>
                 {user && displayAd.userId !== user._id && (

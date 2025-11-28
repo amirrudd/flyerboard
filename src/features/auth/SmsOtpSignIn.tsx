@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Smartphone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
-import { authService } from "../../services/auth/authService";
+import { useDescope } from "@descope/react-sdk";
 import {
     getTimerState,
     setTimerState,
@@ -22,6 +22,8 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
     const [step, setStep] = useState<1 | 2>(1); // 1 = phone, 2 = OTP
     const intervalRef = useRef<number | null>(null);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    const sdk = useDescope();
 
     // Initialize timer state from localStorage
     useEffect(() => {
@@ -68,6 +70,15 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         return australianMobileRegex.test(cleaned);
     };
 
+    const formatPhoneNumber = (phone: string): string => {
+        // Convert 0412345678 to +61412345678
+        const cleaned = phone.replace(/\s/g, "");
+        if (cleaned.startsWith("0")) {
+            return `+61${cleaned.substring(1)}`;
+        }
+        return `+61${cleaned}`;
+    };
+
     const handleSendOtp = async () => {
         if (!isValidPhoneNumber(phoneNumber)) {
             toast.error("Please enter a valid Australian mobile number");
@@ -77,14 +88,20 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         setIsSendingOtp(true);
 
         try {
-            await authService.sendOTP(phoneNumber);
+            const formattedPhone = formatPhoneNumber(phoneNumber);
+            const resp = await sdk?.otp.signUpOrIn.sms(formattedPhone);
+
+            if (!resp?.ok) {
+                throw new Error(resp?.error?.errorMessage || "Failed to send OTP");
+            }
+
             setTimerState(phoneNumber, 60);
             setRemainingTime(60);
             toast.success("Verification code sent!");
             setStep(2); // Slide to OTP input
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error sending OTP:", error);
-            toast.error("Failed to send verification code. Please try again.");
+            toast.error(error.message || "Failed to send verification code. Please try again.");
         } finally {
             setIsSendingOtp(false);
         }
@@ -95,13 +112,19 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
         setIsSendingOtp(true);
         try {
-            await authService.sendOTP(phoneNumber);
+            const formattedPhone = formatPhoneNumber(phoneNumber);
+            const resp = await sdk?.otp.signUpOrIn.sms(formattedPhone);
+
+            if (!resp?.ok) {
+                throw new Error(resp?.error?.errorMessage || "Failed to resend OTP");
+            }
+
             setTimerState(phoneNumber, 60);
             setRemainingTime(60);
             toast.success("Code resent!");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error resending OTP:", error);
-            toast.error("Failed to resend code. Please try again.");
+            toast.error(error.message || "Failed to resend code. Please try again.");
         } finally {
             setIsSendingOtp(false);
         }
@@ -156,26 +179,27 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         setIsVerifying(true);
 
         try {
-            const result = await authService.verifyOTP(phoneNumber, otpCode);
+            const formattedPhone = formatPhoneNumber(phoneNumber);
+            const resp = await sdk?.otp.verify.sms(formattedPhone, otpCode);
 
-            if (result.success) {
-                toast.success("Phone number verified successfully!");
-                clearTimerState(phoneNumber);
-
-                console.log("OTP verified for:", phoneNumber);
-
-                if (onClose) {
-                    onClose();
-                }
-            } else {
-                toast.error(result.error || "Invalid verification code");
-                // Clear the inputs on error
-                setOtpDigits(["", "", "", "", "", ""]);
-                inputRefs.current[0]?.focus();
+            if (!resp?.ok) {
+                throw new Error(resp?.error?.errorMessage || "Invalid verification code");
             }
-        } catch (error) {
+
+            toast.success("Phone number verified successfully!");
+            clearTimerState(phoneNumber);
+
+            console.log("OTP verified for:", phoneNumber);
+
+            if (onClose) {
+                onClose();
+            }
+        } catch (error: any) {
             console.error("Error verifying OTP:", error);
-            toast.error("Failed to verify code. Please try again.");
+            toast.error(error.message || "Failed to verify code. Please try again.");
+            // Clear the inputs on error
+            setOtpDigits(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
         } finally {
             setIsVerifying(false);
         }

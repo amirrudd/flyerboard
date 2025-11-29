@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { ReportModal } from "../../components/ReportModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
+import { useSession } from "@descope/react-sdk";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -42,7 +43,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const getOrCreateChat = useMutation(api.adDetail.getOrCreateChat);
   const sendMessage = useMutation(api.adDetail.sendMessage);
   const incrementViews = useMutation(api.adDetail.incrementViews);
-  const user = useQuery(api.auth.loggedInUser);
+
+  // Use Descope for authentication state
+  const { isAuthenticated } = useSession();
+  const user = isAuthenticated ? { name: "User", _id: "temp-id" } : null;
 
   useEffect(() => {
     if (existingChat) {

@@ -1,6 +1,5 @@
 "use client";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+import { useDescope, useSession } from "@descope/react-sdk";
 import { LogOut } from "lucide-react";
 
 interface SignOutButtonProps {
@@ -9,15 +8,15 @@ interface SignOutButtonProps {
 }
 
 export function SignOutButton({ onSignOut, iconOnly = false }: SignOutButtonProps) {
-  const { isAuthenticated } = useConvexAuth();
-  const { signOut } = useAuthActions();
+  const { isAuthenticated } = useSession();
+  const sdk = useDescope();
 
   if (!isAuthenticated) {
     return null;
   }
 
   const handleSignOut = async () => {
-    await signOut();
+    await sdk.logout();
     // Call the callback to navigate to home page
     onSignOut?.();
   };

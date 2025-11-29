@@ -4,6 +4,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { Header } from "../features/layout/Header";
 import { Sidebar } from "../features/layout/Sidebar";
 import { AdsGrid } from "../features/ads/AdsGrid";
+import { useSession } from "@descope/react-sdk";
 // AuthModal removed, using global one from Layout
 
 import { useState, useEffect, useCallback } from "react";
@@ -37,7 +38,11 @@ export function HomePage() {
     status,
   } = useMarketplace();
 
-  const user = useQuery(api.auth.loggedInUser);
+  // Use Descope session for authentication state
+  const { isAuthenticated } = useSession();
+  // For now, just use a simple user object when authenticated
+  // TODO: Fetch actual user data from Convex once Descope integration is complete
+  const user = isAuthenticated ? { name: "User" } : null;
 
   // Handle location change and save to cookies
 

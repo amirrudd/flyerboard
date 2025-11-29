@@ -4,6 +4,12 @@ import { UserDashboard } from './UserDashboard';
 import { useQuery } from 'convex/react';
 import { BrowserRouter } from 'react-router-dom';
 
+// Mock Descope SDK
+const mockUseSession = vi.fn();
+vi.mock('@descope/react-sdk', () => ({
+    useSession: () => mockUseSession(),
+}));
+
 // Mock convex hooks
 vi.mock('convex/react', () => ({
     useQuery: vi.fn(),
@@ -40,10 +46,12 @@ describe('UserDashboard', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        // Default to authenticated for most tests
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
     });
 
     it('should show sign in message when user is not logged in', () => {
-        vi.mocked(useQuery).mockReturnValue(null); // No user
+        mockUseSession.mockReturnValue({ isAuthenticated: false });
 
         renderDashboard();
 
@@ -51,8 +59,9 @@ describe('UserDashboard', () => {
     });
 
     it('should render dashboard tabs when user is logged in', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
+
         vi.mocked(useQuery)
-            .mockReturnValueOnce({ name: 'Test User', email: 'test@example.com' }) // loggedInUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats
@@ -69,8 +78,9 @@ describe('UserDashboard', () => {
     });
 
     it('should show "No ads yet" when user has no ads', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
+
         vi.mocked(useQuery)
-            .mockReturnValueOnce({ name: 'Test User' }) // loggedInUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats
@@ -85,8 +95,9 @@ describe('UserDashboard', () => {
     });
 
     it('should call onPostAd when button is clicked', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
+
         vi.mocked(useQuery)
-            .mockReturnValueOnce({ name: 'Test User' }) // loggedInUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats

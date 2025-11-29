@@ -1,13 +1,22 @@
 import { createRoot } from "react-dom/client";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { AuthProvider } from "@descope/react-sdk";
+import { ConvexProviderWithAuth } from "convex/react";
 import { ConvexReactClient } from "convex/react";
+import { useDescopeAuth } from "./lib/useDescopeAuth";
 import "./index.css";
 import App from "./App";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
-  <ConvexAuthProvider client={convex}>
-    <App />
-  </ConvexAuthProvider>,
+  <AuthProvider
+    projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID || "placeholder"}
+    persistTokens={true}
+    autoRefresh={true}
+    sessionTokenViaCookie={false}
+  >
+    <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
+      <App />
+    </ConvexProviderWithAuth>
+  </AuthProvider>,
 );

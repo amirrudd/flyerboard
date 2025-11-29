@@ -432,7 +432,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       {displayAd.seller.name}
                       {displayAd.seller.isVerified && (
                         <div title="Verified User" className="relative">
-                          <img src="/verified-badge.svg" alt="Verified Seller" className="w-12 h-12" />
+                          <img src="/verified-badge.svg" alt="Verified Seller" className="w-10 h-10" />
                         </div>
                       )}
                     </p>

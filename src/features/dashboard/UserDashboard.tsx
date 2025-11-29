@@ -374,7 +374,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
                     {user.isVerified && (
                       <div title="Verified User" className="relative">
-                        <img src="/verified-badge.svg" alt="Verified User" className="w-15 h-15" />
+                        <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
                       </div>
                     )}
                     <button
@@ -806,7 +806,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         Status: {user.isVerified ? (
                           <span className="text-primary-600 flex items-center gap-1">
                             Verified
-                            <img src="/verified-badge.svg" alt="Verified" className="w-15 h-15" />
+                            <img src="/verified-badge.svg" alt="Verified" className="w-16 h-16" />
                           </span>
                         ) : (
                           <span className="text-gray-500">Unverified</span>

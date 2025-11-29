@@ -110,6 +110,20 @@ export const deleteAccount = mutation({
   },
 });
 
+export const verifyIdentity = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Must be logged in to verify identity");
+    }
+
+    await ctx.db.patch(userId, { isVerified: true });
+
+    return { success: true };
+  },
+});
+
 export const getUserStats = query({
   args: {},
   handler: async (ctx) => {

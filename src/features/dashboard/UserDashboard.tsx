@@ -87,6 +87,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
+  const verifyIdentity = useMutation(api.users.verifyIdentity);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -136,6 +137,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       onBack();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete account");
+    }
+  };
+
+  const handleVerifyIdentity = async () => {
+    try {
+      await verifyIdentity();
+      toast.success("Identity verified successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to verify identity");
     }
   };
 
@@ -362,6 +372,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
+                    {user.isVerified && (
+                      <div title="Verified User" className="relative">
+                        <img src="/verified-badge.svg" alt="Verified User" className="w-15 h-15" />
+                      </div>
+                    )}
                     <button
                       onClick={() => {
                         setActiveTab("profile");
@@ -782,6 +797,37 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     Update Profile
                   </button>
                 </form>
+
+                <div className="border-t border-gray-200 pt-6 mb-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Verification</h3>
+                  <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                        Status: {user.isVerified ? (
+                          <span className="text-primary-600 flex items-center gap-1">
+                            Verified
+                            <img src="/verified-badge.svg" alt="Verified" className="w-15 h-15" />
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Unverified</span>
+                        )}
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {user.isVerified
+                          ? "Your identity has been verified. A badge is displayed on your profile and listings."
+                          : "Verify your identity to build trust with other users and get a verified badge."}
+                      </p>
+                    </div>
+                    {!user.isVerified && (
+                      <button
+                        onClick={handleVerifyIdentity}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        Verify Identity
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>

@@ -428,7 +428,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 )}
                 <div className="flex-1">
                   {displayAd.seller ? (
-                    <p className="font-medium text-neutral-800">{displayAd.seller.name}</p>
+                    <p className="font-medium text-neutral-800 flex items-center gap-1">
+                      {displayAd.seller.name}
+                      {displayAd.seller.isVerified && (
+                        <div title="Verified User" className="relative">
+                          <img src="/verified-badge.svg" alt="Verified Seller" className="w-12 h-12" />
+                        </div>
+                      )}
+                    </p>
                   ) : (
                     <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
                   )}

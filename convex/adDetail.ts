@@ -23,6 +23,7 @@ export const getAdById = query({
         averageRating: seller.averageRating || 0,
         ratingCount: seller.ratingCount || 0,
         image: seller.image,
+        isVerified: seller.isVerified,
       } : null,
     };
   },

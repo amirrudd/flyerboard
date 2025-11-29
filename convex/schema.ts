@@ -106,5 +106,6 @@ export default defineSchema({
     totalRating: v.optional(v.number()),      // Sum of all ratings received
     ratingCount: v.optional(v.number()),      // Number of ratings received
     averageRating: v.optional(v.number()),    // Average rating (totalRating / ratingCount)
+    isVerified: v.optional(v.boolean()),      // Identity verification status
   }).index("email", ["email"]),
 });

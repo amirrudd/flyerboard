@@ -14,3 +14,5 @@ For every task the follwoing should be alway respected:
 • Never pause to ask for confirmation unless something is genuinely impossible or the task is ambiguous beyond reasonable interpretation.
 • If something needs clarification, make a single assumption that’s safest and easiest to revise later, and continue.
 • Output only the changed/new code unless full context is needed to understand the solution.
+• Add test for new functionality and edit test if a functionality is updated. Run tests to make sure there is no regression.
+• After each task, if neccessary, update the relevant documents in .agent\rules (except .agent\rules\preventing-unwanted-changes.md) to make sure the context of project is alway up to date for the next new task. These file only store nessearry context for AI agent to have a good context of the codebase.

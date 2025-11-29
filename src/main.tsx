@@ -9,7 +9,12 @@ import App from "./App";
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
-  <AuthProvider projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID || "placeholder"}>
+  <AuthProvider
+    projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID || "placeholder"}
+    persistTokens={true}
+    autoRefresh={true}
+    sessionTokenViaCookie={false}
+  >
     <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
       <App />
     </ConvexProviderWithAuth>

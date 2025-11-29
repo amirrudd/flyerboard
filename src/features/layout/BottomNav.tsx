@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Plus, User, MessageSquare, Heart, LayoutDashboard } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useSession } from "@descope/react-sdk";
 
 interface BottomNavProps {
     setShowAuthModal: (show: boolean) => void;
@@ -10,7 +9,8 @@ interface BottomNavProps {
 export function BottomNav({ setShowAuthModal }: BottomNavProps) {
     const location = useLocation();
     const navigate = useNavigate();
-    const user = useQuery(api.auth.loggedInUser);
+    const { isAuthenticated } = useSession();
+    const user = isAuthenticated ? { name: "User" } : null;
 
     const isActive = (path: string) => location.pathname === path;
 

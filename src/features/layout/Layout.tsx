@@ -2,11 +2,11 @@ import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
 import { useState, useEffect } from "react";
-import { useConvexAuth } from "convex/react";
+import { useSession } from "@descope/react-sdk";
 import { Header } from "./Header";
 
 export function Layout() {
-    const { isAuthenticated } = useConvexAuth();
+    const { isAuthenticated } = useSession();
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     // Close modal when user logs in

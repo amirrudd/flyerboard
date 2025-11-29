@@ -181,20 +181,37 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
         try {
             const formattedPhone = formatPhoneNumber(phoneNumber);
+            console.log("Verifying OTP for:", formattedPhone);
+
             const resp = await sdk?.otp.verify.sms(formattedPhone, otpCode);
+
+            console.log("=== DESCOPE VERIFY RESPONSE ===");
+            console.log("Full response:", resp);
+            console.log("Response ok:", resp?.ok);
+            console.log("Response data:", resp?.data);
+            console.log("Response error:", resp?.error);
+            console.log("===============================");
 
             if (!resp?.ok) {
                 throw new Error(resp?.error?.errorMessage || "Invalid verification code");
             }
 
+            console.log("OTP verified successfully!");
+            console.log("Session data returned:", resp?.data);
+
             toast.success("Phone number verified successfully!");
             clearTimerState(phoneNumber);
 
-            console.log("OTP verified for:", phoneNumber);
-
+            // Close the modal first
             if (onClose) {
                 onClose();
             }
+
+            // Force a page reload to establish the session
+            // This is a workaround - the Descope SDK should handle this automatically,
+            // but manual SDK methods may not trigger automatic session management
+            console.log("Reloading page to establish session...");
+            window.location.reload();
         } catch (error: any) {
             console.error("Error verifying OTP:", error);
             toast.error(error.message || "Failed to verify code. Please try again.");

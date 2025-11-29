@@ -10,6 +10,7 @@ import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { useSearchParams } from "react-router-dom";
+import { useSession } from "@descope/react-sdk";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -55,7 +56,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
 
-  const user = useQuery(api.auth.loggedInUser);
+  // Use Descope for authentication state
+  const { isAuthenticated } = useSession();
+  // Create a mock user object for now - TODO: sync with Convex user data
+  const user = isAuthenticated ? { name: "User", email: "user@example.com", _id: "temp-id", image: undefined } : null;
   const userAds = useQuery(api.posts.getUserAds);
   const userStats = useQuery(api.users.getUserStats);
   const sellerChats = useQuery(api.posts.getSellerChats);

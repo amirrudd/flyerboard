@@ -1,16 +1,33 @@
 import { useDescope, useSession } from "@descope/react-sdk";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 export function useDescopeAuth() {
     const { isAuthenticated, isSessionLoading, sessionToken } = useSession();
-    const { } = useDescope(); // We might need useDescope for other things later, but not for auth state directly
+    const { } = useDescope();
+
+    // Debug logging
+    useEffect(() => {
+        console.log("Descope Auth State:", {
+            isAuthenticated,
+            isSessionLoading,
+            hasToken: !!sessionToken,
+            tokenPreview: sessionToken ? sessionToken.substring(0, 20) + "..." : null
+        });
+    }, [isAuthenticated, isSessionLoading, sessionToken]);
 
     const fetchAccessToken = useCallback(async ({ forceRefreshToken }: { forceRefreshToken?: boolean } = {}) => {
-        // Descope SDK handles refreshing automatically, but we can return the current token.
-        // If forceRefreshToken is true, we might need to trigger a refresh explicitly,
-        // but usually returning the token is enough as the SDK keeps it fresh.
+        console.log("Convex requesting access token, authenticated:", isAuthenticated);
+
+        // Return null if not authenticated
+        if (!isAuthenticated || !sessionToken) {
+            console.log("No token available, returning null");
+            return null;
+        }
+
+        console.log("Returning session token to Convex");
+        // Return the session token for Convex to verify
         return sessionToken;
-    }, [sessionToken]);
+    }, [isAuthenticated, sessionToken]);
 
     return {
         isLoading: isSessionLoading,

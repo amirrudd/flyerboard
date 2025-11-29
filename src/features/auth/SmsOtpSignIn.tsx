@@ -71,7 +71,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
     };
 
     const formatPhoneNumber = (phone: string): string => {
-        // Convert 0412345678 to +61412345678
+        // Convert local format (0466666666) to international format (+61466666666) for Descope API
         const cleaned = phone.replace(/\s/g, "");
         if (cleaned.startsWith("0")) {
             return `+61${cleaned.substring(1)}`;
@@ -88,6 +88,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         setIsSendingOtp(true);
 
         try {
+            // Convert to international format for Descope API
             const formattedPhone = formatPhoneNumber(phoneNumber);
             const resp = await sdk?.otp.signUpOrIn.sms(formattedPhone);
 
@@ -324,11 +325,6 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                                             : "Resend Code"}
                                 </button>
                             </div>
-
-                            {/* Helper text for testing */}
-                            <p className="text-xs text-neutral-500 text-center">
-                                For testing, use code: <span className="font-mono font-semibold">123456</span>
-                            </p>
                         </div>
                     </div>
                 </div>

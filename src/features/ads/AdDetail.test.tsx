@@ -4,6 +4,12 @@ import { AdDetail } from './AdDetail';
 import { BrowserRouter } from 'react-router-dom';
 import { toast } from 'sonner';
 
+// Mock Descope SDK
+const mockUseSession = vi.fn();
+vi.mock('@descope/react-sdk', () => ({
+    useSession: () => mockUseSession(),
+}));
+
 // Mock dependencies
 vi.mock('convex/react', () => ({
     useQuery: vi.fn(),
@@ -68,6 +74,9 @@ describe('AdDetail - Share Functionality', () => {
         // Reset all mocks
         vi.clearAllMocks();
 
+        // Default to authenticated
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
+
         // Store original navigator
         originalNavigator = global.navigator;
 
@@ -81,13 +90,13 @@ describe('AdDetail - Share Functionality', () => {
 
         // Setup mock implementations with sequential returns
         // AdDetail makes these useQuery calls in order:
-        // 1. getAdById, 2. isAdSaved, 3. getChatForAd, 4. getChatMessages (skip), 5. loggedInUser
+        // 1. getAdById, 2. isAdSaved, 3. getChatForAd, 4. getChatMessages (skip)
+        // Note: loggedInUser query was removed from AdDetail
         (useQuery as any)
             .mockReturnValueOnce(mockAd)        // getAdById
             .mockReturnValueOnce(false)         // isAdSaved
             .mockReturnValueOnce(null)          // getChatForAd
-            .mockReturnValueOnce(undefined)     // getChatMessages (skip)
-            .mockReturnValueOnce(null);         // loggedInUser
+            .mockReturnValueOnce(undefined);    // getChatMessages (skip)
 
         // useMutation returns a function that returns a promise
         (useMutation as any).mockReturnValue(vi.fn().mockResolvedValue(undefined));

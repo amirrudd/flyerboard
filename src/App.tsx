@@ -7,6 +7,7 @@ import { PostAdPage } from "./pages/PostAdPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { TermsPage } from "./pages/TermsPage";
 import { CommunityGuidelinesPage } from "./pages/CommunityGuidelinesPage";
+import { SupportPage } from "./pages/SupportPage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
 
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
+            <Route path="/support" element={<SupportPage />} />
             {/* Add other routes as needed */}
           </Route>
         </Routes>

@@ -98,11 +98,11 @@ export const Sidebar = memo(function Sidebar({
       <div className="flex flex-wrap gap-x-4 gap-y-2 px-2">
         {[
           { label: "About Us", href: "#" },
-          { label: "Support", href: "#" },
+          { label: "Support", href: "/support" },
           { label: "Terms & Conditions", href: "/terms" },
           { label: "Privacy Policy", href: "/terms#privacy" },
           { label: "Community Guidelines", href: "/community-guidelines" },
-          { label: "Contact", href: "#" },
+          { label: "Contact", href: "/support" },
         ].map((link) => (
           link.href.startsWith("#") ? (
             <a

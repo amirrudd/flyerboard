@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from "react";
-import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
+import { useUploadFile } from "@convex-dev/r2/react";
+import { toR2Reference } from "@/lib/r2";
 
 interface ImageUploadProps {
   images: string[];
@@ -15,7 +16,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
   const [uploading, setUploading] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -68,24 +69,8 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
           throw new Error(`${file.name} is too large. Maximum size is 5MB.`);
         }
 
-        // Generate upload URL
-        const uploadUrl = await generateUploadUrl();
-
-        // Upload file
-        const result = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-
-        if (!result.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
-        }
-
-        const { storageId } = await result.json();
-
-        // Return the storage ID directly - we'll handle URL generation in the backend
-        return storageId;
+        const key = await uploadFile(file);
+        return toR2Reference(key);
       } catch (error: any) {
         toast.error(error.message || `Failed to upload ${file.name}`);
         return null;

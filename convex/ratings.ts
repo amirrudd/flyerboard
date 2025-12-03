@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 
 /**
  * Submit or update a rating for another user
@@ -14,7 +14,7 @@ export const submitRating = mutation({
         comment: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
+        const userId = await getDescopeUserId(ctx);
         if (!userId) {
             throw new Error("Must be logged in to submit ratings");
         }
@@ -115,7 +115,7 @@ export const getUserRating = query({
 export const getMyRatingFor = query({
     args: { userId: v.id("users") },
     handler: async (ctx, args) => {
-        const currentUserId = await getAuthUserId(ctx);
+        const currentUserId = await getDescopeUserId(ctx);
         if (!currentUserId) {
             return null;
         }

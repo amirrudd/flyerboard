@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 // Support profile image updates
 
 
@@ -11,7 +11,7 @@ export const updateProfile = mutation({
     image: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to update profile");
     }
@@ -30,7 +30,7 @@ export const updateProfile = mutation({
 export const deleteAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to delete account");
     }
@@ -113,7 +113,7 @@ export const deleteAccount = mutation({
 export const verifyIdentity = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to verify identity");
     }
@@ -127,7 +127,7 @@ export const verifyIdentity = mutation({
 export const getUserStats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return null;
     }

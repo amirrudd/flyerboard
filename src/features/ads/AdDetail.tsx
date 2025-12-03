@@ -13,6 +13,8 @@ import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
 import { useSession } from "@descope/react-sdk";
 
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
+
 interface AdDetailProps {
   adId: Id<"ads">;
   initialAd?: any; // Using any to avoid strict type matching issues with partial data
@@ -294,7 +296,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
-                <img
+                <ImageDisplay
                   src={images[currentImageIndex]}
                   alt={`${displayAd.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-contain"
@@ -343,7 +345,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           : 'border-neutral-200 hover:border-neutral-300'
                           }`}
                       >
-                        <img
+                        <ImageDisplay
                           src={image}
                           alt={`Thumbnail ${index + 1} `}
                           className="w-full h-full object-cover"
@@ -417,11 +419,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
               <div className="flex items-center gap-3 mb-4">
                 {displayAd.seller?.image && !avatarImageError ? (
-                  <img
+                  <ImageDisplay
                     src={displayAd.seller.image}
                     alt={displayAd.seller.name}
                     className="w-12 h-12 rounded-full object-cover"
-                    onError={() => setAvatarImageError(true)}
+                    fallback="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"
                   />
                 ) : (
                   <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">

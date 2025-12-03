@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 
 /**
  * Submit a report for an ad, profile, or chat
@@ -13,7 +13,7 @@ export const submitReport = mutation({
         description: v.optional(v.string()), // Optional detailed description
     },
     handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
+        const userId = await getDescopeUserId(ctx);
         if (!userId) {
             throw new Error("Must be logged in to submit a report");
         }
@@ -62,7 +62,7 @@ export const submitReport = mutation({
 export const getUserReports = query({
     args: {},
     handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
+        const userId = await getDescopeUserId(ctx);
         if (!userId) {
             return [];
         }
@@ -84,7 +84,7 @@ export const getAllReports = query({
         status: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
+        const userId = await getDescopeUserId(ctx);
         if (!userId) {
             return [];
         }

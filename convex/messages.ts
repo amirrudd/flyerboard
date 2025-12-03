@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 
 export const getAdChats = query({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -34,7 +34,7 @@ export const getAdChats = query({
         const unreadCount = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) => 
+          .filter((q) =>
             q.and(
               q.neq(q.field("senderId"), userId),
               q.gt(q.field("timestamp"), chat.lastReadBySeller ?? 0)
@@ -59,7 +59,7 @@ export const getAdChats = query({
 export const getChatMessages = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -100,7 +100,7 @@ export const sendMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -137,7 +137,7 @@ export const sendMessage = mutation({
 export const markChatAsRead = mutation({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -167,7 +167,7 @@ export const markChatAsRead = mutation({
 export const getUnreadCounts = query({
   args: { adIds: v.array(v.id("ads")) },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return {};
     }
@@ -190,14 +190,14 @@ export const getUnreadCounts = query({
         const unreadMessages = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) => 
+          .filter((q) =>
             q.and(
               q.neq(q.field("senderId"), userId),
               q.gt(q.field("timestamp"), chat.lastReadBySeller ?? 0)
             )
           )
           .collect();
-        
+
         totalUnread += unreadMessages.length;
       }
 
@@ -211,7 +211,7 @@ export const getUnreadCounts = query({
 export const archiveChat = mutation({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -244,7 +244,7 @@ export const archiveChat = mutation({
 export const unarchiveChat = mutation({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -277,14 +277,14 @@ export const unarchiveChat = mutation({
 export const getArchivedChats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
     const archivedChats = await ctx.db
       .query("chats")
-      .withIndex("by_buyer_archived", (q) => 
+      .withIndex("by_buyer_archived", (q) =>
         q.eq("buyerId", userId).eq("archivedByBuyer", true)
       )
       .collect();
@@ -310,7 +310,7 @@ export const getArchivedChats = query({
 export const deleteArchivedChats = mutation({
   args: { chatIds: v.array(v.id("chats")) },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
@@ -324,7 +324,7 @@ export const deleteArchivedChats = mutation({
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chatId))
           .collect();
-        
+
         for (const message of messages) {
           await ctx.db.delete(message._id);
         }

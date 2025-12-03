@@ -17,16 +17,18 @@ export function Layout() {
     }, [isAuthenticated]);
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <main className="flex-1">
+        <div className="flex flex-col h-screen overflow-hidden">
+            <main className="flex-1 overflow-y-auto mobile-scroll-container">
                 <Outlet context={{ setShowAuthModal }} />
             </main>
+
+            {/* Bottom Nav - positioned outside flex flow for proper fixed positioning */}
             <BottomNav setShowAuthModal={setShowAuthModal} />
 
             {/* OTP Sign-In Modal */}
             {showAuthModal && (
                 <div
-                    className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto"
+                    className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto modal-scroll-lock"
                     onClick={() => setShowAuthModal(false)}
                 >
                     <div

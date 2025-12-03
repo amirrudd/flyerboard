@@ -138,7 +138,7 @@ export function HomePage() {
           )}
 
           {/* Main Content - Feed */}
-          <div className="flex-1 min-w-0 pb-20 md:pb-0">
+          <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0">
             <AdsGrid
               ads={ads}
               categories={categories || []}

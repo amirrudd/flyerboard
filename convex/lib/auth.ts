@@ -22,18 +22,20 @@ export async function getDescopeUserId(
         return user?._id || null;
     }
 
-    // FALLBACK for local development if OIDC fails
-    // This allows you to test features even if auth isn't perfectly configured locally
-    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false; // Rough check for local/dev
+    // FALLBACK for local development when OIDC verification fails
+    // In production (Convex Cloud), OIDC works properly and this won't activate
+    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
 
-    if (!identity && isDev) { // Only apply fallback if no identity AND in development
-        console.warn("getDescopeUserId: No identity found. Using fallback user for development.");
-        const firstUser = await ctx.db.query("users").first();
-        if (firstUser) {
-            console.log(`Using fallback user: ${firstUser.email} (${firstUser._id})`);
-            return firstUser._id;
+    if (!identity && isDev) {
+        // Use the most recently created user (likely the one who just logged in)
+        const recentUser = await ctx.db
+            .query("users")
+            .order("desc")
+            .first();
+
+        if (recentUser) {
+            return recentUser._id;
         }
-        return null;
     }
 
     return null;

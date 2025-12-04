@@ -486,7 +486,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                 <div className="space-y-4">
                   {(userAds || []).map((ad) => (
-                    <div key={ad._id} className="border border-gray-200 rounded-lg p-4">
+                    <div
+                      key={ad._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
+                      onClick={() => onEditAd(ad)}
+                    >
                       <div className="flex items-start gap-4">
                         <ImageDisplay
                           src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
@@ -512,7 +516,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             </div>
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={() => setShowMessagesForAd(ad._id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowMessagesForAd(ad._id);
+                                }}
                                 className="relative px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors flex items-center gap-1"
                               >
                                 <MessageSquare className="w-4 h-4" /> Messages
@@ -523,7 +530,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 )}
                               </button>
                               <button
-                                onClick={() => handleToggleStatus(ad._id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleStatus(ad._id);
+                                }}
                                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ad.isActive
                                   ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                   : 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -532,13 +542,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 {ad.isActive ? 'Deactivate' : 'Activate'}
                               </button>
                               <button
-                                onClick={() => onEditAd(ad)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditAd(ad);
+                                }}
                                 className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                               >
                                 Edit
                               </button>
                               <button
-                                onClick={() => setShowDeleteConfirm(ad._id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDeleteConfirm(ad._id);
+                                }}
                                 className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
                               >
                                 Delete
@@ -902,8 +918,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
       {/* Delete Ad Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md my-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Delete Ad</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this ad? This action cannot be undone.
@@ -928,8 +944,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
       {/* Delete Account Confirmation Modal */}
       {showAccountDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md my-8">
             <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
             <p className="text-gray-600 mb-6">
               Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.

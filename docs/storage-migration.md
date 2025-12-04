@@ -7,7 +7,13 @@
 FlyerBoard stores all uploaded images in **Cloudflare R2** instead of the
 Convex storage primitive. New uploads go directly to R2 via the
 `@convex-dev/r2` component and are referenced across the app using the
-`r2:<key>` marker. Existing `_storage` documents remain readable (the backend
+`r2:<key>` marker.
+
+Files are organized in the following folder structure:
+- Profile pictures: `profiles/{userId}/{uuid}`
+- Listing images: `flyers/{postId}/{uuid}`
+
+Existing `_storage` documents remain readable (the backend
 still resolves them), but you can migrate everything to R2 with the provided
 internal action.
 
@@ -15,12 +21,11 @@ internal action.
 
 The upload flow uses **signed URLs** for security:
 
-1. Frontend calls `uploadFile(file)` using the `@convex-dev/r2/react` hook
-2. Hook requests a signed URL from Convex backend via `generateUploadUrl`
-3. Convex backend (using R2 credentials) generates a temporary signed URL
-4. Frontend uploads file directly to R2 using the signed URL
-5. Frontend calls `syncMetadata` to record the upload in Convex
-6. Convex `onUpload` callback tracks the upload in the database
+1. Frontend converts file to base64
+2. Frontend calls custom upload action (`uploadProfileImage` or `uploadListingImage`)
+3. Backend authenticates user and generates proper key with folder prefix
+4. Backend stores file in R2 using `@convex-dev/r2`
+5. Backend returns the R2 reference key (`r2:profiles/...` or `r2:flyers/...`)
 
 **Important**: The frontend never has direct access to R2 credentials. All R2
 operations are authenticated through Convex.

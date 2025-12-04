@@ -1,6 +1,16 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+
+export const getUserByToken = internalQuery({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("tokenIdentifier", (q) => q.eq("tokenIdentifier", args.token))
+      .first();
+  },
+});
 // Support profile image updates
 
 

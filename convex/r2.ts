@@ -1,6 +1,8 @@
 import { R2 } from "@convex-dev/r2";
 import { components } from "./_generated/api";
 import { getDescopeUserId } from "./lib/auth";
+import { action } from "./_generated/server";
+import { v } from "convex/values";
 
 export const R2_REFERENCE_PREFIX = "r2:";
 
@@ -9,6 +11,20 @@ export const fromR2Reference = (reference: string) =>
   reference.slice(R2_REFERENCE_PREFIX.length);
 export const isR2Reference = (value: string | null | undefined) =>
   typeof value === "string" && value.startsWith(R2_REFERENCE_PREFIX);
+
+/**
+ * Generate a unique key for a profile image
+ * Format: profiles/{userId}/{randomUUID}
+ */
+export const makeProfileImageKey = (userId: string) =>
+  `profiles/${userId}/${crypto.randomUUID()}`;
+
+/**
+ * Generate a unique key for a listing image
+ * Format: flyers/{postId}/{randomUUID}
+ */
+export const makeListingImageKey = (postId: string) =>
+  `flyers/${postId}/${crypto.randomUUID()}`;
 
 const r2 = new R2(components.r2);
 
@@ -53,3 +69,66 @@ export const {
 });
 
 export { r2 };
+
+/**
+ * Upload a profile image with proper folder structure
+ * Generates key: profiles/{userId}/{randomUUID}
+ */
+export const uploadProfileImage = action({
+  args: {
+    base64Data: v.string(),
+    contentType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx as any);
+    if (!userId) {
+      throw new Error("Authentication required to upload profile image");
+    }
+
+    // Convert base64 to Uint8Array
+    const base64WithoutPrefix = args.base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const binaryString = atob(base64WithoutPrefix);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Store with custom key
+    const key = makeProfileImageKey(userId);
+    await r2.store(ctx, bytes, { key });
+
+    return toR2Reference(key);
+  },
+});
+
+/**
+ * Upload a listing image with proper folder structure
+ * Generates key: flyers/{postId}/{randomUUID}
+ */
+export const uploadListingImage = action({
+  args: {
+    postId: v.string(),
+    base64Data: v.string(),
+    contentType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx as any);
+    if (!userId) {
+      throw new Error("Authentication required to upload listing image");
+    }
+
+    // Convert base64 to Uint8Array
+    const base64WithoutPrefix = args.base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const binaryString = atob(base64WithoutPrefix);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Store with custom key
+    const key = makeListingImageKey(args.postId);
+    await r2.store(ctx, bytes, { key });
+
+    return toR2Reference(key);
+  },
+});

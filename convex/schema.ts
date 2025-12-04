@@ -94,6 +94,19 @@ const applicationTables = {
     .index("by_rated_user", ["ratedUserId"])
     .index("by_rater_and_rated", ["raterId", "ratedUserId"])
     .index("by_chat", ["chatId"]),
+
+  uploads: defineTable({
+    key: v.string(),                     // R2 object key
+    userId: v.id("users"),               // User who uploaded
+    bucket: v.string(),                  // R2 bucket name
+    contentType: v.optional(v.string()), // MIME type
+    size: v.optional(v.number()),        // File size in bytes
+    uploadedAt: v.number(),              // Timestamp
+    associatedWith: v.optional(v.string()), // "ad:id" or "profile:id" for tracking
+  })
+    .index("by_user", ["userId"])
+    .index("by_key", ["key"])
+    .index("by_uploaded_at", ["uploadedAt"]),
 };
 
 // Extend the auth tables to add custom fields
@@ -102,10 +115,14 @@ export default defineSchema({
   ...applicationTables,
   users: defineTable({
     ...authTables.users.validator.fields,
+    tokenIdentifier: v.optional(v.string()), // Descope subject ID
+    phone: v.optional(v.string()),           // Phone number for OTP users
     image: v.optional(v.string()),
     totalRating: v.optional(v.number()),      // Sum of all ratings received
     ratingCount: v.optional(v.number()),      // Number of ratings received
     averageRating: v.optional(v.number()),    // Average rating (totalRating / ratingCount)
     isVerified: v.optional(v.boolean()),      // Identity verification status
-  }).index("email", ["email"]),
+  })
+    .index("email", ["email"])
+    .index("tokenIdentifier", ["tokenIdentifier"]),
 });

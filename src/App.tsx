@@ -9,10 +9,14 @@ import { TermsPage } from "./pages/TermsPage";
 import { CommunityGuidelinesPage } from "./pages/CommunityGuidelinesPage";
 import { SupportPage } from "./pages/SupportPage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
+import { useDescopeUserSync } from "./lib/useDescopeUserSync";
 
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 export default function App() {
+  // Sync Descope user to Convex on authentication
+  useDescopeUserSync();
+
   return (
     <MarketplaceProvider>
       <BrowserRouter>

@@ -3,14 +3,17 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { Id } from "../../../convex/_generated/dataModel";
 import { AdDetail } from "../ads/AdDetail";
 import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
-import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
+import { useUploadFile } from "@convex-dev/r2/react";
+import { toR2Reference } from "@/lib/r2";
+import { getDisplayName, getInitials } from "../../lib/displayName";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -58,8 +61,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
-  // Create a mock user object for now - TODO: sync with Convex user data
-  const user = isAuthenticated ? { name: "User", email: "user@example.com", _id: "temp-id", image: undefined } : null;
+
+  // Fetch real user data from Convex
+  const convexUser = useQuery(api.descopeAuth.getCurrentUser);
+
+  // Use Convex user data if available, otherwise fall back to Descope session info or null
+  const user = isAuthenticated ? (convexUser || {
+    name: "Loading...",
+    email: "",
+    _id: "temp-id" as Id<"users">,
+    image: undefined,
+    isVerified: false
+  }) : null;
   const userAds = useQuery(api.posts.getUserAds);
   const userStats = useQuery(api.users.getUserStats);
   const sellerChats = useQuery(api.posts.getSellerChats);
@@ -90,8 +103,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const markAsRead = useMutation(api.messages.markChatAsRead);
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
-  const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
+  const uploadFile = useUploadFile(api.r2);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -246,24 +259,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     setUploadingImage(true);
 
     try {
-      // Generate upload URL
-      const uploadUrl = await generateUploadUrl();
-
-      // Upload file
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (!result.ok) {
-        throw new Error("Failed to upload image");
-      }
-
-      const { storageId } = await result.json();
-
-      // Update profile with new image
-      await updateProfile({ image: storageId });
+      const key = await uploadFile(file);
+      await updateProfile({ image: toR2Reference(key) });
       toast.success("Profile picture updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to upload profile picture");
@@ -370,12 +367,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    user.name?.charAt(0) || user.email?.charAt(0) || "U"
+                    getInitials(user)
                   )}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
+                    <h3 className="font-semibold text-gray-800">{getDisplayName(user)}</h3>
                     {user.isVerified && (
                       <div title="Verified User" className="relative">
                         <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
@@ -480,7 +477,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   {(userAds || []).map((ad) => (
                     <div key={ad._id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start gap-4">
-                        <img
+                        <ImageDisplay
                           src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                           alt={ad.title}
                           className="w-20 h-20 object-cover rounded-lg"
@@ -573,7 +570,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4 flex-1">
-                            <img
+                            <ImageDisplay
                               src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                               alt={chat.ad?.title || "Ad"}
                               className="w-16 h-16 object-cover rounded-lg"
@@ -590,7 +587,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     </span>
                                   )}
                                   <p className="text-sm text-gray-600 mb-1">
-                                    Seller: {chat.seller?.name || "Unknown User"}
+                                    Seller: {getDisplayName(chat.seller)}
                                   </p>
                                   {chat.seller && (
                                     <StarRating
@@ -732,7 +729,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-primary-600 cursor-pointer group"
                     >
                       <div className="flex items-start gap-4">
-                        <img
+                        <ImageDisplay
                           src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                           alt={savedAd.ad!.title}
                           className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
@@ -779,7 +776,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       value={profileData.name}
                       onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
-                      placeholder={user.name || "Enter your name"}
+                      placeholder={getDisplayName(user)}
                     />
                   </div>
 

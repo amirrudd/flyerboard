@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
+import { fromR2Reference, isR2Reference, r2 } from "./r2";
+import type { Id } from "./_generated/dataModel";
 
 export const createAd = mutation({
   args: {
@@ -13,7 +15,7 @@ export const createAd = mutation({
     images: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to create an ad");
     }
@@ -47,7 +49,7 @@ export const updateAd = mutation({
     images: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to update an ad");
     }
@@ -80,7 +82,7 @@ export const deleteAd = mutation({
     adId: v.id("ads"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to delete an ad");
     }
@@ -109,7 +111,7 @@ export const toggleAdStatus = mutation({
     adId: v.id("ads"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to toggle ad status");
     }
@@ -135,7 +137,7 @@ export const toggleAdStatus = mutation({
 export const getUserAds = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return [];
     }
@@ -153,7 +155,7 @@ export const getUserAds = query({
 export const getSellerChats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return [];
     }
@@ -202,7 +204,7 @@ export const getSellerChats = query({
 export const getBuyerChats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return [];
     }
@@ -248,21 +250,16 @@ export const getBuyerChats = query({
   },
 });
 
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Must be logged in to upload files");
+export const getImageUrl = query({
+  args: { reference: v.string() },
+  handler: async (ctx, args) => {
+    if (isR2Reference(args.reference)) {
+      const key = fromR2Reference(args.reference);
+      return await r2.getUrl(key, {
+        expiresIn: 60 * 60 * 24,
+      });
     }
 
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-
-export const getImageUrl = query({
-  args: { storageId: v.id("_storage") },
-  handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId);
+    return await ctx.storage.getUrl(args.reference as Id<"_storage">);
   },
 });

@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 
 export const getAdById = query({
   args: { adId: v.id("ads") },
@@ -48,7 +48,7 @@ export const incrementViews = mutation({
 export const saveAd = mutation({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to save ads");
     }
@@ -85,7 +85,7 @@ export const saveAd = mutation({
 export const isAdSaved = query({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return false;
     }
@@ -104,7 +104,7 @@ export const isAdSaved = query({
 export const getOrCreateChat = mutation({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to chat");
     }
@@ -148,7 +148,7 @@ export const sendMessage = mutation({
     content: v.string()
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to send messages");
     }
@@ -188,7 +188,7 @@ export const sendMessage = mutation({
 export const getChatMessages = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return [];
     }
@@ -227,7 +227,7 @@ export const getChatMessages = query({
 export const getChatForAd = query({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return null;
     }
@@ -246,7 +246,7 @@ export const getChatForAd = query({
 export const getSavedAds = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       return [];
     }

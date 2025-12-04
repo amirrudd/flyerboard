@@ -12,6 +12,9 @@ import { ReportModal } from "../../components/ReportModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
 import { useSession } from "@descope/react-sdk";
+import { getDisplayName, getInitials } from "../../lib/displayName";
+
+import { ImageDisplay } from "../../components/ui/ImageDisplay";
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -294,7 +297,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
-                <img
+                <ImageDisplay
                   src={images[currentImageIndex]}
                   alt={`${displayAd.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-contain"
@@ -343,7 +346,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           : 'border-neutral-200 hover:border-neutral-300'
                           }`}
                       >
-                        <img
+                        <ImageDisplay
                           src={image}
                           alt={`Thumbnail ${index + 1} `}
                           className="w-full h-full object-cover"
@@ -417,23 +420,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
               <div className="flex items-center gap-3 mb-4">
                 {displayAd.seller?.image && !avatarImageError ? (
-                  <img
+                  <ImageDisplay
                     src={displayAd.seller.image}
                     alt={displayAd.seller.name}
                     className="w-12 h-12 rounded-full object-cover"
-                    onError={() => setAvatarImageError(true)}
+                    fallback="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-lg">
+                    {displayAd.seller ? getInitials(displayAd.seller) : "U"}
                   </div>
                 )}
                 <div className="flex-1">
                   {displayAd.seller ? (
                     <p className="font-medium text-neutral-800 flex items-center gap-1">
-                      {displayAd.seller.name}
+                      {getDisplayName(displayAd.seller)}
                       {displayAd.seller.isVerified && (
                         <div title="Verified User" className="relative">
                           <img src="/verified-badge.svg" alt="Verified Seller" className="w-10 h-10" />
@@ -623,7 +624,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         onClose={() => setShowReportProfileModal(false)}
         reportType="profile"
         reportedEntityId={displayAd.userId}
-        reportedEntityName={displayAd.seller?.name || "User"}
+        reportedEntityName={getDisplayName(displayAd.seller)}
       />
 
       {/* Rating Modal */}
@@ -632,7 +633,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           isOpen={showRatingModal}
           onClose={() => setShowRatingModal(false)}
           userId={displayAd.userId}
-          userName={displayAd.seller.name || "User"}
+          userName={getDisplayName(displayAd.seller)}
           chatId={chatId || undefined}
         />
       )}

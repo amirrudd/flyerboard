@@ -116,6 +116,7 @@ export default defineSchema({
   users: defineTable({
     ...authTables.users.validator.fields,
     tokenIdentifier: v.optional(v.string()), // Descope subject ID
+    phone: v.optional(v.string()),           // Phone number for OTP users
     image: v.optional(v.string()),
     totalRating: v.optional(v.number()),      // Sum of all ratings received
     ratingCount: v.optional(v.number()),      // Number of ratings received

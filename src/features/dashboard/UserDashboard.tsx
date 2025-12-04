@@ -13,6 +13,7 @@ import { useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { useUploadFile } from "@convex-dev/r2/react";
 import { toR2Reference } from "@/lib/r2";
+import { getDisplayName, getInitials } from "../../lib/displayName";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -366,12 +367,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    user.name?.charAt(0) || user.email?.charAt(0) || "U"
+                    getInitials(user)
                   )}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-800">{user.name || "User"}</h3>
+                    <h3 className="font-semibold text-gray-800">{getDisplayName(user)}</h3>
                     {user.isVerified && (
                       <div title="Verified User" className="relative">
                         <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
@@ -586,7 +587,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     </span>
                                   )}
                                   <p className="text-sm text-gray-600 mb-1">
-                                    Seller: {chat.seller?.name || "Unknown User"}
+                                    Seller: {getDisplayName(chat.seller)}
                                   </p>
                                   {chat.seller && (
                                     <StarRating
@@ -775,7 +776,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       value={profileData.name}
                       onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
-                      placeholder={user.name || "Enter your name"}
+                      placeholder={getDisplayName(user)}
                     />
                   </div>
 

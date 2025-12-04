@@ -5,12 +5,12 @@ import { getDescopeUserId } from "./lib/auth";
 /**
  * Syncs a Descope user to the Convex users table.
  * This should be called on the frontend after a successful Descope login.
+ * Note: Phone numbers from OTP signup are NOT stored for privacy protection.
  */
 export const syncDescopeUser = mutation({
     args: {
         email: v.optional(v.string()),
         name: v.optional(v.string()),
-        phone: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -47,11 +47,20 @@ export const syncDescopeUser = mutation({
             return existingUser._id;
         }
 
-        // Create new user
+        // Create new user with smart display name fallback
+        // For OTP users without email/name, use generic "User" display name
+        // Priority: name > email prefix > "User"
+        let displayName = "User";
+        if (args.name) {
+            displayName = args.name;
+        } else if (args.email) {
+            displayName = args.email.split("@")[0];
+        }
+
         const userId = await ctx.db.insert("users", {
             tokenIdentifier: subject,
             email: args.email,
-            name: args.name || args.email?.split("@")[0] || "User",
+            name: displayName,
             // Optional fields from your schema
             image: undefined,
             totalRating: 0,

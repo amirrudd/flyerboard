@@ -8,7 +8,7 @@ description: Technology stack and dependencies
 ## Frontend
 - **React 19** - UI library
 - **TypeScript** - Type safety
-- **Vite** - Build tool & dev server
+- **Vite** - Build tool & dev server (using SWC for fast builds)
 - **React Router v7** - Client-side routing
 - **TailwindCSS** - Utility-first CSS
 

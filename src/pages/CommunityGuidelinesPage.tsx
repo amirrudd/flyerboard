@@ -46,3 +46,5 @@ export function CommunityGuidelinesPage() {
         </>
     );
 }
+
+export default CommunityGuidelinesPage;

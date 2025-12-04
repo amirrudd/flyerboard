@@ -54,3 +54,5 @@ export function AdDetailPage() {
         </>
     );
 }
+
+export default AdDetailPage;

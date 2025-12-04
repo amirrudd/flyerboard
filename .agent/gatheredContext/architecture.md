@@ -32,3 +32,4 @@ convex/               # Backend functions and schema
 - **Convex queries/mutations**: Direct from components via hooks (useQuery, useMutation)
 - **Client-side caching**: Ads cached by filter combination to prevent reloads
 - **Responsive design**: Mobile-first, sidebar collapses on mobile (<768px)
+- **Route-based code splitting**: React.lazy() for all routes except HomePage to reduce initial bundle size

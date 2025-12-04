@@ -4,7 +4,7 @@ import { Mail, MessageSquare, User, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "../features/layout/Header";
 
-export const SupportPage = () => {
+export default function SupportPage() {
     const navigate = useNavigate();
 
     useEffect(() => {

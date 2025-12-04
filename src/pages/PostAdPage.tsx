@@ -13,3 +13,5 @@ export function PostAdPage() {
         />
     );
 }
+
+export default PostAdPage;

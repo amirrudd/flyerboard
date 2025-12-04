@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
@@ -9,14 +10,17 @@ interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
   maxImages?: number;
+  postId?: string;
+  onCreateDraft?: () => Promise<string>;
 }
 
-export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUploadProps) {
+export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, onCreateDraft }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = useUploadFile(api.r2);
+  const uploadListingImage = useAction(api.r2.uploadListingImage);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -59,6 +63,17 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
       toast.warning(`Only uploading first ${remainingSlots} images (${maxImages} max)`);
     }
 
+    // Ensure we have a postId if we're in listing mode
+    let currentPostId = postId;
+    if (!currentPostId && onCreateDraft) {
+      try {
+        currentPostId = await onCreateDraft();
+      } catch (error) {
+        toast.error("Failed to initialize upload");
+        return;
+      }
+    }
+
     const uploadPromises = filesToUpload.map(async (file) => {
       const fileId = Math.random().toString(36).substring(7);
       setUploading(prev => [...prev, fileId]);
@@ -69,8 +84,25 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
           throw new Error(`${file.name} is too large. Maximum size is 5MB.`);
         }
 
-        const key = await uploadFile(file);
-        return toR2Reference(key);
+        if (currentPostId) {
+          // Use custom upload action for listings
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          return await uploadListingImage({
+            postId: currentPostId,
+            base64Data,
+            contentType: file.type
+          });
+        } else {
+          // Fallback to default upload (legacy)
+          const key = await uploadFile(file);
+          return toR2Reference(key);
+        }
       } catch (error: any) {
         toast.error(error.message || `Failed to upload ${file.name}`);
         return null;

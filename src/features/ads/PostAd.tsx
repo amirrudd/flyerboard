@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -37,7 +37,11 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
   const categories = useQuery(api.categories.getCategories);
   const createAd = useMutation(api.posts.createAd);
+  const createDraftAd = useMutation(api.posts.createDraftAd);
+  const deleteDraftAd = useAction(api.posts.deleteDraftAd);
   const updateAd = useMutation(api.posts.updateAd);
+
+  const [draftAdId, setDraftAdId] = useState<string | null>(null);
 
   // Handle location search
   useEffect(() => {
@@ -92,6 +96,32 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleCreateDraft = async () => {
+    if (draftAdId) return draftAdId;
+    if (editingAd) return editingAd._id;
+
+    try {
+      const newAdId = await createDraftAd();
+      setDraftAdId(newAdId);
+      return newAdId;
+    } catch (error) {
+      console.error("Failed to create draft ad", error);
+      throw error;
+    }
+  };
+
+  const handleCancel = async () => {
+    if (draftAdId && !editingAd) {
+      try {
+        await deleteDraftAd({ adId: draftAdId as Id<"ads"> });
+        toast.info("Draft discarded");
+      } catch (error) {
+        console.error("Failed to cleanup draft", error);
+      }
+    }
+    onBack();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,7 +179,10 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         });
         toast.success("Ad updated successfully!");
       } else {
-        await createAd(adData);
+        await createAd({
+          ...adData,
+          draftId: draftAdId ? (draftAdId as Id<"ads">) : undefined,
+        });
         toast.success("Ad posted successfully!");
       }
 
@@ -166,7 +199,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       <Header
         leftNode={
           <button
-            onClick={onBack}
+            onClick={handleCancel}
             className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -368,13 +401,15 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               images={images}
               onImagesChange={setImages}
               maxImages={10}
+              postId={editingAd?._id || draftAdId || undefined}
+              onCreateDraft={handleCreateDraft}
             />
           </div>
 
           <div className="flex gap-4">
             <button
               type="button"
-              onClick={onBack}
+              onClick={handleCancel}
               className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
             >
               Cancel

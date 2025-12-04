@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -11,8 +11,6 @@ import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
 import { useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
-import { useUploadFile } from "@convex-dev/r2/react";
-import { toR2Reference } from "@/lib/r2";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import {
   LayoutDashboard,
@@ -104,7 +102,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
-  const uploadFile = useUploadFile(api.r2);
+  const uploadProfileImage = useAction(api.r2.uploadProfileImage);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -259,8 +257,21 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     setUploadingImage(true);
 
     try {
-      const key = await uploadFile(file);
-      await updateProfile({ image: toR2Reference(key) });
+      // Convert file to base64
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Upload using custom action with folder structure
+      const r2Reference = await uploadProfileImage({
+        base64Data,
+        contentType: file.type
+      });
+
+      await updateProfile({ image: r2Reference });
       toast.success("Profile picture updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to upload profile picture");

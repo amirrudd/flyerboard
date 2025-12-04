@@ -1,8 +1,34 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
+
+export const createDraftAd = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      throw new Error("Must be logged in to create an ad");
+    }
+
+    const adId = await ctx.db.insert("ads", {
+      title: "",
+      description: "",
+      price: 0,
+      location: "",
+      categoryId: "skip" as any, // Temporary placeholder
+      images: [],
+      userId,
+      isActive: false,
+      isDraft: true,
+      views: 0,
+    });
+
+    return adId;
+  },
+});
 
 export const createAd = mutation({
   args: {
@@ -13,6 +39,7 @@ export const createAd = mutation({
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
+    draftId: v.optional(v.id("ads")),
   },
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
@@ -20,6 +47,29 @@ export const createAd = mutation({
       throw new Error("Must be logged in to create an ad");
     }
 
+    if (args.draftId) {
+      // Update existing draft
+      const existingAd = await ctx.db.get(args.draftId);
+      if (!existingAd || existingAd.userId !== userId) {
+        throw new Error("Invalid draft");
+      }
+
+      await ctx.db.patch(args.draftId, {
+        title: args.title,
+        description: args.description,
+        extendedDescription: args.extendedDescription,
+        price: args.price,
+        location: args.location,
+        categoryId: args.categoryId,
+        images: args.images,
+        isActive: true,
+        isDraft: false,
+      });
+
+      return args.draftId;
+    }
+
+    // Create new ad (fallback)
     const adId = await ctx.db.insert("ads", {
       title: args.title,
       description: args.description,
@@ -74,6 +124,64 @@ export const updateAd = mutation({
     });
 
     return args.adId;
+  },
+});
+
+export const getAdInternal = internalQuery({
+  args: { adId: v.id("ads") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.adId);
+  },
+});
+
+export const hardDeleteAd = internalMutation({
+  args: {
+    adId: v.id("ads"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.adId);
+  },
+});
+
+import { api } from "./_generated/api";
+
+export const deleteDraftAd = action({
+  args: {
+    adId: v.id("ads"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Must be logged in to delete draft");
+    }
+
+    const user = await ctx.runQuery(internal.users.getUserByToken, { token: identity.subject });
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const ad = await ctx.runQuery(internal.posts.getAdInternal, { adId: args.adId });
+    if (!ad) return;
+
+    if (ad.userId !== user._id) {
+      throw new Error("You can only delete your own drafts");
+    }
+
+    // Delete images from R2
+    for (const imageRef of ad.images || []) {
+      if (isR2Reference(imageRef)) {
+        const key = fromR2Reference(imageRef);
+        try {
+          // Use the exported deleteObject mutation from r2.ts
+          await ctx.runMutation(api.r2.deleteObject, { key });
+        } catch (error) {
+          console.error(`Failed to delete R2 file ${key}:`, error);
+        }
+      }
+    }
+
+    // Hard delete the ad record
+    await ctx.runMutation(internal.posts.hardDeleteAd, { adId: args.adId });
   },
 });
 

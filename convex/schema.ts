@@ -19,6 +19,7 @@ const applicationTables = {
     images: v.array(v.string()),
     userId: v.id("users"),
     isActive: v.boolean(),
+    isDraft: v.optional(v.boolean()),
     isDeleted: v.optional(v.boolean()), // Logical delete flag
     views: v.number(),
     extendedDescription: v.optional(v.string()),
@@ -28,6 +29,7 @@ const applicationTables = {
     .index("by_category", ["categoryId"])
     .index("by_location", ["location"])
     .index("by_active", ["isActive"])
+    .index("by_draft", ["isDraft"])
     .index("by_user", ["userId"])
     .index("by_deleted", ["isDeleted"])
     .searchIndex("search_ads", {

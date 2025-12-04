@@ -10,7 +10,7 @@ const needsMigration = (value: string | null | undefined) =>
   Boolean(value && !value.startsWith("http") && !value.startsWith("data:") && !isR2Reference(value));
 
 const makeAdKey = (ad: Pick<Doc<"ads">, "_id" | "userId">, index: number) =>
-  `ads/${ad.userId}/${ad._id}_${index}_${crypto.randomUUID()}`;
+  `flyers/${ad._id}/${crypto.randomUUID()}`;
 
 const makeProfileKey = (userId: Id<"users">) => `profiles/${userId}/${crypto.randomUUID()}`;
 

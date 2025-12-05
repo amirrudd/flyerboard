@@ -9,9 +9,10 @@ interface ImageDisplayProps {
   alt: string;
   className?: string;
   fallback?: string;
+  variant?: "small" | "medium" | "large";
 }
 
-export function ImageDisplay({ src, alt, className, fallback }: ImageDisplayProps) {
+export function ImageDisplay({ src, alt, className, fallback, variant }: ImageDisplayProps) {
   const [hasError, setHasError] = useState(false);
 
   // Check if src is a storage ID (starts with a specific pattern) or a URL
@@ -22,7 +23,7 @@ export function ImageDisplay({ src, alt, className, fallback }: ImageDisplayProp
   // Only fetch storage URL if it's a storage ID
   const storageUrl = useQuery(
     api.posts.getImageUrl,
-    needsLookup ? { reference: src } : "skip"
+    needsLookup ? { reference: src, variant } : "skip"
   );
 
   // Determine the actual image URL to use

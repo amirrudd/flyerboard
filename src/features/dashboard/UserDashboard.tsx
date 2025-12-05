@@ -102,7 +102,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
-  const uploadProfileImage = useAction(api.r2.uploadProfileImage);
+  const uploadProfileImage = useAction(api.image_actions.uploadProfileImage);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -492,6 +492,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                           alt={ad.title}
                           className="w-20 h-20 object-cover rounded-lg"
+                          variant="small"
                         />
                         <div className="flex-1">
                           <div className="flex items-start justify-between">
@@ -585,6 +586,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                               alt={chat.ad?.title || "Ad"}
                               className="w-16 h-16 object-cover rounded-lg"
+                              variant="small"
                             />
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
@@ -744,6 +746,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                           alt={savedAd.ad!.title}
                           className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                          variant="small"
                         />
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-primary-600 transition-colors">

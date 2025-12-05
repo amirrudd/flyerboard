@@ -24,7 +24,10 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   });
 
   const [images, setImages] = useState<string[]>(editingAd?.images || []);
+  const [selectedFiles, setSelectedFiles] = useState<Array<{ dataUrl: string, type: string }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
+  const [progressPercent, setProgressPercent] = useState(0);
 
   // Location search state
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
@@ -37,11 +40,8 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
   const categories = useQuery(api.categories.getCategories);
   const createAd = useMutation(api.posts.createAd);
-  const createDraftAd = useMutation(api.posts.createDraftAd);
-  const deleteDraftAd = useAction(api.posts.deleteDraftAd);
   const updateAd = useMutation(api.posts.updateAd);
-
-  const [draftAdId, setDraftAdId] = useState<string | null>(null);
+  const uploadListingImage = useAction(api.image_actions.uploadListingImage);
 
   // Handle location search
   useEffect(() => {
@@ -98,29 +98,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
     }));
   };
 
-  const handleCreateDraft = async () => {
-    if (draftAdId) return draftAdId;
-    if (editingAd) return editingAd._id;
-
-    try {
-      const newAdId = await createDraftAd();
-      setDraftAdId(newAdId);
-      return newAdId;
-    } catch (error) {
-      console.error("Failed to create draft ad", error);
-      throw error;
-    }
-  };
-
-  const handleCancel = async () => {
-    if (draftAdId && !editingAd) {
-      try {
-        await deleteDraftAd({ adId: draftAdId as Id<"ads"> });
-        toast.info("Draft discarded");
-      } catch (error) {
-        console.error("Failed to cleanup draft", error);
-      }
-    }
+  const handleCancel = () => {
     onBack();
   };
 
@@ -160,29 +138,96 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
     }
 
     setIsSubmitting(true);
+    setProgressPercent(0);
 
     try {
-      const adData = {
-        title: formData.title,
-        description: formData.description,
-        extendedDescription: formData.extendedDescription || undefined,
-        price: parseFloat(formData.price),
-        location: formData.location,
-        categoryId: formData.categoryId as Id<"categories">,
-        images: images,
-      };
-
       if (editingAd) {
+        // Editing existing ad - upload new images if any
+        setUploadProgress("Updating ad...");
+        setProgressPercent(20);
+
+        let finalImages = [...images];
+
+        if (selectedFiles.length > 0) {
+          setUploadProgress(`Uploading ${selectedFiles.length} new image(s)...`);
+          setProgressPercent(40);
+
+          for (let i = 0; i < selectedFiles.length; i++) {
+            setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
+            setProgressPercent(40 + (i / selectedFiles.length) * 40);
+
+            const ref = await uploadListingImage({
+              postId: editingAd._id,
+              base64Data: selectedFiles[i].dataUrl,
+              contentType: selectedFiles[i].type,
+            });
+            finalImages.push(ref);
+          }
+        }
+
+        setUploadProgress("Saving changes...");
+        setProgressPercent(90);
+
         await updateAd({
           adId: editingAd._id,
-          ...adData,
+          title: formData.title,
+          description: formData.description,
+          extendedDescription: formData.extendedDescription || undefined,
+          price: parseFloat(formData.price),
+          location: formData.location,
+          categoryId: formData.categoryId as Id<"categories">,
+          images: finalImages,
         });
+
+        setProgressPercent(100);
         toast.success("Ad updated successfully!");
       } else {
-        await createAd({
-          ...adData,
-          draftId: draftAdId ? (draftAdId as Id<"ads">) : undefined,
+        // Creating new ad - 3-step process
+        setUploadProgress("Creating ad...");
+        setProgressPercent(10);
+
+        const adId = await createAd({
+          title: formData.title,
+          description: formData.description,
+          extendedDescription: formData.extendedDescription || undefined,
+          price: parseFloat(formData.price),
+          location: formData.location,
+          categoryId: formData.categoryId as Id<"categories">,
+          images: [], // Empty initially
         });
+
+        setProgressPercent(20);
+
+        // Upload images
+        const uploadedRefs: string[] = [];
+        for (let i = 0; i < selectedFiles.length; i++) {
+          setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
+          setProgressPercent(20 + (i / selectedFiles.length) * 60);
+
+          const ref = await uploadListingImage({
+            postId: adId,
+            base64Data: selectedFiles[i].dataUrl,
+            contentType: selectedFiles[i].type,
+          });
+          uploadedRefs.push(ref);
+        }
+
+        setUploadProgress("Finalizing...");
+        setProgressPercent(90);
+
+        // Update ad with images
+        await updateAd({
+          adId,
+          title: formData.title,
+          description: formData.description,
+          extendedDescription: formData.extendedDescription || undefined,
+          price: parseFloat(formData.price),
+          location: formData.location,
+          categoryId: formData.categoryId as Id<"categories">,
+          images: uploadedRefs,
+        });
+
+        setProgressPercent(100);
         toast.success("Ad posted successfully!");
       }
 
@@ -191,6 +236,8 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       toast.error(error.message || "Failed to save ad");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress("");
+      setProgressPercent(0);
     }
   };
 
@@ -400,9 +447,8 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             <ImageUpload
               images={images}
               onImagesChange={setImages}
-              maxImages={10}
-              postId={editingAd?._id || draftAdId || undefined}
-              onCreateDraft={handleCreateDraft}
+              onFilesSelected={setSelectedFiles}
+              maxImages={5}
             />
           </div>
 

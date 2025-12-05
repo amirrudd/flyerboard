@@ -1,26 +1,17 @@
 import { useState, useRef, useCallback } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
-import { useUploadFile } from "@convex-dev/r2/react";
-import { toR2Reference } from "@/lib/r2";
 
 interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
+  onFilesSelected?: (files: Array<{ dataUrl: string, type: string }>) => void;
   maxImages?: number;
-  postId?: string;
-  onCreateDraft?: () => Promise<string>;
 }
 
-export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, onCreateDraft }: ImageUploadProps) {
+export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages = 10 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [uploading, setUploading] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadFile = useUploadFile(api.r2);
-  const uploadListingImage = useAction(api.r2.uploadListingImage);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -55,68 +46,53 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
     }
   }, []);
 
-  const uploadFiles = async (files: File[]) => {
-    const remainingSlots = maxImages - images.length;
-    const filesToUpload = files.slice(0, remainingSlots);
+  const uploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
 
-    if (files.length > remainingSlots) {
-      toast.warning(`Only uploading first ${remainingSlots} images (${maxImages} max)`);
+    if (images.length + fileArray.length > maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`);
+      return;
     }
 
-    // Ensure we have a postId if we're in listing mode
-    let currentPostId = postId;
-    if (!currentPostId && onCreateDraft) {
+    const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
+
+    for (const file of fileArray) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`);
+        continue;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 10MB)`);
+        continue;
+      }
+
       try {
-        currentPostId = await onCreateDraft();
+        // Convert to base64 for preview and later upload
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Add to preview images
+        onImagesChange([...images, base64Data]);
+
+        // Store file data for later upload
+        selectedFileData.push({
+          dataUrl: base64Data,
+          type: file.type
+        });
       } catch (error) {
-        toast.error("Failed to initialize upload");
-        return;
+        console.error('Failed to read file:', error);
+        toast.error(`Failed to read ${file.name}`);
       }
     }
 
-    const uploadPromises = filesToUpload.map(async (file) => {
-      const fileId = Math.random().toString(36).substring(7);
-      setUploading(prev => [...prev, fileId]);
-
-      try {
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large. Maximum size is 5MB.`);
-        }
-
-        if (currentPostId) {
-          // Use custom upload action for listings
-          const base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-
-          return await uploadListingImage({
-            postId: currentPostId,
-            base64Data,
-            contentType: file.type
-          });
-        } else {
-          // Fallback to default upload (legacy)
-          const key = await uploadFile(file);
-          return toR2Reference(key);
-        }
-      } catch (error: any) {
-        toast.error(error.message || `Failed to upload ${file.name}`);
-        return null;
-      } finally {
-        setUploading(prev => prev.filter(id => id !== fileId));
-      }
-    });
-
-    const uploadedUrls = await Promise.all(uploadPromises);
-    const validUrls = uploadedUrls.filter(url => url !== null) as string[];
-
-    if (validUrls.length > 0) {
-      onImagesChange([...images, ...validUrls]);
-      toast.success(`Successfully uploaded ${validUrls.length} image${validUrls.length > 1 ? 's' : ''}`);
+    // Pass selected files to parent
+    if (onFilesSelected && selectedFileData.length > 0) {
+      onFilesSelected(selectedFileData);
     }
   };
 

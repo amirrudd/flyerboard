@@ -97,10 +97,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         }
     }, [cacheKey]);
 
-    // Use cached ads if available, otherwise use fresh ads
     const displayAds = cachedAds || ads;
-
-    const clearAndCreateSampleData = useMutation(api.sampleData.clearAndCreateSampleData);
 
     // --- Effects ---
 
@@ -129,16 +126,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         Cookies.set("selectedLocation", location, { expires: 365 });
     }, []);
 
-    // Initialize sample data if needed
-    useEffect(() => {
-        if (categories !== undefined && categories.length === 0) {
-            clearAndCreateSampleData().then(() => {
-                toast.success("Sample data created");
-            }).catch((error) => {
-                console.error("Error creating sample data:", error);
-            });
-        }
-    }, [categories, clearAndCreateSampleData]);
+    // Note: Sample data creation removed for production safety
+    // To create sample data in local development, use the Convex dashboard
+    // to manually call the clearAndCreateSampleData mutation
 
     const value = {
         categories,

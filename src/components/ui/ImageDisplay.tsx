@@ -10,9 +10,12 @@ interface ImageDisplayProps {
   src?: string;
   alt: string;
   className?: string;
+  fallback?: string;
+  variant?: "small" | "large";
+  onError?: () => void;
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError }: ImageDisplayProps) {
   // Use imageRef if provided, otherwise fall back to src
   const reference = imageRef || src;
 
@@ -21,8 +24,14 @@ export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDispla
     reference ? { imageRef: reference } : "skip"
   );
 
+  // Determine the source to display. Prioritize imageUrl from Convex, then fallback to src prop.
+  // Note: imageUrl can be null/undefined while loading or if the ref is invalid.
+  const displaySrc = imageUrl || src;
+
+  // Log relevant information for debugging
+  // isStorageId is not defined in the current context, so it's omitted to prevent errors.
   // Show skeleton while loading
-  if (!imageUrl) {
+  if (!displaySrc) {
     return (
       <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
     );
@@ -31,12 +40,13 @@ export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDispla
   // Show actual image with lazy loading and fade-in effect
   return (
     <LazyLoadImage
-      src={imageUrl}
+      src={displaySrc}
       alt={alt}
       className={className}
       wrapperClassName={className}
       style={{ width: '100%', height: '100%', display: 'block' }}
       effect="opacity"
+      onError={onError}
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
       }

@@ -116,7 +116,7 @@ describe('PostAd', () => {
                 price: 100,
                 location: 'Sydney',
                 description: 'Test Description',
-                images: ['image1.jpg'],
+                images: [],
             }));
         });
     });

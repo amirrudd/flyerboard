@@ -64,7 +64,11 @@ export const {
       uploadedAt: Date.now(),
     });
 
-    console.log(`R2 Upload tracked: ${key} by user ${userId}`);
+    // Only log in development mode
+    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
+    if (isDev) {
+      console.log(`R2 Upload tracked: ${key} by user ${userId}`);
+    }
   },
 });
 

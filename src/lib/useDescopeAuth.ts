@@ -1,5 +1,6 @@
 import { useDescope, useSession } from "@descope/react-sdk";
 import { useCallback, useEffect } from "react";
+import { logDebug } from "./logger";
 
 export function useDescopeAuth() {
     const { isAuthenticated, isSessionLoading, sessionToken } = useSession();
@@ -7,33 +8,31 @@ export function useDescopeAuth() {
 
     // Debug logging (development only)
     useEffect(() => {
-        if (import.meta.env.DEV) {
-            console.log("Descope Auth State:", {
+        if (isAuthenticated !== undefined) {
+            logDebug("Descope Auth State:", {
                 isAuthenticated,
                 isSessionLoading,
-                hasToken: !!sessionToken,
-                tokenPreview: sessionToken ? sessionToken.substring(0, 20) + "..." : null
+                sessionToken: sessionToken ? "present" : "missing",
             });
         }
     }, [isAuthenticated, isSessionLoading, sessionToken]);
 
     const fetchAccessToken = useCallback(async ({ forceRefreshToken }: { forceRefreshToken?: boolean } = {}) => {
-        if (import.meta.env.DEV) {
-            console.log("Convex requesting access token, authenticated:", isAuthenticated);
-        }
+        logDebug("Convex requesting access token, authenticated:", isAuthenticated);
 
         // Return null if not authenticated
-        if (!isAuthenticated || !sessionToken) {
-            if (import.meta.env.DEV) {
-                console.log("No token available, returning null");
-            }
+        if (!isAuthenticated) {
             return null;
         }
 
-        if (import.meta.env.DEV) {
-            console.log("Returning session token to Convex");
+        if (!sessionToken) {
+            logDebug("No token available, returning null");
+            return null;
         }
-        // Return the session token for Convex to verify
+
+        // Return the Descope session token as the access token
+        // Convex will verify this via OIDC
+        logDebug("Returning session token to Convex");
         return sessionToken;
     }, [isAuthenticated, sessionToken]);
 

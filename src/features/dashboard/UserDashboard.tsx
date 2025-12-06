@@ -57,6 +57,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [uploadingImage, setUploadingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
@@ -368,16 +369,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     onClick={handleProfileImageClick}
-                    className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
+                    className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
                     title="Click to upload profile picture"
                   >
                     {uploadingImage ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                    ) : user.image ? (
+                    ) : user.image && !imageError ? (
                       <ImageDisplay
                         src={user.image}
                         alt="Profile"
                         className="w-full h-full object-cover"
+                        onError={() => setImageError(true)}
                       />
                     ) : (
                       getInitials(user)

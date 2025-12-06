@@ -101,7 +101,6 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             setRemainingTime(60);
             toast.success("Verification code sent!");
             setStep(2); // Slide to OTP input
-            setStep(2); // Slide to OTP input
         } catch (error: any) {
             logError("Error sending OTP", error);
             toast.error(error.message || "Failed to send verification code. Please try again.");

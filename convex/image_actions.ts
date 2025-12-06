@@ -1,13 +1,40 @@
+"use node";
+
 import { action } from "./_generated/server";
 import { v } from "convex/values";
-import sharp from "sharp";
-import { getDescopeUserId } from "./lib/auth";
+import { internal } from "./_generated/api";
 import {
     r2,
     toR2Reference,
     makeProfileImageKey,
     makeListingImageKey
 } from "./r2";
+
+// Helper to get user ID with local dev fallback
+async function getUserId(ctx: any) {
+    // Check if we're in local development
+    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
+
+    if (isDev) {
+        // In local dev, just use the most recent user
+        const recentUser = await ctx.runQuery(internal.users.getMostRecentUser);
+        if (recentUser) return recentUser._id;
+        throw new Error("No users found in database. Please log in at least once before uploading images.");
+    }
+
+    // In production, require proper authentication
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+        throw new Error("Authentication required to upload images");
+    }
+
+    const user = await ctx.runQuery(internal.users.getUserByToken, { token: identity.subject });
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return user._id;
+}
 
 /**
  * Upload a profile image with proper folder structure
@@ -19,7 +46,7 @@ export const uploadProfileImage = action({
         contentType: v.string(),
     },
     handler: async (ctx, args) => {
-        const userId = await getDescopeUserId(ctx as any);
+        const userId = await getUserId(ctx);
         if (!userId) {
             throw new Error("Authentication required to upload profile image");
         }
@@ -30,13 +57,8 @@ export const uploadProfileImage = action({
 
         const key = makeProfileImageKey(userId);
 
-        // Optimize profile image: Resize to 400x400 cover, WebP
-        const processedBuffer = await sharp(buffer)
-            .resize(400, 400, { fit: 'cover' })
-            .webp({ quality: 80 })
-            .toBuffer();
-
-        await r2.store(ctx, processedBuffer, { key, type: 'image/webp' });
+        // Store original image
+        await r2.store(ctx, buffer, { key, type: args.contentType });
 
         return toR2Reference(key);
     },
@@ -53,7 +75,7 @@ export const uploadListingImage = action({
         contentType: v.string(),
     },
     handler: async (ctx, args) => {
-        const userId = await getDescopeUserId(ctx as any);
+        const userId = await getUserId(ctx);
         if (!userId) {
             throw new Error("Authentication required to upload listing image");
         }
@@ -64,39 +86,8 @@ export const uploadListingImage = action({
 
         const baseKey = makeListingImageKey(args.postId);
 
-        // Process variants
-        const image = sharp(buffer);
-        const metadata = await image.metadata();
-
-        // Define variants
-        const variants = [
-            { name: 'small', width: 400 },
-            { name: 'medium', width: 800 },
-            { name: 'large', width: 1200 },
-        ];
-
-        // Upload original (optimized as WebP)
-        const originalBuffer = await image
-            .webp({ quality: 80 })
-            .toBuffer();
-
-        await r2.store(ctx, originalBuffer, { key: baseKey, type: 'image/webp' });
-
-        // Upload variants
-        await Promise.all(variants.map(async (variant) => {
-            // Only generate larger variants if original is large enough
-            if (metadata.width && metadata.width < variant.width) return;
-
-            const variantBuffer = await image
-                .resize(variant.width, null, { withoutEnlargement: true })
-                .webp({ quality: 80 })
-                .toBuffer();
-
-            await r2.store(ctx, variantBuffer, {
-                key: `${baseKey}_${variant.name}`,
-                type: 'image/webp'
-            });
-        }));
+        // Store original image
+        await r2.store(ctx, buffer, { key: baseKey, type: args.contentType });
 
         return toR2Reference(baseKey);
     },

@@ -1,50 +1,30 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
 
 interface ImageDisplayProps {
-  src: string;
+  // New prop (preferred)
+  imageRef?: string | null | undefined;
+  // Old props (backward compatibility)
+  src?: string;
   alt: string;
   className?: string;
-  fallback?: string;
-  variant?: "small" | "medium" | "large";
 }
 
-export function ImageDisplay({ src, alt, className, fallback, variant }: ImageDisplayProps) {
-  const [hasError, setHasError] = useState(false);
+export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDisplayProps) {
+  // Use imageRef if provided, otherwise fall back to src
+  const reference = imageRef || src;
 
-  // Check if src is a storage ID (starts with a specific pattern) or a URL
-  const needsLookup = Boolean(
-    src && !src.startsWith("http") && !src.startsWith("data:")
-  );
-
-  // Only fetch storage URL if it's a storage ID
-  const storageUrl = useQuery(
+  const imageUrl = useQuery(
     api.posts.getImageUrl,
-    needsLookup ? { reference: src, variant } : "skip"
+    reference ? { imageRef: reference } : "skip"
   );
 
-  // Determine the actual image URL to use
-  const imageUrl = needsLookup ? storageUrl : src;
-  const defaultFallback = fallback || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop';
-
-  // Show skeleton while fetching storage URL (imageUrl is undefined)
+  // Show skeleton while loading
   if (!imageUrl) {
     return (
       <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
-    );
-  }
-
-  // Show fallback image on error
-  if (hasError) {
-    return (
-      <img
-        src={defaultFallback}
-        alt={alt}
-        className={className}
-      />
     );
   }
 
@@ -58,9 +38,6 @@ export function ImageDisplay({ src, alt, className, fallback, variant }: ImageDi
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
       }
-      onError={() => {
-        setHasError(true);
-      }}
     />
   );
 }

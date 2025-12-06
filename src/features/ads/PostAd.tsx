@@ -196,20 +196,30 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           images: [], // Empty initially
         });
 
-        setProgressPercent(20);
-
-        // Upload images
+        // Step 2: Upload images to R2
+        setUploadProgress("Uploading images...");
         const uploadedRefs: string[] = [];
-        for (let i = 0; i < selectedFiles.length; i++) {
-          setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
-          setProgressPercent(20 + (i / selectedFiles.length) * 60);
 
-          const ref = await uploadListingImage({
-            postId: adId,
-            base64Data: selectedFiles[i].dataUrl,
-            contentType: selectedFiles[i].type,
-          });
-          uploadedRefs.push(ref);
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+
+          try {
+            const ref = await uploadListingImage({
+              postId: adId,
+              base64Data: file.dataUrl,
+              contentType: file.type,
+            });
+
+            uploadedRefs.push(ref);
+
+            // Update progress AFTER successful upload
+            setUploadProgress(`Uploaded ${i + 1}/${selectedFiles.length} images`);
+            setProgressPercent(20 + ((i + 1) / selectedFiles.length) * 60); // Adjusting for overall progress
+          } catch (error) {
+            console.error(`Failed to upload image ${i + 1}:`, error);
+            toast.error(`Failed to upload image ${i + 1}`);
+            throw error;
+          }
         }
 
         setUploadProgress("Finalizing...");
@@ -470,6 +480,33 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           </div>
         </form>
       </div>
+
+      {/* Progress Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editingAd ? 'Updating Ad...' : 'Creating Ad...'}
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-4 text-center">{uploadProgress}</p>
+
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-primary-600 h-3 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            <p className="text-sm text-gray-500 mt-3 text-center">
+              {progressPercent}% complete
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

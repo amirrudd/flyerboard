@@ -253,23 +253,33 @@ export const getBuyerChats = query({
 
 export const getImageUrl = query({
   args: {
-    reference: v.string(),
-    variant: v.optional(v.union(v.literal("small"), v.literal("medium"), v.literal("large")))
+    imageRef: v.string(),
   },
   handler: async (ctx, args) => {
-    if (isR2Reference(args.reference)) {
-      let key = fromR2Reference(args.reference);
+    // Handle external URLs (e.g., Unsplash) - return as-is
+    if (args.imageRef.startsWith('http://') || args.imageRef.startsWith('https://')) {
+      return args.imageRef;
+    }
 
-      // Append variant suffix if requested
-      if (args.variant) {
-        key = `${key}_${args.variant}`;
-      }
-
+    // Handle R2 references with r2: prefix
+    if (isR2Reference(args.imageRef)) {
+      const key = fromR2Reference(args.imageRef);
       return await r2.getUrl(key, {
-        expiresIn: 60 * 60 * 24,
+        expiresIn: 60 * 60 * 24, // 24 hours
       });
     }
 
-    return await ctx.storage.getUrl(args.reference as Id<"_storage">);
+    // Handle legacy R2 keys (without r2: prefix) - check for common patterns
+    if (args.imageRef.includes('/') &&
+      (args.imageRef.startsWith('ad/') ||
+        args.imageRef.startsWith('flyers/') ||
+        args.imageRef.startsWith('profiles/'))) {
+      return await r2.getUrl(args.imageRef, {
+        expiresIn: 60 * 60 * 24, // 24 hours
+      });
+    }
+
+    // Legacy: Handle old _storage IDs (UUIDs)
+    return await ctx.storage.getUrl(args.imageRef as any);
   },
 });

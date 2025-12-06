@@ -17,9 +17,9 @@
     "@convex-dev/r2": "^0.8.1",
     "@descope/react-sdk": "^2.23.10",
     "@types/js-cookie": "^3.0.6",
-    "@types/sharp": "^0.31.1",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.13.2",
+    "browser-image-compression": "^2.0.2",
     "cheerio": "^1.1.2",
     "clsx": "^2.1.1",
     "convex": "^1.24.2",
@@ -35,7 +35,6 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.34.5",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.1.0"
   },

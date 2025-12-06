@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploadProps {
   images: string[];
@@ -11,6 +12,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages = 10 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -54,6 +56,8 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
       return;
     }
 
+    setIsCompressing(true);
+    toast.info(`Compressing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
     const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
 
     for (const file of fileArray) {
@@ -68,12 +72,20 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
       }
 
       try {
-        // Convert to base64 for preview and later upload
+        // Compress and convert to WebP
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 1,
+          useWebWorker: true,
+          fileType: 'image/webp',
+          initialQuality: 0.8,
+        });
+
+        // Convert to base64 for preview and upload
         const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(compressedFile);
         });
 
         // Add to preview images
@@ -82,13 +94,15 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
         // Store file data for later upload
         selectedFileData.push({
           dataUrl: base64Data,
-          type: file.type
+          type: 'image/webp'
         });
       } catch (error) {
-        console.error('Failed to read file:', error);
-        toast.error(`Failed to read ${file.name}`);
+        console.error('Failed to process file:', error);
+        toast.error(`Failed to process ${file.name}`);
       }
     }
+
+    setIsCompressing(false);
 
     // Pass selected files to parent
     if (onFilesSelected && selectedFileData.length > 0) {
@@ -114,7 +128,6 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
               ? 'border-primary-600 bg-orange-50'
               : 'border-neutral-300 hover:border-gray-400'
             }
-            ${uploading.length > 0 ? 'opacity-50' : ''}
           `}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -141,10 +154,10 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading.length > 0}
+                disabled={isCompressing}
                 className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {uploading.length > 0 ? 'Uploading...' : 'Choose Files'}
+                {isCompressing ? 'Compressing...' : 'Choose Files'}
               </button>
             </div>
             <p className="text-xs text-gray-400">
@@ -154,17 +167,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
         </div>
       )}
 
-      {/* Upload Progress */}
-      {uploading.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-            <span className="text-sm text-blue-700">
-              Uploading {uploading.length} image{uploading.length > 1 ? 's' : ''}...
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* Image Counter */}
       <div className="flex items-center justify-between">
@@ -178,34 +181,30 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
 
       {/* Image Preview Grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {images.map((imageId, index) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {images.map((image, index) => (
             <div key={index} className="relative group">
-              <ImageDisplay
-                src={imageId}
-                alt={`Preview ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border border-neutral-200"
-              />
+              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={image}
+                  alt={`Upload ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <button
-                type="button"
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
                 title="Remove image"
               >
                 ×
               </button>
-              {index === 0 && (
-                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                  Main
-                </div>
-              )}
             </div>
           ))}
         </div>
       )}
 
       {/* Empty State */}
-      {images.length === 0 && uploading.length === 0 && (
+      {images.length === 0 && (
         <div className="text-center py-4">
           <p className="text-neutral-500 text-sm">No images added yet</p>
         </div>

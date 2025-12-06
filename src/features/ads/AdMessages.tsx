@@ -77,7 +77,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to listing
+              Back to flyers
             </button>
             <h1 className="text-xl font-semibold text-neutral-800">Messages for "{ad.title}"</h1>
             <div className="w-20"></div>

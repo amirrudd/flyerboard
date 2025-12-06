@@ -186,7 +186,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
           {images.map((image, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                <img
+                <ImageDisplay
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-full object-cover"

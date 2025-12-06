@@ -34,6 +34,8 @@ export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDispla
       src={imageUrl}
       alt={alt}
       className={className}
+      wrapperClassName={className}
+      style={{ width: '100%', height: '100%', display: 'block' }}
       effect="opacity"
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />

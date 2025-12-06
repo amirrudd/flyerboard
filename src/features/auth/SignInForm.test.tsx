@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SignInForm } from './SignInForm';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock convex auth hooks
 vi.mock('@convex-dev/auth/react', () => ({
@@ -24,8 +25,13 @@ describe('SignInForm', () => {
         vi.mocked(useAuthActions).mockReturnValue({ signIn: mockSignIn } as any);
     });
 
+
     it('should render sign in form by default', () => {
-        render(<SignInForm flow="signIn" setFlow={mockSetFlow} />);
+        render(
+            <MemoryRouter>
+                <SignInForm flow="signIn" setFlow={mockSetFlow} />
+            </MemoryRouter>
+        );
 
         expect(screen.getByPlaceholderText('Email address')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
@@ -34,7 +40,11 @@ describe('SignInForm', () => {
     });
 
     it('should render sign up form when flow is signUp', () => {
-        render(<SignInForm flow="signUp" setFlow={mockSetFlow} />);
+        render(
+            <MemoryRouter>
+                <SignInForm flow="signUp" setFlow={mockSetFlow} />
+            </MemoryRouter>
+        );
 
         expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
         expect(screen.getByText("Already have an account?")).toBeInTheDocument();
@@ -42,7 +52,11 @@ describe('SignInForm', () => {
     });
 
     it('should toggle flow when link is clicked', () => {
-        render(<SignInForm flow="signIn" setFlow={mockSetFlow} />);
+        render(
+            <MemoryRouter>
+                <SignInForm flow="signIn" setFlow={mockSetFlow} />
+            </MemoryRouter>
+        );
 
         const toggleButton = screen.getByText('Sign up');
         fireEvent.click(toggleButton);
@@ -52,7 +66,11 @@ describe('SignInForm', () => {
 
     it('should call signIn on form submission', async () => {
         mockSignIn.mockResolvedValue(undefined);
-        render(<SignInForm flow="signIn" setFlow={mockSetFlow} />);
+        render(
+            <MemoryRouter>
+                <SignInForm flow="signIn" setFlow={mockSetFlow} />
+            </MemoryRouter>
+        );
 
         fireEvent.change(screen.getByPlaceholderText('Email address'), { target: { value: 'test@example.com' } });
         fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
@@ -67,7 +85,11 @@ describe('SignInForm', () => {
 
     it('should handle sign in error', async () => {
         mockSignIn.mockRejectedValue(new Error('Invalid password'));
-        render(<SignInForm flow="signIn" setFlow={mockSetFlow} />);
+        render(
+            <MemoryRouter>
+                <SignInForm flow="signIn" setFlow={mockSetFlow} />
+            </MemoryRouter>
+        );
 
         fireEvent.change(screen.getByPlaceholderText('Email address'), { target: { value: 'test@example.com' } });
         fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'wrongpass' } });

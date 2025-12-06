@@ -14,6 +14,7 @@ vi.mock('@descope/react-sdk', () => ({
 vi.mock('convex/react', () => ({
     useQuery: vi.fn(),
     useMutation: vi.fn(() => vi.fn()),
+    useAction: vi.fn(),
 }));
 
 // Mock child components
@@ -62,6 +63,7 @@ describe('UserDashboard', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
         vi.mocked(useQuery)
+            .mockReturnValueOnce({ _id: 'user1', name: 'Test User' }) // getCurrentUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats
@@ -81,6 +83,7 @@ describe('UserDashboard', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
         vi.mocked(useQuery)
+            .mockReturnValueOnce({ _id: 'user1', name: 'Test User' }) // getCurrentUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats
@@ -98,6 +101,7 @@ describe('UserDashboard', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
         vi.mocked(useQuery)
+            .mockReturnValueOnce({ _id: 'user1', name: 'Test User' }) // getCurrentUser
             .mockReturnValueOnce([]) // getUserAds
             .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
             .mockReturnValueOnce([]) // getSellerChats

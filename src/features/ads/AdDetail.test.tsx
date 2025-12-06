@@ -138,7 +138,7 @@ describe('AdDetail - Share Functionality', () => {
             });
 
             // Find and click share button in the header
-            const shareButtons = screen.getAllByTitle('Share ad');
+            const shareButtons = screen.getAllByTitle('Share flyer');
             fireEvent.click(shareButtons[0]);
 
             // Verify clipboard was called with correctly formatted URL
@@ -169,7 +169,7 @@ describe('AdDetail - Share Functionality', () => {
                 expect(titles[0]).toBeInTheDocument();
             });
 
-            const shareButtons = screen.getAllByTitle('Share ad');
+            const shareButtons = screen.getAllByTitle('Share flyer');
             fireEvent.click(shareButtons[0]);
 
             await waitFor(() => {
@@ -196,7 +196,7 @@ describe('AdDetail - Share Functionality', () => {
             });
 
             // Check for share button in header
-            const shareButtons = screen.getAllByTitle('Share ad');
+            const shareButtons = screen.getAllByTitle('Share flyer');
             expect(shareButtons.length).toBeGreaterThan(0);
         });
 
@@ -216,8 +216,8 @@ describe('AdDetail - Share Functionality', () => {
                 expect(titles[0]).toBeInTheDocument();
             });
 
-            // Check for "Share Ad" text in sidebar
-            expect(screen.getByText('Share Ad')).toBeInTheDocument();
+            // Check for "Share Flyer" text in sidebar
+            expect(screen.getByText('Share Flyer')).toBeInTheDocument();
         });
 
         it('should work when clicking share button in sidebar', async () => {
@@ -237,7 +237,7 @@ describe('AdDetail - Share Functionality', () => {
             });
 
             // Click the sidebar share button
-            const sidebarShareButton = screen.getByText('Share Ad');
+            const sidebarShareButton = screen.getByText('Share Flyer');
             fireEvent.click(sidebarShareButton);
 
             await waitFor(() => {

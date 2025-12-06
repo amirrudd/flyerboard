@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
 import imageCompression from 'browser-image-compression';
+import { Trash2 } from "lucide-react";
 
 interface ImageUploadProps {
   images: string[];
@@ -185,7 +186,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
           {images.map((image, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                <img
+                <ImageDisplay
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-full object-cover"
@@ -193,10 +194,10 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
               </div>
               <button
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                 title="Remove image"
               >
-                ×
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}

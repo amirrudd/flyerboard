@@ -49,7 +49,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
-  const user = isAuthenticated ? { name: "User", _id: "temp-id" } : null;
+  // Get real user data from Convex
+  const convexUser = useQuery(api.descopeAuth.getCurrentUser);
+  const user = isAuthenticated ? convexUser : null;
 
   useEffect(() => {
     if (existingChat) {
@@ -248,7 +250,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <button
                 onClick={handleShare}
                 className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
-                title="Share ad"
+                title="Share flyer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
@@ -492,7 +494,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   onClick={() => navigate('/dashboard')}
                   className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                 >
-                  Manage Your Flyer
+                  Manage Your Flyers
                 </button>
               )}
 
@@ -571,19 +573,44 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                {user && displayAd.userId !== user._id && (
+                {user && displayAd.userId === user._id ? (
+                  // Show Edit button for own listings
                   <button
-                    onClick={handleSave}
-                    className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
-                      ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                      : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
-                      }`}
+                    onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary-600 text-white border border-primary-600 hover:bg-primary-700 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                    Edit Flyer
                   </button>
+                ) : (
+                  // Show Save and Report buttons for other users' listings
+                  user && (
+                    <>
+                      <button
+                        onClick={handleSave}
+                        className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
+                          ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                          : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                          }`}
+                      >
+                        <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                      </button>
+                      <button
+                        onClick={() => setShowReportModal(true)}
+                        className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                        </svg>
+                        Report Listing
+                      </button>
+                    </>
+                  )
                 )}
                 <button
                   onClick={handleShare}
@@ -592,19 +619,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                   </svg>
-                  Share Ad
+                  Share Flyer
                 </button>
-                {user && displayAd.userId !== user._id && (
-                  <button
-                    onClick={() => setShowReportModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                    </svg>
-                    Report Listing
-                  </button>
-                )}
               </div>
             </div>
           </div>

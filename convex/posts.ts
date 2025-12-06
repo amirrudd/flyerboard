@@ -5,31 +5,6 @@ import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 
-export const createDraftAd = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getDescopeUserId(ctx);
-    if (!userId) {
-      throw new Error("Must be logged in to create an ad");
-    }
-
-    const adId = await ctx.db.insert("ads", {
-      title: "",
-      description: "",
-      price: 0,
-      location: "",
-      categoryId: "skip" as any, // Temporary placeholder
-      images: [],
-      userId,
-      isActive: false,
-      isDraft: true,
-      views: 0,
-    });
-
-    return adId;
-  },
-});
-
 export const createAd = mutation({
   args: {
     title: v.string(),
@@ -39,7 +14,6 @@ export const createAd = mutation({
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
-    draftId: v.optional(v.id("ads")),
   },
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
@@ -47,29 +21,6 @@ export const createAd = mutation({
       throw new Error("Must be logged in to create an ad");
     }
 
-    if (args.draftId) {
-      // Update existing draft
-      const existingAd = await ctx.db.get(args.draftId);
-      if (!existingAd || existingAd.userId !== userId) {
-        throw new Error("Invalid draft");
-      }
-
-      await ctx.db.patch(args.draftId, {
-        title: args.title,
-        description: args.description,
-        extendedDescription: args.extendedDescription,
-        price: args.price,
-        location: args.location,
-        categoryId: args.categoryId,
-        images: args.images,
-        isActive: true,
-        isDraft: false,
-      });
-
-      return args.draftId;
-    }
-
-    // Create new ad (fallback)
     const adId = await ctx.db.insert("ads", {
       title: args.title,
       description: args.description,
@@ -124,64 +75,6 @@ export const updateAd = mutation({
     });
 
     return args.adId;
-  },
-});
-
-export const getAdInternal = internalQuery({
-  args: { adId: v.id("ads") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.adId);
-  },
-});
-
-export const hardDeleteAd = internalMutation({
-  args: {
-    adId: v.id("ads"),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.adId);
-  },
-});
-
-import { api } from "./_generated/api";
-
-export const deleteDraftAd = action({
-  args: {
-    adId: v.id("ads"),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Must be logged in to delete draft");
-    }
-
-    const user = await ctx.runQuery(internal.users.getUserByToken, { token: identity.subject });
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const ad = await ctx.runQuery(internal.posts.getAdInternal, { adId: args.adId });
-    if (!ad) return;
-
-    if (ad.userId !== user._id) {
-      throw new Error("You can only delete your own drafts");
-    }
-
-    // Delete images from R2
-    for (const imageRef of ad.images || []) {
-      if (isR2Reference(imageRef)) {
-        const key = fromR2Reference(imageRef);
-        try {
-          // Use the exported deleteObject mutation from r2.ts
-          await ctx.runMutation(api.r2.deleteObject, { key });
-        } catch (error) {
-          console.error(`Failed to delete R2 file ${key}:`, error);
-        }
-      }
-    }
-
-    // Hard delete the ad record
-    await ctx.runMutation(internal.posts.hardDeleteAd, { adId: args.adId });
   },
 });
 
@@ -359,15 +252,34 @@ export const getBuyerChats = query({
 });
 
 export const getImageUrl = query({
-  args: { reference: v.string() },
+  args: {
+    imageRef: v.string(),
+  },
   handler: async (ctx, args) => {
-    if (isR2Reference(args.reference)) {
-      const key = fromR2Reference(args.reference);
+    // Handle external URLs (e.g., Unsplash) - return as-is
+    if (args.imageRef.startsWith('http://') || args.imageRef.startsWith('https://')) {
+      return args.imageRef;
+    }
+
+    // Handle R2 references with r2: prefix
+    if (isR2Reference(args.imageRef)) {
+      const key = fromR2Reference(args.imageRef);
       return await r2.getUrl(key, {
-        expiresIn: 60 * 60 * 24,
+        expiresIn: 60 * 60 * 24, // 24 hours
       });
     }
 
-    return await ctx.storage.getUrl(args.reference as Id<"_storage">);
+    // Handle legacy R2 keys (without r2: prefix) - check for common patterns
+    if (args.imageRef.includes('/') &&
+      (args.imageRef.startsWith('ad/') ||
+        args.imageRef.startsWith('flyers/') ||
+        args.imageRef.startsWith('profiles/'))) {
+      return await r2.getUrl(args.imageRef, {
+        expiresIn: 60 * 60 * 24, // 24 hours
+      });
+    }
+
+    // Legacy: Handle old _storage IDs (UUIDs)
+    return await ctx.storage.getUrl(args.imageRef as any);
   },
 });

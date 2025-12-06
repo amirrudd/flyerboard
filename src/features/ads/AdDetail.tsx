@@ -301,6 +301,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   src={images[currentImageIndex]}
                   alt={`${displayAd.title} - Image ${currentImageIndex + 1} `}
                   className="w-full h-full object-contain"
+                  variant="large"
                 />
 
                 {/* Navigation arrows for multiple images */}
@@ -350,6 +351,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           src={image}
                           alt={`Thumbnail ${index + 1} `}
                           className="w-full h-full object-cover"
+                          variant="small"
                         />
                       </button>
                     ))}

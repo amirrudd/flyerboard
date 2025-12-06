@@ -1,26 +1,19 @@
 import { useState, useRef, useCallback } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
-import { useUploadFile } from "@convex-dev/r2/react";
-import { toR2Reference } from "@/lib/r2";
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
+  onFilesSelected?: (files: Array<{ dataUrl: string, type: string }>) => void;
   maxImages?: number;
-  postId?: string;
-  onCreateDraft?: () => Promise<string>;
 }
 
-export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, onCreateDraft }: ImageUploadProps) {
+export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages = 10 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [uploading, setUploading] = useState<string[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadFile = useUploadFile(api.r2);
-  const uploadListingImage = useAction(api.r2.uploadListingImage);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -55,68 +48,65 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
     }
   }, []);
 
-  const uploadFiles = async (files: File[]) => {
-    const remainingSlots = maxImages - images.length;
-    const filesToUpload = files.slice(0, remainingSlots);
+  const uploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
 
-    if (files.length > remainingSlots) {
-      toast.warning(`Only uploading first ${remainingSlots} images (${maxImages} max)`);
+    if (images.length + fileArray.length > maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`);
+      return;
     }
 
-    // Ensure we have a postId if we're in listing mode
-    let currentPostId = postId;
-    if (!currentPostId && onCreateDraft) {
+    setIsCompressing(true);
+    toast.info(`Compressing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
+    const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
+
+    for (const file of fileArray) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`);
+        continue;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 10MB)`);
+        continue;
+      }
+
       try {
-        currentPostId = await onCreateDraft();
+        // Compress and convert to WebP
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 1,
+          useWebWorker: true,
+          fileType: 'image/webp',
+          initialQuality: 0.8,
+        });
+
+        // Convert to base64 for preview and upload
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
+
+        // Add to preview images
+        onImagesChange([...images, base64Data]);
+
+        // Store file data for later upload
+        selectedFileData.push({
+          dataUrl: base64Data,
+          type: 'image/webp'
+        });
       } catch (error) {
-        toast.error("Failed to initialize upload");
-        return;
+        console.error('Failed to process file:', error);
+        toast.error(`Failed to process ${file.name}`);
       }
     }
 
-    const uploadPromises = filesToUpload.map(async (file) => {
-      const fileId = Math.random().toString(36).substring(7);
-      setUploading(prev => [...prev, fileId]);
+    setIsCompressing(false);
 
-      try {
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large. Maximum size is 5MB.`);
-        }
-
-        if (currentPostId) {
-          // Use custom upload action for listings
-          const base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-
-          return await uploadListingImage({
-            postId: currentPostId,
-            base64Data,
-            contentType: file.type
-          });
-        } else {
-          // Fallback to default upload (legacy)
-          const key = await uploadFile(file);
-          return toR2Reference(key);
-        }
-      } catch (error: any) {
-        toast.error(error.message || `Failed to upload ${file.name}`);
-        return null;
-      } finally {
-        setUploading(prev => prev.filter(id => id !== fileId));
-      }
-    });
-
-    const uploadedUrls = await Promise.all(uploadPromises);
-    const validUrls = uploadedUrls.filter(url => url !== null) as string[];
-
-    if (validUrls.length > 0) {
-      onImagesChange([...images, ...validUrls]);
-      toast.success(`Successfully uploaded ${validUrls.length} image${validUrls.length > 1 ? 's' : ''}`);
+    // Pass selected files to parent
+    if (onFilesSelected && selectedFileData.length > 0) {
+      onFilesSelected(selectedFileData);
     }
   };
 
@@ -138,7 +128,6 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
               ? 'border-primary-600 bg-orange-50'
               : 'border-neutral-300 hover:border-gray-400'
             }
-            ${uploading.length > 0 ? 'opacity-50' : ''}
           `}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -165,10 +154,10 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading.length > 0}
+                disabled={isCompressing}
                 className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {uploading.length > 0 ? 'Uploading...' : 'Choose Files'}
+                {isCompressing ? 'Compressing...' : 'Choose Files'}
               </button>
             </div>
             <p className="text-xs text-gray-400">
@@ -178,17 +167,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
         </div>
       )}
 
-      {/* Upload Progress */}
-      {uploading.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-            <span className="text-sm text-blue-700">
-              Uploading {uploading.length} image{uploading.length > 1 ? 's' : ''}...
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* Image Counter */}
       <div className="flex items-center justify-between">
@@ -202,34 +181,30 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, postId, on
 
       {/* Image Preview Grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {images.map((imageId, index) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {images.map((image, index) => (
             <div key={index} className="relative group">
-              <ImageDisplay
-                src={imageId}
-                alt={`Preview ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border border-neutral-200"
-              />
+              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={image}
+                  alt={`Upload ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <button
-                type="button"
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
                 title="Remove image"
               >
                 ×
               </button>
-              {index === 0 && (
-                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                  Main
-                </div>
-              )}
             </div>
           ))}
         </div>
       )}
 
       {/* Empty State */}
-      {images.length === 0 && uploading.length === 0 && (
+      {images.length === 0 && (
         <div className="text-center py-4">
           <p className="text-neutral-500 text-sm">No images added yet</p>
         </div>

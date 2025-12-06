@@ -5,10 +5,18 @@ import { getDescopeUserId } from "./lib/auth";
 export const getUserByToken = internalQuery({
   args: { token: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
-      .withIndex("tokenIdentifier", (q) => q.eq("tokenIdentifier", args.token))
+      .filter((q) => q.eq(q.field("tokenIdentifier"), args.token))
       .first();
+    return user;
+  },
+});
+
+export const getMostRecentUser = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("users").order("desc").first();
   },
 });
 // Support profile image updates

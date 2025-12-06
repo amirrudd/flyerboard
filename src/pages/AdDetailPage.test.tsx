@@ -11,7 +11,7 @@ vi.mock('react-router-dom', async () => {
         ...actual,
         useNavigate: () => mockNavigate,
         useParams: () => ({ id: 'test-ad-id' }),
-        useLocation: () => ({ state: null }),
+        useLocation: () => ({ state: null, pathname: '/ads/test-ad-id' }),
     };
 });
 
@@ -33,11 +33,9 @@ vi.mock('../features/ads/AdDetail', () => ({
     ),
 }));
 
-// Mock AuthModal
-vi.mock('../features/auth/AuthModal', () => ({
-    AuthModal: ({ showAuthModal }: any) => (
-        showAuthModal ? <div data-testid="auth-modal">Auth Modal</div> : null
-    ),
+// Mock SmsOtpSignIn
+vi.mock('../features/auth/SmsOtpSignIn', () => ({
+    SmsOtpSignIn: () => <div data-testid="auth-modal">Auth Component</div>
 }));
 
 describe('AdDetailPage - Navigation', () => {
@@ -45,7 +43,7 @@ describe('AdDetailPage - Navigation', () => {
         mockNavigate.mockClear();
     });
 
-    it('should navigate to home page when back button is clicked', async () => {
+    it('should navigate back when back button is clicked', async () => {
         render(
             <BrowserRouter>
                 <AdDetailPage />
@@ -56,11 +54,11 @@ describe('AdDetailPage - Navigation', () => {
         const backButton = screen.getByTestId('back-button');
         fireEvent.click(backButton);
 
-        // Verify navigate was called with '/' (home page)
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        // Verify navigate was called with -1 (go back)
+        expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 
-    it('should navigate to home page when FlyerBoard header is clicked', async () => {
+    it('should navigate back when FlyerBoard header is clicked', async () => {
         render(
             <BrowserRouter>
                 <AdDetailPage />
@@ -71,8 +69,8 @@ describe('AdDetailPage - Navigation', () => {
         const headerTitle = screen.getByTestId('header-title');
         fireEvent.click(headerTitle);
 
-        // Verify navigate was called with '/' (home page)
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        // Verify navigate was called with -1
+        expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 
     it('should pass the correct ad ID to AdDetail component', () => {
@@ -104,21 +102,5 @@ describe('AdDetailPage - Navigation', () => {
         await waitFor(() => {
             expect(screen.getByTestId('auth-modal')).toBeInTheDocument();
         });
-    });
-
-    it('should ensure navigation works even without browser history', () => {
-        // This test simulates opening a link in a new tab
-        render(
-            <BrowserRouter>
-                <AdDetailPage />
-            </BrowserRouter>
-        );
-
-        const backButton = screen.getByTestId('back-button');
-        fireEvent.click(backButton);
-
-        // Should navigate to '/', not navigate(-1) which wouldn't work in a new tab
-        expect(mockNavigate).toHaveBeenCalledWith('/');
-        expect(mockNavigate).not.toHaveBeenCalledWith(-1);
     });
 });

@@ -8,6 +8,7 @@ import { searchLocations } from '../../lib/locationService';
 vi.mock('convex/react', () => ({
     useMutation: vi.fn(),
     useQuery: vi.fn(),
+    useAction: vi.fn(),
 }));
 
 // Mock sonner

@@ -80,7 +80,12 @@ export function clearTimerState(phoneNumber: string): void {
  */
 export function clearAllTimers(): void {
     try {
-        const keys = Object.keys(localStorage);
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key) keys.push(key);
+        }
+
         keys.forEach(key => {
             if (key.startsWith(STORAGE_KEY_PREFIX)) {
                 localStorage.removeItem(key);

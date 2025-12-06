@@ -139,7 +139,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to listings
+                Back to flyers
               </button>
             </div>
           }
@@ -183,7 +183,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to listings
+                Back to flyers
               </button>
               <h1 className="text-xl font-semibold text-neutral-800">Loading...</h1>
               <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to listings
+              Back to flyers
             </button>
           </div>
         }
@@ -428,7 +428,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     src={displayAd.seller.image}
                     alt={displayAd.seller.name}
                     className="w-12 h-12 rounded-full object-cover"
-                    fallback="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"
+                    onError={() => setAvatarImageError(true)}
                   />
                 ) : (
                   <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-lg">

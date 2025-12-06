@@ -19,7 +19,7 @@ export const getAdById = query({
       ...ad,
       seller: seller ? {
         name: seller.name,
-        email: seller.email,
+        // Email removed for privacy - not exposed in public listings
         averageRating: seller.averageRating || 0,
         ratingCount: seller.ratingCount || 0,
         image: seller.image,

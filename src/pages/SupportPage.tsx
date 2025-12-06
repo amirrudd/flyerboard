@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, MessageSquare, User, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "../features/layout/Header";
+import { logDebug } from "../lib/logger";
 
 export default function SupportPage() {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function SupportPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // In a real app, this would send data to a backend
-        console.log("Support request submitted:", formData);
+        logDebug("Support request submitted:", formData);
         toast.success("Support request submitted successfully! We'll get back to you soon.");
         setFormData({ name: "", email: "", title: "", body: "" });
     };

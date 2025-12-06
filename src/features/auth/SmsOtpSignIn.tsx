@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Smartphone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { useDescope } from "@descope/react-sdk";
+import { logDebug, logError } from "../../lib/logger";
 import {
     getTimerState,
     setTimerState,
@@ -100,8 +101,9 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             setRemainingTime(60);
             toast.success("Verification code sent!");
             setStep(2); // Slide to OTP input
+            setStep(2); // Slide to OTP input
         } catch (error: any) {
-            console.error("Error sending OTP:", error);
+            logError("Error sending OTP", error);
             toast.error(error.message || "Failed to send verification code. Please try again.");
         } finally {
             setIsSendingOtp(false);
@@ -124,7 +126,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             setRemainingTime(60);
             toast.success("Code resent!");
         } catch (error: any) {
-            console.error("Error resending OTP:", error);
+            logError("Error resending OTP", error);
             toast.error(error.message || "Failed to resend code. Please try again.");
         } finally {
             setIsSendingOtp(false);
@@ -181,23 +183,17 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
         try {
             const formattedPhone = formatPhoneNumber(phoneNumber);
-            console.log("Verifying OTP for:", formattedPhone);
+            logDebug("Verifying OTP for:", formattedPhone);
 
             const resp = await sdk?.otp.verify.sms(formattedPhone, otpCode);
 
-            console.log("=== DESCOPE VERIFY RESPONSE ===");
-            console.log("Full response:", resp);
-            console.log("Response ok:", resp?.ok);
-            console.log("Response data:", resp?.data);
-            console.log("Response error:", resp?.error);
-            console.log("===============================");
+            logDebug("OTP Verify Response:", { ok: resp?.ok, error: resp?.error });
 
             if (!resp?.ok) {
                 throw new Error(resp?.error?.errorMessage || "Invalid verification code");
             }
 
-            console.log("OTP verified successfully!");
-            console.log("Session data returned:", resp?.data);
+            logDebug("OTP verified successfully");
 
             toast.success("Phone number verified successfully!");
             clearTimerState(phoneNumber);
@@ -210,10 +206,10 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             // Force a page reload to establish the session
             // This is a workaround - the Descope SDK should handle this automatically,
             // but manual SDK methods may not trigger automatic session management
-            console.log("Reloading page to establish session...");
+            logDebug("Reloading page to establish session...");
             window.location.reload();
         } catch (error: any) {
-            console.error("Error verifying OTP:", error);
+            logError("Error verifying OTP", error);
             toast.error(error.message || "Failed to verify code. Please try again.");
             // Clear the inputs on error
             setOtpDigits(["", "", "", "", "", ""]);

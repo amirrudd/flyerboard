@@ -10,9 +10,12 @@ interface ImageDisplayProps {
   src?: string;
   alt: string;
   className?: string;
+  fallback?: string;
+  variant?: "small" | "large";
+  onError?: () => void;
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError }: ImageDisplayProps) {
   // Use imageRef if provided, otherwise fall back to src
   const reference = imageRef || src;
 
@@ -37,6 +40,7 @@ export function ImageDisplay({ imageRef, src, alt, className = "" }: ImageDispla
       wrapperClassName={className}
       style={{ width: '100%', height: '100%', display: 'block' }}
       effect="opacity"
+      onError={onError}
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
       }

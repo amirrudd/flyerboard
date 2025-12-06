@@ -20,7 +20,7 @@ vi.mock('../features/ads/AdDetail', () => ({
     AdDetail: ({ onBack, onShowAuth, adId }: any) => (
         <div data-testid="ad-detail">
             <button onClick={onBack} data-testid="back-button">
-                Back to listings
+                Back to flyers
             </button>
             <button onClick={onBack} data-testid="header-title">
                 FlyerBoard

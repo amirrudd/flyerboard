@@ -4,12 +4,18 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const clearAndCreateSampleData = mutation({
   args: {},
   handler: async (ctx) => {
+    // PRODUCTION SAFETY: Only allow sample data creation in local development
+    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
+    if (!isDev) {
+      throw new Error("Sample data creation is only allowed in local development mode");
+    }
+
     // Clear existing data
     const existingAds = await ctx.db.query("ads").collect();
     for (const ad of existingAds) {
       await ctx.db.delete(ad._id);
     }
-    
+
     const existingCategories = await ctx.db.query("categories").collect();
     for (const category of existingCategories) {
       await ctx.db.delete(category._id);
@@ -17,7 +23,7 @@ export const clearAndCreateSampleData = mutation({
 
     // Try to get authenticated user, but don't require it for sample data
     let userId = await getAuthUserId(ctx);
-    
+
     // If no authenticated user, create a dummy user for sample data
     if (!userId) {
       userId = await ctx.db.insert("users", {
@@ -281,13 +287,13 @@ export const scrapeCategories = action({
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const html = await response.text();
-      
+
       // Look for category data in the HTML
       return {
         success: true,

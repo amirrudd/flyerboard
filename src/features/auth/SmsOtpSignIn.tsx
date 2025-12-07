@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Smartphone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { useDescope } from "@descope/react-sdk";
+import { Link } from "react-router-dom";
 import { logDebug, logError } from "../../lib/logger";
 import {
     getTimerState,
@@ -243,7 +244,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
             <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : handleVerifyOtp} className="flex flex-col gap-3">
                 {/* Sliding content container - needs overflow hidden for the slide effect */}
-                <div className="relative h-[190px] overflow-hidden">
+                <div className="relative h-[215px] overflow-hidden">
                     {/* Step 1: Phone Number */}
                     <div
                         className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 1
@@ -266,7 +267,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                                     Your Mobile Number (Australia only)
                                 </label>
                                 <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors z-10" />
                                     <input
                                         id="phoneNumber"
                                         className="auth-input-field pl-12"
@@ -284,6 +285,9 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                                         required
                                     />
                                 </div>
+                                <p className="text-xs text-neutral-500">
+                                    By continuing you agree to our <Link to="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.
+                                </p>
                             </div>
                         </div>
                     </div>

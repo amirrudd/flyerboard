@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SmsOtpSignIn } from './SmsOtpSignIn';
 import * as otpTimerStorage from '../../lib/otpTimerStorage';
 
@@ -32,6 +33,11 @@ vi.mock('../../lib/otpTimerStorage', () => ({
     clearTimerState: vi.fn(),
 }));
 
+// Helper function to render with Router
+const renderWithRouter = (component: React.ReactElement) => {
+    return render(<MemoryRouter>{component}</MemoryRouter>);
+};
+
 describe('SmsOtpSignIn', () => {
     const mockOnClose = vi.fn();
 
@@ -42,14 +48,14 @@ describe('SmsOtpSignIn', () => {
 
     describe('Component Rendering', () => {
         it('should render phone number input in step 1', () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             expect(screen.getByLabelText(/Your Mobile Number/i)).toBeInTheDocument();
             expect(screen.getByRole('button', { name: /Get Verification Code/i })).toBeInTheDocument();
         });
 
         it('should show step 1 initially', () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             // Step 1 heading should be visible
             expect(screen.getByText(/Verify Your Australian Phone Number/i)).toBeInTheDocument();
@@ -58,7 +64,7 @@ describe('SmsOtpSignIn', () => {
 
     describe('Phone Number Validation', () => {
         it('should enable send button for valid Australian mobile number', async () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -68,7 +74,7 @@ describe('SmsOtpSignIn', () => {
         });
 
         it('should disable send button for invalid phone number', () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '123' } });
@@ -78,7 +84,7 @@ describe('SmsOtpSignIn', () => {
         });
 
         it('should strip non-numeric characters', () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412abc345def678' } });
@@ -90,7 +96,7 @@ describe('SmsOtpSignIn', () => {
     describe('Send OTP Functionality', () => {
         it('should call Descope SDK sendOTP when send button is clicked', async () => {
             mockDescopeSDK.otp.signUpOrIn.sms.mockResolvedValue({ ok: true });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -106,7 +112,7 @@ describe('SmsOtpSignIn', () => {
 
         it('should transition to step 2 after sending code', async () => {
             mockDescopeSDK.otp.signUpOrIn.sms.mockResolvedValue({ ok: true });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -121,7 +127,7 @@ describe('SmsOtpSignIn', () => {
 
         it('should start timer after sending code', async () => {
             mockDescopeSDK.otp.signUpOrIn.sms.mockResolvedValue({ ok: true });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -140,7 +146,7 @@ describe('SmsOtpSignIn', () => {
                 ok: false,
                 error: { errorMessage: 'Network error' }
             });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -160,7 +166,7 @@ describe('SmsOtpSignIn', () => {
         });
 
         it('should render 6 OTP input boxes in step 2', async () => {
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -178,7 +184,7 @@ describe('SmsOtpSignIn', () => {
         it('should call Descope SDK verifyOTP when all 6 digits are entered', async () => {
             mockDescopeSDK.otp.verify.sms.mockResolvedValue({ ok: true });
 
-            render(<SmsOtpSignIn onClose={mockOnClose} />);
+            renderWithRouter(<SmsOtpSignIn onClose={mockOnClose} />);
 
             // Send OTP
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
@@ -207,7 +213,7 @@ describe('SmsOtpSignIn', () => {
         it('should call onClose on successful verification', async () => {
             mockDescopeSDK.otp.verify.sms.mockResolvedValue({ ok: true });
 
-            render(<SmsOtpSignIn onClose={mockOnClose} />);
+            renderWithRouter(<SmsOtpSignIn onClose={mockOnClose} />);
 
             // Send OTP
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
@@ -239,7 +245,7 @@ describe('SmsOtpSignIn', () => {
                 error: { errorMessage: 'Invalid code' },
             });
 
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             // Send OTP
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
@@ -267,7 +273,7 @@ describe('SmsOtpSignIn', () => {
         it('should clear timer on successful verification', async () => {
             mockDescopeSDK.otp.verify.sms.mockResolvedValue({ ok: true });
 
-            render(<SmsOtpSignIn onClose={mockOnClose} />);
+            renderWithRouter(<SmsOtpSignIn onClose={mockOnClose} />);
 
             // Send OTP
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
@@ -296,7 +302,7 @@ describe('SmsOtpSignIn', () => {
     describe('Back Button', () => {
         it('should show back button in step 2', async () => {
             mockDescopeSDK.otp.signUpOrIn.sms.mockResolvedValue({ ok: true });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);
             fireEvent.change(phoneInput, { target: { value: '0412345678' } });
@@ -312,7 +318,7 @@ describe('SmsOtpSignIn', () => {
 
         it('should return to step 1 when back button is clicked', async () => {
             mockDescopeSDK.otp.signUpOrIn.sms.mockResolvedValue({ ok: true });
-            render(<SmsOtpSignIn />);
+            renderWithRouter(<SmsOtpSignIn />);
 
             // Go to step 2
             const phoneInput = screen.getByPlaceholderText(/0412 345 678/i);

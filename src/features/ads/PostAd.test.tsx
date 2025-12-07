@@ -28,7 +28,13 @@ vi.mock('../../components/ui/ImageUpload', () => ({
 
 // Mock Header
 vi.mock('../layout/Header', () => ({
-    Header: () => <div data-testid="header">Header</div>,
+    Header: ({ leftNode, centerNode, rightNode }: any) => (
+        <div data-testid="header">
+            {leftNode}
+            {centerNode}
+            {rightNode}
+        </div>
+    ),
 }));
 
 // Mock category icons
@@ -48,7 +54,8 @@ describe('PostAd', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useMutation).mockImplementation((apiFunc: any) => {
+        const mockDeleteAd = vi.fn();
+        vi.mocked(useMutation).mockImplementation(() => {
             return mockCreateAd as any;
         });
         vi.mocked(useQuery).mockReturnValue([
@@ -136,5 +143,125 @@ describe('PostAd', () => {
 
         expect(screen.getByDisplayValue('Existing Ad')).toBeInTheDocument();
         expect(screen.getByText('Update Listing')).toBeInTheDocument();
+    });
+
+    it('should show delete button when editing', () => {
+        const editingAd = {
+            _id: 'ad1',
+            title: 'Existing Ad',
+            description: 'Desc',
+            price: 50,
+            location: 'Melbourne',
+            categoryId: 'cat1',
+            images: ['old.jpg'],
+        };
+
+        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+
+        // Delete button should be visible (either with text or just icon on mobile)
+        const deleteButton = screen.getByRole('button', { name: /delete/i });
+        expect(deleteButton).toBeInTheDocument();
+    });
+
+    it('should show confirmation dialog when delete is clicked', async () => {
+        const editingAd = {
+            _id: 'ad1',
+            title: 'Existing Ad',
+            description: 'Desc',
+            price: 50,
+            location: 'Melbourne',
+            categoryId: 'cat1',
+            images: ['old.jpg'],
+        };
+
+        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+
+        const deleteButton = screen.getByRole('button', { name: /delete/i });
+        fireEvent.click(deleteButton);
+
+        await waitFor(() => {
+            expect(screen.getByText('Delete Listing')).toBeInTheDocument();
+            expect(screen.getByText(/are you sure you want to delete this listing/i)).toBeInTheDocument();
+        });
+    });
+
+    it('should show and hide delete confirmation dialog', async () => {
+        const editingAd = {
+            _id: 'ad1',
+            title: 'Existing Ad',
+            description: 'Desc',
+            price: 50,
+            location: 'Melbourne',
+            categoryId: 'cat1',
+            images: ['old.jpg'],
+        };
+
+        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+
+        // Click delete button in the header
+        const deleteButton = screen.getByRole('button', { name: /delete/i });
+        fireEvent.click(deleteButton);
+
+        // Confirmation dialog should appear
+        await waitFor(() => {
+            expect(screen.getByText('Delete Listing')).toBeInTheDocument();
+            expect(screen.getByText(/are you sure you want to delete this listing/i)).toBeInTheDocument();
+        });
+
+        // Get all buttons and find the Cancel button in the dialog (not the form)
+        // The dialog has two buttons: Cancel and Delete, both are after the dialog appears
+        const allButtons = screen.getAllByRole('button');
+        // Filter for buttons that have 'Cancel' text and are within the dialog context
+        // The dialog cancel button should be one of the last buttons rendered
+        const dialogCancelButton = allButtons.filter(btn => btn.textContent === 'Cancel').pop();
+
+        expect(dialogCancelButton).toBeDefined();
+        fireEvent.click(dialogCancelButton!);
+
+        // Dialog should close
+        await waitFor(() => {
+            expect(screen.queryByText('Delete Listing')).not.toBeInTheDocument();
+        });
+    });
+
+    it('should not show delete button when creating new ad', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        // Delete button should not be present
+        const deleteButton = screen.queryByRole('button', { name: /delete/i });
+        expect(deleteButton).not.toBeInTheDocument();
+    });
+
+    it('should enforce character limits on form fields', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const titleInput = screen.getByPlaceholderText('Enter a descriptive title') as HTMLInputElement;
+        const descriptionTextarea = screen.getByPlaceholderText('Describe your item...') as HTMLTextAreaElement;
+        const extendedDescriptionTextarea = screen.getByPlaceholderText('Additional details (optional)...') as HTMLTextAreaElement;
+        const locationInput = screen.getByPlaceholderText('Enter suburb or postcode') as HTMLInputElement;
+
+        // Check maxLength attributes
+        expect(titleInput.maxLength).toBe(100);
+        expect(descriptionTextarea.maxLength).toBe(500);
+        expect(extendedDescriptionTextarea.maxLength).toBe(2000);
+        expect(locationInput.maxLength).toBe(100);
+    });
+
+    it('should display character counters for textareas', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        // Check for character counters
+        expect(screen.getByText('0 / 500 characters')).toBeInTheDocument();
+        expect(screen.getByText('0 / 2000 characters')).toBeInTheDocument();
+    });
+
+    it('should update character counter when typing', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const descriptionTextarea = screen.getByPlaceholderText('Describe your item...');
+
+        fireEvent.change(descriptionTextarea, { target: { value: 'Test description' } });
+
+        expect(screen.getByText('16 / 500 characters')).toBeInTheDocument();
     });
 });

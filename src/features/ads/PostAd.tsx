@@ -28,6 +28,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [progressPercent, setProgressPercent] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Location search state
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
@@ -41,6 +42,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const categories = useQuery(api.categories.getCategories);
   const createAd = useMutation(api.posts.createAd);
   const updateAd = useMutation(api.posts.updateAd);
+  const deleteAd = useMutation(api.posts.deleteAd);
   const uploadListingImage = useAction(api.image_actions.uploadListingImage);
 
   // Handle location search
@@ -100,6 +102,22 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
   const handleCancel = () => {
     onBack();
+  };
+
+  const handleDelete = async () => {
+    if (!editingAd) return;
+
+    setIsSubmitting(true);
+    try {
+      await deleteAd({ adId: editingAd._id });
+      toast.success("Listing deleted successfully!");
+      onBack();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete listing");
+    } finally {
+      setIsSubmitting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -271,11 +289,24 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           </h1>
         }
         rightNode={
-          <div className="w-20"></div>
+          editingAd ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors font-medium"
+              disabled={isSubmitting}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="hidden sm:inline">Delete</span>
+            </button>
+          ) : (
+            <div className="w-20"></div>
+          )
         }
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
@@ -290,10 +321,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   placeholder="Enter a descriptive title"
                   required
                 />
+                <div className="min-h-[20px] mt-1">
+                  {/* Reserved space for support text */}
+                </div>
               </div>
 
               <div>
@@ -350,6 +385,9 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                     </div>
                   )}
                 </div>
+                <div className="min-h-[20px] mt-1">
+                  {/* Reserved space for support text */}
+                </div>
               </div>
 
               <div>
@@ -364,9 +402,13 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   placeholder="0.00"
                   min="0"
+                  max="999999999"
                   step="0.01"
                   required
                 />
+                <div className="min-h-[20px] mt-1">
+                  {/* Reserved space for support text */}
+                </div>
               </div>
 
               <div className="relative" ref={locationWrapperRef}>
@@ -376,6 +418,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 <input
                   type="text"
                   value={locationQuery}
+                  maxLength={100}
                   onChange={(e) => {
                     setLocationQuery(e.target.value);
                     // If user types, invalidate the selected location until they select again
@@ -416,9 +459,11 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                     ))}
                   </div>
                 )}
-                {!formData.location && locationQuery.length > 0 && !isSearchingLocation && (
-                  <p className="text-xs text-amber-600 mt-1">Please select a location from the list</p>
-                )}
+                <div className="min-h-[20px] mt-1">
+                  {!formData.location && locationQuery.length > 0 && !isSearchingLocation ? (
+                    <p className="text-xs text-amber-600">Please select a location from the list</p>
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -430,11 +475,17 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
+                maxLength={500}
                 rows={4}
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Describe your item..."
                 required
               />
+              <div className="min-h-[20px] mt-1">
+                <p className="text-xs text-neutral-400 text-right">
+                  {formData.description.length} / 500 characters
+                </p>
+              </div>
             </div>
 
             <div className="mt-4">
@@ -445,10 +496,16 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 name="extendedDescription"
                 value={formData.extendedDescription}
                 onChange={handleInputChange}
+                maxLength={2000}
                 rows={3}
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Additional details (optional)..."
               />
+              <div className="min-h-[20px] mt-1">
+                <p className="text-xs text-neutral-400 text-right">
+                  {formData.extendedDescription.length} / 2000 characters
+                </p>
+              </div>
             </div>
           </div>
 
@@ -481,8 +538,45 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         </form>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Listing</h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to delete this listing? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Progress Overlay */}
-      {isSubmitting && (
+      {isSubmitting && !showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
             <div className="flex items-center gap-4 mb-6">

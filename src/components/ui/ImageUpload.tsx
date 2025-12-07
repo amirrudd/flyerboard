@@ -60,6 +60,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
     setIsCompressing(true);
     toast.info(`Compressing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
     const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
+    const processedImages: string[] = [];
 
     for (const file of fileArray) {
       if (!file.type.startsWith('image/')) {
@@ -89,8 +90,8 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
           reader.readAsDataURL(compressedFile);
         });
 
-        // Add to preview images
-        onImagesChange([...images, base64Data]);
+        // Collect processed images
+        processedImages.push(base64Data);
 
         // Store file data for later upload
         selectedFileData.push({
@@ -101,6 +102,11 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
         console.error('Failed to process file:', error);
         toast.error(`Failed to process ${file.name}`);
       }
+    }
+
+    // Update all images at once
+    if (processedImages.length > 0) {
+      onImagesChange([...images, ...processedImages]);
     }
 
     setIsCompressing(false);

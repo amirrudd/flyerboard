@@ -261,6 +261,11 @@ export const getImageUrl = query({
       return args.imageRef;
     }
 
+    // Handle base64-encoded images (data URLs) - return as-is
+    if (args.imageRef.startsWith('data:')) {
+      return args.imageRef;
+    }
+
     // Handle R2 references with r2: prefix
     if (isR2Reference(args.imageRef)) {
       const key = fromR2Reference(args.imageRef);

@@ -1,10 +1,10 @@
 # FlyerBoard Terms and Conditions
 
-*Last updated: [Date]*
+*Last updated: 7 December 2025*
 
-*Operator: [Your name / company], ABN [xxxxxx], trading as FlyerBoard ("we", "our", "us", "Platform")*
+*Operator: Mary Rudd (ABN 37 288 406 615), trading as FlyerBoard ("we", "our", "us", "Platform")*
 
-*Website: https://flyerboard.com.au , https://flyerboard.au ("Website")*
+*Websites: https://flyerboard.com.au , https://flyerboard.au ("Website")*
 
 *Users: Anyone who registers, posts, browses, or uses the Website ("User", "you", "your").*
 
@@ -28,7 +28,7 @@ We do not supervise, insure, or guarantee the quality, legality, or safety of it
 
 To register an account, you must provide a valid email address and a **verified mobile phone number** to receive one-time passwords (OTP) for login. You are responsible for all activity using your account. You must provide accurate details and keep them updated.
 
-We may suspend or terminate accounts at our discretion (for suspected fraud, violation of these Terms, or inactivity) without liability.
+We may suspend or terminate accounts for suspected fraud or breaches. Where appropriate we will provide reasons and an opportunity to appeal via our support contact. without liability.
 
 ## 4. User Conduct & Listings
 
@@ -77,7 +77,7 @@ We may change pricing or introduce new features; changes will be notified.
 
 ## 9. Indemnity
 
-You agree to indemnify, defend and hold harmless the Platform and its officers, directors, and employees from any claim, loss, or demand (including legal costs) arising out of your use of the Website, your Listing, **or any transaction or dispute with another User,** or breach of these Terms.
+You agree to indemnify us against any claim, loss, liability, cost, or expense (including reasonable legal fees) arising from: (a) your Listings; (b) your interactions, transactions, or disputes with other Users; or (c) your breach of these Terms. This indemnity does not apply to the extent that any loss is caused by our negligence, unlawful conduct, or any liability that cannot be excluded under Australian law.
 
 ## 10. Privacy & Data Security
 
@@ -87,7 +87,7 @@ We take reasonable steps to protect your data; however, we do not guarantee secu
 
 ## 11. Governing Law & Jurisdiction
 
-These Terms are governed by the laws of [State/Territory, e.g., Victoria] and you submit to the non-exclusive jurisdiction of its courts.
+These Terms are governed by the laws of Victoria, Australia. You submit to the non-exclusive jurisdiction of the courts of Victoria
 
 ## 12. General
 

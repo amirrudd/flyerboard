@@ -270,7 +270,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-100 md:min-h-screen md:h-auto">
+    <div className="min-h-screen bg-neutral-100">
       <Header
         leftNode={
           <button
@@ -306,303 +306,301 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         }
       />
 
-      <div className="flex-1 overflow-y-auto md:overflow-visible">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 md:pb-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    maxLength={100}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                    placeholder="Enter a descriptive title"
-                    required
-                  />
-                  <div className="min-h-[20px] mt-1">
-                    {/* Reserved space for support text */}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Category *
-                  </label>
-                  <div className="relative" ref={categoryWrapperRef}>
-                    <button
-                      type="button"
-                      onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors text-left flex items-center justify-between bg-white"
-                    >
-                      {formData.categoryId ? (
-                        <span className="flex items-center gap-2">
-                          {(() => {
-                            const cat = categories?.find(c => c._id === formData.categoryId);
-                            if (!cat) return "Select a category";
-                            const Icon = getCategoryIcon(cat.slug);
-                            return (
-                              <>
-                                <Icon className="w-4 h-4 text-neutral-500" />
-                                {cat.name}
-                              </>
-                            );
-                          })()}
-                        </span>
-                      ) : (
-                        <span className="text-neutral-500">Select a category</span>
-                      )}
-                      <svg className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {showCategoryDropdown && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {(categories || []).map((category: any) => {
-                          const Icon = getCategoryIcon(category.slug);
-                          return (
-                            <button
-                              key={category._id}
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, categoryId: category._id }));
-                                setShowCategoryDropdown(false);
-                              }}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center gap-3"
-                            >
-                              <Icon className="w-4 h-4 text-neutral-500" />
-                              <span className="font-medium text-neutral-700">{category.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-h-[20px] mt-1">
-                    {/* Reserved space for support text */}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Price (AUD) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                    placeholder="0.00"
-                    min="0"
-                    max="999999999"
-                    step="0.01"
-                    required
-                  />
-                  <div className="min-h-[20px] mt-1">
-                    {/* Reserved space for support text */}
-                  </div>
-                </div>
-
-                <div className="relative" ref={locationWrapperRef}>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Location *
-                  </label>
-                  <input
-                    type="text"
-                    value={locationQuery}
-                    maxLength={100}
-                    onChange={(e) => {
-                      setLocationQuery(e.target.value);
-                      // If user types, invalidate the selected location until they select again
-                      // But we keep the formData.location as is until submit check? 
-                      // Or we clear it? Let's clear it to enforce selection.
-                      if (formData.location && e.target.value !== formData.location) {
-                        setFormData(prev => ({ ...prev, location: "" }));
-                      }
-                    }}
-                    onFocus={() => {
-                      if (locationSuggestions.length > 0) setShowSuggestions(true);
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg outline-none transition-colors ${!formData.location && locationQuery.length > 0 ? "border-amber-500 focus:border-amber-500 focus:ring-amber-500" : "border-neutral-300 focus:border-primary-600 focus:ring-primary-600"
-                      }`}
-                    placeholder="Enter suburb or postcode"
-                    required
-                  />
-                  {isSearchingLocation && (
-                    <div className="absolute right-3 top-[38px]">
-                      <svg className="w-4 h-4 animate-spin text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {showSuggestions && locationSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {locationSuggestions.map((loc) => (
-                        <button
-                          key={loc.id}
-                          type="button"
-                          onClick={() => handleLocationSelect(loc)}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center justify-between group"
-                        >
-                          <span className="font-medium text-neutral-700 group-hover:text-neutral-900">{loc.locality}</span>
-                          <span className="text-neutral-400 text-xs group-hover:text-neutral-500">{loc.state} {loc.postcode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="min-h-[20px] mt-1">
-                    {!formData.location && locationQuery.length > 0 && !isSearchingLocation ? (
-                      <p className="text-xs text-amber-600">Please select a location from the list</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Description *
+                  Title *
                 </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
                   onChange={handleInputChange}
-                  maxLength={500}
-                  rows={4}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                  placeholder="Describe your item..."
+                  placeholder="Enter a descriptive title"
                   required
                 />
                 <div className="min-h-[20px] mt-1">
-                  <p className="text-xs text-neutral-400 text-right">
-                    {formData.description.length} / 500 characters
-                  </p>
+                  {/* Reserved space for support text */}
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Extended Description
+                  Category *
                 </label>
-                <textarea
-                  name="extendedDescription"
-                  value={formData.extendedDescription}
+                <div className="relative" ref={categoryWrapperRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors text-left flex items-center justify-between bg-white"
+                  >
+                    {formData.categoryId ? (
+                      <span className="flex items-center gap-2">
+                        {(() => {
+                          const cat = categories?.find(c => c._id === formData.categoryId);
+                          if (!cat) return "Select a category";
+                          const Icon = getCategoryIcon(cat.slug);
+                          return (
+                            <>
+                              <Icon className="w-4 h-4 text-neutral-500" />
+                              {cat.name}
+                            </>
+                          );
+                        })()}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-500">Select a category</span>
+                    )}
+                    <svg className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showCategoryDropdown && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {(categories || []).map((category: any) => {
+                        const Icon = getCategoryIcon(category.slug);
+                        return (
+                          <button
+                            key={category._id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, categoryId: category._id }));
+                              setShowCategoryDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center gap-3"
+                          >
+                            <Icon className="w-4 h-4 text-neutral-500" />
+                            <span className="font-medium text-neutral-700">{category.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="min-h-[20px] mt-1">
+                  {/* Reserved space for support text */}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Price (AUD) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
                   onChange={handleInputChange}
-                  maxLength={2000}
-                  rows={3}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                  placeholder="Additional details (optional)..."
+                  placeholder="0.00"
+                  min="0"
+                  max="999999999"
+                  step="0.01"
+                  required
                 />
                 <div className="min-h-[20px] mt-1">
-                  <p className="text-xs text-neutral-400 text-right">
-                    {formData.extendedDescription.length} / 2000 characters
-                  </p>
+                  {/* Reserved space for support text */}
+                </div>
+              </div>
+
+              <div className="relative" ref={locationWrapperRef}>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  value={locationQuery}
+                  maxLength={100}
+                  onChange={(e) => {
+                    setLocationQuery(e.target.value);
+                    // If user types, invalidate the selected location until they select again
+                    // But we keep the formData.location as is until submit check? 
+                    // Or we clear it? Let's clear it to enforce selection.
+                    if (formData.location && e.target.value !== formData.location) {
+                      setFormData(prev => ({ ...prev, location: "" }));
+                    }
+                  }}
+                  onFocus={() => {
+                    if (locationSuggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg outline-none transition-colors ${!formData.location && locationQuery.length > 0 ? "border-amber-500 focus:border-amber-500 focus:ring-amber-500" : "border-neutral-300 focus:border-primary-600 focus:ring-primary-600"
+                    }`}
+                  placeholder="Enter suburb or postcode"
+                  required
+                />
+                {isSearchingLocation && (
+                  <div className="absolute right-3 top-[38px]">
+                    <svg className="w-4 h-4 animate-spin text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                )}
+
+                {showSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {locationSuggestions.map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => handleLocationSelect(loc)}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center justify-between group"
+                      >
+                        <span className="font-medium text-neutral-700 group-hover:text-neutral-900">{loc.locality}</span>
+                        <span className="text-neutral-400 text-xs group-hover:text-neutral-500">{loc.state} {loc.postcode}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="min-h-[20px] mt-1">
+                  {!formData.location && locationQuery.length > 0 && !isSearchingLocation ? (
+                    <p className="text-xs text-amber-600">Please select a location from the list</p>
+                  ) : null}
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Images *</h2>
-              <ImageUpload
-                images={images}
-                onImagesChange={setImages}
-                onFilesSelected={setSelectedFiles}
-                maxImages={5}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Description *
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                maxLength={500}
+                rows={4}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                placeholder="Describe your item..."
+                required
               />
+              <div className="min-h-[20px] mt-1">
+                <p className="text-xs text-neutral-400 text-right">
+                  {formData.description.length} / 500 characters
+                </p>
+              </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Extended Description
+              </label>
+              <textarea
+                name="extendedDescription"
+                value={formData.extendedDescription}
+                onChange={handleInputChange}
+                maxLength={2000}
+                rows={3}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                placeholder="Additional details (optional)..."
+              />
+              <div className="min-h-[20px] mt-1">
+                <p className="text-xs text-neutral-400 text-right">
+                  {formData.extendedDescription.length} / 2000 characters
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Images *</h2>
+            <ImageUpload
+              images={images}
+              onImagesChange={setImages}
+              onFilesSelected={setSelectedFiles}
+              maxImages={5}
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || images.length === 0 || !formData.location}
+              className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSubmitting ? "Saving..." : (editingAd ? "Update Listing" : "Post Listing")}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Listing</h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to delete this listing? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
               <button
-                type="button"
-                onClick={handleCancel}
-                className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
-                type="submit"
-                disabled={isSubmitting || images.length === 0 || !formData.location}
-                className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
+                disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : (editingAd ? "Update Listing" : "Post Listing")}
+                {isSubmitting ? "Deleting..." : "Delete"}
               </button>
             </div>
-          </form>
+          </div>
         </div>
+      )}
 
-        {/* Delete Confirmation Dialog */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Listing</h3>
-                  <p className="text-gray-600 text-sm">
-                    Are you sure you want to delete this listing? This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
+      {/* Progress Overlay */}
+      {isSubmitting && !showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editingAd ? 'Updating Ad...' : 'Creating Ad...'}
+              </h3>
             </div>
-          </div>
-        )}
 
-        {/* Progress Overlay */}
-        {isSubmitting && !showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingAd ? 'Updating Ad...' : 'Creating Ad...'}
-                </h3>
-              </div>
+            <p className="text-gray-600 mb-4 text-center">{uploadProgress}</p>
 
-              <p className="text-gray-600 mb-4 text-center">{uploadProgress}</p>
-
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-primary-600 h-3 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-
-              <p className="text-sm text-gray-500 mt-3 text-center">
-                {progressPercent}% complete
-              </p>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-primary-600 h-3 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
+
+            <p className="text-sm text-gray-500 mt-3 text-center">
+              {progressPercent}% complete
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -285,7 +285,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         }
         centerNode={
           <h1 className="text-xl font-semibold text-neutral-800">
-            {editingAd ? "Edit Listing" : "Post New Listing"}
+            {editingAd ? "Edit Listing" : "Pin New Flyer"}
           </h1>
         }
         rightNode={
@@ -311,7 +311,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Title *

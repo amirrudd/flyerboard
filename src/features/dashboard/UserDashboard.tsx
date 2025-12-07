@@ -502,20 +502,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             className="w-20 h-20 object-cover rounded-lg"
                           />
                           <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
-                                <p className="text-lg font-bold text-primary-600 mb-2">
-                                  ${ad.price.toLocaleString()} AUD
-                                </p>
-                                <div className="flex items-center gap-4 text-sm text-gray-500">
-                                  <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views} views</span>
-                                  <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                    {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                    {ad.isActive ? 'Active' : 'Inactive'}
-                                  </span>
-                                </div>
+                            <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
+                            <p className="text-lg font-bold text-primary-600 mb-2">
+                              ${ad.price.toLocaleString()} AUD
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-sm text-gray-500">
+                                <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views} views</span>
+                                <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                  {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                                  {ad.isActive ? 'Active' : 'Inactive'}
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
@@ -523,9 +521,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     e.stopPropagation();
                                     setShowMessagesForAd(ad._id);
                                   }}
-                                  className="relative px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                  className="relative p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                  title="Messages"
                                 >
-                                  <MessageSquare className="w-4 h-4" /> Messages
+                                  <MessageSquare className="w-4 h-4" />
+                                  <span className="hidden md:inline">Messages</span>
                                   {unreadCounts && unreadCounts[ad._id] > 0 && (
                                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                                       {unreadCounts[ad._id]}
@@ -537,30 +537,22 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     e.stopPropagation();
                                     handleToggleStatus(ad._id);
                                   }}
-                                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ad.isActive
-                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    }`}
+                                  className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                  title={ad.isActive ? 'Deactivate' : 'Activate'}
                                 >
-                                  {ad.isActive ? 'Deactivate' : 'Activate'}
+                                  {ad.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-green-600" />}
+                                  <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onEditAd(ad);
                                   }}
-                                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                                  className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                  title="Edit"
                                 >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowDeleteConfirm(ad._id);
-                                  }}
-                                  className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
-                                >
-                                  Delete
+                                  <Edit className="w-4 h-4" />
+                                  <span className="hidden md:inline">Edit</span>
                                 </button>
                               </div>
                             </div>

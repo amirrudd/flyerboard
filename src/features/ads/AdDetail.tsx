@@ -15,6 +15,8 @@ import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { LocationMap } from "../../components/ui/LocationMap";
+
 
 interface AdDetailProps {
   adId: Id<"ads">;
@@ -404,16 +406,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             {/* Map */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Location</h3>
-              <div className="h-64 bg-neutral-100 rounded-lg flex items-center justify-center">
-                <div className="text-center text-neutral-500">
-                  <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <p>Map showing {displayAd.location}</p>
-                  <p className="text-sm">(Map integration coming soon)</p>
-                </div>
-              </div>
+              <LocationMap location={displayAd.location} />
             </div>
           </div>
 

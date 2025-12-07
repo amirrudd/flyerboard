@@ -55,14 +55,14 @@
   }
 
   /* Mobile-specific padding that accounts for bottom nav + safe area + button height */
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .pb-bottom-nav {
-      padding-bottom: calc(var(--bottom-nav-height) + 60px);
+      padding-bottom: calc(var(--bottom-nav-height) + 120px);
     }
   }
 
   /* Desktop - normal padding */
-  @media (min-width: 769px) {
+  @media (min-width: 1025px) {
     .pb-bottom-nav {
       padding-bottom: 2rem;
     }

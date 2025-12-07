@@ -1,16 +1,16 @@
 # FlyerBoard Privacy Policy
 
-*Last updated: [Date]*
+*Last updated: 7 December 2025*
 
-*Controller: [Your name / company], ABN [xxxxxx], trading as FlyerBoard ("we", "our", "us")*
+*Controller: Mary Rudd (ABN 37 288 406 615), trading as FlyerBoard ("we", "our", "us")*
 
-*Website: https://[your-domain].com.au*
+*Websites: https://flyerboard.com.au, https://flyerboard.au*
 
-*We are committed to protecting your personal information and complying with the _Privacy Act 1988_ and the Australian Privacy Principles (APPs).*
+*We are committed to protecting personal information and, where applicable, complying with the Privacy Act 1988 and the Australian Privacy Principles (APPs).*
 
 ## 1. What information we collect
 
-We collect personal information that is reasonably necessary for the operation of our marketplace platform. This includes:
+We collect personal information that is reasonably necessary for the operation of our online marketplace platform. This includes:
 
 - **Account Data:** Name, email, and a **verified mobile phone number (used for login and security purposes)**.
 - **Listing Data:** Images, description, price, location, and listing history.
@@ -42,11 +42,13 @@ We do not sell your personal information for direct marketing without consent.
 
 ## 4. Data Transfer & Storage
 
-Your data may be stored and processed in Australia and/or overseas where we or our service providers operate. We will take reasonable steps to ensure overseas recipients handle your data in accordance with APPs.
+Where we disclose personal information to overseas service providers (e.g., hosting, SMS/OTP), we take reasonable steps to ensure they handle personal information consistently with APPs.
 
 ## 5. Data Security & Retention
 
 We take reasonable steps to protect your personal information from misuse, interference, or loss. However, no system is perfect; we cannot guarantee absolute security.
+
+We do not store your payment card details. Payment processing is handled by third-party payment providers (e.g., Stripe, PayPal). Their use of your payment information is governed by their privacy policies.
 
 We retain your data for as long as needed to provide the Platform, comply with legal obligations, or resolve disputes. This retention period may extend beyond your account deletion **to comply with anti-fraud laws or in connection with an investigation into a potential breach of these Terms.**
 

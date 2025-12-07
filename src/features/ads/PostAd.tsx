@@ -306,7 +306,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         }
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-40 md:pb-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>

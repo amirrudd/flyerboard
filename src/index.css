@@ -54,9 +54,9 @@
     margin-bottom: var(--safe-area-inset-bottom);
   }
 
-  /* Mobile-specific padding that accounts for bottom nav + safe area */
+  /* Mobile-specific padding that accounts for bottom nav + safe area + button height */
   .pb-bottom-nav {
-    padding-bottom: var(--bottom-nav-height);
+    padding-bottom: calc(var(--bottom-nav-height) + 80px);
   }
 
   /* GPU-accelerated fixed positioning for mobile */
@@ -165,7 +165,9 @@
 
   /* Prevent body scroll on mobile - only allow scroll in designated containers */
   @media (max-width: 768px) {
-    html, body {
+
+    html,
+    body {
       overflow: hidden;
       position: fixed;
       width: 100%;

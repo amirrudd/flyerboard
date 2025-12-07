@@ -55,8 +55,17 @@
   }
 
   /* Mobile-specific padding that accounts for bottom nav + safe area + button height */
-  .pb-bottom-nav {
-    padding-bottom: calc(var(--bottom-nav-height) + 80px);
+  @media (max-width: 768px) {
+    .pb-bottom-nav {
+      padding-bottom: calc(var(--bottom-nav-height) + 60px);
+    }
+  }
+
+  /* Desktop - normal padding */
+  @media (min-width: 769px) {
+    .pb-bottom-nav {
+      padding-bottom: 2rem;
+    }
   }
 
   /* GPU-accelerated fixed positioning for mobile */

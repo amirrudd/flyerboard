@@ -150,6 +150,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (user?._id === "temp-id") {
+      toast.error("Please wait for profile sync to complete");
+      return;
+    }
+
     try {
       await updateProfile(profileData);
       toast.success("Profile updated successfully");

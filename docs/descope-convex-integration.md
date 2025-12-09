@@ -101,19 +101,51 @@ Updated `convex/r2.ts`:
 
 ## Environment Variables Required
 
+### Vercel Production (Frontend Only)
+Add these to **Vercel Dashboard → Settings → Environment Variables**:
+
 ```bash
-# Descope
+# Frontend variables (VITE_* prefix - embedded at build time)
+VITE_CONVEX_URL=https://resilient-pheasant-112.convex.cloud
 VITE_DESCOPE_PROJECT_ID=P363bEaEDNeBq3fLWpNjbiUvuloU
-
-# Convex OIDC
-CONVEX_AUTH_ISSUER=https://api.descope.com/P363bEaEDNeBq3fLWpNjbiUvuloU
-
-# R2 Storage
-R2_ACCESS_KEY_ID=...
-R2_SECRET_ACCESS_KEY=...
-R2_ENDPOINT=...
-R2_BUCKET=...
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyC-GecPLxuF3-SJiYzyorDjNyDf5jh24gM
 ```
+
+**❌ Do NOT add to Vercel:**
+- Backend variables (CONVEX_AUTH_ISSUER, DESCOPE_PROJECT_ID without VITE_ prefix, R2_*, etc.)
+- These belong in Convex Dashboard, not Vercel
+
+### Convex Production (Backend Only)
+Add these to **Convex Dashboard → Settings → Environment Variables**:
+
+```bash
+# OIDC Authentication
+CONVEX_AUTH_ISSUER=https://api.descope.com/P363bEaEDNeBq3fLWpNjbiUvuloU
+DESCOPE_PROJECT_ID=P363bEaEDNeBq3fLWpNjbiUvuloU
+
+# Descope Management API
+DESCOPE_MANAGEMENT_KEY=your_descope_management_key
+
+# Cloudflare R2 Storage
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_BUCKET=flyer-board-images
+R2_ENDPOINT=your_r2_endpoint_url
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+```
+
+**❌ Do NOT add to Convex:**
+- Frontend variables (VITE_CONVEX_URL, VITE_DESCOPE_PROJECT_ID, etc.)
+- These are for Vite/React only
+
+### Local Development (.env.local)
+For local development, you need **both** frontend and backend variables in `.env.local`:
+
+```bash
+# See .env.example for complete setup instructions
+```
+
+Refer to [`.env.example`](file:///Users/amir.rudd/flyerBoard/FlyerBoard/.env.example) for detailed documentation.
+
 
 ## Testing
 

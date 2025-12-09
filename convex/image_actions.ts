@@ -10,19 +10,8 @@ import {
     makeListingImageKey
 } from "./r2";
 
-// Helper to get user ID with local dev fallback
+// Helper to get authenticated user ID
 async function getUserId(ctx: any) {
-    // Check if we're in local development
-    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
-
-    if (isDev) {
-        // In local dev, just use the most recent user
-        const recentUser = await ctx.runQuery(internal.users.getMostRecentUser);
-        if (recentUser) return recentUser._id;
-        throw new Error("No users found in database. Please log in at least once before uploading images.");
-    }
-
-    // In production, require proper authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
         throw new Error("Authentication required to upload images");

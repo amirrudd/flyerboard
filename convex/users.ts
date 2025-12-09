@@ -13,12 +13,6 @@ export const getUserByToken = internalQuery({
   },
 });
 
-export const getMostRecentUser = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("users").order("desc").first();
-  },
-});
 // Support profile image updates
 
 

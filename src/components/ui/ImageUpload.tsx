@@ -58,23 +58,30 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
     }
 
     setIsCompressing(true);
-    toast.info(`Compressing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
+    toast.info(`Processing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
     const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
     const processedImages: string[] = [];
 
     for (const file of fileArray) {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image`);
-        continue;
-      }
-
+      // Check file size before processing
       if (file.size > 10 * 1024 * 1024) {
         toast.error(`${file.name} is too large (max 10MB)`);
         continue;
       }
 
+      // Accept common image formats including HEIC/HEIF from iPhones
+      const isValidImage =
+        file.type.startsWith('image/') ||
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif');
+
+      if (!isValidImage) {
+        toast.error(`${file.name} is not a supported image format`);
+        continue;
+      }
+
       try {
-        // Compress and convert to WebP
+        // Compress and convert to WebP (handles HEIC/HEIF automatically)
         const compressedFile = await imageCompression(file, {
           maxSizeMB: 1,
           useWebWorker: true,
@@ -99,14 +106,15 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
           type: 'image/webp'
         });
       } catch (error) {
-        console.error('Failed to process file:', error);
-        toast.error(`Failed to process ${file.name}`);
+        console.error('Failed to process file:', file.name, error);
+        toast.error(`Failed to process ${file.name}. ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
     // Update all images at once
     if (processedImages.length > 0) {
       onImagesChange([...images, ...processedImages]);
+      toast.success(`Successfully processed ${processedImages.length} image${processedImages.length > 1 ? 's' : ''}`);
     }
 
     setIsCompressing(false);
@@ -144,7 +152,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -168,7 +176,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
               </button>
             </div>
             <p className="text-xs text-gray-400">
-              Supports: JPG, PNG, GIF, WebP • Max size: 5MB each • Max {maxImages} images
+              Supports: JPG, PNG, GIF, WebP, HEIC • Max size: 10MB each • Max {maxImages} images
             </p>
           </div>
         </div>

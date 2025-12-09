@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -539,7 +540,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-start gap-4 mb-4">
@@ -572,13 +573,14 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Progress Overlay */}
-      {isSubmitting && !showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+      {isSubmitting && !showDeleteConfirm && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl">
             <div className="flex items-center gap-4 mb-6">
               <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
               <h3 className="text-xl font-semibold text-gray-900">
@@ -599,7 +601,8 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               {progressPercent}% complete
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

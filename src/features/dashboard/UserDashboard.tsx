@@ -33,6 +33,7 @@ import {
   Star
 } from "lucide-react";
 import { StarRating } from "../../components/ui/StarRating";
+import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 
 interface UserDashboardProps {
   onBack: () => void;
@@ -261,15 +262,20 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file");
+    // Accept common image formats including HEIC/HEIF from iPhones
+    const isValidImage =
+      file.type.startsWith('image/') ||
+      file.name.toLowerCase().endsWith('.heic') ||
+      file.name.toLowerCase().endsWith('.heif');
+
+    if (!isValidImage) {
+      toast.error("Please select a valid image file (JPG, PNG, GIF, WebP, HEIC)");
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+    // Validate file size (max 10MB before compression)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
       return;
     }
 
@@ -287,12 +293,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       // Upload using custom action with folder structure
       const r2Reference = await uploadProfileImage({
         base64Data,
-        contentType: file.type
+        contentType: file.type || 'image/jpeg' // Fallback for HEIC files
       });
 
       await updateProfile({ image: r2Reference });
       toast.success("Profile picture updated successfully");
     } catch (error: any) {
+      console.error('Profile image upload error:', error);
       toast.error(error.message || "Failed to upload profile picture");
     } finally {
       setUploadingImage(false);
@@ -375,80 +382,80 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
-                <input
-                  ref={profileImageInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfileImageUpload}
-                  className="hidden"
-                />
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    onClick={handleProfileImageClick}
-                    className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
-                    title="Click to upload profile picture"
-                  >
-                    {uploadingImage ? (
-                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                    ) : user.image && !imageError ? (
-                      <ImageDisplay
-                        src={user.image}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        onError={() => setImageError(true)}
-                      />
-                    ) : (
-                      getInitials(user)
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-800">{getDisplayName(user)}</h3>
-                      {user.isVerified && (
-                        <div title="Verified User" className="relative">
-                          <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
-                        </div>
+              {!convexUser || userStats === undefined ? (
+                <UserProfileSkeleton />
+              ) : (
+                <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+                  <input
+                    ref={profileImageInputRef}
+                    type="file"
+                    accept="image/*,.heic,.heif"
+                    onChange={handleProfileImageUpload}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      onClick={handleProfileImageClick}
+                      className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
+                      title="Click to upload profile picture"
+                    >
+                      {uploadingImage ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                      ) : user.image && !imageError ? (
+                        <ImageDisplay
+                          src={user.image}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          onError={() => setImageError(true)}
+                        />
+                      ) : (
+                        getInitials(user)
                       )}
-                      <button
-                        onClick={() => {
-                          setActiveTab("profile");
-                          setSearchParams({ tab: "profile" });
-                        }}
-                        className="p-1 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-colors"
-                        title="Edit profile"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
                     </div>
-                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-800">{getDisplayName(user)}</h3>
+                        {user.isVerified && (
+                          <div title="Verified User" className="relative">
+                            <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
+                          </div>
+                        )}
+                        <button
+                          onClick={() => {
+                            setActiveTab("profile");
+                            setSearchParams({ tab: "profile" });
+                          }}
+                          className="p-1 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-colors"
+                          title="Edit profile"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
                   </div>
-                </div>
 
-                {userStats && (
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary-600">{userStats.totalAds}</div>
+                      <div className="text-2xl font-bold text-primary-600">{userStats!.totalAds}</div>
                       <div className="text-xs text-gray-500">Total Ads</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary-600">{userStats.totalViews}</div>
+                      <div className="text-2xl font-bold text-primary-600">{userStats!.totalViews}</div>
                       <div className="text-xs text-gray-500">Total Views</div>
                     </div>
                   </div>
-                )}
 
-                {user && (
                   <div className="pt-3 border-t border-gray-200">
                     <StarRating
-                      rating={userStats?.averageRating || 0}
-                      count={userStats?.ratingCount || 0}
+                      rating={userStats!.averageRating || 0}
+                      count={userStats!.ratingCount || 0}
                       size="sm"
                       showCount={true}
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <nav className="bg-white rounded-lg p-4 shadow-sm">
                 <div className="space-y-2">
@@ -506,79 +513,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </div>
 
                   <div className="space-y-4">
-                    {(userAds || []).map((ad) => (
-                      <div
-                        key={ad._id}
-                        className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
-                        onClick={() => onEditAd(ad)}
-                      >
-                        <div className="flex items-start gap-4">
-                          <ImageDisplay
-                            src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
-                            alt={ad.title}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
-                            <p className="text-lg font-bold text-primary-600 mb-2">
-                              ${ad.price.toLocaleString()} AUD
-                            </p>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-sm text-gray-500">
-                                <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views} views</span>
-                                <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                  {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                  {ad.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowMessagesForAd(ad._id);
-                                  }}
-                                  className="relative p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
-                                  title="Messages"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                  <span className="hidden md:inline">Messages</span>
-                                  {unreadCounts && unreadCounts[ad._id] > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                      {unreadCounts[ad._id]}
-                                    </span>
-                                  )}
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleStatus(ad._id);
-                                  }}
-                                  className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
-                                  title={ad.isActive ? 'Deactivate' : 'Activate'}
-                                >
-                                  {ad.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-green-600" />}
-                                  <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditAd(ad);
-                                  }}
-                                  className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  <span className="hidden md:inline">Edit</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {(userAds || []).length === 0 && (
+                    {userAds === undefined ? (
+                      // Loading state - show skeletons
+                      <>
+                        <AdListingSkeleton />
+                        <AdListingSkeleton />
+                        <AdListingSkeleton />
+                      </>
+                    ) : userAds.length === 0 ? (
+                      // Empty state
                       <div className="text-center py-12">
                         <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-gray-300" /></div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">No Flyers Yet</h3>
@@ -590,6 +533,79 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           Pin Your First Flyer
                         </button>
                       </div>
+                    ) : (
+                      // Loaded state - show ads
+                      userAds.map((ad) => (
+                        <div
+                          key={ad._id}
+                          className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
+                          onClick={() => onEditAd(ad)}
+                        >
+                          <div className="flex items-start gap-4">
+                            <ImageDisplay
+                              src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
+                              alt={ad.title}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
+                              <p className="text-lg font-bold text-primary-600 mb-2">
+                                ${ad.price.toLocaleString()} AUD
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views} views</span>
+                                  <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                    {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                                    {ad.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowMessagesForAd(ad._id);
+                                    }}
+                                    className="relative p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                    title="Messages"
+                                  >
+                                    <MessageSquare className="w-4 h-4" />
+                                    <span className="hidden md:inline">Messages</span>
+                                    {unreadCounts && unreadCounts[ad._id] > 0 && (
+                                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                        {unreadCounts[ad._id]}
+                                      </span>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleStatus(ad._id);
+                                    }}
+                                    className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                    title={ad.isActive ? 'Deactivate' : 'Activate'}
+                                  >
+                                    {ad.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-green-600" />}
+                                    <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditAd(ad);
+                                    }}
+                                    className="p-2 md:px-3 md:py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center gap-1"
+                                    title="Edit"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                    <span className="hidden md:inline">Edit</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -601,157 +617,165 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <p className="text-gray-600 mb-6">Conversations for listings you're interested in</p>
 
                   <div className="space-y-4">
-                    {(buyerChats || []).map((chat: any) => (
-                      <div key={chat._id} className="border border-gray-200 rounded-lg overflow-hidden">
-                        {/* Chat Header */}
-                        <div
-                          onClick={() => handleChatClick(chat._id)}
-                          className="p-4 hover:bg-gray-100 transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-4 flex-1">
-                              <ImageDisplay
-                                src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
-                                alt={chat.ad?.title || "Ad"}
-                                className="w-16 h-16 object-cover rounded-lg"
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between mb-2">
-                                  <div>
-                                    <h3 className="font-semibold text-gray-800 mb-1">
-                                      {chat.ad?.title || "Deleted Ad"}
-                                    </h3>
-                                    {!chat.ad?.isActive && chat.ad && (
-                                      <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full mb-1">
-                                        Listing Inactive
-                                      </span>
-                                    )}
-                                    <p className="text-sm text-gray-600 mb-1">
-                                      Seller: {getDisplayName(chat.seller)}
-                                    </p>
-                                    {chat.seller && (
-                                      <StarRating
-                                        rating={chat.seller.averageRating || 0}
-                                        count={chat.seller.ratingCount || 0}
-                                        size="sm"
-                                        showCount={false}
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {chat.ad && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleViewListing(chat.ad!._id);
-                                        }}
-                                        className="px-3 py-1 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                                      >
-                                        View Listing
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleArchiveChat(chat._id);
-                                      }}
-                                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                                    >
-                                      Archive
-                                    </button>
-                                    {chat.unreadCount > 0 && (
-                                      <span className="bg-primary-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
-                                        {chat.unreadCount}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                {chat.latestMessage && (
-                                  <p className="text-sm text-gray-500 line-clamp-2">
-                                    "{chat.latestMessage.content}"
-                                  </p>
-                                )}
-                                <div className="flex items-center justify-between mt-2">
-                                  <p className="text-xs text-gray-400">
-                                    {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
-                                  </p>
-                                  <div className="text-lg font-bold text-primary-600">
-                                    ${chat.ad?.price?.toLocaleString() || 0} AUD
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Expanded Chat Messages */}
-                        {expandedChatId === chat._id && (
-                          <div className="border-t border-gray-200">
-                            {/* Messages */}
-                            <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-100">
-                              {(chatMessages || []).map((message) => (
-                                <div
-                                  key={message._id}
-                                  className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'
-                                    }`}
-                                >
-                                  <div
-                                    className={`max-w-xs px-3 py-2 rounded-lg ${message.senderId === user._id
-                                      ? 'bg-primary-600 text-white'
-                                      : 'bg-white text-gray-900 border border-gray-200'
-                                      }`}
-                                  >
-                                    <p className="text-sm">{message.content}</p>
-                                    <p
-                                      className={`text-xs mt-1 ${message.senderId === user._id
-                                        ? 'text-white/70'
-                                        : 'text-gray-500'
-                                        }`}
-                                    >
-                                      {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                              <div ref={messagesEndRef} />
-                            </div>
-
-                            {/* Message Input */}
-                            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={newMessage}
-                                  onChange={(e) => setNewMessage(e.target.value)}
-                                  placeholder="Type your message..."
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
-                                  disabled={!chat.ad?.isActive}
-                                />
-                                <button
-                                  type="submit"
-                                  disabled={!newMessage.trim() || !chat.ad?.isActive}
-                                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Send
-                                </button>
-                              </div>
-                              {!chat.ad?.isActive && (
-                                <p className="text-xs text-red-600 mt-2">
-                                  Cannot send messages - listing is inactive or deleted
-                                </p>
-                              )}
-                            </form>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {(buyerChats || []).length === 0 && (
+                    {buyerChats === undefined ? (
+                      // Loading state - show skeletons
+                      <>
+                        <ChatItemSkeleton />
+                        <ChatItemSkeleton />
+                      </>
+                    ) : buyerChats.length === 0 ? (
+                      // Empty state
                       <div className="text-center py-12">
                         <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-gray-300" /></div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">No messages yet</h3>
                         <p className="text-gray-600">Start a conversation by messaging sellers on listings you're interested in</p>
                       </div>
+                    ) : (
+                      // Loaded state - show chats
+                      buyerChats.map((chat: any) => (
+                        <div key={chat._id} className="border border-gray-200 rounded-lg overflow-hidden">
+                          {/* Chat Header */}
+                          <div
+                            onClick={() => handleChatClick(chat._id)}
+                            className="p-4 hover:bg-gray-100 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start gap-4 flex-1">
+                                <ImageDisplay
+                                  src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
+                                  alt={chat.ad?.title || "Ad"}
+                                  className="w-16 h-16 object-cover rounded-lg"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <h3 className="font-semibold text-gray-800 mb-1">
+                                        {chat.ad?.title || "Deleted Ad"}
+                                      </h3>
+                                      {!chat.ad?.isActive && chat.ad && (
+                                        <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full mb-1">
+                                          Listing Inactive
+                                        </span>
+                                      )}
+                                      <p className="text-sm text-gray-600 mb-1">
+                                        Seller: {getDisplayName(chat.seller)}
+                                      </p>
+                                      {chat.seller && (
+                                        <StarRating
+                                          rating={chat.seller.averageRating || 0}
+                                          count={chat.seller.ratingCount || 0}
+                                          size="sm"
+                                          showCount={false}
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {chat.ad && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewListing(chat.ad!._id);
+                                          }}
+                                          className="px-3 py-1 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                                        >
+                                          View Listing
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArchiveChat(chat._id);
+                                        }}
+                                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                      >
+                                        Archive
+                                      </button>
+                                      {chat.unreadCount > 0 && (
+                                        <span className="bg-primary-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
+                                          {chat.unreadCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {chat.latestMessage && (
+                                    <p className="text-sm text-gray-500 line-clamp-2">
+                                      "{chat.latestMessage.content}"
+                                    </p>
+                                  )}
+                                  <div className="flex items-center justify-between mt-2">
+                                    <p className="text-xs text-gray-400">
+                                      {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
+                                    </p>
+                                    <div className="text-lg font-bold text-primary-600">
+                                      ${chat.ad?.price?.toLocaleString() || 0} AUD
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Expanded Chat Messages */}
+                          {expandedChatId === chat._id && (
+                            <div className="border-t border-gray-200">
+                              {/* Messages */}
+                              <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-100">
+                                {(chatMessages || []).map((message) => (
+                                  <div
+                                    key={message._id}
+                                    className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'
+                                      }`}
+                                  >
+                                    <div
+                                      className={`max-w-xs px-3 py-2 rounded-lg ${message.senderId === user._id
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-white text-gray-900 border border-gray-200'
+                                        }`}
+                                    >
+                                      <p className="text-sm">{message.content}</p>
+                                      <p
+                                        className={`text-xs mt-1 ${message.senderId === user._id
+                                          ? 'text-white/70'
+                                          : 'text-gray-500'
+                                          }`}
+                                      >
+                                        {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div ref={messagesEndRef} />
+                              </div>
+
+                              {/* Message Input */}
+                              <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Type your message..."
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+                                    disabled={!chat.ad?.isActive}
+                                  />
+                                  <button
+                                    type="submit"
+                                    disabled={!newMessage.trim() || !chat.ad?.isActive}
+                                    className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Send
+                                  </button>
+                                </div>
+                                {!chat.ad?.isActive && (
+                                  <p className="text-xs text-red-600 mt-2">
+                                    Cannot send messages - listing is inactive or deleted
+                                  </p>
+                                )}
+                              </form>
+                            </div>
+                          )}
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -762,43 +786,51 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <h2 className="text-xl font-semibold text-gray-800 mb-6">Saved Ads</h2>
 
                   <div className="grid gap-4">
-                    {(savedAds || []).filter(savedAd => savedAd.ad).map((savedAd) => (
-                      <div
-                        key={savedAd._id}
-                        onClick={() => setSelectedAdId(savedAd.ad!._id)}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-primary-600 cursor-pointer group"
-                      >
-                        <div className="flex items-start gap-4">
-                          <ImageDisplay
-                            src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
-                            alt={savedAd.ad!.title}
-                            className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-primary-600 transition-colors">
-                              {savedAd.ad!.title}
-                            </h3>
-                            <p className="text-lg font-bold text-primary-600 mb-2">
-                              ${savedAd.ad!.price.toLocaleString()} AUD
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {savedAd.ad!.description}
-                            </p>
-                            <div className="flex items-center justify-between text-sm text-gray-500">
-                              <span>{savedAd.ad!.location}</span>
-                              <span>{savedAd.ad!.views} views</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {(savedAds || []).length === 0 && (
+                    {savedAds === undefined ? (
+                      // Loading state - show skeletons
+                      <>
+                        <SavedAdSkeleton />
+                        <SavedAdSkeleton />
+                      </>
+                    ) : savedAds.length === 0 ? (
+                      // Empty state
                       <div className="text-center py-12">
                         <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-gray-300" /></div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">No saved ads</h3>
                         <p className="text-gray-600">Save ads you're interested in to view them here</p>
                       </div>
+                    ) : (
+                      // Loaded state - show saved ads
+                      savedAds.filter(savedAd => savedAd.ad).map((savedAd) => (
+                        <div
+                          key={savedAd._id}
+                          onClick={() => setSelectedAdId(savedAd.ad!._id)}
+                          className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-primary-600 cursor-pointer group"
+                        >
+                          <div className="flex items-start gap-4">
+                            <ImageDisplay
+                              src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
+                              alt={savedAd.ad!.title}
+                              className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-primary-600 transition-colors">
+                                {savedAd.ad!.title}
+                              </h3>
+                              <p className="text-lg font-bold text-primary-600 mb-2">
+                                ${savedAd.ad!.price.toLocaleString()} AUD
+                              </p>
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {savedAd.ad!.description}
+                              </p>
+                              <div className="flex items-center justify-between text-sm text-gray-500">
+                                <span>{savedAd.ad!.location}</span>
+                                <span>{savedAd.ad!.views} views</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>

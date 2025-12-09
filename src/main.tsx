@@ -6,11 +6,25 @@ import { useDescopeAuth } from "./lib/useDescopeAuth";
 import "./index.css";
 import App from "./App";
 
+// Validate required environment variables
+const descopeProjectId = import.meta.env.VITE_DESCOPE_PROJECT_ID;
+if (!descopeProjectId) {
+  console.error(
+    "❌ CRITICAL: Missing VITE_DESCOPE_PROJECT_ID environment variable. " +
+    "Add it to Vercel environment variables and redeploy. " +
+    "See .env.example for setup instructions."
+  );
+  // In development, throw to fail fast
+  if (import.meta.env.DEV) {
+    throw new Error("Missing VITE_DESCOPE_PROJECT_ID - check your .env.local file");
+  }
+}
+
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
   <AuthProvider
-    projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID as string}
+    projectId={descopeProjectId || ""}
     persistTokens={true}
     autoRefresh={true}
     sessionTokenViaCookie={false}

@@ -15,9 +15,9 @@ export const syncDescopeUser = mutation({
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) {
-            // In local development, OIDC might not work properly
-            // Return early instead of throwing
-            console.warn("syncDescopeUser: No identity found (local development mode?)");
+            // In local development, OIDC might not check out if env vars aren't set
+            // In Prod, this means Auth is misconfigured
+            console.error("syncDescopeUser: No identity found. Check CONVEX_AUTH_ISSUER and DESCOPE_PROJECT_ID.");
             return null;
         }
 

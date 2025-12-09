@@ -6,8 +6,10 @@ import { BrowserRouter } from 'react-router-dom';
 
 // Mock Descope SDK
 const mockUseSession = vi.fn();
+const mockUseUser = vi.fn();
 vi.mock('@descope/react-sdk', () => ({
     useSession: () => mockUseSession(),
+    useUser: () => mockUseUser(),
 }));
 
 // Mock convex hooks
@@ -49,6 +51,13 @@ describe('UserDashboard', () => {
         vi.clearAllMocks();
         // Default to authenticated for most tests
         mockUseSession.mockReturnValue({ isAuthenticated: true });
+        mockUseUser.mockReturnValue({
+            user: {
+                name: 'Descope User',
+                email: 'test@descope.com',
+                picture: 'https://example.com/pic.jpg'
+            }
+        });
     });
 
     it('should show sign in message when user is not logged in', () => {

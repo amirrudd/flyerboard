@@ -11,7 +11,7 @@ import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
 import { useSearchParams } from "react-router-dom";
-import { useSession } from "@descope/react-sdk";
+import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import {
   LayoutDashboard,
@@ -61,16 +61,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
+  const { user: descopeUser } = useUser();
 
   // Fetch real user data from Convex
   const convexUser = useQuery(api.descopeAuth.getCurrentUser);
 
   // Use Convex user data if available, otherwise fall back to Descope session info or null
   const user = isAuthenticated ? (convexUser || {
-    name: "Loading...",
-    email: "",
+    name: descopeUser?.name || descopeUser?.email?.split('@')[0] || "Loading...",
+    email: descopeUser?.email || "",
     _id: "temp-id" as Id<"users">,
-    image: undefined,
+    image: descopeUser?.picture || undefined,
     isVerified: false
   }) : null;
   const userAds = useQuery(api.posts.getUserAds);
@@ -118,6 +119,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, [expandedChatId, markAsRead]);
 
+  // Initialize profile form data when user data is loaded
+  useEffect(() => {
+    if (user && user._id !== "temp-id") {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || ""
+      });
+    }
+  }, [user]);
+
   const handleDeleteAd = async (adId: string) => {
     try {
       await deleteAd({ adId: adId as any });
@@ -139,6 +150,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (user?._id === "temp-id") {
+      toast.error("Please wait for profile sync to complete");
+      return;
+    }
+
     try {
       await updateProfile(profileData);
       toast.success("Profile updated successfully");

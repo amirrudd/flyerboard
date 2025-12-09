@@ -13,27 +13,12 @@ export const syncDescopeUser = mutation({
         name: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        // Debug: Log environment configuration
-        console.log("🔍 Descope Auth Debug:", {
-            hasIssuer: !!process.env.CONVEX_AUTH_ISSUER,
-            issuer: process.env.CONVEX_AUTH_ISSUER,
-            hasProjectId: !!process.env.DESCOPE_PROJECT_ID,
-            projectId: process.env.DESCOPE_PROJECT_ID,
-        });
-
         const identity = await ctx.auth.getUserIdentity();
-
-        console.log("🔍 Identity Debug:", {
-            hasIdentity: !!identity,
-            subject: identity?.subject,
-            issuer: identity?.issuer,
-        });
 
         if (!identity) {
             // In local development, OIDC might not check out if env vars aren't set
             // In Prod, this means Auth is misconfigured
             console.error("syncDescopeUser: No identity found. Check CONVEX_AUTH_ISSUER and DESCOPE_PROJECT_ID.");
-            console.error("Expected issuer:", process.env.CONVEX_AUTH_ISSUER);
             return null;
         }
 

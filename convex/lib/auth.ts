@@ -13,30 +13,15 @@ export async function getDescopeUserId(
 ): Promise<Id<"users"> | null> {
     const identity = await ctx.auth.getUserIdentity();
 
-    if (identity) {
-        const subject = identity.subject;
-        const user = await ctx.db
-            .query("users")
-            .filter((q) => q.eq(q.field("tokenIdentifier"), subject))
-            .first();
-        return user?._id || null;
+    if (!identity) {
+        return null;
     }
 
-    // FALLBACK for local development when OIDC verification fails
-    // In production (Convex Cloud), OIDC works properly and this won't activate
-    const isDev = process.env.CONVEX_CLOUD_URL?.includes("convex.cloud") === false;
+    const subject = identity.subject;
+    const user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("tokenIdentifier"), subject))
+        .first();
 
-    if (!identity && isDev) {
-        // Use the most recently created user (likely the one who just logged in)
-        const recentUser = await ctx.db
-            .query("users")
-            .order("desc")
-            .first();
-
-        if (recentUser) {
-            return recentUser._id;
-        }
-    }
-
-    return null;
+    return user?._id || null;
 }

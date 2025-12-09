@@ -42,7 +42,42 @@ In Convex mutations/queries, use `getDescopeUserId(ctx)` (from `convex/lib/auth.
 ### ✅ DO: Handle OTP-Only Users
 Users can sign up via phone-only OTP without providing email or name. For privacy, phone numbers are NOT stored. OTP-only users display as "User" until they add profile details.
 
-## 3. Session Management
+## 3. Environment Variables
+
+### ⚠️ CRITICAL: Frontend vs Backend Variables
+
+Environment variables are split between **frontend** (Vite/React) and **backend** (Convex):
+
+#### Frontend Variables (VITE_* prefix)
+These are embedded into the React app at build time and accessible via `import.meta.env`:
+- `VITE_CONVEX_URL` - Convex deployment URL
+- `VITE_DESCOPE_PROJECT_ID` - Descope project ID for AuthProvider
+- `VITE_GOOGLE_MAPS_API_KEY` - Google Maps API key
+
+**Where to set:**
+- **Vercel Production**: Add to Vercel Dashboard → Settings → Environment Variables
+- **Local Development**: Add to `.env.local` file
+
+#### Backend Variables (NO VITE_ prefix)
+These are only accessible in Convex functions via `process.env`:
+- `CONVEX_AUTH_ISSUER` - OIDC issuer URL for JWT verification
+- `DESCOPE_PROJECT_ID` - Descope project ID for auth.config.ts
+- `DESCOPE_MANAGEMENT_KEY` - Descope management API key
+- `R2_ACCESS_KEY_ID`, `R2_BUCKET`, `R2_ENDPOINT`, `R2_SECRET_ACCESS_KEY` - Cloudflare R2 storage
+
+**Where to set:**
+- **Convex Production**: Add to Convex Dashboard → Settings → Environment Variables
+- **Local Development**: Add to `.env.local` file
+
+### ✅ DO: Check .env.example
+See [`.env.example`](file:///Users/amir.rudd/flyerBoard/FlyerBoard/.env.example) for a complete list of required variables and detailed setup instructions for each deployment environment.
+
+### ❌ DON'T: Mix Frontend and Backend Variables
+- **Never** add backend variables (without VITE_ prefix) to Vercel
+- **Never** add frontend variables (with VITE_ prefix) to Convex Dashboard
+- Both types can coexist in **local** `.env.local` file
+
+## 4. Session Management
 
 ### ✅ DO: Enable Persistence
 The `AuthProvider` in `main.tsx` must have:
@@ -50,19 +85,19 @@ The `AuthProvider` in `main.tsx` must have:
 - `autoRefresh={true}`
 - `sessionTokenViaCookie={false}` (unless specifically required otherwise)
 
-## 4. Mobile & Responsive
+## 5. Mobile & Responsive
 
 ### ✅ DO: Consistent Auth Checks
 Mobile components (`MobileHeader`, `BottomNav`, `Sidebar`) must use the exact same `useSession()` hooks as desktop components. Do not create separate auth logic for mobile views.
 
-## 5. Display Names
+## 6. Display Names
 
 ### ✅ DO: Use Display Name Utilities
 Use `getDisplayName()` and `getInitials()` from `src/lib/displayName.ts` for consistent fallback behavior:
 - Priority: `name` > `email prefix` > "User"
 - **Privacy-focused**: Never uses phone numbers for display
 
-## 6. Privacy & Security
+## 7. Privacy & Security
 
 ### ✅ DO: Protect User Privacy
 - Phone numbers used for OTP verification are **NOT stored** in the database

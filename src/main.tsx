@@ -10,7 +10,7 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
   <AuthProvider
-    projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID || "placeholder"}
+    projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID as string}
     persistTokens={true}
     autoRefresh={true}
     sessionTokenViaCookie={false}

@@ -110,6 +110,35 @@ To test R2 uploads locally:
 4. Log in via Descope (authentication works in local development)
 5. Upload images - authentication is enforced even locally
 
+### Testing Adaptive Compression
+
+The app automatically detects network speed and adjusts compression:
+
+1. Open browser DevTools → Console
+2. Select images to upload
+3. Look for log: `"Adaptive compression: [connection type]"`
+4. Verify compression settings match your connection:
+   - Fast WiFi/5G: "larger files OK" (1.5MB max)
+   - Medium 3G/4G: "standard compression" (1MB max)
+   - Slow 2G: "aggressive compression" (0.8MB max)
+
+**Note**: Image quality is always 90% regardless of connection speed to ensure consistent ad appearance.
+
+## Image Upload UX
+
+### Non-Blocking Compression
+- Images appear instantly after selection (preview from original file)
+- Compression runs silently in background using Web Workers
+- Form remains fully interactive during compression
+- If user clicks "Post" before compression finishes, a circular progress modal appears
+
+### Adaptive Compression Strategy
+- **Quality**: Always 90% for consistent ad appearance
+- **File size**: Adaptive based on network speed (0.8-1.5MB)
+- **Goal**: Minimize total time (compression + upload)
+
+See [`src/lib/networkSpeed.ts`](file:///Users/amir.rudd/flyerBoard/FlyerBoard/src/lib/networkSpeed.ts) for implementation details.
+
 ## Follow-up checklist
 
 1. Verify that new uploads succeed locally and in Vercel previews.

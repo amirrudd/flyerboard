@@ -5,10 +5,20 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
+import { CircularProgress } from "../../components/ui/CircularProgress";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
+
+interface ImageState {
+  id: string;
+  preview: string;
+  file: File;
+  compressed: File | null;
+  status: 'compressing' | 'ready' | 'error';
+  error?: string;
+}
 
 interface PostAdProps {
   onBack: () => void;
@@ -26,8 +36,10 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   });
 
   const [images, setImages] = useState<string[]>(editingAd?.images || []);
-  const [selectedFiles, setSelectedFiles] = useState<Array<{ dataUrl: string, type: string }>>([]);
+  const [imageStates, setImageStates] = useState<Map<string, ImageState>>(new Map());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWaitingForCompression, setIsWaitingForCompression] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
   const [uploadProgress, setUploadProgress] = useState("");
   const [progressPercent, setProgressPercent] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -130,35 +142,60 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
       return;
     }
 
-    // Validate that location is selected from list (or at least matches the format roughly, though strict validation is better)
-    // For now, we rely on the user selecting from the list or typing a valid string. 
-    // To enforce selection, we could clear formData.location if it doesn't match a selection, 
-    // but since we allow free text in the original requirement "type in their suburb", 
-    // we should probably allow it but strongly encourage selection.
-    // However, the requirement says "User must select from list to be able to proceed."
-    // So we should probably enforce that the current query matches the selected location.
-    // But since we store it as a string, it's hard to enforce without keeping the selected object.
-    // Let's assume if they typed it and it's in the input, it's fine, but the UI encourages selection.
-    // Actually, let's enforce it by checking if the current query matches the stored location.
-    if (formData.location !== locationQuery) {
-      // This happens if they typed something but didn't select. 
-      // Or if they modified it after selecting.
-      // We should probably force them to select.
-      // But for better UX, if they typed a valid location manually, maybe let it slide?
-      // "User must select from list to be able to proceed." -> Strict requirement.
-      // So we should clear location if they type something new.
-      // Let's implement a check: if locationQuery is not equal to formData.location, it means they changed it without selecting.
-      // So we set location to empty string in that case? 
-      // Better: update formData.location only on select.
-    }
-
     if (images.length === 0) {
       toast.error("Please add at least one image");
       return;
     }
 
+    // Check if any images are still compressing
+    const states = Array.from(imageStates.values());
+    const compressingImages = states.filter(s => s.status === 'compressing');
+
+    if (compressingImages.length > 0) {
+      setIsWaitingForCompression(true);
+
+      // Wait for all compressions to complete
+      const checkInterval = setInterval(() => {
+        const currentStates = Array.from(imageStates.values());
+        const stillCompressing = currentStates.filter(s => s.status === 'compressing');
+        const total = currentStates.length;
+        const completed = total - stillCompressing.length;
+
+        setCompressionProgress(Math.round((completed / total) * 100));
+
+        if (stillCompressing.length === 0) {
+          clearInterval(checkInterval);
+          setIsWaitingForCompression(false);
+          // Proceed with upload
+          performUpload();
+        }
+      }, 100);
+
+      return;
+    }
+
+    // All images ready, proceed immediately
+    await performUpload();
+  };
+
+  const performUpload = async () => {
+
     setIsSubmitting(true);
     setProgressPercent(0);
+
+    // Get compressed files from imageStates
+    const compressedFiles: File[] = [];
+    const states = Array.from(imageStates.values());
+
+    for (const state of states) {
+      if (state.status === 'ready' && state.compressed) {
+        compressedFiles.push(state.compressed);
+      } else if (state.status === 'error') {
+        toast.error('Some images failed to compress. Please remove and re-add them.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     try {
       if (editingAd) {
@@ -168,28 +205,26 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
         let finalImages = [...images];
 
-        if (selectedFiles.length > 0) {
-          setUploadProgress(`Uploading ${selectedFiles.length} new image(s)...`);
+        // Upload only new compressed images
+        const newImages = compressedFiles.slice(images.length);
+
+        if (newImages.length > 0) {
+          setUploadProgress(`Uploading ${newImages.length} new image(s)...`);
           setProgressPercent(40);
 
-          for (let i = 0; i < selectedFiles.length; i++) {
-            setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
-            const baseProgress = 40 + (i / selectedFiles.length) * 40;
+          for (let i = 0; i < newImages.length; i++) {
+            setUploadProgress(`Uploading image ${i + 1}/${newImages.length}...`);
+            const baseProgress = 40 + (i / newImages.length) * 40;
 
             // Get presigned URL for this image
             const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: editingAd._id });
 
-            // Convert base64 to File for upload
-            const response = await fetch(selectedFiles[i].dataUrl);
-            const blob = await response.blob();
-            const file = new File([blob], `image-${i}.webp`, { type: 'image/webp' });
-
-            // Upload directly to R2
+            // Upload directly to R2 (already compressed)
             await uploadImageToR2(
-              file,
+              newImages[i],
               async () => uploadUrl,
               async () => null,
-              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / selectedFiles.length))
+              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / newImages.length))
             );
 
             finalImages.push(key);
@@ -227,35 +262,28 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           images: [], // Empty initially
         });
 
-        // Step 2: Upload images directly to R2
+        // Step 2: Upload compressed images directly to R2
         setUploadProgress("Uploading images...");
         const uploadedRefs: string[] = [];
 
-        for (let i = 0; i < selectedFiles.length; i++) {
-          const file = selectedFiles[i];
-
+        for (let i = 0; i < compressedFiles.length; i++) {
           try {
-            const baseProgress = 20 + (i / selectedFiles.length) * 60;
-            setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
+            const baseProgress = 20 + (i / compressedFiles.length) * 60;
+            setUploadProgress(`Uploading image ${i + 1}/${compressedFiles.length}...`);
 
             // Get presigned URL for this image
             const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: adId });
 
-            // Convert base64 to File for upload
-            const response = await fetch(file.dataUrl);
-            const blob = await response.blob();
-            const imageFile = new File([blob], `image-${i}.webp`, { type: 'image/webp' });
-
-            // Upload directly to R2 with progress tracking
+            // Upload directly to R2 with progress tracking (already compressed)
             await uploadImageToR2(
-              imageFile,
+              compressedFiles[i],
               async () => uploadUrl,
               async () => null, // No metadata sync needed
-              (percent) => setProgressPercent(baseProgress + (percent / 100) * (60 / selectedFiles.length))
+              (percent) => setProgressPercent(baseProgress + (percent / 100) * (60 / compressedFiles.length))
             );
 
             uploadedRefs.push(key);
-            setUploadProgress(`Uploaded ${i + 1}/${selectedFiles.length} images`);
+            setUploadProgress(`Uploaded ${i + 1}/${compressedFiles.length} images`);
           } catch (error) {
             console.error(`Failed to upload image ${i + 1}:`, error);
             toast.error(`Failed to upload image ${i + 1}`);
@@ -537,7 +565,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             <ImageUpload
               images={images}
               onImagesChange={setImages}
-              onFilesSelected={setSelectedFiles}
+              onCompressionStateChange={setImageStates}
               maxImages={5}
             />
           </div>
@@ -599,29 +627,49 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         document.body
       )}
 
-      {/* Progress Overlay */}
-      {isSubmitting && !showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
-              <h3 className="text-xl font-semibold text-gray-900">
-                {editingAd ? 'Updating Ad...' : 'Creating Ad...'}
+      {/* Compression Wait Modal */}
+      {isWaitingForCompression && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex flex-col items-center">
+              <CircularProgress progress={compressionProgress} size={140} strokeWidth={10}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary-600">{compressionProgress}%</div>
+                  <div className="text-xs text-gray-500 mt-1">Compressing</div>
+                </div>
+              </CircularProgress>
+
+              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
+                Optimizing Images
               </h3>
+              <p className="text-gray-600 text-center text-sm">
+                Please wait while we compress your images for faster uploads...
+              </p>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
-            <p className="text-gray-600 mb-4 text-center">{uploadProgress}</p>
+      {/* Upload Progress Overlay */}
+      {isSubmitting && !showDeleteConfirm && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex flex-col items-center">
+              <CircularProgress progress={progressPercent} size={140} strokeWidth={10}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary-600">{progressPercent}%</div>
+                  <div className="text-xs text-gray-500 mt-1">Uploading</div>
+                </div>
+              </CircularProgress>
 
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div
-                className="bg-primary-600 h-3 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
+              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
+                {editingAd ? 'Updating Listing' : 'Creating Listing'}
+              </h3>
+              <p className="text-gray-600 text-center text-sm">
+                {uploadProgress}
+              </p>
             </div>
-
-            <p className="text-sm text-gray-500 mt-3 text-center">
-              {progressPercent}% complete
-            </p>
           </div>
         </div>,
         document.body

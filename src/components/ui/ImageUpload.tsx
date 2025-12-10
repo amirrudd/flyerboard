@@ -1,20 +1,46 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
 import imageCompression from 'browser-image-compression';
 import { Trash2 } from "lucide-react";
+import { getOptimalCompressionSettings, type CompressionSettings } from "../../lib/networkSpeed";
+
+interface ImageState {
+  id: string;
+  preview: string; // Original file preview (data URL)
+  file: File; // Original file
+  compressed: File | null; // Compressed file when ready
+  status: 'compressing' | 'ready' | 'error';
+  error?: string;
+}
 
 interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
   onFilesSelected?: (files: Array<{ dataUrl: string, type: string }>) => void;
+  onCompressionStateChange?: (states: Map<string, ImageState>) => void;
   maxImages?: number;
 }
 
-export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages = 10 }: ImageUploadProps) {
+export function ImageUpload({
+  images,
+  onImagesChange,
+  onFilesSelected,
+  onCompressionStateChange,
+  maxImages = 10
+}: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [imageStates, setImageStates] = useState<Map<string, ImageState>>(new Map());
+  const [compressionSettings, setCompressionSettings] = useState<CompressionSettings | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect network speed on mount
+  useEffect(() => {
+    getOptimalCompressionSettings().then(settings => {
+      setCompressionSettings(settings);
+      console.log('Adaptive compression:', settings.label);
+    });
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -36,7 +62,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
     if (imageFiles.length > 0) {
       uploadFiles(imageFiles);
     }
-  }, []);
+  }, [images.length]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -47,7 +73,7 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, []);
+  }, [images.length]);
 
   const uploadFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -57,11 +83,10 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
       return;
     }
 
-    setIsCompressing(true);
-    toast.info(`Processing ${fileArray.length} image${fileArray.length > 1 ? 's' : ''}...`);
-    const selectedFileData: Array<{ dataUrl: string, type: string }> = [];
-    const processedImages: string[] = [];
+    const newPreviews: string[] = [];
+    const newStates = new Map(imageStates);
 
+    // Process each file
     for (const file of fileArray) {
       // Check file size before processing
       if (file.size > 10 * 1024 * 1024) {
@@ -81,53 +106,106 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
       }
 
       try {
-        // Compress and convert to WebP (handles HEIC/HEIF automatically)
-        const compressedFile = await imageCompression(file, {
-          maxSizeMB: 1,
-          useWebWorker: true,
-          fileType: 'image/webp',
-          initialQuality: 0.8,
-        });
+        // Generate unique ID for this image
+        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Convert to base64 for preview and upload
-        const base64Data = await new Promise<string>((resolve, reject) => {
+        // Create immediate preview from original file
+        const preview = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
-          reader.readAsDataURL(compressedFile);
+          reader.readAsDataURL(file);
         });
 
-        // Collect processed images
-        processedImages.push(base64Data);
+        // Add to previews immediately
+        newPreviews.push(preview);
 
-        // Store file data for later upload
-        selectedFileData.push({
-          dataUrl: base64Data,
-          type: 'image/webp'
-        });
+        // Initialize state as compressing
+        const imageState: ImageState = {
+          id,
+          preview,
+          file,
+          compressed: null,
+          status: 'compressing',
+        };
+        newStates.set(id, imageState);
+
+        // Start compression in background (non-blocking)
+        compressImageInBackground(id, file, newStates);
       } catch (error) {
         console.error('Failed to process file:', file.name, error);
-        toast.error(`Failed to process ${file.name}. ${error instanceof Error ? error.message : 'Unknown error'}`);
+        toast.error(`Failed to process ${file.name}`);
       }
     }
 
-    // Update all images at once
-    if (processedImages.length > 0) {
-      onImagesChange([...images, ...processedImages]);
-      toast.success(`Successfully processed ${processedImages.length} image${processedImages.length > 1 ? 's' : ''}`);
+    // Update state immediately with previews
+    if (newPreviews.length > 0) {
+      onImagesChange([...images, ...newPreviews]);
+      setImageStates(newStates);
+      onCompressionStateChange?.(newStates);
+      toast.success(`Added ${newPreviews.length} image${newPreviews.length > 1 ? 's' : ''} - compressing in background...`);
     }
+  };
 
-    setIsCompressing(false);
+  const compressImageInBackground = async (
+    id: string,
+    file: File,
+    states: Map<string, ImageState>
+  ) => {
+    try {
+      // Use adaptive compression settings, fallback to balanced if not ready
+      const settings = compressionSettings || { quality: 0.9, maxSizeMB: 1, label: 'Balanced' };
 
-    // Pass selected files to parent
-    if (onFilesSelected && selectedFileData.length > 0) {
-      onFilesSelected(selectedFileData);
+      // Compress and convert to WebP (handles HEIC/HEIF automatically)
+      const compressedFile = await imageCompression(file, {
+        maxSizeMB: settings.maxSizeMB,
+        useWebWorker: true,
+        fileType: 'image/webp',
+        initialQuality: settings.quality,
+      });
+
+      // Update state to ready
+      setImageStates(prev => {
+        const newStates = new Map(prev);
+        const state = newStates.get(id);
+        if (state) {
+          state.compressed = compressedFile;
+          state.status = 'ready';
+          newStates.set(id, state);
+        }
+        onCompressionStateChange?.(newStates);
+        return newStates;
+      });
+    } catch (error) {
+      console.error('Failed to compress image:', error);
+
+      // Update state to error
+      setImageStates(prev => {
+        const newStates = new Map(prev);
+        const state = newStates.get(id);
+        if (state) {
+          state.status = 'error';
+          state.error = error instanceof Error ? error.message : 'Compression failed';
+          newStates.set(id, state);
+        }
+        onCompressionStateChange?.(newStates);
+        return newStates;
+      });
     }
   };
 
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
+
+    // Also remove from imageStates
+    const statesArray = Array.from(imageStates.values());
+    if (statesArray[index]) {
+      const newStates = new Map(imageStates);
+      newStates.delete(statesArray[index].id);
+      setImageStates(newStates);
+      onCompressionStateChange?.(newStates);
+    }
   };
 
   const canUploadMore = images.length < maxImages;
@@ -169,10 +247,9 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isCompressing}
-                className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
               >
-                {isCompressing ? 'Compressing...' : 'Choose Files'}
+                Choose Files
               </button>
             </div>
             <p className="text-xs text-gray-400">
@@ -181,8 +258,6 @@ export function ImageUpload({ images, onImagesChange, onFilesSelected, maxImages
           </div>
         </div>
       )}
-
-
 
       {/* Image Counter */}
       <div className="flex items-center justify-between">

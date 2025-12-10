@@ -144,8 +144,9 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
                 <Map
                     defaultCenter={coordinates}
                     defaultZoom={13}
-                    gestureHandling="cooperative"
-                    disableDefaultUI={false}
+                    gestureHandling="greedy"
+                    disableDefaultUI={true}
+                    zoomControl={true}
                     mapId="flyerboard-location-map"
                 >
                     {/* Circle overlay to show approximate location (1km radius) */}

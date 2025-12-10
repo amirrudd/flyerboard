@@ -98,6 +98,8 @@ export const deleteAd = mutation({
     }
 
     // Soft delete by marking as deleted
+    // Images remain in R2 for potential restoration
+    // TODO: Implement cleanup job to hard delete ads after 30+ days
     await ctx.db.patch(args.adId, {
       isDeleted: true,
       isActive: false,

@@ -23,6 +23,7 @@ async function getUserId(ctx: any) {
 }
 
 // Initialize S3 client for R2
+// CRITICAL: Disable checksums to avoid CORS issues
 const s3Client = new S3Client({
     region: "auto",
     endpoint: process.env.R2_ENDPOINT!,
@@ -30,6 +31,8 @@ const s3Client = new S3Client({
         accessKeyId: process.env.R2_ACCESS_KEY_ID!,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
     },
+    // Disable all request checksums globally
+    requestChecksumCalculation: "WHEN_REQUIRED",
 });
 
 /**

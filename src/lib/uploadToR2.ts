@@ -69,12 +69,25 @@ export async function uploadImageToR2(
             if (xhr.status === 200) {
                 resolve();
             } else {
-                reject(new Error(`Upload failed with status ${xhr.status}`));
+                const errorMsg = `Upload failed with status ${xhr.status}: ${xhr.statusText}. Response: ${xhr.responseText || 'No response body'}`;
+                console.error('R2 Upload Error:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    response: xhr.responseText,
+                    headers: xhr.getAllResponseHeaders()
+                });
+                reject(new Error(errorMsg));
             }
         });
 
-        xhr.addEventListener('error', () => {
-            reject(new Error('Upload failed'));
+        xhr.addEventListener('error', (event) => {
+            console.error('R2 Upload Network Error:', event);
+            console.error('XHR State:', {
+                readyState: xhr.readyState,
+                status: xhr.status,
+                statusText: xhr.statusText
+            });
+            reject(new Error('Upload failed - Network error. Check console for CORS details.'));
         });
 
         xhr.addEventListener('abort', () => {

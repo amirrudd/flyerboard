@@ -35,11 +35,11 @@ export function SignOutButton({ onSignOut, iconOnly = false }: SignOutButtonProp
 
   return (
     <button
-      className="auth-button flex items-center justify-center gap-2 group"
+      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
       onClick={handleSignOut}
     >
+      <LogOut className="w-4 h-4" />
       Sign out
-      <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
     </button>
   );
 }

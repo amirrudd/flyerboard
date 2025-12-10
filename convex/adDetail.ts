@@ -165,7 +165,7 @@ export const sendMessage = mutation({
     // Check if the ad still exists and is not deleted
     const ad = await ctx.db.get(chat.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Cannot send message - listing no longer available");
+      throw new Error("Cannot send message - flyer no longer available");
     }
 
     // Insert message

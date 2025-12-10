@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ export function ReportModal({
     const getReportTypeLabel = () => {
         switch (reportType) {
             case "ad":
-                return "listing";
+                return "flyer";
             case "profile":
                 return "user";
             case "chat":
@@ -89,13 +90,13 @@ export function ReportModal({
         }
     };
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+            className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
             onClick={handleClose}
         >
             <div
-                className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-white/20"
+                className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-white/20 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -143,7 +144,7 @@ export function ReportModal({
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             disabled={isSubmitting}
-                            className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-4 py-3 pr-10 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <option value="">Select a reason...</option>
                             {REPORT_REASONS.map((r) => (
@@ -211,6 +212,7 @@ export function ReportModal({
                     Reports are reviewed by our team. False reports may result in action against your account.
                 </p>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

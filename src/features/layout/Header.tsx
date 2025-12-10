@@ -386,7 +386,7 @@ const MobileHeader = memo(function MobileHeader({
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search in listings..."
+                placeholder="Search in flyers..."
                 value={localSearchQuery}
                 onChange={handleSearchChange}
                 className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
@@ -460,7 +460,7 @@ export const Header = memo(function Header({
               <form className="relative w-full max-w-2xl" onSubmit={e => e.preventDefault()} autoComplete="off">
                 <input
                   type="text"
-                  placeholder="Search in listings..."
+                  placeholder="Search in flyers..."
                   defaultValue={searchQuery}
                   onChange={handleSearchChange}
                   className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"

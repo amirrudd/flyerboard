@@ -29,7 +29,7 @@ export function AdDetailPage() {
             {/* OTP Sign-In Modal */}
             {showAuthModal && (
                 <div
-                    className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto"
+                    className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
                     onClick={() => setShowAuthModal(false)}
                 >
                     <div

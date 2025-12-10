@@ -9,6 +9,7 @@
  */
 
 import type * as adDetail from "../adDetail.js";
+import type * as admin from "../admin.js";
 import type * as ads from "../ads.js";
 import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
@@ -16,6 +17,7 @@ import type * as deleteR2Images from "../deleteR2Images.js";
 import type * as descopeAuth from "../descopeAuth.js";
 import type * as http from "../http.js";
 import type * as image_actions from "../image_actions.js";
+import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
@@ -36,6 +38,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   adDetail: typeof adDetail;
+  admin: typeof admin;
   ads: typeof ads;
   auth: typeof auth;
   categories: typeof categories;
@@ -43,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   descopeAuth: typeof descopeAuth;
   http: typeof http;
   image_actions: typeof image_actions;
+  "lib/adminAuth": typeof lib_adminAuth;
   "lib/auth": typeof lib_auth;
   messages: typeof messages;
   migrations: typeof migrations;

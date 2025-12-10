@@ -29,7 +29,7 @@ export const submitReport = mutation({
             try {
                 const ad = await ctx.db.get(args.reportedEntityId as any);
                 if (ad && 'userId' in ad && ad.userId === userId) {
-                    throw new Error("You cannot report your own listing");
+                    throw new Error("You cannot report your own flyer");
                 }
             } catch (error) {
                 // If the ad doesn't exist or there's an error, we'll still allow the report

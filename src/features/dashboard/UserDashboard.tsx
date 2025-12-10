@@ -10,7 +10,7 @@ import { AdDetail } from "../ads/AdDetail";
 import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
 import { Header } from "../layout/Header";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
@@ -43,6 +43,7 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps) {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
 
@@ -209,9 +210,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
-  const handleViewListing = (adId: Id<"ads">) => {
-    setSelectedAdId(adId);
-    // Mark as read when viewing listing
+  const handleViewFlyer = (adId: Id<"ads">) => {
+    navigate(`/ad/${adId}`);
+    // Mark as read when viewing flyer
     if (expandedChatId) {
       markAsRead({ chatId: expandedChatId });
     }
@@ -492,7 +493,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               {activeTab === "ads" && (
                 <div className="bg-white rounded-lg p-3 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800">My Listings</h2>
+                    <h2 className="text-xl font-semibold text-gray-800">My Flyers</h2>
                     <button
                       onClick={onPostAd}
                       className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
@@ -620,7 +621,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               {activeTab === "chats" && (
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <h2 className="text-xl font-semibold text-gray-800 mb-6">My Messages</h2>
-                  <p className="text-gray-600 mb-6">Conversations for listings you're interested in</p>
+                  <p className="text-gray-600 mb-6">Conversations for flyers you're interested in</p>
 
                   <div className="space-y-4">
                     {buyerChats === undefined ? (
@@ -634,7 +635,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <div className="text-center py-12">
                         <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-gray-300" /></div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">No messages yet</h3>
-                        <p className="text-gray-600">Start a conversation by messaging sellers on listings you're interested in</p>
+                        <p className="text-gray-600">Start a conversation by messaging sellers on flyers you're interested in</p>
                       </div>
                     ) : (
                       // Loaded state - show chats
@@ -668,7 +669,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                       </h3>
                                       {!chat.ad?.isActive && chat.ad && (
                                         <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full mb-1">
-                                          Listing Inactive
+                                          Flyer Inactive
                                         </span>
                                       )}
                                       <p className="text-sm text-gray-600 mb-1">
@@ -688,11 +689,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleViewListing(chat.ad!._id);
+                                            handleViewFlyer(chat.ad!._id);
                                           }}
-                                          className="px-3 py-1 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                                          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                                         >
-                                          View Listing
+                                          View Flyer
                                         </button>
                                       )}
                                       <button
@@ -782,7 +783,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 </div>
                                 {!chat.ad?.isActive && (
                                   <p className="text-xs text-red-600 mt-2">
-                                    Cannot send messages - listing is inactive or deleted
+                                    Cannot send messages - flyer is inactive or deleted
                                   </p>
                                 )}
                               </form>
@@ -901,7 +902,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         </h4>
                         <p className="text-sm text-gray-600 mt-1">
                           {user.isVerified
-                            ? "Your identity has been verified. A badge is displayed on your profile and listings."
+                            ? "Your identity has been verified. A badge is displayed on your profile and flyers."
                             : "Verify your identity to build trust with other users and get a verified badge."}
                         </p>
                       </div>

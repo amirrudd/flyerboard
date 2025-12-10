@@ -13,6 +13,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 const AdDetailPage = lazy(() => import("./pages/AdDetailPage"));
 const PostAdPage = lazy(() => import("./pages/PostAdPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -51,6 +52,11 @@ export default function App() {
             <Route path="/dashboard" element={
               <Suspense fallback={<PageLoader />}>
                 <DashboardPage />
+              </Suspense>
+            } />
+            <Route path="/admin" element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminDashboardPage />
               </Suspense>
             } />
             <Route path="/terms" element={

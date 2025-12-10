@@ -122,7 +122,11 @@ export default defineSchema({
     ratingCount: v.optional(v.number()),      // Number of ratings received
     averageRating: v.optional(v.number()),    // Average rating (totalRating / ratingCount)
     isVerified: v.optional(v.boolean()),      // Identity verification status
+    isAdmin: v.optional(v.boolean()),         // Admin flag for admin access
+    isActive: v.optional(v.boolean()),        // Account status (true = active, false = deactivated)
   })
     .index("email", ["email"])
-    .index("tokenIdentifier", ["tokenIdentifier"]),
+    .index("tokenIdentifier", ["tokenIdentifier"])
+    .index("by_admin", ["isAdmin"])
+    .index("by_active", ["isActive"]),
 });

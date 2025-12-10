@@ -1,6 +1,6 @@
 import { SignInForm } from "./SignInForm";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AuthModalProps {
   showAuthModal: boolean;

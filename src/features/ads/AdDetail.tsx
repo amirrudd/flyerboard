@@ -161,7 +161,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               onClick={onBack}
               className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Return to Listings
+              Return to Flyers
             </button>
           </div>
         </div>
@@ -578,7 +578,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 {user && displayAd.userId === user._id ? (
-                  // Show Edit button for own listings
+                  // Show Edit button for own flyers
                   <button
                     onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
                     className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary-600 text-white border border-primary-600 hover:bg-primary-700 transition-colors"
@@ -589,7 +589,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     Edit Flyer
                   </button>
                 ) : (
-                  // Show Save and Report buttons for other users' listings
+                  // Show Save and Report buttons for other users' flyers
                   user && (
                     <>
                       <button
@@ -611,7 +611,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                         </svg>
-                        Report Listing
+                        Report Flyer
                       </button>
                     </>
                   )

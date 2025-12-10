@@ -124,10 +124,10 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
     setIsSubmitting(true);
     try {
       await deleteAd({ adId: editingAd._id });
-      toast.success("Listing deleted successfully!");
+      toast.success("Flyer deleted successfully!");
       onBack();
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete listing");
+      toast.error(error.message || "Failed to delete flyer");
     } finally {
       setIsSubmitting(false);
       setShowDeleteConfirm(false);
@@ -583,7 +583,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               disabled={isSubmitting || images.length === 0 || !formData.location}
               className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? "Saving..." : (editingAd ? "Update Listing" : "Post Listing")}
+              {isSubmitting ? "Saving..." : (editingAd ? "Update Flyer" : "Pin Flyer")}
             </button>
           </div>
         </form>
@@ -600,9 +600,9 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Listing</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Flyer</h3>
                 <p className="text-gray-600 text-sm">
-                  Are you sure you want to delete this listing? This action cannot be undone.
+                  Are you sure you want to delete this flyer? This action cannot be undone.
                 </p>
               </div>
             </div>
@@ -664,7 +664,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
               </CircularProgress>
 
               <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
-                {editingAd ? 'Updating Listing' : 'Creating Listing'}
+                {editingAd ? 'Updating Flyer' : 'Pinning Flyer'}
               </h3>
               <p className="text-gray-600 text-center text-sm">
                 {uploadProgress}

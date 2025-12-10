@@ -224,7 +224,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const timeAgo = displayAd._creationTime
     ? formatDistanceToNow(new Date(displayAd._creationTime), { addSuffix: true })
     : 'recently';
-  const images = displayAd.images.length > 0 ? displayAd.images : ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop'];
+  const images = displayAd.images.length > 0 ? displayAd.images : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -294,19 +294,30 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         }
       />
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
-                <ImageDisplay
-                  src={images[currentImageIndex]}
-                  alt={`${displayAd.title} - Image ${currentImageIndex + 1} `}
-                  className="w-full h-full object-contain"
-                  variant="large"
-                />
+                {images.length > 0 ? (
+                  <ImageDisplay
+                    imageRef={images[currentImageIndex]}
+                    alt={`${displayAd.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                    variant="large"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <svg className="w-24 h-24 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-gray-500">No images available</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Navigation arrows for multiple images */}
                 {images.length > 1 && (
@@ -352,8 +363,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           }`}
                       >
                         <ImageDisplay
-                          src={image}
-                          alt={`Thumbnail ${index + 1} `}
+                          imageRef={image}
+                          alt={`Thumbnail ${index + 1}`}
                           className="w-full h-full object-cover"
                           variant="small"
                         />

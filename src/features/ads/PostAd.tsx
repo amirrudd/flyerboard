@@ -8,6 +8,7 @@ import { ImageUpload } from "../../components/ui/ImageUpload";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
+import { uploadImageToR2 } from "../../lib/uploadToR2";
 
 interface PostAdProps {
   onBack: () => void;
@@ -44,7 +45,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const createAd = useMutation(api.posts.createAd);
   const updateAd = useMutation(api.posts.updateAd);
   const deleteAd = useMutation(api.posts.deleteAd);
-  const uploadListingImage = useAction(api.image_actions.uploadListingImage);
+  const generateListingUploadUrl = useAction(api.upload_urls.generateListingUploadUrl);
 
   // Handle location search
   useEffect(() => {
@@ -173,14 +174,25 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 
           for (let i = 0; i < selectedFiles.length; i++) {
             setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
-            setProgressPercent(40 + (i / selectedFiles.length) * 40);
+            const baseProgress = 40 + (i / selectedFiles.length) * 40;
 
-            const ref = await uploadListingImage({
-              postId: editingAd._id,
-              base64Data: selectedFiles[i].dataUrl,
-              contentType: selectedFiles[i].type,
-            });
-            finalImages.push(ref);
+            // Get presigned URL for this image
+            const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: editingAd._id });
+
+            // Convert base64 to File for upload
+            const response = await fetch(selectedFiles[i].dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], `image-${i}.webp`, { type: 'image/webp' });
+
+            // Upload directly to R2
+            await uploadImageToR2(
+              file,
+              async () => uploadUrl,
+              async () => null,
+              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / selectedFiles.length))
+            );
+
+            finalImages.push(key);
           }
         }
 
@@ -215,7 +227,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           images: [], // Empty initially
         });
 
-        // Step 2: Upload images to R2
+        // Step 2: Upload images directly to R2
         setUploadProgress("Uploading images...");
         const uploadedRefs: string[] = [];
 
@@ -223,17 +235,27 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
           const file = selectedFiles[i];
 
           try {
-            const ref = await uploadListingImage({
-              postId: adId,
-              base64Data: file.dataUrl,
-              contentType: file.type,
-            });
+            const baseProgress = 20 + (i / selectedFiles.length) * 60;
+            setUploadProgress(`Uploading image ${i + 1}/${selectedFiles.length}...`);
 
-            uploadedRefs.push(ref);
+            // Get presigned URL for this image
+            const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: adId });
 
-            // Update progress AFTER successful upload
+            // Convert base64 to File for upload
+            const response = await fetch(file.dataUrl);
+            const blob = await response.blob();
+            const imageFile = new File([blob], `image-${i}.webp`, { type: 'image/webp' });
+
+            // Upload directly to R2 with progress tracking
+            await uploadImageToR2(
+              imageFile,
+              async () => uploadUrl,
+              async () => null, // No metadata sync needed
+              (percent) => setProgressPercent(baseProgress + (percent / 100) * (60 / selectedFiles.length))
+            );
+
+            uploadedRefs.push(key);
             setUploadProgress(`Uploaded ${i + 1}/${selectedFiles.length} images`);
-            setProgressPercent(20 + ((i + 1) / selectedFiles.length) * 60); // Adjusting for overall progress
           } catch (error) {
             console.error(`Failed to upload image ${i + 1}:`, error);
             toast.error(`Failed to upload image ${i + 1}`);
@@ -307,7 +329,7 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
         }
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-bottom-nav md:pb-8">
+      <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>

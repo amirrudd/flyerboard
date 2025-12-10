@@ -13,6 +13,7 @@ import { Header } from "../layout/Header";
 import { useSearchParams } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
+import { uploadImageToR2 } from "../../lib/uploadToR2";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -56,6 +57,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
   const [newMessage, setNewMessage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState(false);
@@ -99,6 +101,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const deleteAd = useMutation(api.posts.deleteAd);
   const toggleAdStatus = useMutation(api.posts.toggleAdStatus);
+  const generateProfileUploadUrl = useAction(api.upload_urls.generateProfileUploadUrl);
   const updateProfile = useMutation(api.users.updateProfile);
   const deleteAccount = useMutation(api.users.deleteAccount);
   const sendMessage = useMutation(api.messages.sendMessage);
@@ -106,7 +109,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
-  const uploadProfileImage = useAction(api.image_actions.uploadProfileImage);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -262,47 +264,34 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Accept common image formats including HEIC/HEIF from iPhones
-    const isValidImage =
-      file.type.startsWith('image/') ||
-      file.name.toLowerCase().endsWith('.heic') ||
-      file.name.toLowerCase().endsWith('.heif');
-
-    if (!isValidImage) {
-      toast.error("Please select a valid image file (JPG, PNG, GIF, WebP, HEIC)");
-      return;
-    }
-
-    // Validate file size (max 10MB before compression)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image size must be less than 10MB");
-      return;
-    }
-
     setUploadingImage(true);
+    setUploadProgress(0);
 
     try {
-      // Convert file to base64
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Get presigned URL with proper folder structure (profiles/{userId}/{uuid})
+      const { url: uploadUrl, key } = await generateProfileUploadUrl();
 
-      // Upload using custom action with folder structure
-      const r2Reference = await uploadProfileImage({
-        base64Data,
-        contentType: file.type || 'image/jpeg' // Fallback for HEIC files
-      });
+      // Upload directly to R2 with compression and progress tracking
+      await uploadImageToR2(
+        file,
+        async () => uploadUrl,
+        async () => null, // No metadata sync needed
+        (percent) => setUploadProgress(percent)
+      );
 
-      await updateProfile({ image: r2Reference });
+      // Update profile with R2 reference
+      await updateProfile({ image: key });
+
+      // Reset image error to force refresh
+      setImageError(false);
+
       toast.success("Profile picture updated successfully");
     } catch (error: any) {
       console.error('Profile image upload error:', error);
       toast.error(error.message || "Failed to upload profile picture");
     } finally {
       setUploadingImage(false);
+      setUploadProgress(0);
       // Reset input
       if (profileImageInputRef.current) {
         profileImageInputRef.current.value = '';
@@ -403,7 +392,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
                       ) : user.image && !imageError ? (
                         <ImageDisplay
-                          src={user.image}
+                          imageRef={user.image}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={() => setImageError(true)}
@@ -542,11 +531,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           onClick={() => onEditAd(ad)}
                         >
                           <div className="flex items-start gap-4">
-                            <ImageDisplay
-                              src={ad.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
-                              alt={ad.title}
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
+                            {ad.images[0] ? (
+                              <ImageDisplay
+                                imageRef={ad.images[0]}
+                                alt={ad.title}
+                                className="w-20 h-20 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
                             <div className="flex-1">
                               <h3 className="font-semibold text-gray-800 mb-1">{ad.title}</h3>
                               <p className="text-lg font-bold text-primary-600 mb-2">
@@ -641,11 +638,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-4 flex-1">
-                                <ImageDisplay
-                                  src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
-                                  alt={chat.ad?.title || "Ad"}
-                                  className="w-16 h-16 object-cover rounded-lg"
-                                />
+                                {chat.ad?.images?.[0] ? (
+                                  <ImageDisplay
+                                    imageRef={chat.ad.images[0]}
+                                    alt={chat.ad.title}
+                                    className="w-16 h-16 object-cover rounded-lg"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                )}
                                 <div className="flex-1">
                                   <div className="flex items-start justify-between mb-2">
                                     <div>

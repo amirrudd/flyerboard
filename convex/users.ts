@@ -147,6 +147,7 @@ export const getUserStats = query({
     const ads = await ctx.db
       .query("ads")
       .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.neq(q.field("isDeleted"), true))
       .collect();
 
     const activeAds = ads.filter(ad => ad.isActive).length;

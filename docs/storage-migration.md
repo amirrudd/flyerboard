@@ -41,6 +41,20 @@ The following environment variables must be set in your Convex deployment:
 - `R2_ENDPOINT`
 - `R2_BUCKET`
 
+### CORS Configuration
+
+**Important**: Your R2 bucket must have CORS enabled to allow direct uploads from the browser.
+
+See [R2 CORS Setup Guide](./r2-cors-setup.md) for detailed instructions on configuring CORS for your R2 bucket.
+
+Quick summary:
+1. Go to Cloudflare Dashboard → R2 → flyer-board-images → Settings
+2. Add CORS policy allowing your domains (localhost:5173, flyerboard.com.au, flyerboard.au)
+3. Allow methods: GET, PUT, POST, DELETE, HEAD
+4. Allow all headers with `*`
+
+Without proper CORS configuration, image uploads will fail with a 403 error.
+
 ### Vercel Deployment
 
 **No R2 environment variables are needed in Vercel.** The frontend only needs:

@@ -45,13 +45,18 @@ export const generateProfileUploadUrl = action({
         const key = makeProfileImageKey(userId);
 
         // Generate presigned URL for PUT operation
+        // Disable checksums to avoid CORS preflight issues
         const command = new PutObjectCommand({
             Bucket: process.env.R2_BUCKET!,
             Key: key,
             ContentType: "image/webp",
+            ChecksumAlgorithm: undefined,
         });
 
-        const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const url = await getSignedUrl(s3Client, command, {
+            expiresIn: 3600,
+            unhoistableHeaders: new Set(["x-amz-checksum-crc32"]),
+        });
 
         return {
             url,
@@ -75,13 +80,18 @@ export const generateListingUploadUrl = action({
         const key = makeListingImageKey(args.postId);
 
         // Generate presigned URL for PUT operation
+        // Disable checksums to avoid CORS preflight issues
         const command = new PutObjectCommand({
             Bucket: process.env.R2_BUCKET!,
             Key: key,
             ContentType: "image/webp",
+            ChecksumAlgorithm: undefined,
         });
 
-        const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const url = await getSignedUrl(s3Client, command, {
+            expiresIn: 3600,
+            unhoistableHeaders: new Set(["x-amz-checksum-crc32"]),
+        });
 
         return {
             url,

@@ -1,10 +1,12 @@
 import imageCompression from 'browser-image-compression';
+import { getOptimalCompressionSettings } from './networkSpeed';
 
 /**
- * Upload an image directly to R2 storage with compression
+ * Upload an image directly to R2 storage with adaptive compression
  * 
  * This helper compresses images client-side and uploads them directly to R2
  * using presigned URLs, avoiding the 5MB Convex action limit.
+ * Compression quality is automatically adjusted based on network speed.
  * 
  * @param file - The image file to upload
  * @param generateUploadUrl - Convex mutation to get presigned URL
@@ -33,13 +35,16 @@ export async function uploadImageToR2(
         throw new Error('Image size must be less than 10MB');
     }
 
-    // Step 1: Compress and convert to WebP (handles HEIC/HEIF automatically)
+    // Step 1: Compress and convert to WebP with adaptive settings
+    // Compression quality adjusts based on network speed for optimal total time
     onProgress?.(10);
+
+    const settings = await getOptimalCompressionSettings();
     const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,
+        maxSizeMB: settings.maxSizeMB,
         useWebWorker: true,
         fileType: 'image/webp',
-        initialQuality: 0.8,
+        initialQuality: settings.quality,
     });
 
     onProgress?.(30);
@@ -122,7 +127,7 @@ export async function compressImage(
         maxSizeMB: 1,
         useWebWorker: true,
         fileType: 'image/webp',
-        initialQuality: 0.8,
+        initialQuality: 0.9, // 90% quality for crisp display
     });
 
     onProgress?.(70);

@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Smartphone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
+import { Smartphone, ArrowRight, Loader2, ArrowLeft, User } from "lucide-react";
 import { useDescope } from "@descope/react-sdk";
 import { Link } from "react-router-dom";
+import { useMutation, useConvex } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { logDebug, logError } from "../../lib/logger";
 import {
     getTimerState,
@@ -18,14 +20,19 @@ interface SmsOtpSignInProps {
 export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+    const [userName, setUserName] = useState("");
     const [isSendingOtp, setIsSendingOtp] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isCompletingSignup, setIsCompletingSignup] = useState(false);
     const [remainingTime, setRemainingTime] = useState(0);
-    const [step, setStep] = useState<1 | 2>(1); // 1 = phone, 2 = OTP
+    const [step, setStep] = useState<1 | 2 | 3>(1); // 1 = phone, 2 = OTP, 3 = name (for new users)
     const intervalRef = useRef<number | null>(null);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const nameInputRef = useRef<HTMLInputElement | null>(null);
 
     const sdk = useDescope();
+    const convex = useConvex();
+    const syncDescopeUser = useMutation(api.descopeAuth.syncDescopeUser);
 
     // Initialize timer state from localStorage
     useEffect(() => {
@@ -62,6 +69,13 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
     useEffect(() => {
         if (step === 2 && inputRefs.current[0]) {
             setTimeout(() => inputRefs.current[0]?.focus(), 300);
+        }
+    }, [step]);
+
+    // Focus name input when entering step 3
+    useEffect(() => {
+        if (step === 3 && nameInputRef.current) {
+            setTimeout(() => nameInputRef.current?.focus(), 300);
         }
     }, [step]);
 
@@ -194,20 +208,31 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             }
 
             logDebug("OTP verified successfully");
-
-            toast.success("Phone number verified successfully!");
+            toast.success("Phone number verified!");
             clearTimerState(phoneNumber);
 
-            // Close the modal first
-            if (onClose) {
-                onClose();
-            }
+            // Wait for auth session to be established
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Force a page reload to establish the session
-            // This is a workaround - the Descope SDK should handle this automatically,
-            // but manual SDK methods may not trigger automatic session management
-            logDebug("Reloading page to establish session...");
-            window.location.reload();
+            // Check if this is a new user using the Convex client imperatively
+            try {
+                const isNew = await convex.query(api.descopeAuth.isNewUser);
+                logDebug("Is new user check:", isNew);
+
+                if (isNew === true) {
+                    // New user - show name collection step
+                    logDebug("New user detected, showing name collection step");
+                    setStep(3);
+                } else {
+                    // Existing user - complete sign-in directly
+                    logDebug("Existing user, completing sign-in");
+                    await completeSignIn();
+                }
+            } catch (error) {
+                logError("Error checking if user is new, defaulting to name collection", error);
+                // If we can't determine, show name step to be safe
+                setStep(3);
+            }
         } catch (error: any) {
             logError("Error verifying OTP", error);
             toast.error(error.message || "Failed to verify code. Please try again.");
@@ -219,14 +244,66 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
         }
     };
 
+    const handleCompleteSignup = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!userName.trim()) {
+            toast.error("Please enter your name");
+            return;
+        }
+
+        if (userName.trim().length < 2) {
+            toast.error("Name must be at least 2 characters");
+            return;
+        }
+
+        if (userName.trim().length > 50) {
+            toast.error("Name must be less than 50 characters");
+            return;
+        }
+
+        setIsCompletingSignup(true);
+
+        try {
+            // Sync user with the provided name
+            await syncDescopeUser({ name: userName.trim() });
+            logDebug("User synced with name:", userName.trim());
+
+            await completeSignIn();
+        } catch (error: any) {
+            logError("Error completing signup", error);
+            toast.error("Failed to complete signup. Please try again.");
+        } finally {
+            setIsCompletingSignup(false);
+        }
+    };
+
+    const completeSignIn = async () => {
+        // Close the modal first
+        if (onClose) {
+            onClose();
+        }
+
+        // Force a page reload to establish the session
+        logDebug("Reloading page to establish session...");
+        window.location.reload();
+    };
+
     const handleBackToPhone = () => {
         setStep(1);
         setOtpDigits(["", "", "", "", "", ""]);
     };
 
+    const handleBackToOtp = () => {
+        setStep(2);
+        setUserName("");
+    };
+
     const canSubmit = step === 1
         ? phoneNumber && isValidPhoneNumber(phoneNumber)
-        : otpDigits.every(d => d !== "");
+        : step === 2
+            ? otpDigits.every(d => d !== "")
+            : userName.trim().length >= 2;
 
     return (
         <div className="w-full relative">
@@ -241,8 +318,18 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                     <ArrowLeft className="w-6 h-6" />
                 </button>
             )}
+            {step === 3 && (
+                <button
+                    type="button"
+                    onClick={handleBackToOtp}
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors z-50"
+                    aria-label="Go back to verification code"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+            )}
 
-            <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : handleVerifyOtp} className="flex flex-col gap-3">
+            <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : step === 2 ? handleVerifyOtp : handleCompleteSignup} className="flex flex-col gap-3">
                 {/* Sliding content container - needs overflow hidden for the slide effect */}
                 <div className="relative h-[215px] overflow-hidden">
                     {/* Step 1: Phone Number */}
@@ -282,7 +369,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                                             const value = e.target.value.replace(/\D/g, "");
                                             setPhoneNumber(value);
                                         }}
-                                        required
+                                        required={step === 1}
                                     />
                                 </div>
                                 <p className="text-xs text-neutral-500">
@@ -343,20 +430,63 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Step 3: Name Collection (New Users Only) */}
+                    <div
+                        className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 3
+                            ? 'translate-x-0 opacity-100'
+                            : 'translate-x-full opacity-0 pointer-events-none'
+                            }`}
+                    >
+                        <div className="space-y-3">
+                            <div>
+                                <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
+                                    What's Your Name?
+                                </h3>
+                                <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
+                                    Help others recognize you on the Board.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="userName" className="text-xs sm:text-sm font-medium text-neutral-700">
+                                    Your Name
+                                </label>
+                                <div className="relative group">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors z-10" />
+                                    <input
+                                        id="userName"
+                                        ref={nameInputRef}
+                                        className="auth-input-field pl-12"
+                                        type="text"
+                                        name="userName"
+                                        placeholder="John Smith"
+                                        maxLength={50}
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        required={step === 3}
+                                    />
+                                </div>
+                                <p className="text-xs text-neutral-500">
+                                    This will be displayed on your flyers and profile.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Fixed button - only label changes */}
                 <button
                     className="auth-button flex items-center justify-center gap-2 group relative"
                     type="submit"
-                    disabled={!canSubmit || isSendingOtp || isVerifying}
+                    disabled={!canSubmit || isSendingOtp || isVerifying || isCompletingSignup}
                 >
-                    {(isSendingOtp || isVerifying) ? (
+                    {(isSendingOtp || isVerifying || isCompletingSignup) ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                         <>
                             <span className="transition-all duration-300">
-                                {step === 1 ? "Get Verification Code" : "Complete Verification"}
+                                {step === 1 ? "Get Verification Code" : step === 2 ? "Complete Verification" : "Complete Sign Up"}
                             </span>
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </>

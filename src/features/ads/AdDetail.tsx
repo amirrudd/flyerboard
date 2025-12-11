@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { ReportModal } from "../../components/ReportModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
+import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil } from "lucide-react";
@@ -37,6 +38,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showReportModal, setShowReportModal] = useState(false);
   const [showReportProfileModal, setShowReportProfileModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showReviewListModal, setShowReviewListModal] = useState(false);
   const [avatarImageError, setAvatarImageError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -461,12 +463,18 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
                   )}
                   {displayAd.seller ? (
-                    <StarRating
-                      rating={displayAd.seller.averageRating || 0}
-                      count={displayAd.seller.ratingCount || 0}
-                      size="sm"
-                      showCount={true}
-                    />
+                    <div
+                      onClick={() => setShowReviewListModal(true)}
+                      className="cursor-pointer hover:opacity-70 transition-opacity inline-block"
+                      title="View all reviews"
+                    >
+                      <StarRating
+                        rating={displayAd.seller.averageRating || 0}
+                        count={displayAd.seller.ratingCount || 0}
+                        size="sm"
+                        showCount={true}
+                      />
+                    </div>
                   ) : (
                     <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
                   )}
@@ -652,13 +660,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
       {/* Rating Modal */}
       {displayAd.seller && (
-        <RatingModal
-          isOpen={showRatingModal}
-          onClose={() => setShowRatingModal(false)}
-          userId={displayAd.userId}
-          userName={getDisplayName(displayAd.seller)}
-          chatId={chatId || undefined}
-        />
+        <>
+          <RatingModal
+            isOpen={showRatingModal}
+            onClose={() => setShowRatingModal(false)}
+            userId={displayAd.userId}
+            userName={getDisplayName(displayAd.seller)}
+            chatId={chatId || undefined}
+          />
+          <ReviewListModal
+            isOpen={showReviewListModal}
+            onClose={() => setShowReviewListModal(false)}
+            userId={displayAd.userId}
+            userName={getDisplayName(displayAd.seller)}
+          />
+        </>
       )}
 
       {/* Image Lightbox */}

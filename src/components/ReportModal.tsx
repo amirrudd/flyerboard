@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import { X, Loader2 } from "lucide-react";
 
 interface ReportModalProps {
     isOpen: boolean;
@@ -115,20 +116,7 @@ export function ReportModal({
                         disabled={isSubmitting}
                         className="p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-50"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
@@ -190,14 +178,7 @@ export function ReportModal({
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                        />
-                                    </svg>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                     Submitting...
                                 </span>
                             ) : (

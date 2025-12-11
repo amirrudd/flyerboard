@@ -40,7 +40,7 @@ Convex is configured to verify Descope JWTs via OIDC. Ensure `convex/auth.config
 In Convex mutations/queries, use `getDescopeUserId(ctx)` (from `convex/lib/auth.ts`) to retrieve the authenticated user's ID. This replaces the legacy `getAuthUserId` function.
 
 ### ✅ DO: Handle OTP-Only Users
-Users can sign up via phone-only OTP without providing email or name. For privacy, phone numbers are NOT stored. OTP-only users display as "User" until they add profile details.
+Users can sign up via phone-only OTP. **New users** are prompted to provide their name after OTP verification (3-step flow: phone → OTP → name). **Existing users** proceed directly after OTP verification (2-step flow: phone → OTP). Phone numbers are NOT stored for privacy.
 
 ## 3. Environment Variables
 

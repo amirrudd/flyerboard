@@ -17,6 +17,7 @@ export function useDescopeUserSync() {
     useEffect(() => {
         if (isAuthenticated && !isSessionLoading && user) {
             // Sync user data from Descope to Convex
+            // Backend is smart: won't overwrite existing name with empty string
             logDebug('Syncing Descope user to Convex:', {
                 subject: user.loginIds?.[0] || user.userId,
                 name: user.name,

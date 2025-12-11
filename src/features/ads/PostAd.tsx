@@ -10,6 +10,7 @@ import { searchLocations, formatLocation, LocationData } from "../../lib/locatio
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
+import { ChevronLeft, Trash2, ChevronDown, Loader2, AlertTriangle } from "lucide-react";
 
 interface ImageState {
   id: string;
@@ -334,9 +335,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
             onClick={handleCancel}
             className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back</span>
           </button>
         }
@@ -352,9 +351,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors font-medium"
               disabled={isSubmitting}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <Trash2 className="w-5 h-5" />
               <span className="hidden sm:inline">Delete</span>
             </button>
           ) : (
@@ -415,9 +412,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     ) : (
                       <span className="text-neutral-500">Select a category</span>
                     )}
-                    <svg className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showCategoryDropdown && (
@@ -495,9 +490,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 />
                 {isSearchingLocation && (
                   <div className="absolute right-3 top-[38px]">
-                    <svg className="w-4 h-4 animate-spin text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                    <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
                   </div>
                 )}
 
@@ -601,9 +594,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-start gap-4 mb-4">
               <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Flyer</h3>

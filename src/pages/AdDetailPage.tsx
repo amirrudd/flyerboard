@@ -1,6 +1,7 @@
 import { Id } from "../../convex/_generated/dataModel";
 import { AdDetail } from "../features/ads/AdDetail";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { SmsOtpSignIn } from "../features/auth/SmsOtpSignIn";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -27,7 +28,7 @@ export function AdDetailPage() {
             />
 
             {/* OTP Sign-In Modal */}
-            {showAuthModal && (
+            {showAuthModal && createPortal(
                 <div
                     className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
                     onClick={() => setShowAuthModal(false)}
@@ -49,7 +50,8 @@ export function AdDetailPage() {
                         </div>
                         <SmsOtpSignIn onClose={() => setShowAuthModal(false)} />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

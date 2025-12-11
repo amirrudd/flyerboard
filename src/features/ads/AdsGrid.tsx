@@ -32,6 +32,7 @@ interface AdsGridProps {
   onAdClick: (ad: Ad) => void;
   isLoading?: boolean;
   isLoadingMore?: boolean;
+  newAdIds?: Set<string>;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -42,6 +43,7 @@ export const AdsGrid = memo(function AdsGrid({
   onAdClick,
   isLoading = false,
   isLoadingMore = false,
+  newAdIds = new Set(),
 }: AdsGridProps) {
   // Optimize onClick handler with useCallback
   const handleAdClick = useCallback((ad: Ad) => {
@@ -88,42 +90,51 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         /* Listings Grid with CSS transitions for better performance */
         <div className={`listings-grid ${gridClasses}`}>
-          {ads.map((ad) => (
-            <div
-              key={ad._id}
-              onClick={() => handleAdClick(ad)}
-              className="listing-card bg-white border border-gray-200 rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group"
-            >
-              <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
-                <ImageDisplay
-                  src={ad.images[0] || ''}
-                  alt={ad.title}
-                  className="w-full h-full object-contain"
-                />
-                {ad.images.length > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">
-                    {ad.images.length}
+          {ads.map((ad) => {
+            const isNew = newAdIds.has(ad._id);
+            return (
+              <div
+                key={ad._id}
+                onClick={() => handleAdClick(ad)}
+                className={`listing-card bg-white border rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group ${isNew ? 'border-primary-400 animate-fade-in' : 'border-gray-200'
+                  }`}
+              >
+                <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                  <ImageDisplay
+                    src={ad.images[0] || ''}
+                    alt={ad.title}
+                    className="w-full h-full object-contain"
+                  />
+                  {ad.images.length > 1 && (
+                    <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">
+                      {ad.images.length}
+                    </div>
+                  )}
+                  {isNew && (
+                    <div className="absolute top-2 left-2 bg-primary-600 text-white px-2 py-1 rounded text-xs font-semibold shadow-md">
+                      NEW
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-sm sm:text-base">
+                    {ad.title}
+                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
+                      {ad.location}
+                    </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      ${ad.price.toLocaleString()}
+                    </p>
                   </div>
-                )}
-              </div>
-              <div className="p-3">
-                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-sm sm:text-base">
-                  {ad.title}
-                </h3>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
-                  <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
-                    {ad.location}
-                  </p>
-                  <p className="text-sm font-medium text-gray-900">
-                    ${ad.price.toLocaleString()}
-                  </p>
-                </div>
-                <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
-                  <span>{ad.views} views</span>
+                  <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
+                    <span>{ad.views} views</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Loading More Skeletons */}
           {isLoadingMore && (

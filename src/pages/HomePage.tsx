@@ -36,6 +36,9 @@ export function HomePage() {
     ads,
     loadMore,
     status,
+    refreshAds,
+    newAdIds,
+    clearNewAdIds,
   } = useMarketplace();
 
   // Use Descope session for authentication state
@@ -85,6 +88,37 @@ export function HomePage() {
       }
     }
   }, [categories, searchParams]);
+
+  // Refresh on mount (when navigating back to home page)
+  useEffect(() => {
+    // Small delay to ensure ads are loaded first
+    const timer = setTimeout(() => {
+      refreshAds();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array = run once on mount
+
+  // Silent refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAds();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refreshAds]);
+
+  // Clear new ad highlights after 5 seconds
+  useEffect(() => {
+    if (newAdIds.size > 0) {
+      const timer = setTimeout(() => {
+        clearNewAdIds();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [newAdIds, clearNewAdIds]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -147,6 +181,7 @@ export function HomePage() {
               onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
               isLoading={status === "LoadingFirstPage"}
               isLoadingMore={status === "LoadingMore"}
+              newAdIds={newAdIds}
             />
 
             {/* Load More / Loading Status */}

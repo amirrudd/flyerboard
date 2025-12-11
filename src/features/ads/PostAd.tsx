@@ -23,9 +23,10 @@ interface ImageState {
 interface PostAdProps {
   onBack: () => void;
   editingAd?: any;
+  origin?: string;
 }
 
-export function PostAd({ onBack, editingAd }: PostAdProps) {
+export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
   const [formData, setFormData] = useState({
     title: editingAd?.title || "",
     description: editingAd?.description || "",
@@ -58,6 +59,11 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
   const updateAd = useMutation(api.posts.updateAd);
   const deleteAd = useMutation(api.posts.deleteAd);
   const generateListingUploadUrl = useAction(api.upload_urls.generateListingUploadUrl);
+
+  // Scroll to top when component mounts (especially important for edit mode)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   // Handle location search
   useEffect(() => {
@@ -331,12 +337,12 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            <span className="hidden sm:inline">Back</span>
           </button>
         }
         centerNode={
           <h1 className="text-xl font-semibold text-neutral-800">
-            {editingAd ? "Edit Listing" : "Pin New Flyer"}
+            {editingAd ? "Edit Flyer" : "Pin New Flyer"}
           </h1>
         }
         rightNode={

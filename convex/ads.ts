@@ -105,3 +105,78 @@ export const incrementViews = mutation({
     return { success: true };
   },
 });
+
+export const getLatestAds = query({
+  args: {
+    categoryId: v.optional(v.id("categories")),
+    search: v.optional(v.string()),
+    location: v.optional(v.string()),
+    sinceTimestamp: v.number(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+
+    if (args.search) {
+      // For search queries, fetch all matching results created after timestamp
+      const ads = await ctx.db
+        .query("ads")
+        .withSearchIndex("search_ads", (q) => {
+          let searchQuery = q.search("title", args.search!);
+
+          if (args.categoryId) {
+            searchQuery = searchQuery.eq("categoryId", args.categoryId);
+          }
+          if (args.location) {
+            searchQuery = searchQuery.eq("location", args.location);
+          }
+
+          // Filter out deleted and inactive ads
+          searchQuery = searchQuery.eq("isActive", true);
+
+          return searchQuery;
+        })
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("isDeleted"), true),
+            q.gt(q.field("_creationTime"), args.sinceTimestamp)
+          )
+        )
+        .take(limit);
+
+      return ads;
+    } else {
+      // For non-search queries, use creation time index
+      let q = ctx.db
+        .query("ads")
+        .withIndex("by_creation_time", (q) => q.gt("_creationTime", args.sinceTimestamp))
+        .order("desc");
+
+      if (args.categoryId) {
+        q = ctx.db
+          .query("ads")
+          .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+          .order("desc");
+      }
+
+      const ads = await q
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("isActive"), true),
+            q.neq(q.field("isDeleted"), true),
+            args.categoryId
+              ? q.gt(q.field("_creationTime"), args.sinceTimestamp)
+              : true
+          )
+        )
+        .take(limit);
+
+      // Apply location filter in memory if specified
+      if (args.location) {
+        return ads.filter(ad => ad.location === args.location);
+      }
+
+      return ads;
+    }
+  },
+});

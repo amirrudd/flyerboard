@@ -479,7 +479,7 @@ export const Header = memo(function Header({
                 user={user}
                 onPostClick={() => {
                   if (user) {
-                    navigate('/post');
+                    navigate('/post', { state: { from: window.location.pathname } });
                   } else {
                     setShowAuthModal(true);
                   }

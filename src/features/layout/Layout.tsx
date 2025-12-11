@@ -8,18 +8,21 @@ import { Header } from "./Header";
 export function Layout() {
     const { isAuthenticated } = useSession();
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authKey, setAuthKey] = useState(0);
 
-    // Close modal when user logs in
+    // Close modal and trigger re-render when user logs in
     useEffect(() => {
         if (isAuthenticated) {
             setShowAuthModal(false);
+            // Force re-render of child components to show authenticated features
+            setAuthKey(prev => prev + 1);
         }
     }, [isAuthenticated]);
 
     return (
         <div className="flex flex-col h-screen overflow-hidden">
             <main className="flex-1 overflow-y-auto mobile-scroll-container">
-                <Outlet context={{ setShowAuthModal }} />
+                <Outlet key={authKey} context={{ setShowAuthModal }} />
             </main>
 
             {/* Bottom Nav - positioned outside flex flow for proper fixed positioning */}

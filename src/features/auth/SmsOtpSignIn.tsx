@@ -277,14 +277,11 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
     };
 
     const completeSignIn = async () => {
-        // Close the modal first
+        // Close the modal - authentication is already established
+        // The Layout's authKey will trigger a re-render to show authenticated features
         if (onClose) {
             onClose();
         }
-
-        // Force a page reload to establish the session
-        logDebug("Reloading page to establish session...");
-        window.location.reload();
     };
 
     const handleBackToPhone = () => {

@@ -1,10 +1,11 @@
 
+
 import { useQuery, useMutation } from "convex/react";
 import { Header } from "../layout/Header";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -13,9 +14,11 @@ import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
+import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil } from "lucide-react";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
+import { ImageLightbox } from "../../components/ui/ImageLightbox";
 
 
 interface AdDetailProps {
@@ -35,6 +38,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showReportProfileModal, setShowReportProfileModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [avatarImageError, setAvatarImageError] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
@@ -138,10 +143,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to flyers
+                <ChevronLeft className="w-5 h-5" />
+                <span className="hidden sm:inline">Back to flyers</span>
               </button>
             </div>
           }
@@ -152,9 +155,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         />
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <div className="bg-white rounded-lg p-12 shadow-sm max-w-lg mx-auto">
-            <svg className="w-16 h-16 text-neutral-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Frown className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-neutral-800 mb-2">Ad Not Found</h2>
             <p className="text-neutral-600 mb-6">This ad may have been deleted or removed.</p>
             <button
@@ -171,6 +172,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   const displayAd = ad || initialAd;
 
+  // Auto-open chat for logged-in users viewing other users' ads
+  useEffect(() => {
+    if (user && displayAd && displayAd.userId !== user._id && !showChat) {
+      handleStartChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, displayAd]);
+
   if (!displayAd) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -182,10 +191,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to flyers
+                <ChevronLeft className="w-5 h-5" />
+                <span className="hidden sm:inline">Back to flyers</span>
               </button>
               <h1 className="text-xl font-semibold text-neutral-800">Loading...</h1>
               <div className="flex items-center gap-3">
@@ -239,7 +246,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to flyers
+              <span className="hidden sm:inline">Back to flyers</span>
             </button>
           </div>
         }
@@ -254,23 +261,28 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors"
                 title="Share flyer"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                </svg>
+                <Share2 className="w-5 h-5" />
               </button>
               {user && displayAd.userId !== user._id && (
-                <button
-                  onClick={handleSave}
-                  className={`p-2 rounded-lg transition-colors ${isAdSaved
-                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-gray-200'
-                    }`}
-                  title={isAdSaved ? "Remove from saved" : "Save ad"}
-                >
-                  <svg className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </button>
+                <>
+                  <button
+                    onClick={handleSave}
+                    className={`p-2 rounded-lg transition-colors ${isAdSaved
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-gray-200'
+                      }`}
+                    title={isAdSaved ? "Remove from saved" : "Save ad"}
+                  >
+                    <Heart className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} />
+                  </button>
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="p-2 rounded-lg bg-neutral-100 text-neutral-600 hover:bg-gray-200 transition-colors sm:hidden"
+                    title="Report flyer"
+                  >
+                    <Flag className="w-5 h-5" />
+                  </button>
+                </>
               )}
             </div>
 
@@ -302,18 +314,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
                 {images.length > 0 ? (
-                  <ImageDisplay
-                    imageRef={images[currentImageIndex]}
-                    alt={`${displayAd.title} - Image ${currentImageIndex + 1}`}
-                    className="w-full h-full object-contain"
-                    variant="large"
-                  />
+                  <div
+                    className="w-full h-full cursor-pointer"
+                    onClick={() => setShowLightbox(true)}
+                  >
+                    <ImageDisplay
+                      imageRef={images[currentImageIndex]}
+                      alt={`${displayAd.title} - Image ${currentImageIndex + 1}`}
+                      className="w-full h-full object-contain"
+                      variant="large"
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center">
-                      <svg className="w-24 h-24 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <ImageIcon className="w-24 h-24 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">No images available</p>
                     </div>
                   </div>
@@ -326,17 +341,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       onClick={prevImage}
                       className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
+                      <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
                       className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                   </>
                 )}
@@ -405,10 +416,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               <div className="flex items-center gap-4 text-sm text-neutral-600">
                 <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  <MapPin className="w-4 h-4" />
                   <span>{displayAd.location}</span>
                 </div>
               </div>
@@ -469,21 +477,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
                     title="Report seller"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                    </svg>
+                    <Flag className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
               {user && displayAd.userId !== user._id && (
                 <>
-                  <button
-                    onClick={handleStartChat}
-                    className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium mb-2"
-                  >
-                    Contact Seller
-                  </button>
+                  {!showChat && (
+                    <button
+                      onClick={handleStartChat}
+                      className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium mb-2"
+                    >
+                      Contact Seller
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowRatingModal(true)}
                     className="w-full bg-white text-primary-600 border border-primary-600 py-2 px-4 rounded-lg hover:bg-primary-50 transition-colors font-medium"
@@ -522,38 +530,39 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       onClick={() => setShowChat(false)}
                       className="text-neutral-500 hover:text-neutral-700"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
-                <div className="h-64 overflow-y-auto p-4 space-y-3">
-                  {messages?.map((message) => (
-                    <div
-                      key={message._id}
-                      className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
-                    >
+                {messages && messages.length > 0 && (
+                  <div className="h-64 overflow-y-auto p-4 space-y-3">
+                    {messages.map((message) => (
                       <div
-                        className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-neutral-100 text-neutral-900'
-                          }`}
+                        key={message._id}
+                        className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
-                          }`}>
-                          {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                        </p>
+                        <div
+                          className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-neutral-100 text-neutral-900'
+                            }`}
+                        >
+                          <p className="text-sm">{message.content}</p>
+                          <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
+                            }`}>
+                            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
-                <div className="p-4 border-t border-neutral-200">
+                <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-neutral-200' : ''}`}>
                   <div className="flex gap-2">
                     <input
+                      ref={chatInputRef}
                       type="text"
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
@@ -574,7 +583,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="bg-white rounded-lg p-6 shadow-sm hidden sm:block">
               <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 {user && displayAd.userId === user._id ? (
@@ -583,9 +592,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
                     className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary-600 text-white border border-primary-600 hover:bg-primary-700 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+                    <Pencil className="w-4 h-4" />
                     Edit Flyer
                   </button>
                 ) : (
@@ -594,23 +601,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     <>
                       <button
                         onClick={handleSave}
-                        className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-colors ${isAdSaved
+                        className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all shadow-sm active:scale-[0.98] ${isAdSaved
                           ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                          : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                          : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900'
                           }`}
                       >
-                        <svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
+                        <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
                         {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
                       </button>
                       <button
                         onClick={() => setShowReportModal(true)}
                         className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                        </svg>
+                        <Flag className="w-4 h-4" />
                         Report Flyer
                       </button>
                     </>
@@ -620,9 +623,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   onClick={handleShare}
                   className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                  </svg>
+                  <Share2 className="w-4 h-4" />
                   Share Flyer
                 </button>
               </div>
@@ -659,6 +660,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           chatId={chatId || undefined}
         />
       )}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={images}
+        currentIndex={currentImageIndex}
+        isOpen={showLightbox}
+        onClose={() => setShowLightbox(false)}
+        onNavigate={setCurrentImageIndex}
+        altPrefix={displayAd.title}
+      />
     </div >
   );
 }

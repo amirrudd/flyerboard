@@ -92,6 +92,42 @@ interface ImageUploadProps {
 />
 ```
 
+### ImageLightbox
+**File**: `src/components/ui/ImageLightbox.tsx`
+
+**Purpose**: Full-screen image viewer with navigation and keyboard controls.
+
+**Features**:
+- Full-screen overlay with dark backdrop
+- Keyboard navigation (Arrow keys, Escape)
+- Thumbnail strip for quick navigation
+- Image counter display
+- Touch-friendly navigation buttons
+- Prevents body scroll when open
+
+**Usage**:
+```typescript
+const [showLightbox, setShowLightbox] = useState(false);
+const [currentIndex, setCurrentIndex] = useState(0);
+
+<ImageLightbox
+  images={imageRefs}
+  currentIndex={currentIndex}
+  isOpen={showLightbox}
+  onClose={() => setShowLightbox(false)}
+  onNavigate={setCurrentIndex}
+  altPrefix="Product"
+/>
+```
+
+**Integration pattern**:
+```typescript
+// Make image clickable
+<div onClick={() => setShowLightbox(true)} className="cursor-pointer">
+  <ImageDisplay imageRef={images[currentIndex]} alt="..." />
+</div>
+```
+
 ### Header
 **File**: `src/features/layout/Header.tsx`
 

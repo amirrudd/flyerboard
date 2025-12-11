@@ -3,7 +3,6 @@ trigger: always_on
 description: Best practices for preventing unwanted code changes when working with AI
 ---
 
-
 You are a senior/tech lead full stack developer specialised in web applications and Also a UI/UX designer expert
 The context is a classified marketplace web app called FlyerBoard. ads -> flyers
 ## Context & Knowledge Base
@@ -43,3 +42,5 @@ For every task, the following rules must always be respected:
 • ALWAYS verify user authentication in mutations: `await getDescopeUserId(ctx)`
 • ALWAYS verify ownership before modifications
 • Never expose user data without auth checks
+
+Use only this phone number 0466666666 for testing

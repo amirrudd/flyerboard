@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, MessageSquare, User, FileText } from "lucide-react";
+import { Mail, MessageSquare, User, FileText, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "../features/layout/Header";
 import { logDebug } from "../lib/logger";
@@ -37,13 +37,11 @@ export default function SupportPage() {
             <Header
                 leftNode={
                     <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span className="hidden md:inline">Back</span>
+                        <ChevronLeft className="w-5 h-5" />
+                        <span>Back</span>
                     </button>
                 }
                 centerNode={

@@ -100,26 +100,3 @@ export const getCurrentUserId = query({
         return await getDescopeUserId(ctx);
     },
 });
-
-/**
- * Checks if the current authenticated user is new (first-time sign-up).
- * Returns true if user doesn't exist in database yet, false if they do.
- * Returns null if not authenticated.
- */
-export const isNewUser = query({
-    handler: async (ctx) => {
-        const identity = await ctx.auth.getUserIdentity();
-
-        if (!identity) {
-            return null;
-        }
-
-        // Check if user already exists by tokenIdentifier
-        const existingUser = await ctx.db
-            .query("users")
-            .filter((q) => q.eq(q.field("tokenIdentifier"), identity.subject))
-            .first();
-
-        return existingUser === null;
-    },
-});

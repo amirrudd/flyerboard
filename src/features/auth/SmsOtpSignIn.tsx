@@ -15,9 +15,10 @@ import {
 
 interface SmsOtpSignInProps {
     onClose?: () => void;
+    onDismissableChange?: (isDismissable: boolean) => void;
 }
 
-export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
+export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps) {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
     const [userName, setUserName] = useState("");
@@ -78,6 +79,12 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
             setTimeout(() => nameInputRef.current?.focus(), 300);
         }
     }, [step]);
+
+    // Notify parent about dismissable state when step changes
+    useEffect(() => {
+        // Step 3 is not dismissable - user must complete name collection
+        onDismissableChange?.(step !== 3);
+    }, [step, onDismissableChange]);
 
     // Validate Australian mobile numbers
     const isValidPhoneNumber = (phone: string): boolean => {
@@ -201,37 +208,28 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
 
             const resp = await sdk?.otp.verify.sms(formattedPhone, otpCode);
 
-            logDebug("OTP Verify Response:", { ok: resp?.ok, error: resp?.error });
-
             if (!resp?.ok) {
                 throw new Error(resp?.error?.errorMessage || "Invalid verification code");
             }
 
             logDebug("OTP verified successfully");
+
+            // Check if this is a new user from Descope's firstSeen flag
+            const isNew = resp?.data?.firstSeen === true;
+            logDebug("User is new (from Descope firstSeen):", isNew);
+
             toast.success("Phone number verified!");
             clearTimerState(phoneNumber);
 
-            // Wait for auth session to be established
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Check if this is a new user using the Convex client imperatively
-            try {
-                const isNew = await convex.query(api.descopeAuth.isNewUser);
-                logDebug("Is new user check:", isNew);
-
-                if (isNew === true) {
-                    // New user - show name collection step
-                    logDebug("New user detected, showing name collection step");
-                    setStep(3);
-                } else {
-                    // Existing user - complete sign-in directly
-                    logDebug("Existing user, completing sign-in");
-                    await completeSignIn();
-                }
-            } catch (error) {
-                logError("Error checking if user is new, defaulting to name collection", error);
-                // If we can't determine, show name step to be safe
+            // Decide whether to show name collection or complete sign-in
+            if (isNew) {
+                // New user - show name collection step
+                logDebug("New user detected, showing name collection step");
                 setStep(3);
+            } else {
+                // Existing user - complete sign-in directly
+                logDebug("Existing user, completing sign-in");
+                await completeSignIn();
             }
         } catch (error: any) {
             logError("Error verifying OTP", error);
@@ -318,7 +316,8 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                     <ArrowLeft className="w-6 h-6" />
                 </button>
             )}
-            {step === 3 && (
+            {/* Step 3 has no back button - user must complete name collection */}
+            {step === 3 && false && (
                 <button
                     type="button"
                     onClick={handleBackToOtp}
@@ -438,7 +437,7 @@ export function SmsOtpSignIn({ onClose }: SmsOtpSignInProps) {
                             : 'translate-x-full opacity-0 pointer-events-none'
                             }`}
                     >
-                        <div className="space-y-3">
+                        <div className="space-y-3 px-1">
                             <div>
                                 <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
                                     What's Your Name?

@@ -7,8 +7,8 @@ export function DashboardPage() {
     return (
         <UserDashboard
             onBack={() => navigate('/')}
-            onPostAd={() => navigate('/post')}
-            onEditAd={(ad) => navigate('/post', { state: { editingAd: ad } })}
+            onPostAd={() => navigate('/post', { state: { from: '/dashboard' } })}
+            onEditAd={(ad) => navigate('/post', { state: { editingAd: ad, from: '/dashboard' } })}
         />
     );
 }

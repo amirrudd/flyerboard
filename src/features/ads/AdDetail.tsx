@@ -281,7 +281,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 user={user}
                 onPostClick={() => {
                   if (user) {
-                    navigate('/post');
+                    navigate('/post', { state: { from: `/ad/${adId}` } });
                   } else {
                     onShowAuth();
                   }

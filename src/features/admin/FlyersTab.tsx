@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -161,10 +162,10 @@ export function FlyersTab() {
                                         <div className="flex flex-col gap-2">
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${flyer.isDeleted
-                                                        ? "bg-red-100 text-red-800"
-                                                        : flyer.isActive
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-gray-100 text-gray-800"
+                                                    ? "bg-red-100 text-red-800"
+                                                    : flyer.isActive
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-gray-100 text-gray-800"
                                                     }`}
                                             >
                                                 {flyer.isDeleted ? "Deleted" : flyer.isActive ? "Active" : "Inactive"}
@@ -219,8 +220,8 @@ export function FlyersTab() {
             </div>
 
             {/* Delete Flyer Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-scroll-lock">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Flyer</h3>
                         <p className="text-gray-600 mb-6">
@@ -242,12 +243,13 @@ export function FlyersTab() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Image Management Modal */}
-            {showImageModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {showImageModal && createPortal(
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-scroll-lock">
                     <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-gray-900">Manage Images</h3>
@@ -290,7 +292,8 @@ export function FlyersTab() {
                             </div>
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

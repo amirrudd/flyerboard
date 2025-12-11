@@ -5,11 +5,18 @@ export function PostAdPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const editingAd = location.state?.editingAd;
+    const from = location.state?.from || '/';
+
+    const handleBack = () => {
+        // Navigate back to origin or default to home
+        navigate(from);
+    };
 
     return (
         <PostAd
-            onBack={() => navigate(-1)}
+            onBack={handleBack}
             editingAd={editingAd}
+            origin={from}
         />
     );
 }

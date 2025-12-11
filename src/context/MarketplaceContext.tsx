@@ -27,6 +27,9 @@ interface MarketplaceContextType {
     ads: any; // Ideally import { Doc } from ...
     loadMore: (numItems: number) => void;
     status: "CanLoadMore" | "LoadingMore" | "Exhausted" | "LoadingFirstPage";
+    refreshAds: () => Promise<void>;
+    newAdIds: Set<string>;
+    clearNewAdIds: () => void;
 }
 
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
@@ -53,6 +56,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const adsCache = useRef<Map<string, any[]>>(new Map());
     const [cachedAds, setCachedAds] = useState<any[] | undefined>(undefined);
 
+    // Track new ads for highlighting
+    const [newAdIds, setNewAdIds] = useState<Set<string>>(new Set());
+    // Initialize to 5 minutes ago to catch recent ads when page loads
+    const lastRefreshTimestamp = useRef<number>(Date.now() - 5 * 60 * 1000);
+
     // Generate cache key from current filters
     const cacheKey = useMemo(() => {
         return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}`;
@@ -76,6 +84,49 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         },
         { initialNumItems: 30 }
     );
+
+    // Query for latest ads (for refresh)
+    const latestAds = useQuery(
+        api.ads.getLatestAds,
+        {
+            categoryId: selectedCategory ?? undefined,
+            search: searchQuery || undefined,
+            location: selectedLocation || undefined,
+            sinceTimestamp: lastRefreshTimestamp.current,
+            limit: 50,
+        }
+    );
+
+    // Refresh function to fetch and merge new ads
+    const refreshAds = useCallback(async () => {
+        if (!latestAds || latestAds.length === 0) {
+            return;
+        }
+
+        // Get current ad IDs
+        const currentAdIds = new Set((ads || []).map(ad => ad._id));
+
+        // Find truly new ads (not in current list)
+        const newAds = latestAds.filter(ad => !currentAdIds.has(ad._id));
+
+        if (newAds.length > 0) {
+            // Mark these as new for highlighting
+            setNewAdIds(new Set(newAds.map(ad => ad._id)));
+
+            // Merge new ads at the beginning
+            const mergedAds = [...newAds, ...(ads || [])];
+            setCachedAds(mergedAds);
+            adsCache.current.set(cacheKey, mergedAds);
+
+            // Update last refresh timestamp
+            lastRefreshTimestamp.current = Date.now();
+        }
+    }, [latestAds, ads, cacheKey]);
+
+    // Clear new ad IDs (called after animation or user interaction)
+    const clearNewAdIds = useCallback(() => {
+        setNewAdIds(new Set());
+    }, []);
 
     // Update cache when new ads are loaded
     useEffect(() => {
@@ -144,6 +195,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         ads: displayAds, // Use cached ads for instant display
         loadMore,
         status,
+        refreshAds,
+        newAdIds,
+        clearNewAdIds,
     };
 
     return (

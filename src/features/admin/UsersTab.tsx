@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -346,8 +347,8 @@ export function UsersTab() {
             </div>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-scroll-lock">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Delete User Account</h3>
                         <p className="text-gray-600 mb-6">
@@ -369,7 +370,8 @@ export function UsersTab() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

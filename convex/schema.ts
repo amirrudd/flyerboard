@@ -6,9 +6,11 @@ const applicationTables = {
   categories: defineTable({
     name: v.string(),
     slug: v.string(),
-    icon: v.optional(v.string()),
+    icon: v.optional(v.string()),        // Icon name or emoji for category
     parentId: v.optional(v.id("categories")),
-  }).index("by_slug", ["slug"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_parent", ["parentId"]),
 
   ads: defineTable({
     title: v.string(),

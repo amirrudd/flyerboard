@@ -158,6 +158,7 @@ export const getUserRatings = query({
                 return {
                     ...rating,
                     raterName: rater?.name || "Unknown",
+                    raterImage: rater?.image,
                 };
             })
         );

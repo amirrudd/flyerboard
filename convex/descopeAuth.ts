@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { isValidEmail, normalizeEmail } from "./lib/emailUtils";
 
 /**
  * Syncs a Descope user to the Convex users table.
@@ -25,6 +26,9 @@ export const syncDescopeUser = mutation({
         // The subject is the unique identifier from Descope (e.g., "descope|user123")
         const subject = identity.subject;
 
+        // Normalize email (lowercase, trim, null if empty)
+        const normalizedEmail = normalizeEmail(args.email);
+
         // Check if user already exists by tokenIdentifier
         const existingUser = await ctx.db
             .query("users")
@@ -34,9 +38,26 @@ export const syncDescopeUser = mutation({
         if (existingUser) {
             // User exists, optionally update their info
             const updates: any = {};
-            if (args.email && args.email !== existingUser.email) {
-                updates.email = args.email;
+
+            // Handle email updates
+            if (normalizedEmail !== null && normalizedEmail !== existingUser.email) {
+                // Validate email format
+                if (!isValidEmail(normalizedEmail)) {
+                    throw new Error("Invalid email format");
+                }
+
+                // Check uniqueness before updating email on existing user
+                const otherUser = await ctx.db
+                    .query("users")
+                    .withIndex("email", (q) => q.eq("email", normalizedEmail))
+                    .first();
+
+                if (otherUser && otherUser._id !== existingUser._id) {
+                    throw new Error("Email already in use by another account");
+                }
+                updates.email = normalizedEmail;
             }
+
             if (args.name && args.name !== existingUser.name) {
                 updates.name = args.name;
             }
@@ -48,19 +69,41 @@ export const syncDescopeUser = mutation({
             return existingUser._id;
         }
 
+        // Check if user exists by email (to prevent duplicates)
+        // Only check if email is provided (not null/empty)
+        if (normalizedEmail !== null) {
+            // Validate email format
+            if (!isValidEmail(normalizedEmail)) {
+                throw new Error("Invalid email format");
+            }
+
+            const existingUserByEmail = await ctx.db
+                .query("users")
+                .withIndex("email", (q) => q.eq("email", normalizedEmail))
+                .first();
+
+            if (existingUserByEmail) {
+                // SECURITY: Do not automatically link accounts based on email.
+                // This prevents account hijacking if the new auth method isn't verified.
+                // The user must log in with their original method.
+                console.error(`Preventing duplicate account creation for email ${normalizedEmail}`);
+                throw new Error("An account with this email already exists. Please log in with your original account.");
+            }
+        }
+
         // Create new user with smart display name fallback
         // For OTP users without email/name, use generic "User" display name
         // Priority: name > email prefix > "User"
         let displayName = "User";
         if (args.name) {
             displayName = args.name;
-        } else if (args.email) {
-            displayName = args.email.split("@")[0];
+        } else if (normalizedEmail) {
+            displayName = normalizedEmail.split("@")[0];
         }
 
         const userId = await ctx.db.insert("users", {
             tokenIdentifier: subject,
-            email: args.email,
+            email: normalizedEmail || undefined,
             name: displayName,
             // Optional fields from your schema
             image: undefined,
@@ -73,7 +116,6 @@ export const syncDescopeUser = mutation({
         return userId;
     },
 });
-
 
 
 /**

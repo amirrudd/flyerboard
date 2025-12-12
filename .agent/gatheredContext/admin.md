@@ -315,7 +315,114 @@ await ctx.db.patch(adId, {
 - Viewing deleted flyers
 - Filtering with no results
 
+## Category Management
+
+### Schema
+**File**: `convex/schema.ts`
+
+Categories table includes:
+- `name: v.string()` - Category display name
+- `slug: v.string()` - URL-friendly identifier (unique)
+- `icon: v.optional(v.string())` - Emoji or icon name
+- `parentId: v.optional(v.id("categories"))` - For subcategories
+
+**Indexes**:
+- `by_slug` - Query by slug
+- `by_parent` - Query subcategories
+
+### Admin Mutations
+**File**: `convex/categories.ts`
+
+#### createCategory
+Create new category or subcategory.
+
+**Args**:
+- `name: string` - Required, max 50 chars
+- `slug: string` - Lowercase, alphanumeric + hyphens
+- `icon?: string` - Optional emoji or icon name
+- `parentId?: Id<"categories">` - Optional parent for subcategories
+
+**Validation**:
+- Slug must be unique
+- Slug format: `/^[a-z0-9-]+$/`
+- Max 1 level of nesting (no subcategories of subcategories)
+- Parent must exist if provided
+
+#### updateCategory
+Update existing category.
+
+**Args**:
+- `categoryId: Id<"categories">`
+- `name?: string`
+- `slug?: string`
+- `icon?: string`
+- `parentId?: Id<"categories">`
+
+**Validation**:
+- Cannot be own parent
+- Cannot make parent into subcategory if it has children
+- Slug uniqueness (excluding current category)
+
+#### deleteCategory
+Delete category with safety checks.
+
+**Args**:
+- `categoryId: Id<"categories">`
+
+**Protection**:
+- Cannot delete if has subcategories
+- Cannot delete if used by ads
+- Must reassign or delete dependencies first
+
+### Public Queries
+
+#### getCategories
+Get all categories (no auth required).
+
+#### getCategoryBySlug
+Get category by slug (no auth required).
+
+#### getCategoryById
+Get single category by ID.
+
+#### getSubcategories
+Get all children of a parent category.
+
+**Args**:
+- `parentId: Id<"categories">`
+
+### Usage Examples
+
+```bash
+# Create top-level category
+npx convex run categories:createCategory '{
+  "name": "New Category",
+  "slug": "new-category",
+  "icon": "🎯"
+}'
+
+# Create subcategory
+npx convex run categories:createCategory '{
+  "name": "Subcategory",
+  "slug": "subcategory",
+  "parentId": "<PARENT_ID>"
+}'
+
+# Update category
+npx convex run categories:updateCategory '{
+  "categoryId": "<ID>",
+  "name": "Updated Name",
+  "icon": "🚀"
+}'
+
+# Delete category
+npx convex run categories:deleteCategory '{
+  "categoryId": "<ID>"
+}'
+```
+
 ## Future Enhancements
+
 
 ### Potential Features
 - Bulk actions (delete multiple users/flyers)

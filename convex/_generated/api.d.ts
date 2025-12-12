@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as image_actions from "../image_actions.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_emailUtils from "../lib/emailUtils.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
 import type * as posts from "../posts.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   image_actions: typeof image_actions;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/auth": typeof lib_auth;
+  "lib/emailUtils": typeof lib_emailUtils;
   messages: typeof messages;
   migrations: typeof migrations;
   posts: typeof posts;

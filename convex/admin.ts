@@ -512,20 +512,22 @@ export const setAdminUser = internalMutation({
         email: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await ctx.db
+        const users = await ctx.db
             .query("users")
             .withIndex("email", (q) => q.eq("email", args.email))
-            .first();
+            .collect();
 
-        if (!user) {
+        if (users.length === 0) {
             throw new Error(`User with email ${args.email} not found`);
         }
 
-        await ctx.db.patch(user._id, {
-            isAdmin: true,
-            isActive: true, // Ensure admin is active
-        });
+        for (const user of users) {
+            await ctx.db.patch(user._id, {
+                isAdmin: true,
+                isActive: true, // Ensure admin is active
+            });
+        }
 
-        return { success: true, userId: user._id };
+        return { success: true, count: users.length, userIds: users.map((u) => u._id) };
     },
 });

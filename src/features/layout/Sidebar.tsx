@@ -8,6 +8,7 @@ interface Category {
   _id: Id<"categories">;
   name: string;
   slug: string;
+  icon?: string;
   parentId?: Id<"categories">;
 }
 
@@ -73,7 +74,7 @@ export const Sidebar = memo(function Sidebar({
           ))
         ) : (
           categories.map((category) => {
-            const Icon = getCategoryIcon(category.slug);
+            const Icon = getCategoryIcon(category.slug, category.icon);
             const isSelected = selectedCategory === category._id;
             return (
               <button

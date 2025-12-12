@@ -1,6 +1,7 @@
 import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { isValidEmail, normalizeEmail } from "./lib/emailUtils";
 
 export const getUserByToken = internalQuery({
   args: { token: v.string() },
@@ -30,8 +31,29 @@ export const updateProfile = mutation({
 
     const updateData: any = {};
     if (args.name !== undefined) updateData.name = args.name;
-    if (args.email !== undefined) updateData.email = args.email;
     if (args.image !== undefined) updateData.image = args.image;
+
+    // Handle email updates with normalization and validation
+    const normalizedEmail = normalizeEmail(args.email);
+
+    if (normalizedEmail !== null) {
+      // Validate email format
+      if (!isValidEmail(normalizedEmail)) {
+        throw new Error("Invalid email format");
+      }
+
+      // Check if another user already has this email
+      // This is critical to prevent account hijacking/confusion
+      const otherUser = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", normalizedEmail))
+        .first();
+
+      if (otherUser && otherUser._id !== userId) {
+        throw new Error("Email already in use by another account");
+      }
+      updateData.email = normalizedEmail;
+    }
 
     await ctx.db.patch(userId, updateData);
 

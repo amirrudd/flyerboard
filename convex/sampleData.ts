@@ -34,19 +34,19 @@ export const clearAndCreateSampleData = mutation({
       });
     }
 
-    // Create English categories
+    // Create English categories with Lucide icon names
     const categories = [
-      { name: "Vehicles", icon: "🚗", slug: "vehicles" },
-      { name: "Real Estate", icon: "🏠", slug: "real-estate" },
-      { name: "Electronics", icon: "📱", slug: "electronics" },
-      { name: "Home & Garden", icon: "🏡", slug: "home-garden" },
-      { name: "Services", icon: "🔧", slug: "services" },
-      { name: "Fashion", icon: "👕", slug: "fashion" },
-      { name: "Sports & Recreation", icon: "🎮", slug: "sports" },
-      { name: "Temporary Hire", icon: "👥", slug: "temporary-hire" },
-      { name: "Personal Items", icon: "🎒", slug: "personal-items" },
-      { name: "Books & Media", icon: "📚", slug: "books-media" },
-      { name: "Pets & Animals", icon: "🐕", slug: "pets-animals" },
+      { name: "Vehicles", slug: "vehicles", icon: "Car" },
+      { name: "Real Estate", slug: "real-estate", icon: "Home" },
+      { name: "Electronics", slug: "electronics", icon: "Smartphone" },
+      { name: "Home & Garden", slug: "home-garden", icon: "Armchair" },
+      { name: "Services", slug: "services", icon: "Wrench" },
+      { name: "Fashion", slug: "fashion", icon: "Shirt" },
+      { name: "Sports & Recreation", slug: "sports", icon: "Dumbbell" },
+      { name: "Temporary Hire", slug: "temporary-hire", icon: "Briefcase" },
+      { name: "Personal Items", slug: "personal-items", icon: "Watch" },
+      { name: "Books & Media", slug: "books-media", icon: "Book" },
+      { name: "Pets & Animals", slug: "pets-animals", icon: "PawPrint" },
     ];
 
     const categoryIds = [];

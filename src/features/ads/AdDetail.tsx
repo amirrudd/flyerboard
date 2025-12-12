@@ -544,7 +544,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 </div>
 
                 {messages && messages.length > 0 && (
-                  <div className="h-64 overflow-y-auto p-4 space-y-3">
+                  <div className="h-64 overflow-y-auto p-4 space-y-3" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {messages.map((message) => (
                       <div
                         key={message._id}

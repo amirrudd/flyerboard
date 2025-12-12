@@ -107,7 +107,7 @@ export function ChatsTab() {
                             </div>
 
                             {/* Messages */}
-                            <div className="p-4 bg-gray-100 max-h-96 overflow-y-auto">
+                            <div className="p-4 bg-gray-100 max-h-96 overflow-y-auto" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                                 {chatDetails.messages.length === 0 ? (
                                     <p className="text-center text-gray-500 py-8">No messages in this chat</p>
                                 ) : (
@@ -116,14 +116,14 @@ export function ChatsTab() {
                                             <div
                                                 key={message._id}
                                                 className={`flex ${message.senderId === chatDetails.buyer?._id
-                                                        ? "justify-start"
-                                                        : "justify-end"
+                                                    ? "justify-start"
+                                                    : "justify-end"
                                                     }`}
                                             >
                                                 <div
                                                     className={`max-w-xs px-4 py-2 rounded-lg ${message.senderId === chatDetails.buyer?._id
-                                                            ? "bg-white border border-gray-200"
-                                                            : "bg-primary-600 text-white"
+                                                        ? "bg-white border border-gray-200"
+                                                        : "bg-primary-600 text-white"
                                                         }`}
                                                 >
                                                     <div className="text-xs font-medium mb-1 opacity-70">
@@ -132,8 +132,8 @@ export function ChatsTab() {
                                                     <p className="text-sm">{message.content}</p>
                                                     <p
                                                         className={`text-xs mt-1 ${message.senderId === chatDetails.buyer?._id
-                                                                ? "text-gray-500"
-                                                                : "text-white/70"
+                                                            ? "text-gray-500"
+                                                            : "text-white/70"
                                                             }`}
                                                     >
                                                         {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}

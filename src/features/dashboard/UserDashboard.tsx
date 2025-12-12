@@ -738,7 +738,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           {expandedChatId === chat._id && (
                             <div className="border-t border-gray-200">
                               {/* Messages */}
-                              <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-100">
+                              <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-gray-100" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                                 {(chatMessages || []).map((message) => (
                                   <div
                                     key={message._id}

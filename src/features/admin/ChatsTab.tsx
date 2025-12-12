@@ -129,7 +129,7 @@ export function ChatsTab() {
                                                     <div className="text-xs font-medium mb-1 opacity-70">
                                                         {message.sender?.name || "Unknown"}
                                                     </div>
-                                                    <p className="text-sm">{message.content}</p>
+                                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                                     <p
                                                         className={`text-xs mt-1 ${message.senderId === chatDetails.buyer?._id
                                                             ? "text-gray-500"

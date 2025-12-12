@@ -67,7 +67,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col">
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -86,9 +86,9 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
 
       <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chat List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col max-h-[400px] lg:max-h-[calc(100vh-200px)]">
+          {/* Chat List - Hidden on mobile when chat is selected */}
+          <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col flex-1 lg:flex-none lg:max-h-[calc(100vh-200px)]">
               <div className="p-4 border-b border-neutral-200">
                 <h2 className="text-lg font-semibold text-neutral-800">
                   Conversations ({(chats || []).length})
@@ -146,15 +146,23 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
             </div>
           </div>
 
-          {/* Chat Messages */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col max-h-[600px] lg:max-h-[calc(100vh-200px)]">
+          {/* Chat Messages - Hidden on mobile when no chat is selected */}
+          <div className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : ''}`}>
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col flex-1 lg:flex-none lg:max-h-[calc(100vh-200px)]">
               {selectedChat ? (
                 <>
                   {/* Chat Header */}
                   <div className="p-4 border-b border-neutral-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
+                        {/* Back button - Mobile only */}
+                        <button
+                          onClick={() => setSelectedChatId(null)}
+                          className="lg:hidden p-2 -ml-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                          title="Back to conversations"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
                         <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
                           {selectedChat.buyer?.name?.charAt(0) || "U"}
                         </div>
@@ -193,7 +201,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                             : 'bg-neutral-100 text-neutral-900'
                             }`}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           <p
                             className={`text-xs mt-1 ${message.senderId === ad.userId
                               ? 'text-white/70'

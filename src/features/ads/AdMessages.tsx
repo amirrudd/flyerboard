@@ -95,7 +95,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                 </h2>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                 {(chats || []).length === 0 ? (
                   <div className="p-6 text-center">
                     <div className="text-4xl mb-4">💬</div>
@@ -180,7 +180,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {(messages || []).map((message) => (
                       <div
                         key={message._id}

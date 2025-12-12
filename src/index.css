@@ -164,12 +164,15 @@
     /* Optimize scroll performance */
     overflow-y: auto;
     overflow-x: hidden;
+    /* Allow scrolling and single-tap, prevent double-tap zoom */
+    touch-action: manipulation;
   }
 
   /* Prevent scroll chaining on mobile modals */
   .modal-scroll-lock {
     overscroll-behavior: contain;
-    touch-action: pan-y;
+    /* Allow vertical panning for modal content scrolling */
+    touch-action: pan-y pinch-zoom;
   }
 
   /* Prevent body scroll on mobile - only allow scroll in designated containers */
@@ -181,6 +184,8 @@
       position: fixed;
       width: 100%;
       height: 100%;
+      /* Prevent double-tap zoom, allow single-tap and scrolling */
+      touch-action: manipulation;
     }
   }
 }

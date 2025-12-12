@@ -293,8 +293,42 @@ if (!args.title || args.title.length < 3) {
 .mobile-scroll-container {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: manipulation; /* Prevents scroll freeze when tapping interactive elements */
 }
 ```
+
+**Important**: The `touch-action: manipulation` property prevents double-tap zoom and ensures scrolling works even after tapping on interactive elements like cards or buttons.
+
+### Nested Scroll Containers
+**Problem**: When you have nested scrollable containers (e.g., a messages list inside a scrollable page), touch events can get trapped in the nested container, preventing the main page from scrolling.
+
+**Solution**: Add `touch-action: pan-y` and `overscroll-behavior: contain` to nested scroll containers:
+
+```typescript
+{/* Nested scrollable container (e.g., chat messages, conversation list) */}
+<div 
+  className="max-h-96 overflow-y-auto p-4 space-y-3" 
+  style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
+>
+  {/* Scrollable content */}
+</div>
+```
+
+**When to use**:
+- ✅ Chat message containers
+- ✅ Conversation lists
+- ✅ Dropdown menus with scroll
+- ✅ Any scrollable area inside a scrollable page
+
+**Why it works**:
+- `touch-action: pan-y` - Allows vertical panning (scrolling) and prevents touch event trapping
+- `overscrollBehavior: contain` - Prevents scroll chaining (when you reach the end of nested scroll, it doesn't continue to parent scroll)
+
+**Example locations**:
+- `AdMessages.tsx` - Chat list and messages containers
+- `UserDashboard.tsx` - Expanded chat messages
+- `AdDetail.tsx` - Chat messages sidebar
+- `ChatsTab.tsx` - Admin chat monitoring
 
 ### Bottom Navigation
 **Mobile only**: Fixed bottom nav with safe area padding

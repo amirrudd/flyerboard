@@ -330,6 +330,35 @@ if (!args.title || args.title.length < 3) {
 - `AdDetail.tsx` - Chat messages sidebar
 - `ChatsTab.tsx` - Admin chat monitoring
 
+### Mobile List-Detail Pattern
+**Problem**: On mobile, showing both a list and detail view side-by-side (as on desktop) doesn't work well due to limited screen space.
+
+**Solution**: Conditionally show only one view at a time on mobile, with navigation between them:
+
+```typescript
+{/* List - Hidden on mobile when item is selected */}
+<div className={`lg:col-span-1 ${selectedId ? 'hidden lg:block' : ''}`}>
+  {/* List content */}
+</div>
+
+{/* Detail - Hidden on mobile when no item is selected */}
+<div className={`lg:col-span-2 ${!selectedId ? 'hidden lg:block' : ''}`}>
+  {/* Detail content with back button */}
+  <button onClick={() => setSelectedId(null)} className="lg:hidden">
+    <ChevronLeft /> Back
+  </button>
+  {/* Detail content */}
+</div>
+```
+
+**Key points**:
+- Use `hidden lg:block` to hide on mobile but show on desktop
+- Add a back button in the detail view that's only visible on mobile (`lg:hidden`)
+- On desktop (lg breakpoint), both views remain visible
+- Ensure root container uses `h-screen` not `min-h-screen` for proper flex layout
+
+**Example**: `AdMessages.tsx` - Shows conversation list on mobile, then switches to messages view when a conversation is selected
+
 ### Bottom Navigation
 **Mobile only**: Fixed bottom nav with safe area padding
 ```typescript

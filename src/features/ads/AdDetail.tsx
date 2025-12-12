@@ -556,7 +556,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                             : 'bg-neutral-100 text-neutral-900'
                             }`}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
                             }`}>
                             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}

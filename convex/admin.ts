@@ -2,6 +2,7 @@ import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/adminAuth";
 import { Id } from "./_generated/dataModel";
+import { createError, logAdminAction } from "./lib/logger";
 
 // ============================================================================
 // ADMIN QUERIES
@@ -206,7 +207,7 @@ export const getUserDetails = query({
 
         const user = await ctx.db.get(args.userId);
         if (!user) {
-            throw new Error("User not found");
+            throw createError("User not found", { userId: args.userId, operation: "getUserDetails" });
         }
 
         // Get user's ads
@@ -268,7 +269,7 @@ export const getChatForModeration = query({
 
         const chat = await ctx.db.get(args.chatId);
         if (!chat) {
-            throw new Error("Chat not found");
+            throw createError("Chat not found", { chatId: args.chatId, operation: "getChatForModeration" });
         }
 
         const [buyer, seller, ad, messages] = await Promise.all([
@@ -328,16 +329,16 @@ export const toggleUserStatus = mutation({
         userId: v.id("users"),
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const user = await ctx.db.get(args.userId);
         if (!user) {
-            throw new Error("User not found");
+            throw createError("User not found", { userId: args.userId, operation: "toggleUserStatus" });
         }
 
         // Don't allow deactivating admin accounts
         if (user.isAdmin) {
-            throw new Error("Cannot deactivate admin accounts");
+            throw createError("Cannot deactivate admin accounts", { userId: args.userId, operation: "toggleUserStatus" });
         }
 
         const newStatus = !user.isActive;
@@ -357,6 +358,7 @@ export const toggleUserStatus = mutation({
             }
         }
 
+        logAdminAction("User status toggled", { adminId: adminUser, userId: args.userId, newStatus, adsAffected: newStatus ? 0 : (await ctx.db.query("ads").withIndex("by_user", (q) => q.eq("userId", args.userId)).collect()).length });
         return { isActive: newStatus };
     },
 });
@@ -369,16 +371,16 @@ export const deleteUserAccount = mutation({
         userId: v.id("users"),
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const user = await ctx.db.get(args.userId);
         if (!user) {
-            throw new Error("User not found");
+            throw createError("User not found", { userId: args.userId, operation: "deleteUserAccount" });
         }
 
         // Don't allow deleting admin accounts
         if (user.isAdmin) {
-            throw new Error("Cannot delete admin accounts");
+            throw createError("Cannot delete admin accounts", { userId: args.userId, operation: "deleteUserAccount" });
         }
 
         // Soft delete all user's ads
@@ -397,6 +399,7 @@ export const deleteUserAccount = mutation({
         // Delete the user
         await ctx.db.delete(args.userId);
 
+        logAdminAction("User account deleted", { adminId: adminUser, userId: args.userId, adsDeleted: userAds.length });
         return { success: true };
     },
 });
@@ -410,24 +413,25 @@ export const deleteFlyerImage = mutation({
         imageRef: v.string(),
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const ad = await ctx.db.get(args.adId);
         if (!ad) {
-            throw new Error("Flyer not found");
+            throw createError("Flyer not found", { adId: args.adId, operation: "deleteFlyerImage" });
         }
 
         // Remove the image from the array
         const updatedImages = ad.images.filter((img) => img !== args.imageRef);
 
         if (updatedImages.length === ad.images.length) {
-            throw new Error("Image not found in flyer");
+            throw createError("Image not found in flyer", { adId: args.adId, imageRef: args.imageRef });
         }
 
         await ctx.db.patch(args.adId, {
             images: updatedImages,
         });
 
+        logAdminAction("Flyer image deleted", { adminId: adminUser, adId: args.adId, imageRef: args.imageRef, remainingImages: updatedImages.length });
         return { success: true, remainingImages: updatedImages.length };
     },
 });
@@ -440,11 +444,11 @@ export const deleteFlyerAdmin = mutation({
         adId: v.id("ads"),
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const ad = await ctx.db.get(args.adId);
         if (!ad) {
-            throw new Error("Flyer not found");
+            throw createError("Flyer not found", { adId: args.adId, operation: "deleteFlyerAdmin" });
         }
 
         await ctx.db.patch(args.adId, {
@@ -452,6 +456,7 @@ export const deleteFlyerAdmin = mutation({
             isActive: false,
         });
 
+        logAdminAction("Flyer deleted by admin", { adminId: adminUser, adId: args.adId, ownerId: ad.userId });
         return { success: true };
     },
 });
@@ -465,17 +470,18 @@ export const updateReportStatus = mutation({
         status: v.string(), // "pending", "reviewed", "resolved"
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const report = await ctx.db.get(args.reportId);
         if (!report) {
-            throw new Error("Report not found");
+            throw createError("Report not found", { reportId: args.reportId, operation: "updateReportStatus" });
         }
 
         await ctx.db.patch(args.reportId, {
             status: args.status,
         });
 
+        logAdminAction("Report status updated", { adminId: adminUser, reportId: args.reportId, newStatus: args.status, previousStatus: report.status });
         return { success: true };
     },
 });
@@ -488,11 +494,11 @@ export const toggleUserVerification = mutation({
         userId: v.id("users"),
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const adminUser = await requireAdmin(ctx);
 
         const user = await ctx.db.get(args.userId);
         if (!user) {
-            throw new Error("User not found");
+            throw createError("User not found", { userId: args.userId, operation: "toggleUserVerification" });
         }
 
         const newVerificationStatus = !user.isVerified;
@@ -500,6 +506,7 @@ export const toggleUserVerification = mutation({
             isVerified: newVerificationStatus,
         });
 
+        logAdminAction("User verification toggled", { adminId: adminUser, userId: args.userId, newVerificationStatus });
         return { isVerified: newVerificationStatus };
     },
 });

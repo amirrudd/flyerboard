@@ -4,6 +4,7 @@ import { getDescopeUserId } from "./lib/auth";
 import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { createError, logOperation } from "./lib/logger";
 
 export const createAd = mutation({
   args: {
@@ -18,7 +19,7 @@ export const createAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to create an ad");
+      throw createError("Must be logged in to create an ad", { operation: "createAd" });
     }
 
     const adId = await ctx.db.insert("ads", {
@@ -34,6 +35,7 @@ export const createAd = mutation({
       views: 0,
     });
 
+    logOperation("Ad created", { adId, userId, categoryId: args.categoryId });
     return adId;
   },
 });
@@ -52,16 +54,16 @@ export const updateAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to update an ad");
+      throw createError("Must be logged in to update an ad", { operation: "updateAd", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw new Error("You can only update your own ads");
+      throw createError("You can only update your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     await ctx.db.patch(args.adId, {
@@ -74,6 +76,7 @@ export const updateAd = mutation({
       images: args.images,
     });
 
+    logOperation("Ad updated", { adId: args.adId, userId });
     return args.adId;
   },
 });
@@ -85,16 +88,16 @@ export const deleteAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to delete an ad");
+      throw createError("Must be logged in to delete an ad", { operation: "deleteAd", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw new Error("You can only delete your own ads");
+      throw createError("You can only delete your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     // Soft delete by marking as deleted
@@ -105,6 +108,7 @@ export const deleteAd = mutation({
       isActive: false,
     });
 
+    logOperation("Ad soft-deleted", { adId: args.adId, userId });
     return args.adId;
   },
 });
@@ -116,16 +120,16 @@ export const toggleAdStatus = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to toggle ad status");
+      throw createError("Must be logged in to toggle ad status", { operation: "toggleAdStatus", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw new Error("You can only modify your own ads");
+      throw createError("You can only modify your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     const newStatus = !existingAd.isActive;
@@ -133,6 +137,7 @@ export const toggleAdStatus = mutation({
       isActive: newStatus,
     });
 
+    logOperation("Ad status toggled", { adId: args.adId, userId, newStatus });
     return { adId: args.adId, isActive: newStatus };
   },
 });

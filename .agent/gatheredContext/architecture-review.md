@@ -326,18 +326,40 @@ export const getAds = query({ ... });
 
 ---
 
-### 3. **Monitoring & Observability** ⭐⭐
-**Status: Basic**
 
-**Current:** Speed Insights only
+### 3. **Monitoring & Observability** ⭐⭐⭐
+**Status: Improved**
 
-**Missing:**
-- Error tracking (Sentry, Rollbar)
+**Current:** 
+- Speed Insights for frontend performance
+- **Backend logging with structured error context** ✅
+- **Admin action logging** ✅
+- Environment-aware logging (dev vs. production)
+
+**Implemented:**
+- Centralized logging utility (`convex/lib/logger.ts`)
+- Structured error messages with contextual information (user IDs, resource IDs, operation details)
+- Admin action logging for accountability and audit trails
+- Development-only operation logging for debugging
+- All errors include relevant context for easier debugging
+
+**Example Logging:**
+```typescript
+// Error with context
+throw createError("Ad not found", { adId: args.adId, userId });
+// Logs: Error: Ad not found [adId=k17abc123, userId=k17xyz789]
+
+// Admin action logging
+logAdminAction("User status toggled", { adminId, userId, newStatus });
+// Logs: [ADMIN] User status toggled [adminId=k17admin123, userId=k17user456, newStatus=false]
+```
+
+**Still Missing (Optional):**
+- Error tracking service (Sentry, Rollbar) - requires 3rd party integration
 - Performance monitoring (detailed metrics)
 - User analytics (PostHog, Mixpanel)
-- Backend logging/tracing
 
-**Recommendation:**
+**Recommendation for Future:**
 ```typescript
 // Add Sentry for error tracking
 import * as Sentry from "@sentry/react";
@@ -348,6 +370,7 @@ Sentry.init({
   tracesSampleRate: 0.1,
 });
 ```
+
 
 ---
 

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { requireAdmin } from "./lib/adminAuth";
+import { Id } from "./_generated/dataModel";
+import { createError, logAdminAction } from "./lib/logger";
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -83,27 +85,26 @@ export const createCategory = mutation({
       throw new Error("Slug must contain only lowercase letters, numbers, and hyphens");
     }
 
-    // Check slug uniqueness
-    const existingCategory = await ctx.db
+    // Check for duplicate slug
+    const existing = await ctx.db
       .query("categories")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
       .first();
 
-    if (existingCategory) {
-      throw new Error(`Category with slug "${slug}" already exists`);
+    if (existing) {
+      throw createError(`Category with slug "${slug}" already exists`, { slug, operation: "createCategory" });
     }
 
     // Validate parent category exists if provided
     if (args.parentId) {
       const parentCategory = await ctx.db.get(args.parentId);
       if (!parentCategory) {
-        throw new Error("Parent category not found");
+        throw createError("Parent category not found", { parentId: args.parentId, operation: "createCategory" });
       }
 
-      // Prevent circular references - check if parent has this as ancestor
-      // (For now, we only allow one level of nesting to keep it simple)
+      // Prevent creating subcategory of a subcategory
       if (parentCategory.parentId) {
-        throw new Error("Cannot create subcategory of a subcategory. Only one level of nesting is supported.");
+        throw createError("Cannot create subcategory of a subcategory. Only one level of nesting is supported.", { parentId: args.parentId, parentParentId: parentCategory.parentId });
       }
     }
 
@@ -184,12 +185,12 @@ export const updateCategory = mutation({
       if (args.parentId) {
         const parentCategory = await ctx.db.get(args.parentId);
         if (!parentCategory) {
-          throw new Error("Parent category not found");
+          throw createError("Parent category not found", { parentId: args.parentId, operation: "updateCategory" });
         }
 
-        // Prevent circular references
+        // Prevent creating subcategory of a subcategory
         if (parentCategory.parentId) {
-          throw new Error("Cannot create subcategory of a subcategory. Only one level of nesting is supported.");
+          throw createError("Cannot create subcategory of a subcategory. Only one level of nesting is supported.", { parentId: args.parentId, parentParentId: parentCategory.parentId, operation: "updateCategory" });
         }
 
         // Check if this category has children - if so, can't make it a subcategory

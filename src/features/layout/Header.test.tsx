@@ -39,7 +39,7 @@ describe('Header', () => {
         expect(logos.length).toBeGreaterThan(0);
 
         // Search bar might also appear multiple times
-        const searchInputs = screen.getAllByPlaceholderText('Search in listings...');
+        const searchInputs = screen.getAllByPlaceholderText('Search in flyers...');
         expect(searchInputs.length).toBeGreaterThan(0);
     });
 
@@ -53,7 +53,7 @@ describe('Header', () => {
         renderHeader({ setSearchQuery });
 
         // Target the desktop search input (or the first one found)
-        const inputs = screen.getAllByPlaceholderText('Search in listings...');
+        const inputs = screen.getAllByPlaceholderText('Search in flyers...');
         fireEvent.change(inputs[0], { target: { value: 'test' } });
 
         expect(setSearchQuery).toHaveBeenCalledWith('test');

@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SmsOtpSignIn } from './SmsOtpSignIn';
 import * as otpTimerStorage from '../../lib/otpTimerStorage';
+import { ConvexProvider } from 'convex/react';
+import { ConvexReactClient } from 'convex/react';
+
+// Mock Convex client
+const mockConvex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL || 'https://test.convex.cloud');
 
 // Mock Descope SDK
 const mockDescopeSDK = {
@@ -33,9 +38,13 @@ vi.mock('../../lib/otpTimerStorage', () => ({
     clearTimerState: vi.fn(),
 }));
 
-// Helper function to render with Router
+// Helper function to render with Router and ConvexProvider
 const renderWithRouter = (component: React.ReactElement) => {
-    return render(<MemoryRouter>{component}</MemoryRouter>);
+    return render(
+        <ConvexProvider client={mockConvex}>
+            <MemoryRouter>{component}</MemoryRouter>
+        </ConvexProvider>
+    );
 };
 
 describe('SmsOtpSignIn', () => {
@@ -176,8 +185,8 @@ describe('SmsOtpSignIn', () => {
 
             await waitFor(() => {
                 const otpInputs = screen.getAllByRole('textbox');
-                // Expect 7 textboxes: 1 phone input + 6 OTP inputs
-                expect(otpInputs.length).toBe(7);
+                // Expect 8 textboxes: 1 phone input + 6 OTP inputs + 1 name input
+                expect(otpInputs.length).toBe(8);
             });
         });
 

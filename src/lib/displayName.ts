@@ -12,13 +12,23 @@ export interface UserDisplayInfo {
 /**
  * Gets a display-friendly name from a user object.
  * Priority: name > email prefix > "User"
+ * Names are truncated to 15 characters max for UI consistency.
  */
 export function getDisplayName(user: UserDisplayInfo | null | undefined): string {
     if (!user) return "User";
 
-    if (user.name) return user.name;
-    if (user.email) return user.email.split("@")[0];
-    return "User";
+    let displayName = "User";
+    if (user.name) {
+        displayName = user.name;
+    } else if (user.email) {
+        displayName = user.email.split("@")[0];
+    }
+
+    // Truncate to max 15 characters to prevent UI breaking
+    if (displayName.length > 15) {
+        return displayName.substring(0, 15) + "…";
+    }
+    return displayName;
 }
 
 /**

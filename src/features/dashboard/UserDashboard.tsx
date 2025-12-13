@@ -51,6 +51,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
+  const [nameError, setNameError] = useState<string>("");
   const [selectedAdId, setSelectedAdId] = useState<Id<"ads"> | null>(null);
   const [showMessagesForAd, setShowMessagesForAd] = useState<Id<"ads"> | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<Id<"chats"> | null>(null);
@@ -62,6 +63,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState(false);
+
+  // Name validation function
+  const validateName = (name: string): { valid: boolean; error: string } => {
+    const trimmedName = name.trim();
+
+    if (trimmedName.length === 0) {
+      return { valid: false, error: "Name cannot be empty" };
+    }
+
+    if (trimmedName.length < 2) {
+      return { valid: false, error: "Name must be at least 2 characters long" };
+    }
+
+    if (trimmedName.length > 15) {
+      return { valid: false, error: "Name cannot exceed 15 characters" };
+    }
+
+    const validNamePattern = /^[a-zA-Z\s\-']+$/;
+    if (!validNamePattern.test(trimmedName)) {
+      return { valid: false, error: "Name can only contain letters, spaces, hyphens, and apostrophes" };
+    }
+
+    return { valid: true, error: "" };
+  };
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
@@ -167,6 +192,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       toast.error("Please wait for profile sync to complete");
       return;
     }
+
+    // Validate name before submitting
+    const nameValidation = validateName(profileData.name);
+    if (!nameValidation.valid) {
+      setNameError(nameValidation.error);
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    // Clear any previous errors
+    setNameError("");
 
     try {
       await updateProfile(profileData);
@@ -865,10 +901,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <input
                         type="text"
                         value={profileData.name}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+                        onChange={(e) => {
+                          setProfileData(prev => ({ ...prev, name: e.target.value }));
+                          // Clear error when user starts typing
+                          if (nameError) setNameError("");
+                        }}
+                        maxLength={15}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none ${nameError ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder={getDisplayName(user)}
                       />
+                      {nameError && (
+                        <p className="text-sm text-red-600 mt-1">{nameError}</p>
+                      )}
                     </div>
 
                     <div>

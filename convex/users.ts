@@ -16,6 +16,33 @@ export const getUserByToken = internalQuery({
 
 // Support profile image updates
 
+// Name validation helper
+function validateName(name: string): { valid: boolean; error?: string } {
+  const trimmedName = name.trim();
+
+  // Check if empty
+  if (trimmedName.length === 0) {
+    return { valid: false, error: "Name cannot be empty" };
+  }
+
+  // Check minimum length
+  if (trimmedName.length < 2) {
+    return { valid: false, error: "Name must be at least 2 characters long" };
+  }
+
+  // Check maximum length
+  if (trimmedName.length > 15) {
+    return { valid: false, error: "Name cannot exceed 15 characters" };
+  }
+
+  // Check for valid characters (letters, spaces, hyphens, apostrophes only)
+  const validNamePattern = /^[a-zA-Z\s\-']+$/;
+  if (!validNamePattern.test(trimmedName)) {
+    return { valid: false, error: "Name can only contain letters, spaces, hyphens, and apostrophes" };
+  }
+
+  return { valid: true };
+}
 
 export const updateProfile = mutation({
   args: {
@@ -30,7 +57,16 @@ export const updateProfile = mutation({
     }
 
     const updateData: any = {};
-    if (args.name !== undefined) updateData.name = args.name;
+
+    // Validate and process name
+    if (args.name !== undefined) {
+      const validation = validateName(args.name);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+      updateData.name = args.name.trim();
+    }
+
     if (args.image !== undefined) updateData.image = args.image;
 
     // Handle email updates with normalization and validation

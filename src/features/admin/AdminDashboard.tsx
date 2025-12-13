@@ -94,8 +94,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                        ? "bg-primary-600 text-white"
-                                        : "text-gray-700 hover:bg-gray-100"
+                                    ? "bg-primary-600 text-white"
+                                    : "text-gray-700 hover:bg-gray-100"
                                     }`}
                             >
                                 <tab.icon className="w-5 h-5" />

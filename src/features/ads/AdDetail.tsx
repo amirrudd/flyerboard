@@ -52,7 +52,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   );
 
   const saveAd = useMutation(api.adDetail.saveAd);
-  const getOrCreateChat = useMutation(api.adDetail.getOrCreateChat);
+  const sendFirstMessage = useMutation(api.adDetail.sendFirstMessage);
   const sendMessage = useMutation(api.adDetail.sendMessage);
   const incrementViews = useMutation(api.adDetail.incrementViews);
 
@@ -102,20 +102,22 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       return;
     }
 
-    try {
-      const newChatId = await getOrCreateChat({ adId });
-      setChatId(newChatId);
-      setShowChat(true);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to start chat");
-    }
+    // Just show the chat UI - chat will be created when first message is sent
+    setShowChat(true);
   };
 
   const handleSendMessage = async () => {
-    if (!messageText.trim() || !chatId) return;
+    if (!messageText.trim()) return;
 
     try {
-      await sendMessage({ chatId, content: messageText.trim() });
+      if (!chatId) {
+        // First message - create chat and send message atomically
+        const result = await sendFirstMessage({ adId, content: messageText.trim() });
+        setChatId(result.chatId);
+      } else {
+        // Subsequent messages
+        await sendMessage({ chatId, content: messageText.trim() });
+      }
       setMessageText("");
     } catch (error: any) {
       toast.error(error.message || "Failed to send message");

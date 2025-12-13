@@ -45,7 +45,7 @@ export const getAdChats = query({
 
         return {
           ...chat,
-          buyer,
+          buyer: buyer ? buyer : { _id: chat.buyerId, name: null, isDeleted: true },
           latestMessage,
           unreadCount,
         };

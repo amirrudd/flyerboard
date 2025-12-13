@@ -67,7 +67,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col">
+    <div className="h-screen h-dvh bg-white flex flex-col">
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -88,7 +88,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat List - Hidden on mobile when chat is selected */}
           <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>
-            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col flex-1 lg:flex-none lg:max-h-[calc(100vh-200px)]">
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)]">
               <div className="p-4 border-b border-neutral-200">
                 <h2 className="text-lg font-semibold text-neutral-800">
                   Conversations ({(chats || []).length})
@@ -117,7 +117,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium">
-                            {chat.buyer?.name || "Unknown User"}
+                            {chat.buyer?.name || "Deleted User"}
                           </span>
                           {chat.unreadCount > 0 && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedChatId === chat._id
@@ -148,7 +148,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
 
           {/* Chat Messages - Hidden on mobile when no chat is selected */}
           <div className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : ''}`}>
-            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col flex-1 lg:flex-none lg:max-h-[calc(100vh-200px)]">
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)]">
               {selectedChat ? (
                 <>
                   {/* Chat Header */}
@@ -168,11 +168,13 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-neutral-800">
-                            {selectedChat.buyer?.name || "Unknown User"}
+                            {selectedChat.buyer?.name || "Deleted User"}
                           </h3>
-                          <p className="text-sm text-neutral-500">
-                            {selectedChat.buyer?.email}
-                          </p>
+                          {selectedChat.buyer?.email && (
+                            <p className="text-sm text-neutral-500">
+                              {selectedChat.buyer?.email}
+                            </p>
+                          )}
                         </div>
                       </div>
 

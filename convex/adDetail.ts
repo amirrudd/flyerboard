@@ -101,12 +101,15 @@ export const isAdSaved = query({
   },
 });
 
-export const getOrCreateChat = mutation({
-  args: { adId: v.id("ads") },
+export const sendFirstMessage = mutation({
+  args: {
+    adId: v.id("ads"),
+    content: v.string()
+  },
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to chat");
+      throw new Error("Must be logged in to send messages");
     }
 
     const ad = await ctx.db.get(args.adId);
@@ -126,19 +129,34 @@ export const getOrCreateChat = mutation({
       )
       .unique();
 
+    let chatId: any;
+
     if (existingChat) {
-      return existingChat._id;
+      chatId = existingChat._id;
+    } else {
+      // Create new chat only when sending first message
+      chatId = await ctx.db.insert("chats", {
+        adId: args.adId,
+        buyerId: userId,
+        sellerId: ad.userId,
+        lastMessageAt: Date.now(),
+      });
     }
 
-    // Create new chat
-    const chatId = await ctx.db.insert("chats", {
-      adId: args.adId,
-      buyerId: userId,
-      sellerId: ad.userId,
+    // Insert the first message
+    await ctx.db.insert("messages", {
+      chatId,
+      senderId: userId,
+      content: args.content,
+      timestamp: Date.now(),
+    });
+
+    // Update chat last message time
+    await ctx.db.patch(chatId, {
       lastMessageAt: Date.now(),
     });
 
-    return chatId;
+    return { chatId, success: true };
   },
 });
 

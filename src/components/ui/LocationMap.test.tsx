@@ -5,11 +5,13 @@ import { LocationMap } from './LocationMap';
 // Mock google.maps API
 global.google = {
     maps: {
-        Circle: vi.fn().mockImplementation(() => ({
-            setMap: vi.fn(),
-            setCenter: vi.fn(),
-            setRadius: vi.fn(),
-        })),
+        Circle: vi.fn().mockImplementation(function () {
+            return {
+                setMap: vi.fn(),
+                setCenter: vi.fn(),
+                setRadius: vi.fn(),
+            };
+        }),
     },
 } as any;
 

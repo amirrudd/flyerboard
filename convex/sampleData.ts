@@ -22,16 +22,30 @@ export const clearAndCreateSampleData = mutation({
     }
 
     // Try to get authenticated user, but don't require it for sample data
-    let userId = await getAuthUserId(ctx);
+    let currentUserId = await getAuthUserId(ctx);
 
-    // If no authenticated user, create a dummy user for sample data
-    if (!userId) {
-      userId = await ctx.db.insert("users", {
-        name: "Sample User",
-        email: "sample@example.com",
+    // Create multiple sample users for realistic test data
+    const sampleUsers = [
+      { name: "Sarah Chen", email: "sarah.chen@example.com" },
+      { name: "Mike Johnson", email: "mike.j@example.com" },
+      { name: "Emma Wilson", email: "emma.w@example.com" },
+      { name: "David Park", email: "david.park@example.com" },
+      { name: "Lisa Brown", email: "lisa.brown@example.com" },
+    ];
+
+    const userIds: any[] = [];
+    for (const userData of sampleUsers) {
+      const userId = await ctx.db.insert("users", {
+        name: userData.name,
+        email: userData.email,
         emailVerificationTime: Date.now(),
         isAnonymous: false,
+        totalRating: Math.floor(Math.random() * 20),
+        ratingCount: Math.floor(Math.random() * 10),
+        averageRating: Math.round((3 + Math.random() * 2) * 10) / 10, // 3.0-5.0 rating
+        isVerified: Math.random() > 0.5,
       });
+      userIds.push(userId);
     }
 
     // Create English categories with Lucide icon names
@@ -74,7 +88,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1542362567-b07e54358753?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[0], // Sarah Chen
         isActive: true,
         views: 127,
       },
@@ -96,7 +110,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[1], // Mike Johnson
         isActive: true,
         views: 289,
       },
@@ -116,7 +130,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[2], // Emma Wilson
         isActive: true,
         views: 203,
       },
@@ -135,7 +149,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[3], // David Park
         isActive: true,
         views: 156,
       },
@@ -155,7 +169,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[4], // Lisa Brown
         isActive: true,
         views: 342,
       },
@@ -169,12 +183,11 @@ export const clearAndCreateSampleData = mutation({
         longitude: 138.6007,
         categoryId: categoryIds[6],
         images: [
-          "https://images.unsplash.com/photo-1544191696-15693072e0b5?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1502744688674-c619d1586c9e?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[0], // Sarah Chen
         isActive: true,
         views: 89,
       },
@@ -192,7 +205,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[1], // Mike Johnson
         isActive: true,
         views: 78,
       },
@@ -210,7 +223,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[2], // Emma Wilson
         isActive: true,
         views: 45,
       },
@@ -228,7 +241,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[3], // David Park
         isActive: true,
         views: 92,
       },
@@ -246,7 +259,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[4], // Lisa Brown
         isActive: true,
         views: 156,
       },
@@ -264,7 +277,7 @@ export const clearAndCreateSampleData = mutation({
           "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&h=600&fit=crop",
           "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&h=600&fit=crop"
         ],
-        userId,
+        userId: userIds[0], // Sarah Chen
         isActive: true,
         views: 234,
       }

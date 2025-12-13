@@ -23,7 +23,7 @@ For every task, the following rules must always be respected:
 • Do not pause for confirmation unless the task is truly impossible or unreasonably ambiguous.
 • When clarification is needed, make a safe, minimal assumption and proceed.
 • Output only the new or changed code unless full context is absolutely necessary.
-• Run tests to ensure no regressions, and update tests when functionality changes.
+• Run tests after task completion to ensure no regressions, and update tests when functionality changes.
 • After completing a task, update relevant documents in `.agent/gatheredContext/{relevant context document}` when needed so the project context stays accurate for future tasks.
 ## Critical Patterns (Always Follow)
 ### Image Quality

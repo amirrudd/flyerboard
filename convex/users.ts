@@ -2,6 +2,7 @@ import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { isValidEmail, normalizeEmail } from "./lib/emailUtils";
+import { createError, logOperation } from "./lib/logger";
 
 export const getUserByToken = internalQuery({
   args: { token: v.string() },
@@ -53,7 +54,7 @@ export const updateProfile = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to update profile");
+      throw createError("Must be logged in to update profile", { operation: "updateProfile" });
     }
 
     const updateData: any = {};
@@ -75,7 +76,7 @@ export const updateProfile = mutation({
     if (normalizedEmail !== null) {
       // Validate email format
       if (!isValidEmail(normalizedEmail)) {
-        throw new Error("Invalid email format");
+        throw createError("Invalid email format", { email: normalizedEmail, userId });
       }
 
       // Check if another user already has this email
@@ -86,7 +87,7 @@ export const updateProfile = mutation({
         .first();
 
       if (otherUser && otherUser._id !== userId) {
-        throw new Error("Email already in use by another account");
+        throw createError("Email already in use by another account", { email: normalizedEmail, userId });
       }
       updateData.email = normalizedEmail;
     }
@@ -102,7 +103,7 @@ export const deleteAccount = mutation({
   handler: async (ctx) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to delete account");
+      throw createError("Must be logged in to delete account", { operation: "deleteAccount" });
     }
 
     // Delete user's ads
@@ -176,6 +177,7 @@ export const deleteAccount = mutation({
     // Finally delete the user
     await ctx.db.delete(userId);
 
+    logOperation("Account deleted", { userId, adsDeleted: userAds.length, chatsDeleted: buyerChats.length });
     return { success: true };
   },
 });

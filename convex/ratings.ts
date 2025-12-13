@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { createError, logOperation } from "./lib/logger";
 
 /**
  * Submit or update a rating for another user
@@ -16,17 +17,17 @@ export const submitRating = mutation({
     handler: async (ctx, args) => {
         const userId = await getDescopeUserId(ctx);
         if (!userId) {
-            throw new Error("Must be logged in to submit ratings");
+            throw createError("Must be logged in to submit ratings", { operation: "submitRating", ratedUserId: args.ratedUserId });
         }
 
         // Prevent self-rating
         if (userId === args.ratedUserId) {
-            throw new Error("Cannot rate yourself");
+            throw createError("Cannot rate yourself", { userId, ratedUserId: args.ratedUserId });
         }
 
         // Validate rating value (0-5, supports 0.5 increments)
         if (args.rating < 0 || args.rating > 5 || (args.rating * 2) % 1 !== 0) {
-            throw new Error("Rating must be between 0 and 5 in 0.5 increments");
+            throw createError("Rating must be between 0 and 5 in 0.5 increments", { rating: args.rating, userId, ratedUserId: args.ratedUserId });
         }
 
         // Check if user has already rated this person
@@ -39,7 +40,7 @@ export const submitRating = mutation({
 
         const ratedUser = await ctx.db.get(args.ratedUserId);
         if (!ratedUser) {
-            throw new Error("User not found");
+            throw createError("User not found", { ratedUserId: args.ratedUserId, operation: "submitRating" });
         }
 
         if (existingRating) {

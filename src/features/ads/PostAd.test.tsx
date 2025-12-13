@@ -77,7 +77,7 @@ describe('PostAd', () => {
     it('should validate required fields on submit', async () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const submitButton = screen.getByText('Post Listing');
+        const submitButton = screen.getByText('Pin Flyer');
         fireEvent.click(submitButton);
 
         expect(mockCreateAd).not.toHaveBeenCalled();
@@ -113,7 +113,7 @@ describe('PostAd', () => {
         // Add image
         fireEvent.click(screen.getByText('Add Image'));
 
-        const submitButton = screen.getByText('Post Listing');
+        const submitButton = screen.getByText('Pin Flyer');
         expect(submitButton).not.toBeDisabled();
         fireEvent.click(submitButton);
 
@@ -142,7 +142,7 @@ describe('PostAd', () => {
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
         expect(screen.getByDisplayValue('Existing Ad')).toBeInTheDocument();
-        expect(screen.getByText('Update Listing')).toBeInTheDocument();
+        expect(screen.getByText('Update Flyer')).toBeInTheDocument();
     });
 
     it('should show delete button when editing', () => {
@@ -180,8 +180,8 @@ describe('PostAd', () => {
         fireEvent.click(deleteButton);
 
         await waitFor(() => {
-            expect(screen.getByText('Delete Listing')).toBeInTheDocument();
-            expect(screen.getByText(/are you sure you want to delete this listing/i)).toBeInTheDocument();
+            expect(screen.getByText('Delete Flyer')).toBeInTheDocument();
+            expect(screen.getByText(/are you sure you want to delete this flyer/i)).toBeInTheDocument();
         });
     });
 
@@ -204,8 +204,8 @@ describe('PostAd', () => {
 
         // Confirmation dialog should appear
         await waitFor(() => {
-            expect(screen.getByText('Delete Listing')).toBeInTheDocument();
-            expect(screen.getByText(/are you sure you want to delete this listing/i)).toBeInTheDocument();
+            expect(screen.getByText('Delete Flyer')).toBeInTheDocument();
+            expect(screen.getByText(/are you sure you want to delete this flyer/i)).toBeInTheDocument();
         });
 
         // Get all buttons and find the Cancel button in the dialog (not the form)

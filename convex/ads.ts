@@ -3,6 +3,41 @@ import { query, mutation } from "./_generated/server";
 
 import { paginationOptsValidator } from "convex/server";
 
+/**
+ * Fetch paginated ads with optional filtering by category, search term, and location
+ * 
+ * Supports both search-based queries (using full-text search on title) and standard
+ * queries (using indexes). Search queries return top 50 results without cursor pagination.
+ * Standard queries support cursor-based pagination. Only returns active, non-deleted ads.
+ * 
+ * @param args.categoryId - Filter by specific category (optional)
+ * @param args.search - Search term for title search (optional, returns top 50 results)
+ * @param args.location - Filter by location string (optional, applied in-memory)
+ * @param args.paginationOpts - Pagination cursor and page size
+ * @param args.maxCreationTime - Maximum creation timestamp for pagination (optional)
+ * @returns Paginated result with ads array, continuation cursor, and isDone flag
+ * 
+ * @example
+ * ```typescript
+ * // Get first page of all ads
+ * const result = await ctx.runQuery(api.ads.getAds, {
+ *   paginationOpts: { numItems: 20, cursor: null }
+ * });
+ * 
+ * // Search for "laptop" in Electronics category
+ * const laptops = await ctx.runQuery(api.ads.getAds, {
+ *   categoryId: electronicsId,
+ *   search: "laptop",
+ *   paginationOpts: { numItems: 20, cursor: null }
+ * });
+ * 
+ * // Get ads in Sydney
+ * const sydneyAds = await ctx.runQuery(api.ads.getAds, {
+ *   location: "Sydney",
+ *   paginationOpts: { numItems: 20, cursor: null }
+ * });
+ * ```
+ */
 export const getAds = query({
   args: {
     categoryId: v.optional(v.id("categories")),
@@ -76,6 +111,26 @@ export const getAds = query({
   },
 });
 
+/**
+ * Get a single ad by its ID
+ * 
+ * Returns null if the ad doesn't exist or has been soft-deleted.
+ * This is a public query that doesn't require authentication.
+ * 
+ * @param args.adId - The ID of the ad to retrieve
+ * @returns The ad document or null if not found/deleted
+ * 
+ * @example
+ * ```typescript
+ * const ad = await ctx.runQuery(api.ads.getAdById, {
+ *   adId: adId
+ * });
+ * 
+ * if (!ad) {
+ *   console.log("Ad not found or deleted");
+ * }
+ * ```
+ */
 export const getAdById = query({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
@@ -90,6 +145,24 @@ export const getAdById = query({
   },
 });
 
+/**
+ * Increment the view count for an ad
+ * 
+ * This mutation is called when a user views an ad detail page.
+ * It increments the views counter by 1. Requires the ad to exist
+ * and not be deleted.
+ * 
+ * @param args.adId - The ID of the ad to increment views for
+ * @returns Success object with success: true
+ * @throws Error if ad not found or deleted
+ * 
+ * @example
+ * ```typescript
+ * await ctx.runMutation(api.ads.incrementViews, {
+ *   adId: adId
+ * });
+ * ```
+ */
 export const incrementViews = mutation({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
@@ -106,6 +179,37 @@ export const incrementViews = mutation({
   },
 });
 
+/**
+ * Fetch ads created after a specific timestamp (for smart refresh)
+ * 
+ * Used to fetch new ads that were created since the last page load,
+ * enabling a "smart refresh" feature that shows only new content.
+ * Supports the same filtering options as getAds but returns an array
+ * instead of paginated results.
+ * 
+ * @param args.categoryId - Filter by specific category (optional)
+ * @param args.search - Search term for title search (optional)
+ * @param args.location - Filter by location string (optional)
+ * @param args.sinceTimestamp - Fetch ads created after this timestamp
+ * @param args.limit - Maximum number of ads to return (default: 50)
+ * @returns Array of ads created after the timestamp
+ * 
+ * @example
+ * ```typescript
+ * // Get ads created in the last 5 minutes
+ * const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+ * const newAds = await ctx.runQuery(api.ads.getLatestAds, {
+ *   sinceTimestamp: fiveMinutesAgo,
+ *   limit: 20
+ * });
+ * 
+ * // Get new ads in a specific category
+ * const newCategoryAds = await ctx.runQuery(api.ads.getLatestAds, {
+ *   categoryId: categoryId,
+ *   sinceTimestamp: lastCheckTimestamp
+ * });
+ * ```
+ */
 export const getLatestAds = query({
   args: {
     categoryId: v.optional(v.id("categories")),
@@ -175,6 +279,7 @@ export const getLatestAds = query({
       if (args.location) {
         return ads.filter(ad => ad.location === args.location);
       }
+
 
       return ads;
     }

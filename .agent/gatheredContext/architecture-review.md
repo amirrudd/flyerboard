@@ -273,28 +273,31 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 
 ## ⚠️ Areas for Improvement
 
-### 1. **Error Boundaries** ⭐⭐⭐
-**Status: Missing**
+### 1. **Error Boundaries** ⭐⭐⭐⭐⭐
+**Status: Implemented** ✅
 
-**Issue:** No explicit error boundary components found.
+**Implementation:**
+- **ErrorBoundary Component**: Class-based component with `componentDidCatch` and `getDerivedStateFromError`
+- **ErrorFallback UI**: User-friendly fallback with "Try Again" and "Go Home" options
+- **Top-level Protection**: Wraps entire app to prevent white screen of death
+- **Route-level Isolation**: Each lazy-loaded route has its own error boundary for granular error containment
 
-**Recommendation:**
-```typescript
-// src/components/ErrorBoundary.tsx
-class ErrorBoundary extends React.Component {
-  componentDidCatch(error, errorInfo) {
-    logErrorToService(error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback />;
-    }
-    return this.props.children;
-  }
-}
-```
+**Files:**
+- `src/components/ErrorBoundary.tsx` - Core error boundary logic
+- `src/components/ui/ErrorFallback.tsx` - Premium fallback UI
+- `src/components/ErrorBoundary.test.tsx` - Comprehensive unit tests
+- `src/components/ui/ErrorFallback.test.tsx` - UI component tests
 
-**Impact:** Prevents entire app crashes from unhandled errors.
+**Features:**
+- Catches JavaScript errors anywhere in component tree
+- Logs errors to console (extensible for error tracking services)
+- Displays user-friendly error message (no technical jargon)
+- Reset functionality to recover from errors
+- Development mode shows detailed error info
+- Mobile-responsive design
+- Accessible with ARIA labels
+
+**Impact:** Prevents entire app crashes from unhandled errors, improving user experience and reliability.
 
 ---
 
@@ -323,18 +326,40 @@ export const getAds = query({ ... });
 
 ---
 
-### 3. **Monitoring & Observability** ⭐⭐
-**Status: Basic**
 
-**Current:** Speed Insights only
+### 3. **Monitoring & Observability** ⭐⭐⭐
+**Status: Improved**
 
-**Missing:**
-- Error tracking (Sentry, Rollbar)
+**Current:** 
+- Speed Insights for frontend performance
+- **Backend logging with structured error context** ✅
+- **Admin action logging** ✅
+- Environment-aware logging (dev vs. production)
+
+**Implemented:**
+- Centralized logging utility (`convex/lib/logger.ts`)
+- Structured error messages with contextual information (user IDs, resource IDs, operation details)
+- Admin action logging for accountability and audit trails
+- Development-only operation logging for debugging
+- All errors include relevant context for easier debugging
+
+**Example Logging:**
+```typescript
+// Error with context
+throw createError("Ad not found", { adId: args.adId, userId });
+// Logs: Error: Ad not found [adId=k17abc123, userId=k17xyz789]
+
+// Admin action logging
+logAdminAction("User status toggled", { adminId, userId, newStatus });
+// Logs: [ADMIN] User status toggled [adminId=k17admin123, userId=k17user456, newStatus=false]
+```
+
+**Still Missing (Optional):**
+- Error tracking service (Sentry, Rollbar) - requires 3rd party integration
 - Performance monitoring (detailed metrics)
 - User analytics (PostHog, Mixpanel)
-- Backend logging/tracing
 
-**Recommendation:**
+**Recommendation for Future:**
 ```typescript
 // Add Sentry for error tracking
 import * as Sentry from "@sentry/react";
@@ -345,6 +370,7 @@ Sentry.init({
   tracesSampleRate: 0.1,
 });
 ```
+
 
 ---
 
@@ -546,10 +572,9 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 ## 🎯 Priority Recommendations
 
 ### High Priority (Do First)
-1. **Add Error Boundaries** - Prevents app crashes
-2. **Implement Error Tracking** (Sentry) - Critical for production monitoring
-3. **Add E2E Tests** - Catch integration issues early
-4. **Configure CSP** - Security hardening
+1. **Implement Error Tracking** (Sentry) - Critical for production monitoring
+2. **Add E2E Tests** - Catch integration issues early
+3. **Configure CSP** - Security hardening
 
 ### Medium Priority (Next Quarter)
 5. **Implement Rate Limiting** - Prevent abuse
@@ -583,6 +608,7 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 | Code Splitting | ✅ Essential | ✅ Implemented | ✅ |
 | Testing (Unit) | ✅ Essential | ✅ Implemented | ✅ |
 | Testing (E2E) | ✅ Recommended | ❌ Missing | ⚠️ |
+| Error Boundaries | ✅ Essential | ✅ Implemented | ✅ |
 | Error Tracking | ✅ Essential | ❌ Missing | ⚠️ |
 | PWA | ⚡ Optional | ❌ Missing | ℹ️ |
 | i18n | ⚡ Optional | ❌ Missing | ℹ️ |

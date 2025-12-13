@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { createError, logOperation } from "./lib/logger";
 
 export const getAdById = query({
   args: { adId: v.id("ads") },
@@ -34,7 +35,7 @@ export const incrementViews = mutation({
   handler: async (ctx, args) => {
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId });
     }
 
     await ctx.db.patch(args.adId, {
@@ -50,13 +51,13 @@ export const saveAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to save ads");
+      throw createError("Must be logged in to save ads", { operation: "saveAd", adId: args.adId });
     }
 
     // Check if ad exists and is not deleted
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId, userId });
     }
 
     // Check if already saved
@@ -109,16 +110,16 @@ export const sendFirstMessage = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to send messages");
+      throw createError("Must be logged in to send messages", { operation: "startChat", adId: args.adId });
     }
 
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Ad not found");
+      throw createError("Ad not found", { adId: args.adId, userId });
     }
 
     if (ad.userId === userId) {
-      throw new Error("Cannot chat with yourself");
+      throw createError("Cannot chat with yourself", { adId: args.adId, userId });
     }
 
     // Check if chat already exists
@@ -168,22 +169,22 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw new Error("Must be logged in to send messages");
+      throw createError("Must be logged in to send messages", { operation: "sendMessage", chatId: args.chatId });
     }
 
     const chat = await ctx.db.get(args.chatId);
     if (!chat) {
-      throw new Error("Chat not found");
+      throw createError("Chat not found", { chatId: args.chatId, userId });
     }
 
     if (chat.buyerId !== userId && chat.sellerId !== userId) {
-      throw new Error("Not authorized to send messages in this chat");
+      throw createError("Not authorized to send messages in this chat", { chatId: args.chatId, userId, buyerId: chat.buyerId, sellerId: chat.sellerId });
     }
 
     // Check if the ad still exists and is not deleted
     const ad = await ctx.db.get(chat.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Cannot send message - flyer no longer available");
+      throw createError("Cannot send message - flyer no longer available", { chatId: args.chatId, adId: chat.adId });
     }
 
     // Insert message

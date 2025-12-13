@@ -36,6 +36,11 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     }
   }, [selectedChatId, markAsRead]);
 
+  // Reset scroll position on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -67,7 +72,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }
 
   return (
-    <div className="h-screen h-dvh bg-white flex flex-col">
+    <div className="h-full bg-white flex flex-col">
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">

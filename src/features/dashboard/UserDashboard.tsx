@@ -448,7 +448,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-800">{getDisplayName(user)}</h3>
+                        <h3 className="font-semibold text-gray-800 max-w-[120px] truncate">{getDisplayName(user)}</h3>
                         {user.isVerified && (
                           <div title="Verified User" className="relative">
                             <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />

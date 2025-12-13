@@ -106,40 +106,33 @@ describe('ImageDisplay', () => {
         expect(skeleton).toHaveClass('shimmer', 'bg-gray-200', 'test-class');
     });
 
-    it.skip('should show fallback on error', async () => {
+    it('should call onError callback when image fails to load', async () => {
         const src = 'https://example.com/broken.jpg';
-        const customFallback = 'fallback.jpg';
+        const mockOnError = vi.fn();
 
-        render(<ImageDisplay src={src} alt="Broken Image" fallback={customFallback} />);
+        render(<ImageDisplay src={src} alt="Broken Image" onError={mockOnError} />);
 
         const img = screen.getByRole('img', { hidden: true });
 
         // Simulate error
         fireEvent.error(img);
 
-        // Should show fallback image
+        // Should call onError callback
         await waitFor(() => {
-            const fallbackImg = screen.getByRole('img');
-            expect(fallbackImg).toHaveAttribute('src', customFallback);
-            expect(fallbackImg).not.toHaveAttribute('data-effect');
+            expect(mockOnError).toHaveBeenCalled();
         });
     });
 
-    it.skip('should use default fallback if none provided', async () => {
+    it('should work without onError callback', async () => {
         const src = 'https://example.com/broken.jpg';
 
+        // Should not throw when onError is not provided
         render(<ImageDisplay src={src} alt="Broken Image" />);
 
         const img = screen.getByRole('img', { hidden: true });
 
-        // Simulate error
-        fireEvent.error(img);
-
-        // Should show default fallback image
-        await waitFor(() => {
-            const fallbackImg = screen.getByRole('img');
-            expect(fallbackImg).toHaveAttribute('src', expect.stringContaining('unsplash'));
-        });
+        // Simulate error - should not throw
+        expect(() => fireEvent.error(img)).not.toThrow();
     });
 
     it('should show skeleton only while URL is being fetched', () => {

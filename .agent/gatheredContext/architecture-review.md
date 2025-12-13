@@ -445,32 +445,33 @@ function Component() {
 
 ---
 
-### 7. **Performance Budgets** ⭐⭐⭐
-**Status: Not Enforced**
+### 7. **Performance Budgets & Lighthouse CI** ⭐⭐⭐⭐⭐
+**Status: Implemented** ✅
 
-**Recommendation:**
-```javascript
-// vite.config.ts
-build: {
-  chunkSizeWarningLimit: 500, // Currently 1000
-  rollupOptions: {
-    output: {
-      manualChunks: {
-        'vendor': ['react', 'react-dom'],
-        'maps': ['@vis.gl/react-google-maps'],
-      }
-    }
-  }
-}
-```
+**Implementation:**
+- **Lighthouse CI Workflow**: Runs on every push and PR to main branch
+- **Performance Budget Config**: `lighthouserc.json` with Core Web Vitals thresholds
+- **Automated Reporting**: Results uploaded to temporary public storage
 
-**Add Lighthouse CI:**
-```yaml
-# .github/workflows/lighthouse.yml
-- uses: treosh/lighthouse-ci-action@v9
-  with:
-    budgetPath: ./budget.json
-```
+**Files:**
+- `.github/workflows/lighthouse.yml` - CI workflow configuration
+- `lighthouserc.json` - Performance budgets and audit settings
+
+**Thresholds Configured:**
+| Metric | Threshold | Level |
+|--------|-----------|-------|
+| Performance Score | ≥ 80% | warn |
+| Accessibility Score | ≥ 90% | error |
+| Best Practices Score | ≥ 85% | warn |
+| SEO Score | ≥ 90% | warn |
+| First Contentful Paint | ≤ 2s | warn |
+| Largest Contentful Paint | ≤ 2.5s | warn |
+| Cumulative Layout Shift | ≤ 0.1 | error |
+| Total Blocking Time | ≤ 300ms | warn |
+| Script Size | ≤ 500KB | warn |
+| Total Page Size | ≤ 2MB | warn |
+
+**Impact:** Prevents performance regressions by failing/warning builds that don't meet standards.
 
 ---
 
@@ -578,9 +579,8 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 
 ### Medium Priority (Next Quarter)
 5. **Implement Rate Limiting** - Prevent abuse
-6. **Add Performance Budgets** - Maintain performance
-7. **Formalize Database Migrations** - Safer schema changes
-8. **PWA Support** - Enhanced user experience
+6. **Formalize Database Migrations** - Safer schema changes
+7. **PWA Support** - Enhanced user experience
 
 ### Low Priority (Future)
 9. **Internationalization** - Market expansion

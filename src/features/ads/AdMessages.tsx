@@ -72,7 +72,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }
 
   return (
-    <div className="h-full bg-white flex flex-col">
+    <div className="fixed inset-0 md:relative md:inset-auto md:h-full bg-white flex flex-col z-40">
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -89,7 +89,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
+      <div className="flex-1 overflow-y-auto mobile-scroll-container md:overflow-visible max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat List - Hidden on mobile when chat is selected */}
           <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>

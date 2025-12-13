@@ -14,13 +14,15 @@ global.google = {
 } as any;
 
 // Mock the @vis.gl/react-google-maps module
+const mockMap = {
+    setCenter: vi.fn(),
+    setZoom: vi.fn(),
+};
+
 vi.mock('@vis.gl/react-google-maps', () => ({
     APIProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="api-provider">{children}</div>,
     Map: ({ children }: { children: React.ReactNode }) => <div data-testid="google-map">{children}</div>,
-    useMap: () => ({
-        setCenter: vi.fn(),
-        setZoom: vi.fn(),
-    }),
+    useMap: () => mockMap, // Return the map object itself
 }));
 
 // Mock fetch for Nominatim API

@@ -1,10 +1,11 @@
 name: Lighthouse CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Run daily at 2 AM UTC (1 PM AEDT)
+  schedule:
+    - cron: '0 2 * * *'
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   build:

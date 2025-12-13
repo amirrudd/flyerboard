@@ -72,12 +72,21 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }
 
   return (
-    <div className="fixed inset-0 md:relative md:inset-auto md:h-full bg-white flex flex-col z-40">
-      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(72px+env(safe-area-inset-bottom))] md:relative md:inset-auto md:h-full bg-white flex flex-col z-40">
+      {/* Fixed Header */}
+      <header className="absolute top-0 left-0 right-0 h-16 z-50 bg-white border-b border-neutral-200 shadow-sm md:relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center justify-between h-full">
             <button
-              onClick={onBack}
+              onClick={() => {
+                // On mobile, if chat is selected, go back to conversations list
+                // Otherwise, go back to flyers
+                if (selectedChatId) {
+                  setSelectedChatId(null);
+                } else {
+                  onBack();
+                }
+              }}
               className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -89,8 +98,9 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto mobile-scroll-container md:overflow-visible max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Content area - flex-1 fills space below header */}
+      <div className={`flex-1 min-h-0 mt-16 md:mt-0 ${selectedChatId ? 'overflow-hidden' : 'overflow-y-auto mobile-scroll-container px-4 sm:px-6 lg:px-8 py-6 pb-24'} md:overflow-visible md:px-4 md:sm:px-6 md:lg:px-8 md:py-6 md:pb-6 max-w-7xl mx-auto w-full`}>
+        <div className={`${selectedChatId ? 'h-full min-h-0' : ''} grid grid-cols-1 lg:grid-cols-3 ${selectedChatId ? 'gap-0' : 'gap-6'} lg:gap-6`}>
           {/* Chat List - Hidden on mobile when chat is selected */}
           <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>
             <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)]">
@@ -116,7 +126,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         key={chat._id}
                         onClick={() => setSelectedChatId(chat._id)}
                         className={`w-full text-left p-3 rounded-lg transition-colors ${selectedChatId === chat._id
-                          ? 'bg-primary-600 text-white'
+                          ? 'bg-primary-50 border-l-4 border-primary-600'
                           : 'hover:bg-neutral-100'
                           }`}
                       >
@@ -125,22 +135,17 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                             {chat.buyer?.name || "Deleted User"}
                           </span>
                           {chat.unreadCount > 0 && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedChatId === chat._id
-                              ? 'bg-white text-primary-600'
-                              : 'bg-primary-600 text-white'
-                              }`}>
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-600 text-white">
                               {chat.unreadCount}
                             </span>
                           )}
                         </div>
                         {chat.latestMessage && (
-                          <p className={`text-sm truncate ${selectedChatId === chat._id ? 'text-white/80' : 'text-neutral-600'
-                            }`}>
+                          <p className="text-sm truncate text-neutral-600">
                             {chat.latestMessage.content}
                           </p>
                         )}
-                        <p className={`text-xs mt-1 ${selectedChatId === chat._id ? 'text-white/60' : 'text-neutral-500'
-                          }`}>
+                        <p className="text-xs mt-1 text-neutral-500">
                           {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
                         </p>
                       </button>
@@ -152,50 +157,13 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
           </div>
 
           {/* Chat Messages - Hidden on mobile when no chat is selected */}
-          <div className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : ''}`}>
-            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)]">
+          <div className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : 'h-full min-h-0'}`}>
+            {/* Chat container: flex column with scroll in messages */}
+            <div className="bg-white h-full min-h-0 flex flex-col lg:rounded-lg lg:shadow-sm lg:border lg:border-neutral-200">
               {selectedChat ? (
                 <>
-                  {/* Chat Header */}
-                  <div className="p-4 border-b border-neutral-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {/* Back button - Mobile only */}
-                        <button
-                          onClick={() => setSelectedChatId(null)}
-                          className="lg:hidden p-2 -ml-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-                          title="Back to conversations"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {selectedChat.buyer?.name?.charAt(0) || "U"}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-neutral-800">
-                            {selectedChat.buyer?.name || "Deleted User"}
-                          </h3>
-                          {selectedChat.buyer?.email && (
-                            <p className="text-sm text-neutral-500">
-                              {selectedChat.buyer?.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Report Button */}
-                      <button
-                        onClick={() => setShowReportModal(true)}
-                        className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-                        title="Report conversation"
-                      >
-                        <Flag className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                  {/* Messages - Row 2: fills space, scrollable */}
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {(messages || []).map((message) => (
                       <div
                         key={message._id}
@@ -204,14 +172,14 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                       >
                         <div
                           className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-neutral-100 text-neutral-900'
+                            ? 'bg-primary-50 text-neutral-900'
+                            : 'bg-white border border-neutral-200 text-neutral-900'
                             }`}
                         >
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           <p
                             className={`text-xs mt-1 ${message.senderId === ad.userId
-                              ? 'text-white/70'
+                              ? 'text-neutral-500'
                               : 'text-neutral-500'
                               }`}
                           >
@@ -270,15 +238,17 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
       </div>
 
       {/* Report Modal */}
-      {selectedChatId && (
-        <ReportModal
-          isOpen={showReportModal}
-          onClose={() => setShowReportModal(false)}
-          reportType="chat"
-          reportedEntityId={selectedChatId}
-          reportedEntityName={`Conversation with ${selectedChat?.buyer?.name || 'Unknown User'}`}
-        />
-      )}
-    </div>
+      {
+        selectedChatId && (
+          <ReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            reportType="chat"
+            reportedEntityId={selectedChatId}
+            reportedEntityName={`Conversation with ${selectedChat?.buyer?.name || 'Unknown User'}`}
+          />
+        )
+      }
+    </div >
   );
 }

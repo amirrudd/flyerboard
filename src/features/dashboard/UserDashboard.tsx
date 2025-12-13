@@ -383,7 +383,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   return (
     <>
-      <div className="min-h-screen bg-white">
+      <div className="bg-white">
         <Header
           leftNode={
             <button
@@ -412,7 +412,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           }
         />
 
-        <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1">

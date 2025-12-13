@@ -175,9 +175,9 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                           <h3 className="font-semibold text-neutral-800">
                             {selectedChat.buyer?.name || "Deleted User"}
                           </h3>
-                          {selectedChat.buyer?.email && (
+                          {selectedChat.buyer && 'email' in selectedChat.buyer && (selectedChat.buyer as any).email && (
                             <p className="text-sm text-neutral-500">
-                              {selectedChat.buyer?.email}
+                              {(selectedChat.buyer as any).email}
                             </p>
                           )}
                         </div>

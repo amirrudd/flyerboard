@@ -376,6 +376,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   value={formData.title}
                   onChange={handleInputChange}
                   maxLength={100}
+                  autoComplete="off"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                   placeholder="Enter a descriptive title"
                   required
@@ -527,6 +528,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 onChange={handleInputChange}
                 maxLength={500}
                 rows={4}
+                autoComplete="off"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Describe your item..."
                 required
@@ -548,6 +550,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 onChange={handleInputChange}
                 maxLength={2000}
                 rows={3}
+                autoComplete="off"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Additional details (optional)..."
               />

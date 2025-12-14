@@ -155,6 +155,7 @@ export function ReportModal({
                             disabled={isSubmitting}
                             rows={4}
                             maxLength={500}
+                            autoComplete="off"
                             placeholder="Provide any additional context that might help us review this report..."
                             className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
                         />

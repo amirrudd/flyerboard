@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -17,6 +18,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   const [newMessage, setNewMessage] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const chats = useQuery(api.messages.getAdChats, { adId });
@@ -45,6 +47,14 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Detect mobile for portal rendering
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChatId) return;
@@ -71,7 +81,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     );
   }
 
-  return (
+  const content = (
     <div className="fixed inset-x-0 top-0 bottom-[calc(72px+env(safe-area-inset-bottom))] md:relative md:inset-auto md:h-full bg-white flex flex-col z-40">
       {/* Fixed Header */}
       <header className="absolute top-0 left-0 right-0 h-16 z-50 bg-white border-b border-neutral-200 shadow-sm md:relative">
@@ -251,4 +261,9 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
       }
     </div >
   );
+
+  // On mobile, render via portal to escape scroll container
+  return isMobile && typeof document !== 'undefined'
+    ? createPortal(content, document.body)
+    : content;
 }

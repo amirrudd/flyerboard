@@ -16,6 +16,7 @@ import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil } from "lucide-react";
+import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
@@ -42,6 +43,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [avatarImageError, setAvatarImageError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const [showMessageNotificationModal, setShowMessageNotificationModal] = useState(false);
+  const [showLikeNotificationModal, setShowLikeNotificationModal] = useState(false);
 
   const ad = useQuery(api.adDetail.getAdById, { adId });
   const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
@@ -85,6 +88,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     try {
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
+
+      // Show notification modal only when saving (not removing)
+      if (result.saved) {
+        setShowLikeNotificationModal(true);
+      }
     } catch (error) {
       toast.error("Please sign in to save ads");
     }
@@ -114,6 +122,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         // First message - create chat and send message atomically
         const result = await sendFirstMessage({ adId, content: messageText.trim() });
         setChatId(result.chatId);
+
+        // Show notification modal after first message
+        setShowMessageNotificationModal(true);
       } else {
         // Subsequent messages
         await sendMessage({ chatId, content: messageText.trim() });
@@ -687,6 +698,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         onClose={() => setShowLightbox(false)}
         onNavigate={setCurrentImageIndex}
         altPrefix={displayAd.title}
+      />
+
+      {/* Contextual Notification Modals */}
+      <ContextualNotificationModal
+        context="send-message"
+        isOpen={showMessageNotificationModal}
+        onClose={() => setShowMessageNotificationModal(false)}
+      />
+
+      <ContextualNotificationModal
+        context="like-flyer"
+        isOpen={showLikeNotificationModal}
+        onClose={() => setShowLikeNotificationModal(false)}
       />
     </div >
   );

@@ -11,6 +11,7 @@ import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { ChevronLeft, Trash2, ChevronDown, Loader2, AlertTriangle } from "lucide-react";
+import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 interface ImageState {
   id: string;
@@ -45,6 +46,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
   const [uploadProgress, setUploadProgress] = useState("");
   const [progressPercent, setProgressPercent] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   // Location search state
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
@@ -315,9 +317,16 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
         setProgressPercent(100);
         toast.success("Ad posted successfully!");
+
+        // Show notification permission modal for new posts (not edits)
+        setShowNotificationModal(true);
       }
 
-      onBack();
+      // Don't call onBack() immediately - let modal show first
+      // Modal will call onBack when it closes
+      if (editingAd) {
+        onBack();
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to save ad");
     } finally {
@@ -674,6 +683,16 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         </div>,
         document.body
       )}
+
+      {/* Contextual Notification Modal */}
+      <ContextualNotificationModal
+        context="post-flyer"
+        isOpen={showNotificationModal}
+        onClose={() => {
+          setShowNotificationModal(false);
+          onBack();
+        }}
+      />
     </div>
   );
 }

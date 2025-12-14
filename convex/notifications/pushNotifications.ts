@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action, internalAction, internalMutation } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 
@@ -141,8 +141,8 @@ export const notifyMessageReceived = internalAction({
             userId: args.senderId,
         });
 
-        // Get ad title for context (using internal query)
-        const ad = await ctx.runMutation(internal.notifications.pushNotifications.getAdTitle, {
+        // Get ad title directly from database (using query from queries.ts)
+        const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
             adId: args.adId,
         });
 
@@ -164,19 +164,5 @@ export const notifyMessageReceived = internalAction({
             url: `/messages/${args.chatId}`,
             chatId: args.chatId,
         });
-    },
-});
-
-/**
- * Internal mutation to get ad title for notifications
- */
-export const getAdTitle = internalMutation({
-    args: { adId: v.id("ads") },
-    handler: async (ctx, args) => {
-        const ad = await ctx.db.get(args.adId);
-        if (!ad || ad.isDeleted) {
-            return null;
-        }
-        return { title: ad.title };
     },
 });

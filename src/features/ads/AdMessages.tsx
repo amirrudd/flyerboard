@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
+import { useSession } from "@descope/react-sdk";
+import { useUserSync } from "../../context/UserSyncContext";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -20,11 +22,19 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Check authentication and sync status
+  const { isAuthenticated, isSessionLoading } = useSession();
+  const { isUserSynced } = useUserSync();
+
+  // Only query when authenticated AND user is synced to database
   const ad = useQuery(api.adDetail.getAdById, { adId });
-  const chats = useQuery(api.messages.getAdChats, { adId });
+  const chats = useQuery(
+    api.messages.getAdChats,
+    isAuthenticated && !isSessionLoading && isUserSynced ? { adId } : "skip"
+  );
   const messages = useQuery(
     api.messages.getChatMessages,
-    selectedChatId ? { chatId: selectedChatId } : "skip"
+    selectedChatId && isAuthenticated && !isSessionLoading && isUserSynced ? { chatId: selectedChatId } : "skip"
   );
 
   const sendMessage = useMutation(api.messages.sendMessage);
@@ -43,9 +53,13 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  // Scroll to bottom when chat is opened or new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messages && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, selectedChatId]); // Added selectedChatId to scroll when chat opens
+
 
   // Detect mobile for portal rendering
   useEffect(() => {
@@ -70,7 +84,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     }
   };
 
-  if (!ad) {
+  if (isSessionLoading || !ad) {
     return (
       <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
         <div className="text-center">
@@ -173,32 +187,35 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               {selectedChat ? (
                 <>
                   {/* Messages - Row 2: fills space, scrollable */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col justify-end space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
-                    {(messages || []).map((message) => (
-                      <div
-                        key={message._id}
-                        className={`flex ${message.senderId === ad.userId ? 'justify-end' : 'justify-start'
-                          }`}
-                      >
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                    {/* Wrapper to push messages to bottom while allowing scroll */}
+                    <div className="flex flex-col space-y-4 min-h-full justify-end">
+                      {(messages || []).map((message) => (
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
-                            ? 'bg-primary-50 text-neutral-900'
-                            : 'bg-white border border-neutral-200 text-neutral-900'
+                          key={message._id}
+                          className={`flex ${message.senderId === ad.userId ? 'justify-end' : 'justify-start'
                             }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <p
-                            className={`text-xs mt-1 ${message.senderId === ad.userId
-                              ? 'text-neutral-500'
-                              : 'text-neutral-500'
+                          <div
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
+                              ? 'bg-primary-50 text-neutral-900'
+                              : 'bg-white border border-neutral-200 text-neutral-900'
                               }`}
                           >
-                            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                          </p>
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <p
+                              className={`text-xs mt-1 ${message.senderId === ad.userId
+                                ? 'text-neutral-500'
+                                : 'text-neutral-500'
+                                }`}
+                            >
+                              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
                   </div>
 
                   {/* Message Input */}

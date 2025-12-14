@@ -74,8 +74,8 @@ export const AdListingSkeleton = () => {
                             <div className="h-6 w-16 rounded-full shimmer" />
                         </div>
 
-                        {/* Action buttons skeleton */}
-                        <div className="flex items-center gap-2">
+                        {/* Action buttons skeleton - hidden on mobile */}
+                        <div className="hidden md:flex items-center gap-2">
                             <div className="h-8 w-20 rounded-lg shimmer" />
                             <div className="h-8 w-20 rounded-lg shimmer" />
                             <div className="h-8 w-16 rounded-lg shimmer" />

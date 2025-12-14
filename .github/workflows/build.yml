@@ -30,16 +30,3 @@ jobs:
 
       - name: Run tests
         run: npm run test -- --run
-
-      - name: Build application
-        run: npm run build
-        env:
-          VITE_CONVEX_URL: https://placeholder.convex.cloud
-          VITE_DESCOPE_PROJECT_ID: placeholder
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1

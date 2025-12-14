@@ -174,7 +174,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                 <>
                   {/* Messages - Row 2: fills space, scrollable */}
                   <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col-reverse space-y-4 space-y-reverse" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
-                    {(messages || []).map((message) => (
+                    {(messages || []).reverse().map((message) => (
                       <div
                         key={message._id}
                         className={`flex ${message.senderId === ad.userId ? 'justify-end' : 'justify-start'

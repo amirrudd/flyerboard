@@ -173,7 +173,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               {selectedChat ? (
                 <>
                   {/* Messages - Row 2: fills space, scrollable */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col-reverse space-y-4 space-y-reverse" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col justify-end space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {(messages || []).map((message) => (
                       <div
                         key={message._id}

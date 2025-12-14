@@ -109,6 +109,20 @@ const applicationTables = {
     .index("by_user", ["userId"])
     .index("by_key", ["key"])
     .index("by_uploaded_at", ["uploadedAt"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),               // User who owns this subscription
+    endpoint: v.string(),                // Push service endpoint URL
+    keys: v.object({
+      p256dh: v.string(),                // Public key for encryption
+      auth: v.string(),                  // Authentication secret
+    }),
+    userAgent: v.optional(v.string()),   // Browser/device info
+    createdAt: v.number(),               // When subscription was created
+    lastUsed: v.optional(v.number()),    // Last successful notification sent
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 };
 
 // Extend the auth tables to add custom fields

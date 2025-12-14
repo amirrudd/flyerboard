@@ -15,6 +15,14 @@ export const getUserByToken = internalQuery({
   },
 });
 
+export const getUser = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
+
 // Support profile image updates
 
 // Name validation helper

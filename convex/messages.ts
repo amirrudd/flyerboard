@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getDescopeUserId } from "./lib/auth";
+import { internal } from "./_generated/api";
 
 export const getAdChats = query({
   args: { adId: v.id("ads") },
@@ -129,6 +130,23 @@ export const sendMessage = mutation({
     await ctx.db.patch(args.chatId, {
       lastMessageAt: timestamp,
     });
+
+    // Send push notification to recipient (if enabled)
+    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true') {
+      const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
+
+      // Schedule push notification
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notifications.pushNotifications.notifyMessageReceived,
+        {
+          recipientId,
+          senderId: userId,
+          chatId: args.chatId,
+          messageContent: args.content,
+        }
+      );
+    }
 
     return { success: true };
   },

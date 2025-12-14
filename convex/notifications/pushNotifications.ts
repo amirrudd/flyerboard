@@ -141,7 +141,7 @@ export const notifyMessageReceived = internalAction({
             userId: args.senderId,
         });
 
-        // Get ad title directly from database (using query from queries.ts)
+        // Get ad title for context (using query from queries.ts)
         const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
             adId: args.adId,
         });

@@ -26,6 +26,7 @@ import type * as migrations from "../migrations.js";
 import type * as notifications_index from "../notifications/index.js";
 import type * as notifications_pushNotifications from "../notifications/pushNotifications.js";
 import type * as notifications_pushSubscriptions from "../notifications/pushSubscriptions.js";
+import type * as notifications_queries from "../notifications/queries.js";
 import type * as posts from "../posts.js";
 import type * as r2 from "../r2.js";
 import type * as ratings from "../ratings.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "notifications/index": typeof notifications_index;
   "notifications/pushNotifications": typeof notifications_pushNotifications;
   "notifications/pushSubscriptions": typeof notifications_pushSubscriptions;
+  "notifications/queries": typeof notifications_queries;
   posts: typeof posts;
   r2: typeof r2;
   ratings: typeof ratings;

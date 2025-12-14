@@ -141,6 +141,7 @@ export function RatingModal({
                         onChange={(e) => setComment(e.target.value)}
                         rows={4}
                         maxLength={500}
+                        autoComplete="off"
                         placeholder="Share your experience..."
                         disabled={isSubmitting}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none disabled:opacity-50"

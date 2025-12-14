@@ -173,7 +173,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               {selectedChat ? (
                 <>
                   {/* Messages - Row 2: fills space, scrollable */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col-reverse space-y-reverse space-y-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {(messages || []).map((message) => (
                       <div
                         key={message._id}
@@ -216,6 +216,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         }}
                         placeholder="Type your message..."
                         rows={1}
+                        autoComplete="off"
                         className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none resize-none min-h-[42px] max-h-32 overflow-y-auto"
                         style={{ fieldSizing: 'content' } as any}
                       />

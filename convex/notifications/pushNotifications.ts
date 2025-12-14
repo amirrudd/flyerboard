@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action, internalAction } from "../_generated/server";
+import { action, internalAction, internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 
@@ -126,14 +126,14 @@ export const sendPushNotification = internalAction({
  * @param recipientId - User receiving the message
  * @param senderId - User who sent the message
  * @param chatId - Chat ID
- * @param messageContent - Message text (truncated for notification)
+ * @param adId - Ad ID for context
  */
 export const notifyMessageReceived = internalAction({
     args: {
         recipientId: v.id("users"),
         senderId: v.id("users"),
         chatId: v.id("chats"),
-        messageContent: v.string(),
+        adId: v.id("ads"),
     },
     handler: async (ctx, args) => {
         // Get sender info
@@ -141,16 +141,42 @@ export const notifyMessageReceived = internalAction({
             userId: args.senderId,
         });
 
+        // Get ad title for context (using internal query)
+        const ad = await ctx.runMutation(internal.notifications.pushNotifications.getAdTitle, {
+            adId: args.adId,
+        });
+
+        if (!ad) {
+            console.log("Ad not found, skipping notification");
+            return;
+        }
+
         const senderName = sender?.name || "Someone";
-        const truncatedMessage = args.messageContent.substring(0, 100);
+
+        // Privacy: Don't reveal message content, just show ad title
+        const notificationBody = `New message about "${ad.title}"`;
 
         // Send push notification
         await ctx.runAction(internal.notifications.pushNotifications.sendPushNotification, {
             userId: args.recipientId,
-            title: `New message from ${senderName}`,
-            body: truncatedMessage,
+            title: `Message from ${senderName}`,
+            body: notificationBody,
             url: `/messages/${args.chatId}`,
             chatId: args.chatId,
         });
+    },
+});
+
+/**
+ * Internal mutation to get ad title for notifications
+ */
+export const getAdTitle = internalMutation({
+    args: { adId: v.id("ads") },
+    handler: async (ctx, args) => {
+        const ad = await ctx.db.get(args.adId);
+        if (!ad || ad.isDeleted) {
+            return null;
+        }
+        return { title: ad.title };
     },
 });

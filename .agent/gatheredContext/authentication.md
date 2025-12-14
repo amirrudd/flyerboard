@@ -39,6 +39,31 @@ Convex is configured to verify Descope JWTs via OIDC. Ensure `convex/auth.config
 ### ✅ DO: Use `getDescopeUserId`
 In Convex mutations/queries, use `getDescopeUserId(ctx)` (from `convex/lib/auth.ts`) to retrieve the authenticated user's ID. This replaces the legacy `getAuthUserId` function.
 
+### ✅ DO: Wait for User Sync Before Queries
+**CRITICAL**: Always check that the user is synced to the database before making authenticated queries. Use the `UserSyncContext`:
+
+```tsx
+import { useSession } from "@descope/react-sdk";
+import { useUserSync } from "../../context/UserSyncContext";
+
+const { isAuthenticated, isSessionLoading } = useSession();
+const { isUserSynced } = useUserSync();
+
+// Only query when ALL conditions are met
+const data = useQuery(
+  api.someQuery,
+  isAuthenticated && !isSessionLoading && isUserSynced ? { args } : "skip"
+);
+```
+
+**Why This Matters:**
+- Prevents "Not authenticated" errors from race conditions
+- User may be authenticated with Descope but not yet synced to Convex database
+- The `syncDescopeUser` mutation runs asynchronously on login
+- Queries that run before sync completes will fail with "Not authenticated"
+
+**See:** `/src/features/ads/AdMessages.tsx` for a complete example
+
 ### ✅ DO: Handle OTP-Only Users
 Users can sign up via phone-only OTP. **New users** are prompted to provide their name after OTP verification (3-step flow: phone → OTP → name). **Existing users** proceed directly after OTP verification (2-step flow: phone → OTP). Phone numbers are NOT stored for privacy.
 

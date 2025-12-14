@@ -6,7 +6,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 // Eager: Critical for initial render
 import { HomePage } from "./pages/HomePage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
-import { useDescopeUserSync } from "./lib/useDescopeUserSync";
+import { UserSyncProvider } from "./context/UserSyncContext";
 
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
@@ -27,75 +27,74 @@ const PageLoader = () => (
 );
 
 export default function App() {
-  // Sync Descope user to Convex on authentication
-  useDescopeUserSync();
-
   return (
     <ErrorBoundary>
-      <MarketplaceProvider>
-        <BrowserRouter>
-          <SpeedInsights />
-          <Routes>
-            <Route element={<Layout />}>
-              {/* Eager: Home is critical path */}
-              <Route path="/" element={<HomePage />} />
+      <UserSyncProvider>
+        <MarketplaceProvider>
+          <BrowserRouter>
+            <SpeedInsights />
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Eager: Home is critical path */}
+                <Route path="/" element={<HomePage />} />
 
-              {/* Lazy: Only load when navigating to these routes */}
-              <Route path="/ad/:id" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <AdDetailPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/post" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <PostAdPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/dashboard" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <DashboardPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/admin" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <AdminDashboardPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/terms" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <TermsPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/community-guidelines" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <CommunityGuidelinesPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              <Route path="/support" element={
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                    <SupportPage />
-                  </Suspense>
-                </ErrorBoundary>
-              } />
-              {/* Add other routes as needed */}
-            </Route>
-          </Routes>
-          <Toaster />
-        </BrowserRouter>
-      </MarketplaceProvider>
+                {/* Lazy: Only load when navigating to these routes */}
+                <Route path="/ad/:id" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <AdDetailPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/post" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <PostAdPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/dashboard" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <DashboardPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <AdminDashboardPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/terms" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <TermsPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/community-guidelines" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <CommunityGuidelinesPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/support" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <SupportPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                {/* Add other routes as needed */}
+              </Route>
+            </Routes>
+            <Toaster />
+          </BrowserRouter>
+        </MarketplaceProvider>
+      </UserSyncProvider>
     </ErrorBoundary>
   );
 }

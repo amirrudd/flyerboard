@@ -143,7 +143,7 @@ export const sendMessage = mutation({
           recipientId,
           senderId: userId,
           chatId: args.chatId,
-          messageContent: args.content,
+          adId: chat.adId,
         }
       );
     }

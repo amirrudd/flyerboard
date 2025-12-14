@@ -1,7 +1,7 @@
 # Push Notifications Context
 
 ## Overview
-FlyerBoard implements Web Push notifications using a modular, provider-based architecture that allows PWA users to receive notifications when they get new messages.
+FlyerBoard implements Web Push notifications using a modular, provider-based architecture that allows PWA users to receive notifications when they get new messages. For privacy, notifications show the ad title instead of message content.
 
 ## Architecture
 
@@ -52,9 +52,13 @@ await ctx.scheduler.runAfter(0, internal.notifications.pushNotifications.notifyM
 - Provides: `subscribe()`, `unsubscribe()`, `isSubscribed`, `permission`
 - Integrates with Convex mutations
 
-**UI**: `src/components/notifications/NotificationPrompt.tsx`
-- Auto-appears after 3 seconds
-- Dismissible with localStorage persistence
+**UI**: `src/components/notifications/ContextualNotificationModal.tsx`
+- Shows contextual permission requests at key moments:
+  - After posting a new flyer
+  - When sending first message to seller
+  - When saving/liking a flyer
+- Independent dismissal tracking per context
+- Privacy-focused: Notifications show ad title, not message content
 
 ## Setup
 

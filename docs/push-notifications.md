@@ -45,9 +45,10 @@ Add the same environment variables to your Vercel project:
    - iOS: Safari → Share → Add to Home Screen
    - Android: Chrome → Menu → Add to Home Screen
 
-2. **Enable Notifications**: When prompted, tap "Enable" to receive push notifications
+2. **Enable Notifications**: When prompted at key moments (posting a flyer, messaging, or saving), tap "Enable" to receive push notifications
 
-3. **Receive Notifications**: You'll get notified when someone sends you a message
+3. **Receive Notifications**: You'll get notified when someone sends you a message. For privacy, notifications show the ad title, not the message content.
+   - Example: "Message from John" - "New message about 'iPhone 13 Pro Max 256GB'"
 
 ### For Developers
 
@@ -88,20 +89,33 @@ function MyComponent() {
 
 #### Showing the Prompt
 
-Add the `NotificationPrompt` component to your app layout:
+Add the `ContextualNotificationModal` component where appropriate:
 
 ```typescript
-import { NotificationPrompt } from './components/notifications/NotificationPrompt';
+import { ContextualNotificationModal } from './components/notifications/ContextualNotificationModal';
 
-function App() {
+function MyComponent() {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <>
-      <YourApp />
-      <NotificationPrompt />
+      <YourComponent />
+      <ContextualNotificationModal
+        context="post-flyer" // or "send-message" or "like-flyer"
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </>
   );
 }
 ```
+
+#### Notification Privacy
+
+Notifications are designed with privacy in mind:
+- **Message content is never shown** in notifications
+- Only the ad title and sender name are displayed
+- Users must open the app to read actual messages
 
 ## Architecture
 

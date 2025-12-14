@@ -5,6 +5,15 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+
+    /* Safe Area Insets - CSS Variables for consistent usage */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+
+    /* Mobile bottom nav height + safe area */
+    --bottom-nav-height: calc(72px + var(--safe-area-inset-bottom));
   }
 
   body {
@@ -32,17 +41,6 @@
 }
 
 @layer utilities {
-
-  /* Safe Area Insets - CSS Variables for consistent usage */
-  :root {
-    --safe-area-inset-top: env(safe-area-inset-top, 0px);
-    --safe-area-inset-right: env(safe-area-inset-right, 0px);
-    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-inset-left: env(safe-area-inset-left, 0px);
-
-    /* Mobile bottom nav height + safe area */
-    --bottom-nav-height: calc(72px + var(--safe-area-inset-bottom));
-  }
 
   /* Safe area utilities */
   .pb-safe {
@@ -163,8 +161,10 @@
     /* Optimize scroll performance */
     overflow-y: auto;
     overflow-x: hidden;
-    /* Allow scrolling and single-tap, prevent double-tap zoom */
-    touch-action: manipulation;
+    /* Allow vertical scrolling only */
+    touch-action: pan-y;
+    /* Prevent scroll chaining to parent containers */
+    overscroll-behavior-y: contain;
   }
 
   /* Prevent scroll chaining on mobile modals */

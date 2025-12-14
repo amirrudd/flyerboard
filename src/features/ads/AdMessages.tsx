@@ -192,7 +192,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   </div>
 
                   {/* Message Input */}
-                  <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200">
+                  <form onSubmit={handleSendMessage} className="shrink-0 p-4 border-t border-neutral-200">
                     <div className="flex gap-2 items-end">
                       <textarea
                         value={newMessage}

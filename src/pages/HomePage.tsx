@@ -121,7 +121,7 @@ export function HomePage() {
   }, [newAdIds, clearNewAdIds]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
 
 
       <Header

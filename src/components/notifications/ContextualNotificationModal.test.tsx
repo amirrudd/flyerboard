@@ -301,7 +301,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            const closeButton = screen.getByLabelText('Close');
+            const closeButton = screen.getByLabelText('Close notification prompt');
             fireEvent.click(closeButton);
 
             expect(localStorage.getItem('notification-prompt-dismissed-like-flyer')).toBe('true');
@@ -362,7 +362,7 @@ describe('ContextualNotificationModal', () => {
 
             expect(screen.getByText('Enable Notifications')).toBeInTheDocument();
             expect(screen.getByText('Not now')).toBeInTheDocument();
-            expect(screen.getByLabelText('Close')).toBeInTheDocument();
+            expect(screen.getByLabelText('Close notification prompt')).toBeInTheDocument();
         });
     });
 

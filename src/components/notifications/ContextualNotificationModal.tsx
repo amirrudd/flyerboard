@@ -80,20 +80,32 @@ export function ContextualNotificationModal({
     }
 
     const modal = (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`notification-modal-title-${context}`}
+            aria-describedby={`notification-modal-desc-${context}`}
+        >
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full animate-scale-in">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-2xl">
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-2xl" aria-hidden="true">
                             {config.icon}
                         </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <h3
+                            id={`notification-modal-title-${context}`}
+                            className="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+                        >
                             {config.title}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <p
+                            id={`notification-modal-desc-${context}`}
+                            className="text-sm text-gray-600 dark:text-gray-400 mb-4"
+                        >
                             {config.message}
                         </p>
 
@@ -102,12 +114,14 @@ export function ContextualNotificationModal({
                                 onClick={handleEnable}
                                 disabled={isLoading}
                                 className="flex-1 px-4 py-2.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                aria-label="Enable push notifications"
                             >
                                 {isLoading ? 'Enabling...' : 'Enable Notifications'}
                             </button>
                             <button
                                 onClick={handleDismiss}
                                 className="px-4 py-2.5 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                aria-label="Dismiss notification prompt"
                             >
                                 Not now
                             </button>
@@ -117,7 +131,7 @@ export function ContextualNotificationModal({
                     <button
                         onClick={handleDismiss}
                         className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        aria-label="Close"
+                        aria-label="Close notification prompt"
                     >
                         <X className="w-5 h-5" />
                     </button>

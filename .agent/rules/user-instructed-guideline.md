@@ -42,5 +42,7 @@ For every task, the following rules must always be respected:
 • ALWAYS verify user authentication in mutations: `await getDescopeUserId(ctx)`
 • ALWAYS verify ownership before modifications
 • Never expose user data without auth checks
+### Authentication
+• Any DB schema update requires carefull migration consideration for existing users in prod.
 
 Use only this phone number 0466666666 for testing

@@ -5,6 +5,7 @@ import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
 import { useState, useEffect } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Header } from "./Header";
+import { NotificationPrompt } from "../../components/notifications/NotificationPrompt";
 
 export function Layout() {
     const { isAuthenticated } = useSession();
@@ -58,6 +59,9 @@ export function Layout() {
                     </div>
                 </div>
             )}
+
+            {/* Notification Prompt */}
+            <NotificationPrompt />
         </div>
     );
 }

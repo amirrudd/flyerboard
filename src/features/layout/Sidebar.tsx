@@ -98,30 +98,20 @@ export const Sidebar = memo(function Sidebar({
 
       <div className="flex flex-wrap gap-x-4 gap-y-2 px-2">
         {[
-          { label: "About Us", href: "#" },
+          { label: "About Us", href: "/about" },
           { label: "Support", href: "/support" },
           { label: "Terms & Conditions", href: "/terms" },
           { label: "Privacy Policy", href: "/terms#privacy" },
           { label: "Community Guidelines", href: "/community-guidelines" },
           { label: "Contact", href: "/support" },
         ].map((link) => (
-          link.href.startsWith("#") ? (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
-            >
-              {link.label}
-            </a>
-          ) : (
-            <Link
-              key={link.label}
-              to={link.href}
-              className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
-            >
-              {link.label}
-            </Link>
-          )
+          <Link
+            key={link.label}
+            to={link.href}
+            className="text-xs text-gray-500 hover:text-gray-900 transition-colors duration-200"
+          >
+            {link.label}
+          </Link>
         ))}
       </div>
       <div className="px-2 pt-4 text-[10px] text-gray-400">

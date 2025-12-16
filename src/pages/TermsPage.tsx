@@ -30,7 +30,7 @@ export function TermsPage() {
                         className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
                     >
                         <ChevronLeft className="w-5 h-5" />
-                        <span>Back</span>
+                        <span className="hidden sm:inline">Back</span>
                     </button>
                 }
                 centerNode={

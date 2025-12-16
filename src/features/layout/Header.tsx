@@ -330,8 +330,9 @@ const MobileHeader = memo(function MobileHeader({
           >
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>
-            {window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}
+          <h1 className="text-lg font-bold text-gray-900 cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
+            <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
+            <span>{window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}</span>
           </h1>
         </div>
 
@@ -428,7 +429,10 @@ export const Header = memo(function Header({
           <div className="flex items-center gap-6 flex-shrink-0">
             {leftNode ? leftNode : (
               <>
-                <h1 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>FlyerBoard</h1>
+                <h1 className="text-xl font-bold text-gray-900 cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
+                  <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
+                  <span>FlyerBoard</span>
+                </h1>
 
                 {/* Location Selector - Divar style */}
                 <LocationSelector

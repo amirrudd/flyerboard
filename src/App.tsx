@@ -18,6 +18,7 @@ const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
+const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 
 // Loading fallback for lazy-loaded routes
 const PageLoader = () => (
@@ -85,6 +86,13 @@ export default function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <SupportPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/about" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <AboutUsPage />
                     </Suspense>
                   </ErrorBoundary>
                 } />

@@ -24,13 +24,13 @@ FlyerBoard is proudly Australian. We understand the unique needs of our local co
 
 Built with cutting-edge technology, FlyerBoard offers a fast, responsive experience whether you're on your phone, tablet, or desktop. Real-time messaging, location-based search, and intelligent image compression ensure a smooth experience every time.
 
-## What's Next
+## Join Our Community
 
-We're just getting started. Here's what's coming:
+We can't wait for you to use FlyerBoard and support local communities across Australia. Every time you buy or sell on our platform, you're not just making a transaction—you're making a difference.
 
-- **Verified Identity Badges**: Third-party identity verification to build even more trust
-- **Enhanced Safety Features**: Advanced fraud detection and automated moderation
-- **Community Growth**: Expanding our safe marketplace to every corner of Australia
+By giving someone else's pre-loved items a second life, you're helping create a more sustainable world. Fewer items in landfills, less manufacturing waste, and more resources staying in our communities. It's a simple choice that has a powerful impact.
+
+Together, we're building more than a marketplace. We're building a movement toward conscious consumption, community connection, and a better future for all Australians.
 
 ## Our Commitment
 

@@ -35,7 +35,7 @@ export const incrementViews = mutation({
   handler: async (ctx, args) => {
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw createError("Ad not found", { adId: args.adId });
+      throw createError("Flyer not found", { adId: args.adId });
     }
 
     await ctx.db.patch(args.adId, {
@@ -57,7 +57,7 @@ export const saveAd = mutation({
     // Check if ad exists and is not deleted
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw createError("Ad not found", { adId: args.adId, userId });
+      throw createError("Flyer not found", { adId: args.adId, userId });
     }
 
     // Check if already saved
@@ -115,7 +115,7 @@ export const sendFirstMessage = mutation({
 
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw createError("Ad not found", { adId: args.adId, userId });
+      throw createError("Flyer not found", { adId: args.adId, userId });
     }
 
     if (ad.userId === userId) {

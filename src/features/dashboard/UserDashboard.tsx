@@ -64,6 +64,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState(false);
 
+  // Refs for tab content sections (for mobile auto-scroll)
+  const adsContentRef = useRef<HTMLDivElement>(null);
+  const chatsContentRef = useRef<HTMLDivElement>(null);
+  const savedContentRef = useRef<HTMLDivElement>(null);
+  const profileContentRef = useRef<HTMLDivElement>(null);
+  const archivedContentRef = useRef<HTMLDivElement>(null);
+
+  // Track whether we should scroll to content (only on manual sidebar clicks)
+  const [shouldScrollToContent, setShouldScrollToContent] = useState(false);
+
   // Name validation function
   const validateName = (name: string): { valid: boolean; error: string } => {
     const trimmedName = name.trim();
@@ -166,22 +176,50 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, [searchParams, activeTab]);
 
+  // Auto-scroll to content on mobile when tab changes (only if triggered by sidebar click)
+  useEffect(() => {
+    // Only scroll on mobile devices (below lg breakpoint)
+    const isMobile = window.innerWidth < 1024;
+    if (!isMobile || !shouldScrollToContent) return;
+
+    // Small delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      const refMap = {
+        ads: adsContentRef,
+        chats: chatsContentRef,
+        saved: savedContentRef,
+        profile: profileContentRef,
+        archived: archivedContentRef,
+      };
+
+      const targetRef = refMap[activeTab];
+      if (targetRef?.current) {
+        targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // Reset the flag after scrolling
+      setShouldScrollToContent(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, shouldScrollToContent]);
+
   const handleDeleteAd = async (adId: string) => {
     try {
       await deleteAd({ adId: adId as any });
-      toast.success("Ad deleted successfully");
+      toast.success("Flyer deleted successfully");
       setShowDeleteConfirm(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete ad");
+      toast.error(error.message || "Failed to delete flyer");
     }
   };
 
   const handleToggleStatus = async (adId: string) => {
     try {
       const result = await toggleAdStatus({ adId: adId as any });
-      toast.success(result?.isActive ? "Ad activated" : "Ad deactivated");
+      toast.success(result?.isActive ? "Flyer activated" : "Flyer deactivated");
     } catch (error: any) {
-      toast.error(error.message || "Failed to update ad status");
+      toast.error(error.message || "Failed to update flyer status");
     }
   };
 
@@ -494,14 +532,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               <nav className="bg-white rounded-lg p-4 shadow-sm">
                 <div className="space-y-2">
                   {[
-                    { id: "ads", label: "My Ads", icon: LayoutDashboard },
+                    { id: "ads", label: "My Flyers", icon: LayoutDashboard },
                     {
                       id: "chats",
                       label: "Messages",
                       icon: MessageSquare,
                       badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                     },
-                    { id: "saved", label: "Saved Ads", icon: Heart },
+                    { id: "saved", label: "Saved Flyers", icon: Heart },
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
                   ].map((tab) => (
@@ -510,6 +548,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       onClick={() => {
                         setActiveTab(tab.id as any);
                         setSearchParams({ tab: tab.id });
+                        // Trigger scroll when clicking sidebar menu
+                        setShouldScrollToContent(true);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-100'
                         }`}
@@ -535,7 +575,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             {/* Main Content */}
             <div className="lg:col-span-3">
               {activeTab === "ads" && (
-                <div className="bg-white rounded-lg p-3 sm:p-6 shadow-sm">
+                <div ref={adsContentRef} className="bg-white rounded-lg p-3 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">My Flyers</h2>
                     <button
@@ -661,7 +701,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               )}
 
               {activeTab === "chats" && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div ref={chatsContentRef} className="bg-white rounded-lg p-6 shadow-sm">
                   <h2 className="text-xl font-semibold text-gray-800 mb-6">My Messages</h2>
                   <p className="text-gray-600 mb-6">Conversations for flyers you're interested in</p>
 
@@ -705,7 +745,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   <div className="flex items-start justify-between mb-2">
                                     <div>
                                       <h3 className="font-semibold text-gray-800 mb-1">
-                                        {chat.ad?.title || "Deleted Ad"}
+                                        {chat.ad?.title || "Deleted Flyer"}
                                       </h3>
                                       {!chat.ad?.isActive && chat.ad && (
                                         <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full mb-1">
@@ -837,7 +877,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               )}
 
               {activeTab === "saved" && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div ref={savedContentRef} className="bg-white rounded-lg p-6 shadow-sm">
                   <h2 className="text-xl font-semibold text-gray-800 mb-6">Saved Ads</h2>
 
                   <div className="grid gap-4">
@@ -892,7 +932,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               )}
 
               {activeTab === "profile" && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div ref={profileContentRef} className="bg-white rounded-lg p-6 shadow-sm">
                   <h2 className="text-xl font-semibold text-gray-800 mb-6">Profile Settings</h2>
 
                   <form onSubmit={handleUpdateProfile} className="space-y-4 mb-8">
@@ -982,7 +1022,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               )}
 
               {activeTab === "archived" && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div ref={archivedContentRef} className="bg-white rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">Archived Messages</h2>
                     {(archivedChats || []).length > 0 && (
@@ -1023,7 +1063,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
         </div>
       </div>
 
-      {/* Delete Ad Confirmation Modal */}
+      {/* Delete Flyer Confirmation Modal */}
       {showDeleteConfirm && createPortal(
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -1033,9 +1073,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             className="bg-white rounded-lg p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Delete Ad</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Delete Flyer</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this ad? This action cannot be undone.
+              Are you sure you want to delete this flyer? This action cannot be undone.
             </p>
             <div className="flex gap-4">
               <button

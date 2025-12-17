@@ -82,9 +82,9 @@ describe('UserDashboard', () => {
 
         renderDashboard();
 
-        expect(screen.getByText('My Ads')).toBeInTheDocument();
+        expect(screen.getAllByText('My Flyers')[0]).toBeInTheDocument();
         expect(screen.getByText('Messages')).toBeInTheDocument();
-        expect(screen.getByText('Saved Ads')).toBeInTheDocument();
+        expect(screen.getAllByText('Saved Flyers')[0]).toBeInTheDocument();
         expect(screen.getByText('Profile')).toBeInTheDocument();
     });
 

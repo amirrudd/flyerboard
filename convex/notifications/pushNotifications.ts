@@ -147,7 +147,7 @@ export const notifyMessageReceived = internalAction({
         });
 
         if (!ad) {
-            console.log("Ad not found, skipping notification");
+            console.log("Flyer not found, skipping notification");
             return;
         }
 

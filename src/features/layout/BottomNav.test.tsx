@@ -82,7 +82,7 @@ describe('BottomNav', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/dashboard?tab=saved');
     });
 
-    it('should open auth modal when clicking Post Ad (PIN) if not authenticated', () => {
+    it('should open auth modal when clicking Post Flyer (PIN) if not authenticated', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: false });
         renderBottomNav();
 
@@ -93,7 +93,7 @@ describe('BottomNav', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate when clicking Post Ad (PIN) if authenticated', () => {
+    it('should navigate when clicking Post Flyer (PIN) if authenticated', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
         renderBottomNav();
 

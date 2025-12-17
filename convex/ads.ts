@@ -127,7 +127,7 @@ export const getAds = query({
  * });
  * 
  * if (!ad) {
- *   console.log("Ad not found or deleted");
+ *   console.log("Flyer not found or deleted");
  * }
  * ```
  */
@@ -168,7 +168,7 @@ export const incrementViews = mutation({
   handler: async (ctx, args) => {
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
-      throw new Error("Ad not found");
+      throw new Error("Flyer not found");
     }
 
     await ctx.db.patch(args.adId, {

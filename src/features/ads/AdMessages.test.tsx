@@ -26,7 +26,7 @@ describe('AdMessages', () => {
 
     const mockAd = {
         _id: mockAdId,
-        title: 'Test Ad',
+        title: 'Test Flyer',
         userId: 'seller-id',
     };
 

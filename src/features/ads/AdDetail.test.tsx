@@ -48,8 +48,8 @@ describe('AdDetail - Share Functionality', () => {
     const mockAdId = 'test-ad-id' as any;
     const mockAd = {
         _id: mockAdId,
-        title: 'Test Ad Title',
-        description: 'Test ad description',
+        title: 'Test Flyer Title',
+        description: 'Test flyer description',
         price: 100,
         images: ['https://example.com/image1.jpg'],
         location: 'Sydney, NSW',
@@ -133,7 +133,7 @@ describe('AdDetail - Share Functionality', () => {
 
             // Wait for component to render
             await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
+                const titles = screen.getAllByText('Test Flyer Title');
                 expect(titles[0]).toBeInTheDocument();
             });
 
@@ -165,7 +165,7 @@ describe('AdDetail - Share Functionality', () => {
             renderAdDetail();
 
             await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
+                const titles = screen.getAllByText('Test Flyer Title');
                 expect(titles[0]).toBeInTheDocument();
             });
 
@@ -191,7 +191,7 @@ describe('AdDetail - Share Functionality', () => {
             renderAdDetail();
 
             await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
+                const titles = screen.getAllByText('Test Flyer Title');
                 expect(titles[0]).toBeInTheDocument();
             });
 
@@ -212,7 +212,7 @@ describe('AdDetail - Share Functionality', () => {
             renderAdDetail();
 
             await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
+                const titles = screen.getAllByText('Test Flyer Title');
                 expect(titles[0]).toBeInTheDocument();
             });
 
@@ -232,7 +232,7 @@ describe('AdDetail - Share Functionality', () => {
             renderAdDetail();
 
             await waitFor(() => {
-                const titles = screen.getAllByText('Test Ad Title');
+                const titles = screen.getAllByText('Test Flyer Title');
                 expect(titles[0]).toBeInTheDocument();
             });
 

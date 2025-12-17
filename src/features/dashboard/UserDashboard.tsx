@@ -71,6 +71,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const profileContentRef = useRef<HTMLDivElement>(null);
   const archivedContentRef = useRef<HTMLDivElement>(null);
 
+  // Track whether we should scroll to content (only on manual sidebar clicks)
+  const [shouldScrollToContent, setShouldScrollToContent] = useState(false);
+
   // Name validation function
   const validateName = (name: string): { valid: boolean; error: string } => {
     const trimmedName = name.trim();
@@ -173,11 +176,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, [searchParams, activeTab]);
 
-  // Auto-scroll to content on mobile when tab changes
+  // Auto-scroll to content on mobile when tab changes (only if triggered by sidebar click)
   useEffect(() => {
     // Only scroll on mobile devices (below lg breakpoint)
     const isMobile = window.innerWidth < 1024;
-    if (!isMobile) return;
+    if (!isMobile || !shouldScrollToContent) return;
 
     // Small delay to ensure content is rendered
     const timer = setTimeout(() => {
@@ -193,10 +196,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       if (targetRef?.current) {
         targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+
+      // Reset the flag after scrolling
+      setShouldScrollToContent(false);
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [activeTab]);
+  }, [activeTab, shouldScrollToContent]);
 
   const handleDeleteAd = async (adId: string) => {
     try {
@@ -542,6 +548,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       onClick={() => {
                         setActiveTab(tab.id as any);
                         setSearchParams({ tab: tab.id });
+                        // Trigger scroll when clicking sidebar menu
+                        setShouldScrollToContent(true);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-100'
                         }`}

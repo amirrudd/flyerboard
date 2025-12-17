@@ -346,8 +346,8 @@ export const getAds = query({ ... });
 **Example Logging:**
 ```typescript
 // Error with context
-throw createError("Ad not found", { adId: args.adId, userId });
-// Logs: Error: Ad not found [adId=k17abc123, userId=k17xyz789]
+throw createError("Flyer not found", { adId: args.adId, userId });
+// Logs: Error: Flyer not found [adId=k17abc123, userId=k17xyz789]
 
 // Admin action logging
 logAdminAction("User status toggled", { adminId, userId, newStatus });
@@ -385,7 +385,7 @@ Sentry.init({
 test('user can post an ad', async ({ page }) => {
   await page.goto('/');
   await page.click('[data-testid="post-ad-button"]');
-  await page.fill('[name="title"]', 'Test Ad');
+  await page.fill('[name="title"]', 'Test Flyer');
   await page.fill('[name="price"]', '100');
   await page.click('[type="submit"]');
   await expect(page).toHaveURL(/\/ad\//);

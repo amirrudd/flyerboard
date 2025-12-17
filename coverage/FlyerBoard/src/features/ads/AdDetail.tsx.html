@@ -1213,9 +1213,9 @@ interface AdDetailProps {
 <span class="cstat-no" title="statement not covered" >  const handleSave = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const result = await saveAd({ adId });</span>
-<span class="cstat-no" title="statement not covered" >      toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");</span>
+<span class="cstat-no" title="statement not covered" >      toast.success(result.saved ? "Flyer saved!" : "Flyer removed from saved");</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      toast.error("Please sign in to save ads");</span>
+<span class="cstat-no" title="statement not covered" >      toast.error("Please sign in to save flyers");</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
@@ -1470,7 +1470,7 @@ interface AdDetailProps {
               )}
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 &nbsp;
-            {/* Ad Information */}
+            {/* Flyer Information */}
 <span class="cstat-no" title="statement not covered" >            &lt;div className="bg-white rounded-lg p-6 shadow-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-start justify-between mb-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -1650,7 +1650,7 @@ interface AdDetailProps {
 <span class="cstat-no" title="statement not covered" >                    &lt;svg className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/svg&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {isAdSaved ? 'Remove from Saved' : 'Save Ad'}</span>
+<span class="cstat-no" title="statement not covered" >                    {isAdSaved ? 'Remove from Saved' : 'Save Flyer'}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/button&gt;</span>
                 )}
 <span class="cstat-no" title="statement not covered" >                &lt;button</span>

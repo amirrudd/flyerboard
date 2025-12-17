@@ -382,7 +382,7 @@ if (!args.title || args.title.length < 3) {
 **Patterns**:
 ```typescript
 // Success
-toast.success("Ad posted successfully!");
+toast.success("Flyer posted successfully!");
 
 // Error
 toast.error(error.message || "Failed to save");

@@ -1,65 +1,66 @@
-
 <!doctype html>
 <html lang="en">
 
 <head>
-    <title>Code coverage report for FlyerBoard/src/features/dashboard/UserDashboard.tsx</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../../../prettify.css" />
-    <link rel="stylesheet" href="../../../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../../../favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style type='text/css'>
-        .coverage-summary .sorter {
-            background-image: url(../../../../sort-arrow-sprite.png);
-        }
-    </style>
+  <title>Code coverage report for FlyerBoard/src/features/dashboard/UserDashboard.tsx</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../../../../prettify.css" />
+  <link rel="stylesheet" href="../../../../base.css" />
+  <link rel="shortcut icon" type="image/x-icon" href="../../../../favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style type='text/css'>
+    .coverage-summary .sorter {
+      background-image: url(../../../../sort-arrow-sprite.png);
+    }
+  </style>
 </head>
-    
+
 <body>
-<div class='wrapper'>
+  <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../../index.html">All files</a> / <a href="index.html">FlyerBoard/src/features/dashboard</a> UserDashboard.tsx</h1>
-        <div class='clearfix'>
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">30.17% </span>
-                <span class="quiet">Statements</span>
-                <span class='fraction'>207/686</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">46.34% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>19/41</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">4.16% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>1/24</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">30.17% </span>
-                <span class="quiet">Lines</span>
-                <span class='fraction'>207/686</span>
-            </div>
-        
-            
+      <h1><a href="../../../../index.html">All files</a> / <a href="index.html">FlyerBoard/src/features/dashboard</a>
+        UserDashboard.tsx</h1>
+      <div class='clearfix'>
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">30.17% </span>
+          <span class="quiet">Statements</span>
+          <span class='fraction'>207/686</span>
         </div>
-        <p class="quiet">
-            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
-        </p>
-        <template id="filterTemplate">
-            <div class="quiet">
-                Filter:
-                <input type="search" id="fileSearch">
-            </div>
-        </template>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">46.34% </span>
+          <span class="quiet">Branches</span>
+          <span class='fraction'>19/41</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">4.16% </span>
+          <span class="quiet">Functions</span>
+          <span class='fraction'>1/24</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">30.17% </span>
+          <span class="quiet">Lines</span>
+          <span class='fraction'>207/686</span>
+        </div>
+
+
+      </div>
+      <p class="quiet">
+        Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the
+        previous block.
+      </p>
+      <template id="filterTemplate">
+        <div class="quiet">
+          Filter:
+          <input type="search" id="fileSearch">
+        </div>
+      </template>
     </div>
     <div class='status-line low'></div>
     <pre><table class="coverage">
@@ -1870,19 +1871,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const handleDeleteAd = <span class="fstat-no" title="function not covered" >async (adId: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await deleteAd({ adId: adId as any });</span>
-<span class="cstat-no" title="statement not covered" >      toast.success("Ad deleted successfully");</span>
+<span class="cstat-no" title="statement not covered" >      toast.success("Flyer deleted successfully");</span>
 <span class="cstat-no" title="statement not covered" >      setShowDeleteConfirm(null);</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to delete ad");</span>
+<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to delete flyer");</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
   const handleToggleStatus = <span class="fstat-no" title="function not covered" >async (adId: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      const result = await toggleAdStatus({ adId: adId as any });</span>
-<span class="cstat-no" title="statement not covered" >      toast.success(result?.isActive ? "Ad activated" : "Ad deactivated");</span>
+<span class="cstat-no" title="statement not covered" >      toast.success(result?.isActive ? "Flyer activated" : "Flyer deactivated");</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to update ad status");</span>
+<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to update flyer status");</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
 &nbsp;
@@ -2139,7 +2140,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             &lt;nav className="bg-white rounded-lg p-4 shadow-sm"&gt;
               &lt;div className="space-y-2"&gt;
                 {[
-                  { id: "ads", label: "My Ads", icon: LayoutDashboard },
+                  { id: "ads", label: "My Flyers", icon: LayoutDashboard },
                   {
                     id: "chats",
                     label: "Messages",
@@ -2187,7 +2188,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     onClick={onPostAd}
                     className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                   &gt;
-                    Post New Ad
+                    Post New Flyer
                   &lt;/button&gt;
                 &lt;/div&gt;
 &nbsp;
@@ -2265,7 +2266,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         onClick={onPostAd}
                         className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                       &gt;
-                        Post Your First Ad
+                        Post Your First Flyer
                       &lt;/button&gt;
                     &lt;/div&gt;
                   )}
@@ -2619,23 +2620,27 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     &lt;/div&gt;
   );
 }
-&nbsp;</pre></td></tr></table></pre>
+&nbsp;</pre>
+    </td>
+    </tr>
+    </table>
+    </pre>
 
-                <div class='push'></div><!-- for sticky footer -->
-            </div><!-- /wrapper -->
-            <div class='footer quiet pad2 space-top1 center small'>
-                Code coverage generated by
-                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-24T11:51:42.685Z
-            </div>
-        <script src="../../../../prettify.js"></script>
-        <script>
-            window.onload = function () {
-                prettyPrint();
-            };
-        </script>
-        <script src="../../../../sorter.js"></script>
-        <script src="../../../../block-navigation.js"></script>
-    </body>
+    <div class='push'></div><!-- for sticky footer -->
+  </div><!-- /wrapper -->
+  <div class='footer quiet pad2 space-top1 center small'>
+    Code coverage generated by
+    <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+    at 2025-11-24T11:51:42.685Z
+  </div>
+  <script src="../../../../prettify.js"></script>
+  <script>
+    window.onload = function () {
+      prettyPrint();
+    };
+  </script>
+  <script src="../../../../sorter.js"></script>
+  <script src="../../../../block-navigation.js"></script>
+</body>
+
 </html>
-    

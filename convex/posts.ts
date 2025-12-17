@@ -19,7 +19,7 @@ export const createAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw createError("Must be logged in to create an ad", { operation: "createAd" });
+      throw createError("Must be logged in to create a flyer", { operation: "createAd" });
     }
 
     const adId = await ctx.db.insert("ads", {
@@ -35,7 +35,7 @@ export const createAd = mutation({
       views: 0,
     });
 
-    logOperation("Ad created", { adId, userId, categoryId: args.categoryId });
+    logOperation("Flyer created", { adId, userId, categoryId: args.categoryId });
     return adId;
   },
 });
@@ -54,16 +54,16 @@ export const updateAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw createError("Must be logged in to update an ad", { operation: "updateAd", adId: args.adId });
+      throw createError("Must be logged in to update a flyer", { operation: "updateAd", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw createError("Ad not found", { adId: args.adId, userId });
+      throw createError("Flyer not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw createError("You can only update your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
+      throw createError("You can only update your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     await ctx.db.patch(args.adId, {
@@ -76,7 +76,7 @@ export const updateAd = mutation({
       images: args.images,
     });
 
-    logOperation("Ad updated", { adId: args.adId, userId });
+    logOperation("Flyer updated", { adId: args.adId, userId });
     return args.adId;
   },
 });
@@ -88,27 +88,27 @@ export const deleteAd = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw createError("Must be logged in to delete an ad", { operation: "deleteAd", adId: args.adId });
+      throw createError("Must be logged in to delete a flyer", { operation: "deleteAd", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw createError("Ad not found", { adId: args.adId, userId });
+      throw createError("Flyer not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw createError("You can only delete your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
+      throw createError("You can only delete your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     // Soft delete by marking as deleted
     // Images remain in R2 for potential restoration
-    // TODO: Implement cleanup job to hard delete ads after 30+ days
+    // TODO: Implement cleanup job to hard delete flyers after 30+ days
     await ctx.db.patch(args.adId, {
       isDeleted: true,
       isActive: false,
     });
 
-    logOperation("Ad soft-deleted", { adId: args.adId, userId });
+    logOperation("Flyer soft-deleted", { adId: args.adId, userId });
     return args.adId;
   },
 });
@@ -120,16 +120,16 @@ export const toggleAdStatus = mutation({
   handler: async (ctx, args) => {
     const userId = await getDescopeUserId(ctx);
     if (!userId) {
-      throw createError("Must be logged in to toggle ad status", { operation: "toggleAdStatus", adId: args.adId });
+      throw createError("Must be logged in to toggle flyer status", { operation: "toggleAdStatus", adId: args.adId });
     }
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
-      throw createError("Ad not found", { adId: args.adId, userId });
+      throw createError("Flyer not found", { adId: args.adId, userId });
     }
 
     if (existingAd.userId !== userId) {
-      throw createError("You can only modify your own ads", { adId: args.adId, userId, ownerId: existingAd.userId });
+      throw createError("You can only modify your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
     const newStatus = !existingAd.isActive;
@@ -137,7 +137,7 @@ export const toggleAdStatus = mutation({
       isActive: newStatus,
     });
 
-    logOperation("Ad status toggled", { adId: args.adId, userId, newStatus });
+    logOperation("Flyer status toggled", { adId: args.adId, userId, newStatus });
     return { adId: args.adId, isActive: newStatus };
   },
 });

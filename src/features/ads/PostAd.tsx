@@ -208,8 +208,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
     try {
       if (editingAd) {
-        // Editing existing ad - upload new images if any
-        setUploadProgress("Updating ad...");
+        // Editing existing flyer - upload new images if any
+        setUploadProgress("Updating flyer...");
         setProgressPercent(20);
 
         let finalImages = [...images];
@@ -255,10 +255,10 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         });
 
         setProgressPercent(100);
-        toast.success("Ad updated successfully!");
+        toast.success("Flyer updated successfully!");
       } else {
         // Creating new ad - 3-step process
-        setUploadProgress("Creating ad...");
+        setUploadProgress("Creating flyer...");
         setProgressPercent(10);
 
         const adId = await createAd({
@@ -303,7 +303,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         setUploadProgress("Finalizing...");
         setProgressPercent(90);
 
-        // Update ad with images
+        // Update flyer with images
         await updateAd({
           adId,
           title: formData.title,
@@ -316,7 +316,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         });
 
         setProgressPercent(100);
-        toast.success("Ad posted successfully!");
+        toast.success("Flyer posted successfully!");
 
         // Show notification permission modal for new posts (not edits)
         setShowNotificationModal(true);
@@ -328,7 +328,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         onBack();
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to save ad");
+      toast.error(error.message || "Failed to save flyer");
     } finally {
       setIsSubmitting(false);
       setUploadProgress("");

@@ -1001,15 +1001,15 @@ export function PostAd({ onBack, editingAd }: PostAdProps) {
 <span class="cstat-no" title="statement not covered" >          adId: editingAd._id,</span>
 <span class="cstat-no" title="statement not covered" >          ...adData,</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
-<span class="cstat-no" title="statement not covered" >        toast.success("Ad updated successfully!");</span>
+<span class="cstat-no" title="statement not covered" >        toast.success("Flyer updated successfully!");</span>
       } else {
         await createAd(adData);
-        toast.success("Ad posted successfully!");
+        toast.success("Flyer posted successfully!");
       }
 &nbsp;
       onBack();
 <span class="branch-0 cbranch-no" title="branch not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to save ad");</span>
+<span class="cstat-no" title="statement not covered" >      toast.error(error.message || "Failed to save flyer");</span>
     } finally {
       setIsSubmitting(false);
     }

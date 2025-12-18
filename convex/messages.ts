@@ -148,20 +148,22 @@ export const sendMessage = mutation({
       );
     }
 
-    // Send email notification to recipient
-    const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
+    // Send email notification to recipient if feature is enabled
+    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
+      const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.notifications.emailNotifications.notifyMessageReceived,
-      {
-        recipientId,
-        senderId: userId,
-        chatId: args.chatId,
-        adId: chat.adId,
-        messageContent: args.content,
-      }
-    );
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notifications.emailNotifications.notifyMessageReceived,
+        {
+          recipientId,
+          senderId: userId,
+          chatId: args.chatId,
+          adId: chat.adId,
+          messageContent: args.content,
+        }
+      );
+    }
 
     return { success: true };
   },

@@ -20,6 +20,7 @@ Email notifications are sent to users when they receive new chat messages about 
 
 3. **Message Trigger** (`convex/messages.ts`)
    - `sendMessage` mutation triggers email via scheduler
+   - Controlled by `ENABLE_EMAIL_NOTIFICATIONS` feature flag
    - Runs alongside push notifications
 
 4. **UI Components** (`src/features/dashboard/UserDashboard.tsx`)
@@ -72,6 +73,7 @@ Full content in plain text format for accessibility and email clients that don't
 ```bash
 # Required
 RESEND_API_KEY=re_xxxxxxxxxxxxx
+ENABLE_EMAIL_NOTIFICATIONS=true
 
 # Optional
 EMAIL_FROM=FlyerBoard <noreply@yourdomain.com>
@@ -216,15 +218,22 @@ Sends email notification for new message.
 
 ### Test Checklist
 
-- [ ] Enable notifications in dashboard
-- [ ] Send test message to yourself
-- [ ] Verify email received
-- [ ] Check HTML rendering in Gmail/Outlook
-- [ ] Click "View Conversation" link
-- [ ] Test unsubscribe link
-- [ ] Disable notifications → no email sent
-- [ ] Test with no email address → banner shows
-- [ ] Test message truncation (>150 chars)
+- [x] Enable notifications in dashboard
+- [x] Send test message to yourself
+- [x] Verify email received
+- [x] Check HTML rendering in Gmail/Outlook
+- [x] Click "View Conversation" link
+- [x] Test unsubscribe link
+- [x] Disable notifications → no email sent
+- [x] Test with no email address → banner shows
+- [x] Test email length validation (max 50 chars)
+- [x] Test local part validation (min 2 chars)
+
+### Automated Testing
+
+Integrated automated tests verify the trigger logic:
+- `convex/notifications/notifications.test.ts`: Backend unit tests for scheduler triggers in `sendMessage`.
+- `src/features/dashboard/UserDashboard.emailNotifications.test.tsx`: Component-level integration coverage.
 
 ## Monitoring
 

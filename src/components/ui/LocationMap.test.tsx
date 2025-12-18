@@ -69,7 +69,9 @@ describe('LocationMap', () => {
 
         expect(screen.getByTestId('google-map')).toBeInTheDocument();
         // Verify Circle was created
-        expect(global.google.maps.Circle).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(global.google.maps.Circle).toHaveBeenCalled();
+        });
     });
 
     it('should show error state when geocoding fails', async () => {

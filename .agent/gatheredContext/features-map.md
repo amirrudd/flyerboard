@@ -28,6 +28,10 @@ description: Feature modules and component map
 ## src/features/auth
 - Handles authentication flows (Login/Signup modals).
 
+## src/features/notifications
+- **EmailNotifications**: Sends personalized HTML emails via Resend when users receive messages
+- **PushNotifications**: Browser push notifications for real-time alerts
+
 ## src/components/ui
 - **ImageUpload**: Drag-and-drop image upload with compression and HEIC support.
 - **ImageDisplay**: Lazy-loaded image component that resolves R2 references to URLs.

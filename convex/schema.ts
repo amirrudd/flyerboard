@@ -140,6 +140,7 @@ export default defineSchema({
     isVerified: v.optional(v.boolean()),      // Identity verification status
     isAdmin: v.optional(v.boolean()),         // Admin flag for admin access
     isActive: v.optional(v.boolean()),        // Account status (true = active, false = deactivated)
+    emailNotificationsEnabled: v.optional(v.boolean()), // Opt-in for email notifications
   })
     .index("email", ["email"])
     .index("tokenIdentifier", ["tokenIdentifier"])

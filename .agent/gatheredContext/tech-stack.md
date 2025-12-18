@@ -24,6 +24,7 @@ description: Technology stack and dependencies
 - **date-fns** - Date formatting
 - **react-markdown** + **remark-gfm** - Markdown rendering
 - **clsx** + **tailwind-merge** - Class name utilities
+- **Resend** - Email notification delivery
 
 ## Testing
 - **Vitest** - Test runner

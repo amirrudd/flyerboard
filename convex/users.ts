@@ -244,3 +244,18 @@ export const getUserStats = query({
     };
   },
 });
+
+// Update email notification preference
+export const updateEmailNotificationPreference = mutation({
+  args: { enabled: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      throw createError("Must be logged in to update notification preferences", { operation: "updateEmailNotificationPreference" });
+    }
+
+    await ctx.db.patch(userId, { emailNotificationsEnabled: args.enabled });
+
+    return { success: true };
+  },
+});

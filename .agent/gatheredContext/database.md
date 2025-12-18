@@ -38,6 +38,7 @@
   averageRating?: number;
   ratingCount?: number;
   tokenIdentifier: string;       // Descope user ID
+  emailNotificationsEnabled?: boolean;  // Opt-in for email notifications
   _creationTime: number;
 }
 ```
@@ -157,7 +158,7 @@ try {
 **Use actions for**:
 - R2 presigned URL generation
 - Nominatim location search
-- Email sending
+- Email sending (via Resend)
 - Payment processing
 
 **Pattern**:

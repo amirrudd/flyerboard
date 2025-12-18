@@ -31,7 +31,8 @@ import {
   MapPin,
   Search,
   Filter,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Mail
 } from "lucide-react";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
@@ -52,6 +53,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
   const [nameError, setNameError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
   const [selectedAdId, setSelectedAdId] = useState<Id<"ads"> | null>(null);
   const [showMessagesForAd, setShowMessagesForAd] = useState<Id<"ads"> | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<Id<"chats"> | null>(null);
@@ -98,6 +100,33 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     return { valid: true, error: "" };
   };
 
+  // Email validation function
+  const validateEmail = (email: string): { valid: boolean; error: string } => {
+    const trimmedEmail = email.trim();
+
+    if (trimmedEmail.length === 0) {
+      return { valid: true, error: "" }; // Empty is valid (optional field)
+    }
+
+    if (trimmedEmail.length > 50) {
+      return { valid: false, error: "Email cannot exceed 50 characters" };
+    }
+
+    // Minimum length check for local part (before @)
+    const atIndex = trimmedEmail.indexOf('@');
+    if (atIndex !== -1 && atIndex < 2) {
+      return { valid: false, error: "Email local part must be at least 2 characters" };
+    }
+
+    // Standard email regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return { valid: false, error: "Please enter a valid email address" };
+    }
+
+    return { valid: true, error: "" };
+  };
+
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
   const { user: descopeUser } = useUser();
@@ -111,7 +140,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     email: descopeUser?.email || "",
     _id: "temp-id" as Id<"users">,
     image: descopeUser?.picture || undefined,
-    isVerified: false
+    isVerified: false,
+    emailNotificationsEnabled: false
   }) : null;
   const userAds = useQuery(api.posts.getUserAds);
   const userStats = useQuery(api.users.getUserStats);
@@ -145,6 +175,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const archiveChat = useMutation(api.messages.archiveChat);
   const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
+  const updateEmailNotificationPreference = useMutation(api.users.updateEmailNotificationPreference);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -204,6 +235,21 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     return () => clearTimeout(timer);
   }, [activeTab, shouldScrollToContent]);
 
+  // Debounced email validation
+  useEffect(() => {
+    if (!profileData.email) {
+      setEmailError("");
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const validation = validateEmail(profileData.email);
+      setEmailError(validation.error);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [profileData.email]);
+
   const handleDeleteAd = async (adId: string) => {
     try {
       await deleteAd({ adId: adId as any });
@@ -231,7 +277,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       return;
     }
 
-    // Validate name before submitting
+    // Validate name if provided
     const nameValidation = validateName(profileData.name);
     if (!nameValidation.valid) {
       setNameError(nameValidation.error);
@@ -239,12 +285,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       return;
     }
 
+    // Validate email if provided
+    if (profileData.email) {
+      const emailValidation = validateEmail(profileData.email);
+      if (!emailValidation.valid) {
+        setEmailError(emailValidation.error);
+        toast.error(emailValidation.error);
+        return;
+      }
+    }
+
     // Clear any previous errors
     setNameError("");
+    setEmailError("");
 
     try {
       await updateProfile(profileData);
       toast.success("Profile updated successfully");
+      // Clear local state after success to reset inputs
+      setProfileData({ name: "", email: "" });
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
     }
@@ -266,6 +325,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       toast.success("Identity verified successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to verify identity");
+    }
+  };
+
+  const handleToggleEmailNotifications = async (enabled: boolean) => {
+    try {
+      await updateEmailNotificationPreference({ enabled });
+      toast.success(
+        enabled
+          ? "Email notifications enabled"
+          : "Email notifications disabled"
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update notification settings");
     }
   };
 
@@ -574,6 +646,34 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
             {/* Main Content */}
             <div className="lg:col-span-3">
+              {/* Email collection banner - show on all tabs if no email */}
+              {user && user._id !== "temp-id" && !user.email && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <Mail className="w-5 h-5 text-gray-600 mt-0.5" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        Get notified when buyers message you
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Add your email to receive instant notifications about new messages.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setActiveTab("profile");
+                          setSearchParams({ tab: "profile" });
+                        }}
+                        className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+                      >
+                        Add email address →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === "ads" && (
                 <div ref={adsContentRef} className="bg-white rounded-lg p-3 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
@@ -961,10 +1061,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <input
                         type="email"
                         value={profileData.email}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+                        onChange={(e) => {
+                          setProfileData(prev => ({ ...prev, email: e.target.value }));
+                          // Clear error when user starts typing
+                          if (emailError) setEmailError("");
+                        }}
+                        maxLength={50}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none ${emailError ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder={user.email || "Enter your email"}
                       />
+                      {emailError && (
+                        <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                      )}
                     </div>
 
                     <button
@@ -1004,6 +1113,34 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         </button>
                       )}
                     </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-6 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Notifications</h3>
+                    {user.email && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900 mb-1">
+                              Email notifications for new messages
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Receive email notifications at {user.email} when you get a new message
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={user.emailNotificationsEnabled || false}
+                              onChange={(e) => handleToggleEmailNotifications(e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 rounded-full peer bg-gray-200 peer-focus:ring-4 peer-focus:ring-primary-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600">
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t border-gray-200 pt-6">

@@ -40,7 +40,26 @@ window.addEventListener('message', async (message) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Stub out Node.js built-ins that are imported by server-only packages
+      // These should never be used in the browser
+      "http": "vite/module-empty",
+      "https": "vite/module-empty",
+      "net": "vite/module-empty",
+      "tls": "vite/module-empty",
+      "crypto": "vite/module-empty",
+      "stream": "vite/module-empty",
+      "url": "vite/module-empty",
+      "util": "vite/module-empty",
+      "assert": "vite/module-empty",
+      "buffer": "vite/module-empty",
     },
+  },
+  optimizeDeps: {
+    exclude: [
+      "@convex-dev/resend",
+      "agent-base",
+      "https-proxy-agent"
+    ],
   },
   build: {
     chunkSizeWarningLimit: 1000,

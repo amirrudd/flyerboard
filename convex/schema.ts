@@ -123,6 +123,18 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_endpoint", ["endpoint"]),
+
+  pendingEmailNotifications: defineTable({
+    recipientId: v.id("users"),
+    chatId: v.id("chats"),
+    adId: v.id("ads"),
+    senderId: v.id("users"),
+    messageContent: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_recipient", ["recipientId"])
+    .index("by_recipient_chat", ["recipientId", "chatId"])
+    .index("by_created_at", ["createdAt"]),
 };
 
 // Extend the auth tables to add custom fields

@@ -148,13 +148,13 @@ export const sendMessage = mutation({
       );
     }
 
-    // Send email notification to recipient if feature is enabled
+    // Queue email notification for batching (if feature is enabled)
     if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
       const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
-      await ctx.scheduler.runAfter(
-        0,
-        internal.notifications.emailNotifications.notifyMessageReceived,
+      // Queue notification instead of sending immediately
+      await ctx.runMutation(
+        internal.notifications.pendingEmailNotifications.queueEmailNotification,
         {
           recipientId,
           senderId: userId,

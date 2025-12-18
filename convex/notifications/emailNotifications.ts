@@ -12,11 +12,12 @@ import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { components } from "../_generated/api";
 import { Resend } from "@convex-dev/resend";
+import type { Id } from "../_generated/dataModel";
 
 // Initialize Resend client
 export const resend: Resend = new Resend(components.resend, {
-    // Use test mode by default - set to false in production
-    testMode: process.env.RESEND_TEST_MODE !== "false",
+  // Use test mode by default - set to false in production
+  testMode: process.env.RESEND_TEST_MODE !== "false",
 });
 
 /**
@@ -24,46 +25,46 @@ export const resend: Resend = new Resend(components.resend, {
  * Called by the sendMessage mutation
  */
 export const notifyMessageReceived = internalAction({
-    args: {
-        recipientId: v.id("users"),
-        senderId: v.id("users"),
-        chatId: v.id("chats"),
-        adId: v.id("ads"),
-        messageContent: v.string(),
-    },
-    handler: async (ctx, args) => {
-        // Get recipient info
-        const recipient = await ctx.runQuery(internal.users.getUser, {
-            userId: args.recipientId,
-        });
+  args: {
+    recipientId: v.id("users"),
+    senderId: v.id("users"),
+    chatId: v.id("chats"),
+    adId: v.id("ads"),
+    messageContent: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get recipient info
+    const recipient = await ctx.runQuery(internal.users.getUser, {
+      userId: args.recipientId,
+    });
 
-        // Check if recipient has email and notifications enabled
-        if (!recipient?.email || !recipient.emailNotificationsEnabled) {
-            console.log("Recipient email notifications disabled or no email address");
-            return { success: false, reason: "notifications_disabled" };
-        }
+    // Check if recipient has email and notifications enabled
+    if (!recipient?.email || !recipient.emailNotificationsEnabled) {
+      console.log("Recipient email notifications disabled or no email address");
+      return { success: false, reason: "notifications_disabled" };
+    }
 
-        // Get sender info
-        const sender = await ctx.runQuery(internal.users.getUser, {
-            userId: args.senderId,
-        });
+    // Get sender info
+    const sender = await ctx.runQuery(internal.users.getUser, {
+      userId: args.senderId,
+    });
 
-        // Get ad info for context
-        const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
-            adId: args.adId,
-        });
+    // Get ad info for context
+    const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
+      adId: args.adId,
+    });
 
-        if (!ad) {
-            console.log("Ad not found, skipping email notification");
-            return { success: false, reason: "ad_not_found" };
-        }
+    if (!ad) {
+      console.log("Ad not found, skipping email notification");
+      return { success: false, reason: "ad_not_found" };
+    }
 
-        const senderName = sender?.name || "Someone";
-        const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
-        const chatUrl = `${appUrl}/messages/${args.chatId}`;
+    const senderName = sender?.name || "Someone";
+    const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
+    const chatUrl = `${appUrl}/messages/${args.chatId}`;
 
-        // Build HTML email
-        const htmlBody = `
+    // Build HTML email
+    const htmlBody = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -106,8 +107,8 @@ export const notifyMessageReceived = internalAction({
 </html>
     `;
 
-        // Build plain text version
-        const textBody = `
+    // Build plain text version
+    const textBody = `
 New Message from ${senderName}
 
 About: "${ad.title}"
@@ -122,25 +123,223 @@ You're receiving this email because you have email notifications enabled for new
 To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
     `.trim();
 
-        try {
-            // Send email via Resend
-            await resend.sendEmail(ctx, {
-                from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
-                to: recipient.email,
-                subject: `💬 ${senderName} sent you a message about "${ad.title}"`,
-                html: htmlBody,
-                text: textBody,
-                // Add List-Unsubscribe header for Gmail compliance
-                headers: [
-                    { name: "List-Unsubscribe", value: `<${appUrl}/dashboard?tab=profile>` },
-                ],
-            });
+    try {
+      // Send email via Resend
+      await resend.sendEmail(ctx, {
+        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+        to: recipient.email,
+        subject: `💬 ${senderName} sent you a message about "${ad.title}"`,
+        html: htmlBody,
+        text: textBody,
+        // Add List-Unsubscribe header for Gmail compliance
+        headers: [
+          { name: "List-Unsubscribe", value: `<${appUrl}/dashboard?tab=profile>` },
+        ],
+      });
 
-            console.log(`Email notification sent to ${recipient.email}`);
-            return { success: true };
-        } catch (error: any) {
-            console.error("Failed to send email notification:", error);
-            return { success: false, reason: "send_failed", error: error.message };
+      console.log(`Email notification sent to ${recipient.email}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Failed to send email notification:", error);
+      return { success: false, reason: "send_failed", error: error.message };
+    }
+  },
+});
+
+/**
+ * Send batched email notifications
+ * Called by cron job every 5 minutes
+ */
+export const sendBatchedNotifications = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ processed: number }> => {
+    const batchWindowMinutes = parseInt(process.env.EMAIL_BATCH_WINDOW_MINUTES || "10");
+
+    // Get pending notifications grouped by recipient
+    const grouped: Array<{
+      recipientId: Id<"users">;
+      notifications: Array<any>;
+    }> = await ctx.runQuery(
+      internal.notifications.pendingEmailNotifications.getPendingNotificationsToSend,
+      { batchWindowMinutes }
+    );
+
+    console.log(`Processing ${grouped.length} recipients with pending notifications`);
+
+    for (const { recipientId, notifications } of grouped) {
+      try {
+        // Get recipient info
+        const recipient = await ctx.runQuery(internal.users.getUser, {
+          userId: recipientId,
+        });
+
+        // Check if recipient has email and notifications enabled
+        if (!recipient?.email || !recipient.emailNotificationsEnabled) {
+          console.log(`Skipping batch for ${recipientId}: no email or notifications disabled`);
+          // Clear these notifications anyway
+          await ctx.runMutation(
+            internal.notifications.pendingEmailNotifications.clearPendingNotifications,
+            { notificationIds: notifications.map((n: any) => n._id) }
+          );
+          continue;
         }
-    },
+
+        const messageCount = notifications.length;
+        const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
+
+        // Get unique chats and ads
+        const uniqueChats = [...new Set(notifications.map((n: any) => n.chatId))];
+        const uniqueAds = [...new Set(notifications.map((n: any) => n.adId))];
+
+        // Build email based on count
+        let subject: string;
+        let htmlBody: string;
+        let textBody: string;
+
+        if (messageCount === 1) {
+          // Single message - use detailed format
+          const notification = notifications[0];
+          const sender = await ctx.runQuery(internal.users.getUser, {
+            userId: notification.senderId,
+          });
+          const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
+            adId: notification.adId,
+          });
+
+          const senderName = sender?.name || "Someone";
+          const chatUrl = `${appUrl}/messages/${notification.chatId}`;
+
+          subject = `💬 ${senderName} sent you a message about "${ad?.title}"`;
+          htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+    <h2 style="margin: 0 0 16px 0; color: #1a1a1a;">💬 New Message</h2>
+    <p style="margin: 0 0 12px 0; font-size: 16px;">
+      <strong>${senderName}</strong> sent you a message about:
+    </p>
+    <p style="margin: 0; font-size: 18px; font-weight: 600; color: #0066cc;">
+      "${ad?.title}"
+    </p>
+  </div>
+  
+  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+    <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Message:</p>
+    <p style="margin: 0; font-size: 15px; color: #1f2937; white-space: pre-wrap;">${notification.messageContent}</p>
+  </div>
+
+  <div style="text-align: center; margin-bottom: 24px;">
+    <a href="${chatUrl}" style="display: inline-block; background-color: #0066cc; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+      View & Reply
+    </a>
+  </div>
+
+  <div style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px;">
+    <p style="margin: 0; font-size: 13px; color: #6b7280; text-align: center;">
+      You're receiving this email because you have email notifications enabled for new messages.
+    </p>
+    <p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">
+      To manage your notification settings, visit your 
+      <a href="${appUrl}/dashboard?tab=profile" style="color: #0066cc; text-decoration: none;">dashboard settings</a>.
+    </p>
+  </div>
+</body>
+</html>
+                    `;
+
+          textBody = `
+New Message from ${senderName}
+
+About: "${ad?.title}"
+
+Message:
+${notification.messageContent}
+
+View and reply: ${chatUrl}
+
+---
+You're receiving this email because you have email notifications enabled for new messages.
+To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
+                    `.trim();
+        } else {
+          // Multiple messages - use summary format
+          subject = `💬 You have ${messageCount} new message${messageCount > 1 ? 's' : ''}`;
+          const messagesUrl = `${appUrl}/messages`;
+
+          htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+    <h2 style="margin: 0 0 16px 0; color: #1a1a1a;">💬 New Messages</h2>
+    <p style="margin: 0; font-size: 18px; font-weight: 600; color: #0066cc;">
+      You have ${messageCount} new message${messageCount > 1 ? 's' : ''} from ${uniqueChats.length} conversation${uniqueChats.length > 1 ? 's' : ''}
+    </p>
+  </div>
+
+  <div style="text-align: center; margin-bottom: 24px;">
+    <a href="${messagesUrl}" style="display: inline-block; background-color: #0066cc; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+      View All Messages
+    </a>
+  </div>
+
+  <div style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px;">
+    <p style="margin: 0; font-size: 13px; color: #6b7280; text-align: center;">
+      You're receiving this email because you have email notifications enabled for new messages.
+    </p>
+    <p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">
+      To manage your notification settings, visit your 
+      <a href="${appUrl}/dashboard?tab=profile" style="color: #0066cc; text-decoration: none;">dashboard settings</a>.
+    </p>
+  </div>
+</body>
+</html>
+                    `;
+
+          textBody = `
+You have ${messageCount} new message${messageCount > 1 ? 's' : ''} from ${uniqueChats.length} conversation${uniqueChats.length > 1 ? 's' : ''}
+
+View all messages: ${messagesUrl}
+
+---
+You're receiving this email because you have email notifications enabled for new messages.
+To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
+                    `.trim();
+        }
+
+        // Send the email
+        await resend.sendEmail(ctx, {
+          from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+          to: recipient.email,
+          subject,
+          html: htmlBody,
+          text: textBody,
+          headers: [
+            { name: "List-Unsubscribe", value: `<${appUrl}/dashboard?tab=profile>` },
+          ],
+        });
+
+        console.log(`Sent batched email to ${recipient.email} (${messageCount} messages)`);
+
+        // Clear sent notifications
+        await ctx.runMutation(
+          internal.notifications.pendingEmailNotifications.clearPendingNotifications,
+          { notificationIds: notifications.map((n: any) => n._id) }
+        );
+      } catch (error: any) {
+        console.error(`Failed to send batched email to ${recipientId}:`, error);
+      }
+    }
+
+    return { processed: grouped.length };
+  },
 });

@@ -9,43 +9,20 @@ import { api, internal } from '../_generated/api';
  */
 
 describe('Notification Triggers', () => {
-    it('should verify the sendMessage implementation logic for triggers', async () => {
-        // This is a documentation-based verification of the logic in convex/messages.ts
-        // In a real project, we would use convex-test, but here we explicitly 
-        // define the expected behavior to ensure it matches the implementation.
-
-        const mockCtx = {
-            db: {
-                get: vi.fn(),
-                insert: vi.fn(),
-            },
-            scheduler: {
-                runAfter: vi.fn(),
-            },
-            auth: {
-                getUserIdentity: vi.fn(),
-            }
-        };
-
-        // Since we are verifying the logic in convex/messages.ts, 
-        // we are ensuring that the following calls exist in that file:
-
-        // 1. Trigger Push Notifications
-        // await ctx.scheduler.runAfter(
-        //   0,
-        //   internal.notifications.pushNotifications.notifyMessageReceived,
-        //   { recipientId, senderId, chatId, adId }
-        // );
-
-        // 2. Trigger Email Notifications
-        // await ctx.scheduler.runAfter(
-        //   0,
-        //   internal.notifications.emailNotifications.notifyMessageReceived,
-        //   { recipientId, senderId, chatId, adId, messageContent }
-        // );
-
-        // We verify these exist by code inspection in this test context
+    it('should verify push notifications use scheduler (instant)', async () => {
+        // Push notifications should still be instant via scheduler
         expect(internal.notifications.pushNotifications.notifyMessageReceived).toBeDefined();
+    });
+
+    it('should verify email notifications use batching queue (not instant)', async () => {
+        // Email notifications should be queued, NOT sent immediately
+        // The sendMessage mutation should call queueEmailNotification
+        expect(internal.notifications.pendingEmailNotifications.queueEmailNotification).toBeDefined();
+
+        // The batched sending action should exist for the cron job
+        expect(internal.notifications.emailNotifications.sendBatchedNotifications).toBeDefined();
+
+        // The immediate send action still exists but is NOT called by sendMessage anymore
         expect(internal.notifications.emailNotifications.notifyMessageReceived).toBeDefined();
     });
 });

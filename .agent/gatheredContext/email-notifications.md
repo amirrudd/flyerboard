@@ -78,6 +78,7 @@ ENABLE_EMAIL_NOTIFICATIONS=true
 # Optional
 EMAIL_FROM=FlyerBoard <noreply@yourdomain.com>
 VITE_APP_URL=https://flyerboard.com
+EMAIL_BATCH_WINDOW_MINUTES=10  # Time window for batching emails (default: 10)
 ```
 
 ### Domain Verification (Production)
@@ -116,10 +117,17 @@ Without domain verification, emails only work with `*@resend.dev` addresses.
 
 ### Frequency Management
 
-Consider implementing:
-- **Rate limiting**: Max 1 email per chat per hour
-- **Batching**: "You have 3 new messages" vs 3 separate emails
-- **Digest mode**: Daily summary instead of instant notifications
+**Implemented:** 10-minute time-based batching
+- Messages are queued and sent in batches every 10 minutes
+- Single message: Detailed email with full content
+- Multiple messages: Summary email with count
+- Cron job processes queue every 5 minutes
+- Configurable via `EMAIL_BATCH_WINDOW_MINUTES` environment variable
+
+**Benefits:**
+- Prevents email spam
+- Respects Resend free tier limits (100 emails/day)
+- Better user experience with consolidated notifications
 
 ## Database Schema
 

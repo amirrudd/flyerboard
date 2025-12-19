@@ -37,7 +37,7 @@ export function CommunityGuidelinesPage() {
                 }
                 rightNode={<div />}
             />
-            <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 pb-bottom-nav md:pb-12">
                 <div className="max-w-3xl mx-auto">
                     <MarkdownContent content={guidelinesContent} />
                 </div>

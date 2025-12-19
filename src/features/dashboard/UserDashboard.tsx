@@ -14,6 +14,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
+import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -47,6 +48,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+  const { isMobile } = useDeviceInfo();
 
   const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "profile" | "archived">(tabParam || "ads");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Track whether we should scroll to content (only on manual sidebar clicks)
   const [shouldScrollToContent, setShouldScrollToContent] = useState(false);
+  const scrollIntentRef = useRef<'top' | 'content' | null>(null);
 
   // Name validation function
   const validateName = (name: string): { valid: boolean; error: string } => {
@@ -207,33 +210,59 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, [searchParams, activeTab]);
 
-  // Auto-scroll to content on mobile when tab changes (only if triggered by sidebar click)
+  // Scroll to top only when navigating TO dashboard from external route
   useEffect(() => {
-    // Only scroll on mobile devices (below lg breakpoint)
-    const isMobile = window.innerWidth < 1024;
-    if (!isMobile || !shouldScrollToContent) return;
+    // Check if this is a fresh navigation to dashboard (not tab change within dashboard)
+    const fromParam = new URLSearchParams(location.search).get('from');
+    if (fromParam !== 'internal') {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
-    // Small delay to ensure content is rendered
-    const timer = setTimeout(() => {
-      const refMap = {
-        ads: adsContentRef,
-        chats: chatsContentRef,
-        saved: savedContentRef,
-        profile: profileContentRef,
-        archived: archivedContentRef,
-      };
+  // Redirect invalid tabs on mobile (archived/profile need sidebar nav)
+  useEffect(() => {
+    if (isMobile && (activeTab === 'archived' || activeTab === 'profile')) {
+      setActiveTab('ads');
+      setSearchParams({ tab: 'ads' }, { replace: true });
+    }
+  }, [isMobile, activeTab, setSearchParams]);
 
-      const targetRef = refMap[activeTab];
-      if (targetRef?.current) {
-        targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
 
-      // Reset the flag after scrolling
-      setShouldScrollToContent(false);
-    }, 100);
+  // Handle scroll behavior based on intent
+  useEffect(() => {
+    // Priority 1: Back button scroll to top
+    if (scrollIntentRef.current === 'top') {
+      const timer = setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollIntentRef.current = null;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
 
-    return () => clearTimeout(timer);
-  }, [activeTab, shouldScrollToContent]);
+    // Priority 2: Auto-scroll to content on mobile tab change
+    if (isMobile && shouldScrollToContent && !scrollIntentRef.current) {
+      const timer = setTimeout(() => {
+        const refMap = {
+          ads: adsContentRef,
+          chats: chatsContentRef,
+          saved: savedContentRef,
+          profile: profileContentRef,
+          archived: archivedContentRef,
+        };
+
+        const targetRef = refMap[activeTab];
+        if (targetRef?.current) {
+          targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Reset the flag after scrolling
+        setShouldScrollToContent(false);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isMobile, shouldScrollToContent, activeTab]);
+
 
   // Debounced email validation
   useEffect(() => {
@@ -493,11 +522,23 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   return (
     <>
-      <div className="bg-white">
+      <div className="bg-white flex flex-col">
         <Header
           leftNode={
             <button
-              onClick={onBack}
+              onClick={() => {
+                // On mobile, if we're not on the default "ads" tab, go back to it first
+                if (isMobile && activeTab !== "ads") {
+                  // Set scroll intent to top - prevents auto-scroll race condition
+                  scrollIntentRef.current = 'top';
+                  setShouldScrollToContent(false);
+                  setActiveTab("ads");
+                  setSearchParams({ tab: "ads" }, { replace: true });
+                } else {
+                  // Otherwise, leave the dashboard
+                  onBack();
+                }
+              }}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -522,10 +563,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           }
         />
 
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 pb-bottom-nav">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="flex-1 w-full md:max-w-7xl md:mx-auto sm:px-6 lg:px-8 py-6 pb-bottom-nav md:pb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-6">
             {/* Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 md:sticky md:top-21 md:self-start">
               {!convexUser || userStats === undefined ? (
                 <UserProfileSkeleton />
               ) : (
@@ -567,7 +608,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         <button
                           onClick={() => {
                             setActiveTab("profile");
-                            setSearchParams({ tab: "profile" });
+                            setSearchParams({ tab: "profile" }, { replace: true });
+                            setShouldScrollToContent(true);
                           }}
                           className="p-1 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 transition-colors"
                           title="Edit profile"
@@ -601,7 +643,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 </div>
               )}
 
-              <nav className="bg-white rounded-lg p-4 shadow-sm">
+              <nav className="bg-white rounded-lg p-4 shadow-sm hidden md:block">
                 <div className="space-y-2">
                   {[
                     { id: "ads", label: "My Flyers", icon: LayoutDashboard },
@@ -619,7 +661,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       key={tab.id}
                       onClick={() => {
                         setActiveTab(tab.id as any);
-                        setSearchParams({ tab: tab.id });
+                        setSearchParams({ tab: tab.id }, { replace: true });
                         // Trigger scroll when clicking sidebar menu
                         setShouldScrollToContent(true);
                       }}
@@ -1231,40 +1273,43 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           </div>
         </div>,
         document.body
-      )}
+      )
+      }
 
       {/* Delete Account Confirmation Modal */}
-      {showAccountDeleteConfirm && createPortal(
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowAccountDeleteConfirm(false)}
-        >
+      {
+        showAccountDeleteConfirm && createPortal(
           <div
-            className="bg-white rounded-lg p-6 w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAccountDeleteConfirm(false)}
           >
-            <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
-            <p className="text-gray-600 mb-6">
-              Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowAccountDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Account
-              </button>
+            <div
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
+              <p className="text-gray-600 mb-6">
+                Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowAccountDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      }
     </>
   );
 }

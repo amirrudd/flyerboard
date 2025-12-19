@@ -249,7 +249,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const images = displayAd.images.length > 0 ? displayAd.images : [];
 
   return (
-    <div className="fixed inset-0 md:relative md:inset-auto md:min-h-screen bg-gray-50 flex flex-col z-40">
+    <div className="bg-gray-50 flex flex-col">
       {/* Header */}
       <Header
         leftNode={
@@ -321,7 +321,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         }
       />
 
-      <div className="flex-1 overflow-y-auto mobile-scroll-container md:overflow-visible max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
+      <div className="flex-1 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-bottom-nav md:pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -445,208 +445,210 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Seller Info */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
-              <div className="flex items-center gap-3 mb-4">
-                {displayAd.seller?.image && !avatarImageError ? (
-                  <ImageDisplay
-                    src={displayAd.seller.image}
-                    alt={displayAd.seller.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                    onError={() => setAvatarImageError(true)}
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-lg">
-                    {displayAd.seller ? getInitials(displayAd.seller) : "U"}
-                  </div>
-                )}
-                <div className="flex-1">
-                  {displayAd.seller ? (
-                    <p className="font-medium text-neutral-800 flex items-center gap-1">
-                      {getDisplayName(displayAd.seller)}
-                      {displayAd.seller.isVerified && (
-                        <div title="Verified User" className="relative">
-                          <img src="/verified-badge.svg" alt="Verified Seller" className="w-10 h-10" />
-                        </div>
-                      )}
-                    </p>
+          <div className="sticky top-21 self-start">
+            <div className="space-y-6">
+              {/* Seller Info */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  {displayAd.seller?.image && !avatarImageError ? (
+                    <ImageDisplay
+                      src={displayAd.seller.image}
+                      alt={displayAd.seller.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={() => setAvatarImageError(true)}
+                    />
                   ) : (
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
-                  )}
-                  {displayAd.seller ? (
-                    <div
-                      onClick={() => setShowReviewListModal(true)}
-                      className="cursor-pointer hover:opacity-70 transition-opacity inline-block"
-                      title="View all reviews"
-                    >
-                      <StarRating
-                        rating={displayAd.seller.averageRating || 0}
-                        count={displayAd.seller.ratingCount || 0}
-                        size="sm"
-                        showCount={true}
-                      />
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-lg">
+                      {displayAd.seller ? getInitials(displayAd.seller) : "U"}
                     </div>
-                  ) : (
-                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                  )}
+                  <div className="flex-1">
+                    {displayAd.seller ? (
+                      <p className="font-medium text-neutral-800 flex items-center gap-1">
+                        {getDisplayName(displayAd.seller)}
+                        {displayAd.seller.isVerified && (
+                          <div title="Verified User" className="relative">
+                            <img src="/verified-badge.svg" alt="Verified Seller" className="w-10 h-10" />
+                          </div>
+                        )}
+                      </p>
+                    ) : (
+                      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                    )}
+                    {displayAd.seller ? (
+                      <div
+                        onClick={() => setShowReviewListModal(true)}
+                        className="cursor-pointer hover:opacity-70 transition-opacity inline-block"
+                        title="View all reviews"
+                      >
+                        <StarRating
+                          rating={displayAd.seller.averageRating || 0}
+                          count={displayAd.seller.ratingCount || 0}
+                          size="sm"
+                          showCount={true}
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                    )}
+                  </div>
+                  {user && displayAd.userId !== user._id && (
+                    <button
+                      onClick={() => setShowReportProfileModal(true)}
+                      className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                      title="Report seller"
+                    >
+                      <Flag className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
+
                 {user && displayAd.userId !== user._id && (
+                  <>
+                    {!showChat && (
+                      <button
+                        onClick={handleStartChat}
+                        className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium mb-2"
+                      >
+                        Contact Seller
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowRatingModal(true)}
+                      className="w-full bg-white text-primary-600 border border-primary-600 py-2 px-4 rounded-lg hover:bg-primary-50 transition-colors font-medium"
+                    >
+                      Rate Seller
+                    </button>
+                  </>
+                )}
+
+                {user && displayAd.userId === user._id && (
                   <button
-                    onClick={() => setShowReportProfileModal(true)}
-                    className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-                    title="Report seller"
+                    onClick={() => navigate('/dashboard')}
+                    className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
                   >
-                    <Flag className="w-4 h-4" />
+                    Manage Your Flyers
+                  </button>
+                )}
+
+                {!user && (
+                  <button
+                    onClick={onShowAuth}
+                    className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                  >
+                    Sign in to contact seller
                   </button>
                 )}
               </div>
 
-              {user && displayAd.userId !== user._id && (
-                <>
-                  {!showChat && (
-                    <button
-                      onClick={handleStartChat}
-                      className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium mb-2"
-                    >
-                      Contact Seller
-                    </button>
+              {/* Chat Section */}
+              {showChat && (
+                <div className="bg-white rounded-lg shadow-sm">
+                  <div className="p-4 border-b border-neutral-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-neutral-800">Chat with Seller</h3>
+                      <button
+                        onClick={() => setShowChat(false)}
+                        className="text-neutral-500 hover:text-neutral-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {messages && messages.length > 0 && (
+                    <div className="h-64 overflow-y-auto p-4 space-y-3" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                      {messages.map((message) => (
+                        <div
+                          key={message._id}
+                          className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
+                        >
+                          <div
+                            className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-neutral-100 text-neutral-900'
+                              }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
+                              }`}>
+                              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  <button
-                    onClick={() => setShowRatingModal(true)}
-                    className="w-full bg-white text-primary-600 border border-primary-600 py-2 px-4 rounded-lg hover:bg-primary-50 transition-colors font-medium"
-                  >
-                    Rate Seller
-                  </button>
-                </>
-              )}
 
-              {user && displayAd.userId === user._id && (
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                >
-                  Manage Your Flyers
-                </button>
-              )}
-
-              {!user && (
-                <button
-                  onClick={onShowAuth}
-                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                >
-                  Sign in to contact seller
-                </button>
-              )}
-            </div>
-
-            {/* Chat Section */}
-            {showChat && (
-              <div className="bg-white rounded-lg shadow-sm">
-                <div className="p-4 border-b border-neutral-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-neutral-800">Chat with Seller</h3>
-                    <button
-                      onClick={() => setShowChat(false)}
-                      className="text-neutral-500 hover:text-neutral-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                  <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-neutral-200' : ''}`}>
+                    <div className="flex gap-2">
+                      <input
+                        ref={chatInputRef}
+                        type="text"
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Type your message..."
+                        className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+                      />
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={!messageText.trim()}
+                        className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Send
+                      </button>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {messages && messages.length > 0 && (
-                  <div className="h-64 overflow-y-auto p-4 space-y-3" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
-                    {messages.map((message) => (
-                      <div
-                        key={message._id}
-                        className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
-                      >
-                        <div
-                          className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-neutral-100 text-neutral-900'
+              {/* Quick Actions */}
+              <div className="bg-white rounded-lg p-6 shadow-sm hidden sm:block">
+                <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
+                <div className="space-y-3">
+                  {user && displayAd.userId === user._id ? (
+                    // Show Edit button for own flyers
+                    <button
+                      onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary-600 text-white border border-primary-600 hover:bg-primary-700 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit Flyer
+                    </button>
+                  ) : (
+                    // Show Save and Report buttons for other users' flyers
+                    user && (
+                      <>
+                        <button
+                          onClick={handleSave}
+                          className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all shadow-sm active:scale-[0.98] ${isAdSaved
+                            ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                            : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900'
                             }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
-                            }`}>
-                            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-neutral-200' : ''}`}>
-                  <div className="flex gap-2">
-                    <input
-                      ref={chatInputRef}
-                      type="text"
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!messageText.trim()}
-                      className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg p-6 shadow-sm hidden sm:block">
-              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                {user && displayAd.userId === user._id ? (
-                  // Show Edit button for own flyers
+                          <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
+                          {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                        </button>
+                        <button
+                          onClick={() => setShowReportModal(true)}
+                          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
+                        >
+                          <Flag className="w-4 h-4" />
+                          Report Flyer
+                        </button>
+                      </>
+                    )
+                  )}
                   <button
-                    onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary-600 text-white border border-primary-600 hover:bg-primary-700 transition-colors"
+                    onClick={handleShare}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
                   >
-                    <Pencil className="w-4 h-4" />
-                    Edit Flyer
+                    <Share2 className="w-4 h-4" />
+                    Share Flyer
                   </button>
-                ) : (
-                  // Show Save and Report buttons for other users' flyers
-                  user && (
-                    <>
-                      <button
-                        onClick={handleSave}
-                        className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all shadow-sm active:scale-[0.98] ${isAdSaved
-                          ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                          : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900'
-                          }`}
-                      >
-                        <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
-                        {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
-                      </button>
-                      <button
-                        onClick={() => setShowReportModal(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
-                      >
-                        <Flag className="w-4 h-4" />
-                        Report Flyer
-                      </button>
-                    </>
-                  )
-                )}
-                <button
-                  onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 hover:text-neutral-900 transition-all shadow-sm active:scale-[0.98]"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share Flyer
-                </button>
+                </div>
               </div>
             </div>
           </div>

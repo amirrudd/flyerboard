@@ -8,6 +8,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ReportModal } from "../../components/ReportModal";
+import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { Flag, ChevronLeft } from "lucide-react";
 
 interface AdMessagesProps {
@@ -20,7 +21,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   const [newMessage, setNewMessage] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const { isMobile } = useDeviceInfo();
 
   // Check authentication and sync status
   const { isAuthenticated, isSessionLoading } = useSession();
@@ -61,13 +62,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   }, [messages, selectedChatId]); // Added selectedChatId to scroll when chat opens
 
 
-  // Detect mobile for portal rendering
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

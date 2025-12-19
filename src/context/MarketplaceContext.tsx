@@ -5,6 +5,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
 import { throttle } from "../lib/performanceUtils";
+import { useDeviceInfo } from "../hooks/useDeviceInfo";
 
 interface Category {
     _id: Id<"categories">;
@@ -35,6 +36,8 @@ interface MarketplaceContextType {
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
 
 export function MarketplaceProvider({ children }: { children: ReactNode }) {
+    const { isMobile } = useDeviceInfo();
+
     // --- State ---
     const [selectedCategory, setSelectedCategory] = useState<Id<"categories"> | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -43,13 +46,8 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         return savedLocation !== undefined ? savedLocation : "";
     });
 
-    // Initialize sidebar state based on screen size
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth < 768; // Collapsed on mobile, expanded on desktop
-        }
-        return false; // Default to expanded
-    });
+    // Initialize sidebar state based on device
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
 
     // --- Client-Side Cache ---
     // Cache ads by filter combination to prevent reloads when switching categories
@@ -152,24 +150,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // --- Effects ---
 
-    // Handle responsive sidebar behavior with throttled resize
+    // Handle responsive sidebar behavior - sync with device changes
     useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 768) {
-                // Mobile: collapse sidebar
-                setSidebarCollapsed(true);
-            } else {
-                // Desktop: expand sidebar
-                setSidebarCollapsed(false);
-            }
-        };
-
-        // Throttle resize handler to fire at most every 150ms
-        const throttledResize = throttle(handleResize, 150);
-
-        window.addEventListener('resize', throttledResize);
-        return () => window.removeEventListener('resize', throttledResize);
-    }, []);
+        setSidebarCollapsed(isMobile);
+    }, [isMobile]);
 
     // Handle location change and save to cookies
     const handleSetSelectedLocation = useCallback((location: string) => {

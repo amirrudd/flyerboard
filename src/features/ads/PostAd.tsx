@@ -212,36 +212,42 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         setUploadProgress("Updating flyer...");
         setProgressPercent(20);
 
-        let finalImages = [...images];
+        // Keep track of existing image keys (from database)
+        // Filter to only include images that haven't been removed by user
+        const existingImageKeys = (editingAd.images || []).filter((imgKey: string) =>
+          images.includes(imgKey)
+        );
+        const newImageKeys: string[] = [];
 
-        // Upload only new compressed images
-        const newImages = compressedFiles.slice(images.length);
-
-        if (newImages.length > 0) {
-          setUploadProgress(`Uploading ${newImages.length} new image(s)...`);
+        // Upload new compressed images only
+        if (compressedFiles.length > 0) {
+          setUploadProgress(`Uploading ${compressedFiles.length} new image(s)...`);
           setProgressPercent(40);
 
-          for (let i = 0; i < newImages.length; i++) {
-            setUploadProgress(`Uploading image ${i + 1}/${newImages.length}...`);
-            const baseProgress = 40 + (i / newImages.length) * 40;
+          for (let i = 0; i < compressedFiles.length; i++) {
+            setUploadProgress(`Uploading image ${i + 1}/${compressedFiles.length}...`);
+            const baseProgress = 40 + (i / compressedFiles.length) * 40;
 
             // Get presigned URL for this image
             const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: editingAd._id });
 
             // Upload directly to R2 (already compressed)
             await uploadImageToR2(
-              newImages[i],
+              compressedFiles[i],
               async () => uploadUrl,
               async () => null,
-              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / newImages.length))
+              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / compressedFiles.length))
             );
 
-            finalImages.push(key);
+            newImageKeys.push(key);
           }
         }
 
         setUploadProgress("Saving changes...");
         setProgressPercent(90);
+
+        // Combine existing keys with new keys
+        const finalImages = [...existingImageKeys, ...newImageKeys];
 
         await updateAd({
           adId: editingAd._id,
@@ -369,7 +375,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         }
       />
 
-      <div className="flex-1 overflow-y-auto mobile-scroll-container lg:overflow-visible max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-bottom-nav md:pb-8">
+      <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>

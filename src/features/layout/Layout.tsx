@@ -23,7 +23,7 @@ export function Layout() {
     }, [isAuthenticated]);
 
     return (
-        <div className="flex flex-col h-screen h-dvh overflow-hidden">
+        <div className="flex flex-col h-screen overflow-hidden">
             <main className="flex-1 overflow-y-auto mobile-scroll-container">
                 <Outlet key={authKey} context={{ setShowAuthModal }} />
             </main>

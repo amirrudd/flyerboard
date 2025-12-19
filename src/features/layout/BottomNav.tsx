@@ -13,7 +13,17 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
     const { isAuthenticated } = useSession();
     const user = isAuthenticated ? { name: "User" } : null;
 
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path: string) => {
+        // Handle dashboard tab states
+        if (path.startsWith('/dashboard')) {
+            const currentParams = new URLSearchParams(location.search);
+            const currentTab = currentParams.get('tab') || 'ads';
+            const targetParams = new URLSearchParams(path.split('?')[1]);
+            const targetTab = targetParams.get('tab') || 'ads';
+            return location.pathname === '/dashboard' && currentTab === targetTab;
+        }
+        return location.pathname === path;
+    };
 
     const handleAuthGuard = (path: string) => {
         if (user) {
@@ -46,7 +56,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=saved")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/saved") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=saved") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <Heart size={24} />
@@ -65,7 +75,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=chats")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/messages") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=chats") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     <MessageSquare size={24} />
@@ -73,8 +83,8 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                 </button>
 
                 <button
-                    onClick={() => handleAuthGuard("/dashboard")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    onClick={() => handleAuthGuard("/dashboard?tab=ads")}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=ads") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
                         }`}
                 >
                     {user ? <LayoutDashboard size={24} /> : <User size={24} />}

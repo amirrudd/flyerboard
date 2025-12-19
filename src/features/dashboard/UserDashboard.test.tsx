@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UserDashboard } from './UserDashboard';
 import { useQuery } from 'convex/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 // Mock Descope SDK
 const mockUseSession = vi.fn();
@@ -145,5 +145,56 @@ describe('UserDashboard', () => {
         fireEvent.click(postButton);
 
         expect(mockOnPostAd).toHaveBeenCalled();
+    });
+
+    it('should redirect to ads tab when accessing invalid tabs on mobile', async () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true });
+
+        // Mock window.matchMedia to simulate mobile viewport
+        Object.defineProperty(window, 'matchMedia', {
+            writable: true,
+            value: vi.fn().mockImplementation(query => ({
+                matches: query === '(max-width: 768px)', // Mobile viewport
+                media: query,
+                onchange: null,
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+                dispatchEvent: vi.fn(),
+            })),
+        });
+
+        const user = { _id: 'user1', name: 'Test User', email: 'test@test.com' };
+        const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
+
+        vi.mocked(useQuery)
+            .mockReturnValueOnce(user)
+            .mockReturnValueOnce([])
+            .mockReturnValueOnce(stats)
+            .mockReturnValueOnce([])
+            .mockReturnValueOnce([])
+            .mockReturnValueOnce([])
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce({})
+            .mockReturnValue(undefined);
+
+        // Render with archived tab in URL
+        const { container } = render(
+            <MemoryRouter initialEntries={['/dashboard?tab=archived']}>
+                <UserDashboard
+                    onBack={mockOnBack}
+                    onPostAd={mockOnPostAd}
+                    onEditAd={mockOnEditAd}
+                />
+            </MemoryRouter>
+        );
+
+        // Should redirect to ads tab on mobile
+        await waitFor(() => {
+            const url = new URL(window.location.href);
+            expect(url.searchParams.get('tab')).not.toBe('archived');
+        }, { timeout: 1000 });
     });
 });

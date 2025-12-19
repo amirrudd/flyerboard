@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Header } from "../features/layout/Header";
-import { Sidebar } from "../features/layout/Sidebar";
+import { Sidebar } from "../features/layout/Sidebar/index";
 import { AdsGrid } from "../features/ads/AdsGrid";
 import { useSession } from "@descope/react-sdk";
 // AuthModal removed, using global one from Layout
@@ -121,9 +121,7 @@ export function HomePage() {
   }, [newAdIds, clearNewAdIds]);
 
   return (
-    <div className="bg-white">
-
-
+    <div className="flex flex-col bg-white min-h-full">
       <Header
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -135,41 +133,18 @@ export function HomePage() {
         setSelectedLocation={setSelectedLocation}
       />
 
-      <div className="max-w-[1440px] mx-auto px-4 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 py-6 w-full">
         <div className="flex gap-8 items-start">
-          {/* Sidebar - Sticky on Desktop, Fixed Overlay on Mobile */}
-          {!sidebarCollapsed && (
-            <>
-              {/* Mobile Overlay Backdrop */}
-              <div
-                className="md:hidden fixed inset-0 bg-black/50 z-[60]"
-                onClick={() => setSidebarCollapsed(true)}
-              />
-
-              {/* Sidebar */}
-              <div className={`
-                fixed md:sticky top-0 md:top-[84px] left-0 md:left-auto
-                h-screen md:h-[calc(100vh-84px)]
-                w-64 md:w-64
-                bg-white md:bg-transparent
-                shadow-2xl md:shadow-none
-                overflow-y-auto scrollbar-hide
-                z-[70] md:z-auto
-                flex-shrink-0
-                transition-transform duration-300
-                pt-4 md:pt-0
-              `}>
-                <Sidebar
-                  sidebarCollapsed={sidebarCollapsed}
-                  categories={categories || []}
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={handleSetSelectedCategory}
-                  setSidebarCollapsed={setSidebarCollapsed}
-                  isLoading={isCategoriesLoading}
-                />
-              </div>
-            </>
-          )}
+          <div className="hidden md:block sticky top-21 self-start flex-shrink-0">
+            <Sidebar
+              sidebarCollapsed={sidebarCollapsed}
+              categories={categories || []}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={handleSetSelectedCategory}
+              setSidebarCollapsed={setSidebarCollapsed}
+              isLoading={isCategoriesLoading}
+            />
+          </div>
 
           {/* Main Content - Feed */}
           <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0">
@@ -186,7 +161,6 @@ export function HomePage() {
 
             {/* Load More / Loading Status */}
             <div className="mt-8 flex justify-center">
-
               {status === "CanLoadMore" && (
                 <button
                   onClick={() => loadMore(30)}

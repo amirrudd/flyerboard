@@ -38,6 +38,9 @@ import {
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 
+// Feature flags
+const FEATURE_IDENTITY_VERIFICATION = false; // Set to true when identity verification is ready for production
+
 interface UserDashboardProps {
   onBack: () => void;
   onPostAd: () => void;
@@ -1126,36 +1129,38 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </button>
                   </form>
 
-                  <div className="border-t border-gray-200 pt-6 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Verification</h3>
-                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                          Status: {user.isVerified ? (
-                            <span className="text-primary-600 flex items-center gap-1">
-                              Verified
-                              <img src="/verified-badge.svg" alt="Verified" className="w-16 h-16" />
-                            </span>
-                          ) : (
-                            <span className="text-gray-500">Unverified</span>
-                          )}
-                        </h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {user.isVerified
-                            ? "Your identity has been verified. A badge is displayed on your profile and flyers."
-                            : "Verify your identity to build trust with other users and get a verified badge."}
-                        </p>
+                  {FEATURE_IDENTITY_VERIFICATION && (
+                    <div className="border-t border-gray-200 pt-6 mb-8">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Verification</h3>
+                      <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                        <div>
+                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                            Status: {user.isVerified ? (
+                              <span className="text-primary-600 flex items-center gap-1">
+                                Verified
+                                <img src="/verified-badge.svg" alt="Verified" className="w-16 h-16" />
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">Unverified</span>
+                            )}
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {user.isVerified
+                              ? "Your identity has been verified. A badge is displayed on your profile and flyers."
+                              : "Verify your identity to build trust with other users and get a verified badge."}
+                          </p>
+                        </div>
+                        {!user.isVerified && (
+                          <button
+                            onClick={handleVerifyIdentity}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            Verify Identity
+                          </button>
+                        )}
                       </div>
-                      {!user.isVerified && (
-                        <button
-                          onClick={handleVerifyIdentity}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          Verify Identity
-                        </button>
-                      )}
                     </div>
-                  </div>
+                  )}
 
                   <div className="border-t border-gray-200 pt-6 mb-8">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Notifications</h3>

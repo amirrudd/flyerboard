@@ -55,3 +55,21 @@ description: Feature modules and component map
 ## src/services/notifications
 - **webPushService.ts**: Web Push API integration.
 - **types.ts**: Notification service interface.
+
+## Feature Flags
+
+Features that are not yet live are controlled by feature flags:
+
+| Flag | Location | Status | Description |
+|------|----------|--------|-------------|
+| `FEATURE_IDENTITY_VERIFICATION` | `src/features/dashboard/UserDashboard.tsx` | `false` | Identity verification for users (verify button in Profile tab) |
+
+### Enabling Identity Verification for Production
+
+When ready to launch identity verification:
+
+1. Open `src/features/dashboard/UserDashboard.tsx`
+2. Find `const FEATURE_IDENTITY_VERIFICATION = false;` (near top of file, after imports)
+3. Change to `const FEATURE_IDENTITY_VERIFICATION = true;`
+4. Test the feature in staging environment
+5. Deploy to production

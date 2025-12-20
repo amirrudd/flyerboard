@@ -219,9 +219,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, []);
 
-  // Redirect invalid tabs on mobile (archived/profile need sidebar nav)
+  // Redirect invalid tabs on mobile (archived needs sidebar nav for batch actions)
   useEffect(() => {
-    if (isMobile && (activeTab === 'archived' || activeTab === 'profile')) {
+    if (isMobile && activeTab === 'archived') {
       setActiveTab('ads');
       setSearchParams({ tab: 'ads' }, { replace: true });
     }

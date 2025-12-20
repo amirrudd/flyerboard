@@ -5,17 +5,20 @@ description: Feature modules and component map
 
 # Features Map
 
+**Last Updated**: 2025-12-20
+
 ## src/features/ads
-- **AdsGrid**: Main grid display of ads with infinite scroll.
-- **AdDetail**: Single ad view with images, map, seller info.
+- **AdsGrid**: Main grid display of flyers with infinite scroll.
+- **AdDetail**: Single flyer view with images, map, seller info.
 - **PostAd**: Form to create new listings with direct R2 image upload.
-- **AdMessages**: Chat interface for an ad.
+- **AdMessages**: Chat interface for a flyer.
 
 ## src/features/dashboard
 - **UserDashboard**: User's personal area. Tabs for:
-  - My Listings (manage active/inactive ads)
-  - Favorites (saved ads)
+  - My Listings (manage active/inactive flyers)
+  - Favorites (saved flyers)
   - Profile (stats, verification, profile image upload)
+  - Settings (notification preferences)
 
 ## src/features/layout
 - **Layout**: Main app shell.
@@ -26,15 +29,29 @@ description: Feature modules and component map
 - **AddReviewForm**: Form to submit a review.
 
 ## src/features/auth
-- Handles authentication flows (Login/Signup modals).
+- Handles authentication flows (Login/Signup modals via Descope).
+
+## src/features/admin
+- **AdminDashboard**: Admin-only management interface. Tabs for:
+  - Users (search, filter, activate/deactivate, verify)
+  - Flyers (search, filter, delete images, soft-delete)
+  - Reports (view/resolve user reports)
+  - Chats (view any chat for moderation)
 
 ## src/features/notifications
-- **EmailNotifications**: Sends personalized HTML emails via Resend when users receive messages
-- **PushNotifications**: Browser push notifications for real-time alerts
+- **ContextualNotificationModal**: Prompts for push notification permissions at key moments.
 
 ## src/components/ui
 - **ImageUpload**: Drag-and-drop image upload with compression and HEIC support.
 - **ImageDisplay**: Lazy-loaded image component that resolves R2 references to URLs.
+- **ImageLightbox**: Full-screen image viewer with navigation.
+- **CircularProgress**: Progress indicator for uploads/compression.
 
 ## src/lib
 - **uploadToR2.ts**: Helper functions for direct R2 uploads with compression and progress tracking.
+- **networkSpeed.ts**: Adaptive compression based on network speed.
+- **displayName.ts**: Privacy-focused display name utilities.
+
+## src/services/notifications
+- **webPushService.ts**: Web Push API integration.
+- **types.ts**: Notification service interface.

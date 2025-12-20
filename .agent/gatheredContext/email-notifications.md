@@ -1,5 +1,7 @@
 # Email Notifications
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 
 Email notifications are sent to users when they receive new chat messages about their flyers. The system uses Resend for reliable email delivery with built-in queueing, batching, and idempotency.

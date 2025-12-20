@@ -1,6 +1,6 @@
 # Authentication Architecture
 
-**Last Updated**: 2025-12-03  
+**Last Updated**: 2025-12-20  
 **Status**: Production-Ready ✅
 
 ## Overview
@@ -144,12 +144,12 @@ const handleAuthGuard = (path: string) => {
 **Standard pattern** used across all protected mutations:
 
 ```typescript
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDescopeUserId } from "./lib/auth";
 
 export const myMutation = mutation({
   handler: async (ctx, args) => {
-    // 1. Get authenticated user ID
-    const userId = await getAuthUserId(ctx);
+    // 1. Get authenticated user ID (via Descope OIDC)
+    const userId = await getDescopeUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to perform this action");
     }
@@ -313,7 +313,7 @@ CONVEX_AUTH_ISSUER=https://api.descope.com/[PROJECT_ID]
 
 ### ✅ DO
 - Use `useSession()` for UI state
-- Use `getAuthUserId()` in backend mutations
+- Use `getDescopeUserId()` in backend mutations
 - Implement ownership checks for user resources
 - Provide clear error messages
 - Use auth guards to prompt login

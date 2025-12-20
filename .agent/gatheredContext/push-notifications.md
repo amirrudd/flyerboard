@@ -1,5 +1,7 @@
 # Push Notifications Context
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 FlyerBoard implements Web Push notifications using a modular, provider-based architecture that allows PWA users to receive notifications when they get new messages. For privacy, notifications show the ad title instead of message content.
 

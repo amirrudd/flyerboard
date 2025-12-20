@@ -5,10 +5,12 @@ description: FlyerBoard project architecture overview
 
 # Architecture
 
+**Last Updated**: 2025-12-20
+
 ## Stack
 - **Frontend**: React 19 + TypeScript + Vite
 - **Backend**: Convex (serverless, real-time)
-- **Auth**: Convex Auth (anonymous auth enabled)
+- **Auth**: Descope (OTP-based authentication via OIDC)
 - **Styling**: TailwindCSS + custom design tokens
 - **Routing**: React Router v7
 - **Testing**: Vitest + React Testing Library
@@ -16,12 +18,14 @@ description: FlyerBoard project architecture overview
 ## Project Structure
 ```
 src/
- features/          # Feature modules (ads, auth, dashboard, layout, reviews)
+ features/          # Feature modules (ads, auth, dashboard, layout, reviews, admin)
  components/        # Shared UI components
  pages/            # Route pages (HomePage, AdDetailPage, etc.)
- context/          # React context (MarketplaceContext)
+ context/          # React context (MarketplaceContext, UserSyncContext)
  lib/              # Utilities and helpers
  content/          # Static content (terms, guidelines)
+ services/         # External service integrations (notifications)
+ hooks/            # Custom React hooks
 
 convex/               # Backend functions and schema
 ```
@@ -33,3 +37,4 @@ convex/               # Backend functions and schema
 - **Client-side caching**: Ads cached by filter combination to prevent reloads
 - **Responsive design**: Mobile-first, sidebar collapses on mobile (<768px)
 - **Route-based code splitting**: React.lazy() for all routes except HomePage to reduce initial bundle size
+- **PWA support**: Installable app with push notifications

@@ -1,5 +1,7 @@
 # Responsive Design Best Practices
 
+**Last Updated**: 2025-12-20
+
 ## Core Principles
 
 ### 1. Mobile-First Approach

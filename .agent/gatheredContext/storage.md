@@ -1,5 +1,7 @@
 # Storage & R2 Integration
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 FlyerBoard uses Cloudflare R2 (S3-compatible) for image storage with direct uploads via presigned URLs.
 

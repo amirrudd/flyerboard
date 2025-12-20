@@ -11,6 +11,10 @@ Before starting any task, check if relevant context exists in `.agent/gatheredCo
 • **Storage/R2/CORS**: Read `storage.md` - covers R2 integration, presigned URLs, CORS configuration
 • **UI components/patterns**: Read `ui-patterns.md` - covers component usage, loading states, modals, forms
 • **Database/Convex queries**: Read `database.md` - covers schema, query patterns, soft deletes, authentication
+• **Authentication**: Read `authentication.md` - covers Descope integration, user sync, token handling
+• **Notifications**: Read `email-notifications.md` and `push-notifications.md` - covers notification systems
+• **Admin features**: Read `admin.md` - covers admin dashboard, user/flyer management
+• **Responsive design**: Read `responsive-design-best-practices.md` - covers mobile-first patterns
 If working on a feature that touches multiple areas, read all relevant context files before planning.
 ## Development Rules
 For every task, the following rules must always be respected:
@@ -42,7 +46,33 @@ For every task, the following rules must always be respected:
 • ALWAYS verify user authentication in mutations: `await getDescopeUserId(ctx)`
 • ALWAYS verify ownership before modifications
 • Never expose user data without auth checks
-### Authentication
+### Database Migrations
 • Any DB schema update requires carefull migration consideration for existing users in prod.
+
+### Mobile UX Patterns
+• Use Tailwind `md:` prefix for desktop-only features (sidebar nav, sticky positioning)
+• Hide complex navigation on mobile if bottom nav provides same functionality
+• Test mobile viewports (< 768px) for scroll behavior and layout issues
+• Use `MemoryRouter` with `initialEntries` for testing URL-based navigation
+• Validate that mobile users can't access desktop-only tabs via URL manipulation
+
+### Scroll Behavior
+• Use `useRef` for scroll intent tracking to prevent race conditions between competing scroll effects
+• Priority-based scroll handling: explicit intents (back button) take priority over auto-scroll
+• Check for external navigation before scrolling on mount to respect browser scroll restoration
+• Avoid `behavior: 'instant'` - use `'smooth'` for better UX unless immediate scroll is critical
+• When multiple useEffects manage scroll, coordinate them with a single source of truth (ref or state)
+
+### Image Upload in Edit Mode
+• When editing, filter existing images to exclude deleted ones: `existingImages.filter(img => currentImages.includes(img))`
+• Keep existing image storage keys separate from new upload keys
+• Never pass data URLs or base64 to mutations - only storage keys
+• Verify compressed files array contains only NEW files, not existing images
+
+### Test Coverage
+• Always add tests when fixing bugs or adding features
+• Test mobile-specific behavior with `matchMedia` mocks
+• Test URL navigation with `MemoryRouter` for query param handling
+• Update test count in comments when adding new tests
 
 Use only this phone number 0466666666 for testing

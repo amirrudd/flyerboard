@@ -5,6 +5,8 @@ description: Technology stack and dependencies
 
 # Tech Stack
 
+**Last Updated**: 2025-12-20
+
 ## Frontend
 - **React 19** - UI library
 - **TypeScript** - Type safety
@@ -14,7 +16,7 @@ description: Technology stack and dependencies
 
 ## Backend
 - **Convex** - Serverless backend with real-time subscriptions
-- **Convex Auth** - Authentication (anonymous auth enabled)
+- **Descope** - Authentication provider (OTP-based)
 
 ## Key Libraries
 - **lucide-react** - Icon library
@@ -25,6 +27,7 @@ description: Technology stack and dependencies
 - **react-markdown** + **remark-gfm** - Markdown rendering
 - **clsx** + **tailwind-merge** - Class name utilities
 - **Resend** - Email notification delivery
+- **web-push** - Push notification delivery
 
 ## Testing
 - **Vitest** - Test runner

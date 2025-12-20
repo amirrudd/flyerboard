@@ -12,6 +12,30 @@ Comprehensive guide to the hybrid Descope + Convex authentication system, includ
 - Troubleshooting guide
 - Row-level security (RLS) implementation
 
+### [Descope Convex Integration](./descope-convex-integration.md)
+Details on how Descope users are synced to Convex, including:
+- User sync mechanism
+- Privacy-focused phone handling
+- Environment variable setup
+
+### [Push Notifications](./push-notifications.md)
+Web Push notification setup and usage:
+- VAPID key generation
+- Service worker configuration
+- Mobile platform support
+
+### [Email Notifications Update](./email-notifications-update.md)
+Email notification implementation changelog:
+- Resend integration
+- Batching system
+- User preferences
+
+### [R2 CORS Setup](./r2-cors-setup.md)
+Cloudflare R2 CORS configuration for image uploads.
+
+### [Storage Migration](./storage-migration.md)
+Guide for migrating from Convex storage to R2.
+
 ## Quick Links
 
 ### For Developers
@@ -27,14 +51,16 @@ Comprehensive guide to the hybrid Descope + Convex authentication system, includ
 
 ## Related Files
 
-### Project Rules (`.agent/rules/`)
+### Project Context (`.agent/gatheredContext/`)
 - `authentication.md` - Development rules for authentication
 - `architecture.md` - Overall project architecture
 - `tech-stack.md` - Technology stack details
+- `database.md` - Database patterns and queries
 
 ### Source Code
 - `src/lib/useDescopeAuth.ts` - Token bridge implementation
-- `convex/auth.ts` - Backend auth configuration
+- `convex/auth.config.ts` - Backend auth configuration
+- `convex/lib/auth.ts` - `getDescopeUserId()` helper
 - `convex/schema.ts` - Database schema with auth tables
 
 ## Contributing
@@ -48,4 +74,4 @@ When adding new documentation:
 
 ## Version
 
-Last updated: 2025-12-03
+Last updated: 2025-12-20

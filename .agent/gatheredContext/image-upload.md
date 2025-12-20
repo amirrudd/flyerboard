@@ -1,5 +1,7 @@
 # Image Upload & Compression
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 FlyerBoard uses adaptive, non-blocking image compression to optimize upload times while maintaining consistent quality for all viewers.
 

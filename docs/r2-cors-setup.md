@@ -1,5 +1,7 @@
 # Cloudflare R2 CORS Configuration
 
+**Last Updated**: 2025-12-20
+
 ## Problem
 When uploading images directly to R2 using presigned URLs, browsers send CORS preflight requests (OPTIONS) that must be allowed by the R2 bucket's CORS policy. Without proper CORS configuration, uploads fail with a 403 error.
 

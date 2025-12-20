@@ -5,17 +5,19 @@ description: State management and data flow
 
 # State Management
 
+**Last Updated**: 2025-12-20
+
 ## Global State (MarketplaceContext)
 - **Filters**: selectedCategory, searchQuery, selectedLocation.
 - **UI State**: sidebarCollapsed.
-- **Data**: categories (fetched once), ds (paginated).
+- **Data**: categories (fetched once), ads (paginated).
 
 ## Data Fetching (Convex)
 - **Hooks**: useQuery (subscriptions), useMutation (changes), usePaginatedQuery (infinite scroll).
 - **Real-time**: UI updates automatically when backend data changes.
 
 ## Caching Strategy
-- **Client-side Cache**: dsCache (Map) in context.
+- **Client-side Cache**: adsCache (Map) in context.
 - **Key**: Combination of filters (category_search_location).
 - **Behavior**: Serves cached ads immediately while fetching fresh data to prevent UI flicker.
 

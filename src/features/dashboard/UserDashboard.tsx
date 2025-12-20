@@ -210,6 +210,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
+      // Clear any open message views when navigating via URL (e.g., bottom nav)
+      setShowMessagesForAd(null);
+      setSelectedAdId(null);
     }
   }, [searchParams, activeTab]);
 

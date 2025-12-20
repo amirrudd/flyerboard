@@ -1,5 +1,7 @@
 # Admin Patterns & Dashboard
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 
 The admin dashboard provides a centralized interface for managing users, flyers, reports, and monitoring chats. Access is restricted to users with the `isAdmin` flag set to `true`.

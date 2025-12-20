@@ -396,14 +396,14 @@ test('user can post an ad', async ({ page }) => {
 
 ---
 
-### 5. **Progressive Web App (PWA)** ⭐⭐
-**Status: Not Implemented**
+### 5. **Progressive Web App (PWA)** ⭐⭐⭐⭐
+**Status: Implemented** ✅
 
-**Missing:**
-- Service worker for offline support
-- Web app manifest
-- Install prompts
-- Push notifications
+**Implemented:**
+- Service worker for installability and push notifications
+- Web app manifest with icons
+- Home screen installation support
+- Push notifications for new messages
 
 **Recommendation:**
 ```json
@@ -610,7 +610,7 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 | Testing (E2E) | ✅ Recommended | ❌ Missing | ⚠️ |
 | Error Boundaries | ✅ Essential | ✅ Implemented | ✅ |
 | Error Tracking | ✅ Essential | ❌ Missing | ⚠️ |
-| PWA | ⚡ Optional | ❌ Missing | ℹ️ |
+| PWA | ⚡ Optional | ✅ Implemented | ✅ |
 | i18n | ⚡ Optional | ❌ Missing | ℹ️ |
 | CSP | ✅ Recommended | ❌ Missing | ⚠️ |
 | Rate Limiting | ✅ Essential | ❌ Missing | ⚠️ |

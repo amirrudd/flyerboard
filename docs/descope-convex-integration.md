@@ -1,5 +1,7 @@
 # Descope + Convex Integration Summary
 
+**Last Updated**: 2025-12-20
+
 ## Problem
 After migrating from Convex Auth to Descope, users were not being created in the Convex `users` table, causing authentication failures for R2 uploads and other operations.
 

@@ -1,5 +1,7 @@
 # Database Patterns & Convex
 
+**Last Updated**: 2025-12-20
+
 ## Schema Overview
 
 ### Core Tables

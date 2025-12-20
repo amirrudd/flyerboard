@@ -1,12 +1,14 @@
 # Progressive Web App (PWA)
 
+**Last Updated**: 2025-12-20
+
 ## Overview
-FlyerBoard implements PWA capabilities to enable home screen installation and app-like experience on mobile devices.
+FlyerBoard implements PWA capabilities to enable home screen installation, app-like experience, and push notifications on mobile devices.
 
 ## Implementation Status
 ✅ **Phase 1 Complete**: Basic PWA setup (installable app)  
 ⏳ **Phase 2 Pending**: Static asset caching (optional)  
-⏳ **Phase 3 Pending**: Push notifications (future)
+✅ **Phase 3 Complete**: Push notifications
 
 ---
 
@@ -29,11 +31,10 @@ Defines app metadata for browsers:
 ### Service Worker
 **File**: `public/sw.js`
 
-Minimal service worker for installability (no offline caching):
-```javascript
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
-```
+Handles:
+- PWA installability (install/activate events)
+- Push notification display (push event)
+- Notification click handling (notificationclick event)
 
 **No fetch handler** - all requests go to network to maintain real-time data.
 
@@ -82,6 +83,11 @@ When launched from home screen:
 - Orange status bar (theme color)
 - Splash screen on iOS
 
+### Push Notifications
+- Receive alerts when new messages arrive
+- Privacy-focused: shows ad title, not message content
+- iOS 16.4+ required (PWA must be installed)
+
 ---
 
 ## Design Decisions
@@ -95,11 +101,15 @@ FlyerBoard is a real-time marketplace. Offline functionality would:
 **Decision**: Prioritize real-time accuracy over offline capability.
 
 ### Minimal Service Worker
-Only implements install/activate handlers for PWA installability. No fetch handler means:
+Implements handlers for:
+- install/activate: PWA installability
+- push: Notification display
+- notificationclick: Open app to relevant chat
+
+No fetch handler means:
 - All requests go to network
 - No cache management complexity
 - Real-time data guaranteed
-- Future-ready for push notifications
 
 ---
 
@@ -121,6 +131,8 @@ Only implements install/activate handlers for PWA installability. No fetch handl
 2. Install to home screen
 3. Launch from home screen
 4. Verify standalone mode (no browser UI)
+5. Enable push notifications
+6. Send yourself a message, verify notification appears
 
 ### Lighthouse Audit
 ```bash
@@ -132,20 +144,6 @@ Expected: ✅ Installable, ✅ PWA optimized
 
 ---
 
-## Future Enhancements
-
-### Phase 2: Static Asset Caching
-- Cache JS/CSS/fonts for faster repeat visits
-- Stale-while-revalidate for images
-- Reduces data usage
-
-### Phase 3: Push Notifications
-- Notify users of new messages
-- Alert on flyer status changes
-- Re-engagement campaigns
-
----
-
 ## Related Documentation
-- [Architecture Review](file:///Users/amir.rudd/flyerBoard/FlyerBoard/.agent/gatheredContext/architecture-review.md) - PWA section
+- [Push Notifications](file:///Users/amir.rudd/flyerBoard/FlyerBoard/.agent/gatheredContext/push-notifications.md) - Push notification details
 - [UI Patterns](file:///Users/amir.rudd/flyerBoard/FlyerBoard/.agent/gatheredContext/ui-patterns.md) - Mobile-first design

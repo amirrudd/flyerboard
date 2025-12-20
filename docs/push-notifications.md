@@ -1,5 +1,7 @@
 # Web Push Notification Implementation - Documentation
 
+**Last Updated**: 2025-12-20
+
 ## Overview
 This document provides instructions for setting up and using the Web Push notification system in FlyerBoard.
 

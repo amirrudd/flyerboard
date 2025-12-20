@@ -5,6 +5,8 @@ description: Rules and architecture for Authentication (Descope + Convex)
 
 # Authentication Architecture & Rules
 
+**Last Updated**: 2025-12-20
+
 This project uses a **Hybrid Authentication** approach:
 - **Identity Provider**: [Descope](https://descope.com) handles user identity, OTP verification, and session management.
 - **Data Authorization**: [Convex](https://convex.dev) handles data access control using tokens issued by Descope.

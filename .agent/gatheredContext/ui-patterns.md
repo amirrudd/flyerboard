@@ -1,5 +1,7 @@
 # UI Patterns & Components
 
+**Last Updated**: 2025-12-20
+
 ## Design Philosophy
 
 ### Mobile-First

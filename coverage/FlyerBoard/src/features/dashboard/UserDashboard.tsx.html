@@ -2291,14 +2291,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 <span class="cstat-no" title="statement not covered" >                          &lt;div className="flex items-start gap-4 flex-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;img</span>
 <span class="cstat-no" title="statement not covered" >                              src={chat.ad?.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&amp;h=300&amp;fit=crop'}</span>
-<span class="cstat-no" title="statement not covered" >                              alt={chat.ad?.title || "Ad"}</span>
+<span class="cstat-no" title="statement not covered" >                              alt={chat.ad?.title || "Flyer"}</span>
 <span class="cstat-no" title="statement not covered" >                              className="w-16 h-16 object-cover rounded-lg"</span>
 <span class="cstat-no" title="statement not covered" >                            /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;div className="flex-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                              &lt;div className="flex items-start justify-between mb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                  &lt;h3 className="font-semibold text-gray-800 mb-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                    {chat.ad?.title || "Deleted Ad"}</span>
+<span class="cstat-no" title="statement not covered" >                                    {chat.ad?.title || "Deleted Flyer"}</span>
 <span class="cstat-no" title="statement not covered" >                                  &lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                  {!chat.ad?.isActive &amp;&amp; chat.ad &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full mb-1"&gt;</span>
@@ -2566,13 +2566,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
         &lt;/div&gt;
       &lt;/div&gt;
 &nbsp;
-      {/* Delete Ad Confirmation Modal */}
+      {/* Delete Flyer Confirmation Modal */}
       {<span class="branch-0 cbranch-no" title="branch not covered" >showDeleteConfirm &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="bg-white rounded-lg p-6 w-full max-w-md"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h3 className="text-lg font-semibold text-gray-800 mb-4"&gt;Delete Ad&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h3 className="text-lg font-semibold text-gray-800 mb-4"&gt;Delete Flyer&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-gray-600 mb-6"&gt;</span>
-              Are you sure you want to delete this ad? This action cannot be undone.
+              Are you sure you want to delete this flyer? This action cannot be undone.
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;button</span>

@@ -72,7 +72,7 @@ export function ImageLightbox({
             {/* Close button */}
             <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-10"
+                className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-lg border border-white/20 backdrop-blur-sm z-10"
                 aria-label="Close lightbox"
             >
                 <X className="w-6 h-6" />
@@ -94,7 +94,7 @@ export function ImageLightbox({
                     <ImageDisplay
                         imageRef={images[currentIndex]}
                         alt={`${altPrefix} ${currentIndex + 1}`}
-                        className="max-w-full max-h-full object-contain"
+                        className="w-full h-full object-contain"
                     />
                 </div>
 

@@ -87,10 +87,10 @@ export function ImageLightbox({
 
             {/* Main image container */}
             <div
-                className="relative w-full h-full flex items-center justify-center p-4 sm:p-8"
+                className="relative w-full h-full flex items-center justify-center px-4 sm:px-8 pt-16 pb-28 sm:pb-32"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
                     <ImageDisplay
                         imageRef={images[currentIndex]}
                         alt={`${altPrefix} ${currentIndex + 1}`}
@@ -104,7 +104,7 @@ export function ImageLightbox({
                         <button
                             onClick={handlePrevious}
                             disabled={currentIndex === 0}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-lg border border-white/20 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Previous image"
                         >
                             <ChevronLeft className="w-6 h-6" />
@@ -112,7 +112,7 @@ export function ImageLightbox({
                         <button
                             onClick={handleNext}
                             disabled={currentIndex === images.length - 1}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-lg border border-white/20 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Next image"
                         >
                             <ChevronRight className="w-6 h-6" />
@@ -133,8 +133,8 @@ export function ImageLightbox({
                                     onNavigate(index);
                                 }}
                                 className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentIndex
-                                        ? "border-primary-600 ring-2 ring-primary-600 ring-opacity-50"
-                                        : "border-white/30 hover:border-white/60"
+                                    ? "border-primary-600 ring-2 ring-primary-600 ring-opacity-50"
+                                    : "border-white/30 hover:border-white/60"
                                     }`}
                             >
                                 <ImageDisplay

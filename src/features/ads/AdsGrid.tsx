@@ -91,8 +91,9 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         /* Listings Grid with CSS transitions for better performance */
         <div className={`listings-grid ${gridClasses}`}>
-          {ads.map((ad) => {
+          {ads.map((ad, index) => {
             const isNew = newAdIds.has(ad._id);
+            const isPriority = index < 6; // First 6 images are priority
             return (
               <div
                 key={ad._id}
@@ -105,6 +106,7 @@ export const AdsGrid = memo(function AdsGrid({
                     src={ad.images[0] || ''}
                     alt={ad.title}
                     className="w-full h-full object-contain"
+                    priority={isPriority}
                   />
                   {ad.images.length > 1 && (
                     <div className="absolute bottom-2 right-2 bg-black/60 text-white px-1.5 py-0.5 rounded text-xs font-medium">

@@ -15,9 +15,10 @@ interface ImageDisplayProps {
   fallback?: string;
   variant?: "small" | "large";
   onError?: () => void;
+  priority?: boolean; // For above-the-fold images (first 6)
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "", onError }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError, priority = false }: ImageDisplayProps) {
   const [hasError, setHasError] = useState(false);
 
   // Use imageRef if provided, otherwise fall back to src
@@ -63,6 +64,8 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError }: Im
       wrapperClassName={className}
       style={{ width: '100%', height: '100%', display: 'block' }}
       effect="opacity"
+      threshold={300} // Start loading 300px before entering viewport
+      visibleByDefault={priority} // Skip lazy loading for priority images
       onError={handleError}
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />

@@ -7,7 +7,7 @@ import { AdsGrid } from "../features/ads/AdsGrid";
 import { useSession } from "@descope/react-sdk";
 // AuthModal removed, using global one from Layout
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
@@ -120,6 +120,30 @@ export function HomePage() {
     }
   }, [newAdIds, clearNewAdIds]);
 
+  // Infinite scroll with IntersectionObserver
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Only load if intersecting and can load more
+        if (entries[0].isIntersecting && status === "CanLoadMore") {
+          loadMore(30);
+        }
+      },
+      {
+        rootMargin: '500px', // Load 500px before reaching sentinel
+        threshold: 0.1
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [status, loadMore]);
+
   return (
     <div className="flex flex-col bg-white min-h-full">
       <Header
@@ -159,16 +183,20 @@ export function HomePage() {
               newAdIds={newAdIds}
             />
 
-            {/* Load More / Loading Status */}
-            <div className="mt-8 flex justify-center">
-              {status === "CanLoadMore" && (
-                <button
-                  onClick={() => loadMore(30)}
-                  className="px-6 py-2 bg-white border border-neutral-200 text-neutral-600 rounded-full hover:bg-neutral-50 hover:border-neutral-300 transition-all shadow-sm"
-                >
-                  Load More Ads
-                </button>
+
+            {/* Infinite scroll sentinel and loading states */}
+            <div className="mt-8 flex flex-col items-center">
+              {/* Sentinel element for IntersectionObserver */}
+              <div ref={loadMoreSentinelRef} className="h-4" />
+
+              {/* Loading spinner when loading more */}
+              {status === "LoadingMore" && (
+                <div className="py-4">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+                </div>
               )}
+
+              {/* End of results */}
               {status === "Exhausted" && ads && ads.length > 0 && (
                 <div className="text-center py-8">
                   <p className="text-neutral-400 text-sm">End of the Board</p>

@@ -44,7 +44,7 @@ export async function uploadImageToR2(
         maxSizeMB: settings.maxSizeMB,
         maxWidthOrHeight: 2048, // Preserve resolution, prevent downscaling
         useWebWorker: true,
-        fileType: 'image/webp',
+        fileType: 'image/webp', // WebP format provides progressive-like loading
         initialQuality: settings.quality,
     });
 
@@ -141,7 +141,7 @@ export async function compressImage(
         maxSizeMB: 10, // Safety net, won't constrain normal images
         maxWidthOrHeight: 2048, // Preserve resolution for preview
         useWebWorker: true,
-        fileType: 'image/webp',
+        fileType: 'image/webp', // WebP format provides progressive-like loading
         initialQuality: 0.88, // Balanced quality for crisp display
     });
 

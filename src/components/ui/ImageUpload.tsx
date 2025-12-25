@@ -157,6 +157,7 @@ export function ImageUpload({
       const settings = compressionSettings || { quality: 0.88, maxSizeMB: 10, label: 'Balanced' };
 
       // Compress and convert to WebP (handles HEIC/HEIF automatically)
+      // WebP format provides progressive-like loading inherently
       const compressedFile = await imageCompression(file, {
         maxSizeMB: settings.maxSizeMB,
         maxWidthOrHeight: 2048, // Preserve resolution, prevent downscaling

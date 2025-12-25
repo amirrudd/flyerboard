@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Search, Trash2, Eye, X, Image as ImageIcon } from "lucide-react";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { formatPrice } from "../../lib/priceFormatter";
 
 export function FlyersTab() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -154,7 +155,7 @@ export function FlyersTab() {
                                                 {flyer.description}
                                             </p>
                                             <div className="flex items-center gap-3 text-sm text-gray-600">
-                                                <span className="font-bold text-primary-600">${flyer.price}</span>
+                                                <span className="font-bold text-primary-600">{formatPrice(flyer.price)}</span>
                                                 <span>📍 {flyer.location}</span>
                                                 <span>👁️ {flyer.views} views</span>
                                             </div>

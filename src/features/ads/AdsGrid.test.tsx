@@ -118,4 +118,46 @@ describe('AdsGrid', () => {
 
         expect(screen.getByText('No Flyers Found')).toBeInTheDocument();
     });
+
+    it('should display "Free" for ads with price 0 and formatted prices for others', () => {
+        const adsWithFree = [
+            {
+                _id: 'ad1' as Id<'ads'>,
+                title: 'Free Item',
+                description: 'Take it away',
+                price: 0,
+                location: 'Sydney',
+                categoryId: 'cat1' as Id<'categories'>,
+                images: ['img1.jpg'],
+                userId: 'user1' as Id<'users'>,
+                isActive: true,
+                views: 5,
+            },
+            {
+                _id: 'ad2' as Id<'ads'>,
+                title: 'Paid Item',
+                description: 'For sale',
+                price: 1500,
+                location: 'Melbourne',
+                categoryId: 'cat2' as Id<'categories'>,
+                images: ['img2.jpg'],
+                userId: 'user2' as Id<'users'>,
+                isActive: true,
+                views: 10,
+            },
+        ];
+
+        render(
+            <AdsGrid
+                ads={adsWithFree}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('Free')).toBeInTheDocument();
+        expect(screen.getByText('$1,500')).toBeInTheDocument();
+    });
 });

@@ -21,6 +21,7 @@ import { ContextualNotificationModal } from "../../components/notifications/Cont
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
 import { ImageLightbox } from "../../components/ui/ImageLightbox";
+import { formatPriceWithCurrency } from "../../lib/priceFormatter";
 
 
 interface AdDetailProps {
@@ -406,7 +407,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-2xl font-bold text-neutral-800 mb-2">{displayAd.title}</h1>
-                  <p className="text-3xl font-bold text-primary-600">${displayAd.price.toLocaleString()} AUD</p>
+                  <p className="text-3xl font-bold text-primary-600">{formatPriceWithCurrency(displayAd.price)}</p>
                 </div>
                 <div className="text-right text-sm text-neutral-500">
                   {ad ? (

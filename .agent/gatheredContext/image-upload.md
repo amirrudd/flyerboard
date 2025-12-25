@@ -1,32 +1,35 @@
 # Image Upload & Compression
 
-**Last Updated**: 2025-12-20
+**Last Updated**: 2025-12-25
 
 ## Overview
-FlyerBoard uses adaptive, non-blocking image compression to optimize upload times while maintaining consistent quality for all viewers.
+FlyerBoard uses adaptive, non-blocking image compression to optimize upload times while preserving image resolution and quality for all viewers.
 
 ## Key Principles
 
-### 1. Quality Consistency
-**Rule**: Image quality is ALWAYS 90% WebP, regardless of uploader's connection speed.
+### 1. Resolution Preservation
+**Rule**: Image resolution is PRESERVED up to 2048px on the longest side, regardless of network speed.
 
 **Rationale**: 
-- Ads must look good for all viewers, not just those with fast connections
-- Someone on slow 2G shouldn't upload low-quality images that look bad to everyone
-- 90% WebP ≈ 95-98% JPEG quality - excellent for product photos
+- Ads must look sharp and clear for all viewers
+- Downscaling resolution causes blurry images that look bad to everyone
+- 2048px is sufficient for high-quality display on all devices
+- Modern connections can handle 2-4MB files without issue
 
-### 2. Adaptive File Size
-**Rule**: Only the compression aggressiveness (maxSizeMB) varies based on network speed.
+### 2. Adaptive Quality
+**Rule**: Quality varies (85-92%) based on network speed to optimize upload time while maintaining visual quality.
 
 **Settings**:
-- Fast (>5 Mbps): 1.5MB max - less aggressive compression
-- Medium (1-5 Mbps): 1MB max - standard compression  
-- Slow (<1 Mbps): 0.8MB max - aggressive compression
+- Fast (>5 Mbps): 92% quality, 10MB max (safety net)
+- Medium (1-5 Mbps): 88% quality, 10MB max (safety net)
+- Slow (<1 Mbps): 85% quality, 10MB max (safety net)
 
 **Rationale**:
-- Fast connections: Larger files upload quickly, so save compression time
-- Slow connections: Smaller files worth the extra compression time
-- Goal: Minimize total time (compression + upload)
+- Fast connections: Higher quality, files upload quickly
+- Slow connections: Slightly lower quality to reduce upload time
+- All settings preserve resolution - quality adjustment is subtle
+- 10MB limit acts as safety net, won't constrain normal images (typically 1.5-4MB)
+- Goal: Sharp images with reasonable upload times
 
 ### 3. Non-Blocking UX
 **Rule**: Images appear instantly, compression happens in background.
@@ -88,10 +91,11 @@ interface ImageState {
 ```typescript
 const settings = await getOptimalCompressionSettings();
 const compressedFile = await imageCompression(file, {
-  maxSizeMB: settings.maxSizeMB,  // Adaptive: 0.8-1.5MB
-  useWebWorker: true,              // Non-blocking
-  fileType: 'image/webp',          // Optimal format
-  initialQuality: settings.quality, // Always 0.9 (90%)
+  maxSizeMB: settings.maxSizeMB,    // 10MB safety net (won't constrain normal images)
+  maxWidthOrHeight: 2048,           // Preserve resolution
+  useWebWorker: true,               // Non-blocking
+  fileType: 'image/webp',           // Optimal format
+  initialQuality: settings.quality, // Adaptive: 0.85-0.92
 });
 ```
 
@@ -102,21 +106,23 @@ const compressedFile = await imageCompression(file, {
 - **Medium images (1-5MB)**: ~1-3s
 - **Large images (5-10MB)**: ~2-5s
 
-**Note**: Times vary by device CPU and image complexity.
+**Note**: Times vary by device CPU and image complexity. Resolution is preserved (max 2048px).
 
 ### Upload Time (after compression)
-- **Fast WiFi (10 Mbps)**: 0.5-1.5MB → ~1-2s
-- **4G (5 Mbps)**: 0.5-1.5MB → ~1-3s
-- **3G (1 Mbps)**: 0.5-1MB → ~4-8s
-- **2G (0.25 Mbps)**: 0.5-0.8MB → ~16-25s
+- **Fast WiFi (10 Mbps)**: 2-4MB → ~2-4s
+- **4G (5 Mbps)**: 2-4MB → ~3-6s
+- **3G (1 Mbps)**: 1-2MB → ~8-16s
+- **2G (0.25 Mbps)**: 1-2MB → ~32-64s
 
 ### Total Time Optimization
-Example: 5MB original image
+Example: 7.8MB iPhone photo (3024x4032 pixels)
 
-| Connection | Settings | Compress | Upload | Total |
-|------------|----------|----------|--------|-------|
-| Fast WiFi (10 Mbps) | 1.2MB @ 90% | 2s | 1s | **3s** ✅ |
-| 3G (1 Mbps) | 0.7MB @ 90% | 3s | 5.6s | **8.6s** ✅ |
+| Connection | Settings | Result Size | Compress | Upload | Total |
+|------------|----------|-------------|----------|--------|-------|
+| Fast WiFi (10 Mbps) | 2048px @ 92% | ~3.5MB | 3s | 3s | **6s** ✅ |
+| 3G (1 Mbps) | 2048px @ 85% | ~2MB | 4s | 16s | **20s** ✅ |
+
+**Key Improvement**: Images maintain full resolution (2048px) instead of being downscaled to 430px, resulting in sharp, clear photos.
 
 ## Common Patterns
 

@@ -92,7 +92,7 @@ describe('PostAd', () => {
 
         // Fill form
         fireEvent.change(screen.getByPlaceholderText('Enter a descriptive title'), { target: { value: 'Test Ad' } });
-        fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '100' } });
+        fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '100' } });
 
         // Handle Location Selection
         const locationInput = screen.getByPlaceholderText('Enter suburb or postcode');
@@ -302,5 +302,99 @@ describe('PostAd', () => {
         //   images.includes(imgKey)
         // );
         // This test passes if the component renders without error, confirming the logic exists
+    });
+
+    it('should only accept whole numbers in price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Valid whole numbers should be accepted
+        fireEvent.change(priceInput, { target: { value: '100' } });
+        expect(priceInput.value).toBe('100');
+
+        fireEvent.change(priceInput, { target: { value: '0' } });
+        expect(priceInput.value).toBe('0');
+
+        fireEvent.change(priceInput, { target: { value: '999999999' } });
+        expect(priceInput.value).toBe('999999999');
+    });
+
+    it('should reject decimal values in price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Set initial valid value
+        fireEvent.change(priceInput, { target: { value: '100' } });
+        expect(priceInput.value).toBe('100');
+
+        // Try to enter decimal - should be rejected, value stays at 100
+        fireEvent.change(priceInput, { target: { value: '100.50' } });
+        expect(priceInput.value).toBe('100');
+
+        fireEvent.change(priceInput, { target: { value: '0.99' } });
+        expect(priceInput.value).toBe('100');
+    });
+
+    it('should reject leading zeros in price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Try to enter leading zeros - should be rejected
+        fireEvent.change(priceInput, { target: { value: '00' } });
+        expect(priceInput.value).toBe('');
+
+        fireEvent.change(priceInput, { target: { value: '0123' } });
+        expect(priceInput.value).toBe('');
+
+        fireEvent.change(priceInput, { target: { value: '000000' } });
+        expect(priceInput.value).toBe('');
+    });
+
+    it('should reject non-numeric characters in price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Set initial valid value
+        fireEvent.change(priceInput, { target: { value: '100' } });
+        expect(priceInput.value).toBe('100');
+
+        // Try to enter letters - should be rejected
+        fireEvent.change(priceInput, { target: { value: 'abc' } });
+        expect(priceInput.value).toBe('100');
+
+        fireEvent.change(priceInput, { target: { value: '100abc' } });
+        expect(priceInput.value).toBe('100');
+    });
+
+    it('should reject values exceeding maximum price', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Try to enter value over max (999999999)
+        fireEvent.change(priceInput, { target: { value: '9999999999' } });
+        expect(priceInput.value).toBe('');
+
+        // Max value should be accepted
+        fireEvent.change(priceInput, { target: { value: '999999999' } });
+        expect(priceInput.value).toBe('999999999');
+    });
+
+    it('should allow clearing the price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+
+        // Set a value
+        fireEvent.change(priceInput, { target: { value: '100' } });
+        expect(priceInput.value).toBe('100');
+
+        // Clear the field
+        fireEvent.change(priceInput, { target: { value: '' } });
+        expect(priceInput.value).toBe('');
     });
 });

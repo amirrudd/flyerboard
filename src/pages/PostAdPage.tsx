@@ -8,8 +8,13 @@ export function PostAdPage() {
     const from = location.state?.from || '/';
 
     const handleBack = () => {
-        // Navigate back to origin or default to home
-        navigate(from);
+        // If posting from dashboard, navigate back to dashboard
+        // Otherwise navigate to home to see the newly posted flyer
+        if (from === '/dashboard') {
+            navigate('/dashboard');
+        } else {
+            navigate('/');
+        }
     };
 
     return (

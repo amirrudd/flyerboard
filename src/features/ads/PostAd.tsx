@@ -123,6 +123,29 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
     }));
   };
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Allow empty string (for clearing the field)
+    if (value === '') {
+      setFormData(prev => ({ ...prev, price: '' }));
+      return;
+    }
+
+    // Only allow whole numbers (no decimals, no leading zeros except for "0")
+    // Regex: ^[1-9]\d*$ (starts with 1-9, followed by any digits) OR ^0$ (just "0")
+    const wholeNumberRegex = /^(0|[1-9]\d*)$/;
+
+    if (wholeNumberRegex.test(value)) {
+      const numValue = parseInt(value, 10);
+      // Check max value
+      if (numValue <= 999999999) {
+        setFormData(prev => ({ ...prev, price: value }));
+      }
+    }
+  };
+
+
   const handleCancel = () => {
     onBack();
   };
@@ -328,8 +351,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         setShowNotificationModal(true);
       }
 
-      // Don't call onBack() immediately - let modal show first
-      // Modal will call onBack when it closes
+      // For edits, navigate back immediately
+      // For new posts, let modal handle navigation (it will call onBack)
       if (editingAd) {
         onBack();
       }
@@ -463,19 +486,18 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   Price (AUD) *
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   name="price"
                   value={formData.price}
-                  onChange={handleInputChange}
+                  onChange={handlePriceChange}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                  placeholder="0.00"
-                  min="0"
-                  max="999999999"
-                  step="0.01"
+                  placeholder="0"
+                  pattern="[0-9]*"
                   required
                 />
                 <div className="min-h-[20px] mt-1">
-                  {/* Reserved space for support text */}
+                  <p className="text-xs text-neutral-400">Enter whole numbers only (no decimals)</p>
                 </div>
               </div>
 

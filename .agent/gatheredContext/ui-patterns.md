@@ -1,6 +1,6 @@
 # UI Patterns & Components
 
-**Last Updated**: 2025-12-20
+**Last Updated**: 2025-12-25
 
 ## Design Philosophy
 
@@ -84,15 +84,39 @@ interface ImageUploadProps {
 - Skeleton placeholder
 - Error fallback
 - Handles all image reference types
+- Priority loading for above-the-fold images
+
+**Props**:
+```typescript
+interface ImageDisplayProps {
+  imageRef?: string | null | undefined;  // Preferred: R2 storage reference
+  src?: string;                          // Backward compatibility: direct URL
+  alt: string;                           // Required alt text
+  className?: string;                    // CSS classes
+  onError?: () => void;                  // Error callback
+  priority?: boolean;                    // Skip lazy loading for above-the-fold images
+}
+```
 
 **Usage**:
 ```typescript
+// Standard usage with lazy loading
 <ImageDisplay
   imageRef="r2:flyers/123/abc.webp"
   alt="Product image"
   className="w-full h-full object-cover"
 />
+
+// Priority loading for first visible images (e.g., first 6 in grid)
+<ImageDisplay
+  imageRef={ad.images[0]}
+  alt={ad.title}
+  className="w-full h-full object-contain"
+  priority={index < 6}  // First 6 images load immediately
+/>
 ```
+
+**Performance tip**: Set `priority={true}` for the first 6 images in grids to improve perceived load time.
 
 ### ImageLightbox
 **File**: `src/components/ui/ImageLightbox.tsx`
@@ -100,12 +124,29 @@ interface ImageUploadProps {
 **Purpose**: Full-screen image viewer with navigation and keyboard controls.
 
 **Features**:
-- Full-screen overlay with dark backdrop
+- Full-screen overlay with dark backdrop (`bg-black/95 backdrop-blur-sm`)
 - Keyboard navigation (Arrow keys, Escape)
 - Thumbnail strip for quick navigation
 - Image counter display
-- Touch-friendly navigation buttons
+- Touch-friendly navigation buttons with premium styling:
+  - Semi-transparent black background (`bg-black/50`)
+  - Backdrop blur effect
+  - White border (`border-white/20`)
+  - Shadow and hover effects
 - Prevents body scroll when open
+- Responsive padding for UI elements (top counter, bottom thumbnails)
+
+**Props**:
+```typescript
+interface ImageLightboxProps {
+  images: string[];           // Array of image references
+  currentIndex: number;       // Currently displayed image index
+  isOpen: boolean;           // Lightbox visibility state
+  onClose: () => void;       // Close callback
+  onNavigate: (index: number) => void;  // Navigation callback
+  altPrefix?: string;        // Alt text prefix (default: "Image")
+}
+```
 
 **Usage**:
 ```typescript
@@ -124,11 +165,16 @@ const [currentIndex, setCurrentIndex] = useState(0);
 
 **Integration pattern**:
 ```typescript
-// Make image clickable
+// Make image clickable to open lightbox
 <div onClick={() => setShowLightbox(true)} className="cursor-pointer">
   <ImageDisplay imageRef={images[currentIndex]} alt="..." />
 </div>
 ```
+
+**Styling details**:
+- Close/navigation buttons: `bg-black/50 hover:bg-black/70 border border-white/20 backdrop-blur-sm shadow-lg`
+- Main container: `px-4 sm:px-8 pt-16 pb-28 sm:pb-32` (space for counter and thumbnails)
+- Image display: `w-full h-full object-contain` (maintains aspect ratio)
 
 ### Header
 **File**: `src/features/layout/Header.tsx`

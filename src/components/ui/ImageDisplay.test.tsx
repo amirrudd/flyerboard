@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ImageDisplay } from './ImageDisplay';
 import { useQuery } from 'convex/react';
+import React from 'react';
 
 // Mock convex hooks
 vi.mock('convex/react', () => ({
@@ -43,8 +44,10 @@ vi.mock('react-lazy-load-image-component', () => ({
     },
 }));
 
-// Import React for the mock
-import React from 'react';
+// Mock lucide-react
+vi.mock('lucide-react', () => ({
+    Image: ({ className }: any) => <div data-testid="image-placeholder-icon" className={className} />,
+}));
 
 describe('ImageDisplay', () => {
     beforeEach(() => {
@@ -170,4 +173,78 @@ describe('ImageDisplay', () => {
         const img = screen.getByRole('img', { hidden: true });
         expect(img).toHaveClass(className);
     });
+
+    it('should show skeleton for R2 references that haven\'t been converted yet', () => {
+        const r2Reference = 'r2:flyers/test-id/image.jpg';
+
+        // Mock useQuery to return undefined (still converting)
+        vi.mocked(useQuery).mockReturnValue(undefined);
+
+        render(<ImageDisplay src={r2Reference} alt="R2 Image" className="test-class" />);
+
+        // Should show skeleton while R2 reference is being converted
+        const skeleton = screen.getByLabelText('Loading image');
+        expect(skeleton).toBeInTheDocument();
+        expect(skeleton).toHaveClass('shimmer', 'bg-gray-200', 'test-class');
+    });
+
+    it('should show skeleton for R2 references even if imageUrl is still loading', () => {
+        const r2Reference = 'r2:flyers/test-id/image.jpg';
+
+        // Mock useQuery to return undefined
+        vi.mocked(useQuery).mockReturnValue(undefined);
+
+        render(<ImageDisplay imageRef={r2Reference} alt="R2 Image" />);
+
+        // Should show skeleton, not attempt to load r2: URL
+        const skeleton = screen.getByLabelText('Loading image');
+        expect(skeleton).toBeInTheDocument();
+
+        // Should NOT try to render an image with r2: URL
+        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should show error placeholder when image fails to load', async () => {
+        const src = 'https://example.com/broken.jpg';
+
+        render(<ImageDisplay src={src} alt="Broken Image" className="test-class" />);
+
+        const img = screen.getByRole('img', { hidden: true });
+
+        // Simulate error
+        fireEvent.error(img);
+
+        // Should show error placeholder with icon
+        await waitFor(() => {
+            const placeholder = screen.getByTestId('image-placeholder-icon');
+            expect(placeholder).toBeInTheDocument();
+            expect(placeholder).toHaveClass('w-1/3', 'h-1/3', 'text-gray-300');
+        });
+
+        // Should no longer show the image
+        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should call onError callback and show placeholder when image fails', async () => {
+        const src = 'https://example.com/broken.jpg';
+        const mockOnError = vi.fn();
+
+        render(<ImageDisplay src={src} alt="Broken Image" onError={mockOnError} />);
+
+        const img = screen.getByRole('img', { hidden: true });
+
+        // Simulate error
+        fireEvent.error(img);
+
+        // Should call onError callback
+        await waitFor(() => {
+            expect(mockOnError).toHaveBeenCalled();
+        });
+
+        // Should show error placeholder
+        await waitFor(() => {
+            expect(screen.getByTestId('image-placeholder-icon')).toBeInTheDocument();
+        });
+    });
 });
+// Total tests: 13

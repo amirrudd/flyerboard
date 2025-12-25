@@ -203,8 +203,32 @@ for (const state of states) {
 
 ## Future Enhancements
 
+### Progressive Image Loading
+
+**Status**: ✅ **Phase 1 Complete** - WebP format provides progressive-like loading
+
+**Current Implementation:**
+- All images are compressed to WebP format
+- WebP inherently supports progressive decoding in modern browsers
+- Images load incrementally as data arrives (similar to progressive JPEG)
+- No additional configuration needed
+
+**How it works:**
+- WebP uses VP8/VP9 encoding which supports incremental decoding
+- Browsers render partial image data as it arrives
+- Users see a gradually improving image rather than waiting for full load
+- Especially effective on slower connections
+
+**Phase 2 (Future - LQIP Blur-up):**
+- [ ] Generate tiny blur placeholders (~20x20px @ 50% quality)
+- [ ] Store blur as base64 in database
+- [ ] Show instant blur while full image loads
+- [ ] Smooth transition when full image ready
+- **Estimated effort**: 4-6 hours
+- **Impact**: Dramatic perceived performance boost (like Medium, Pinterest)
+
+**Other Enhancements:**
 - [ ] Manual quality toggle in user settings
-- [ ] Progressive compression (show low-quality preview first)
 - [ ] Batch optimization for multiple images
 - [ ] Responsive image generation (multiple sizes)
 - [ ] Client-side image editing (crop, rotate)

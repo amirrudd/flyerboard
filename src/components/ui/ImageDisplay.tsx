@@ -2,6 +2,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
+import { useState } from "react";
+import { Image as ImageIcon } from "lucide-react";
 
 interface ImageDisplayProps {
   // New prop (preferred)
@@ -16,6 +18,8 @@ interface ImageDisplayProps {
 }
 
 export function ImageDisplay({ imageRef, src, alt, className = "", onError }: ImageDisplayProps) {
+  const [hasError, setHasError] = useState(false);
+
   // Use imageRef if provided, otherwise fall back to src
   const reference = imageRef || src;
 
@@ -28,12 +32,25 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError }: Im
   // Note: imageUrl can be null/undefined while loading or if the ref is invalid.
   const displaySrc = imageUrl || src;
 
-  // Log relevant information for debugging
-  // isStorageId is not defined in the current context, so it's omitted to prevent errors.
-  // Show skeleton while loading
-  if (!displaySrc) {
+  // Handle error state
+  const handleError = () => {
+    setHasError(true);
+    onError?.();
+  };
+
+  // Show skeleton while loading (or if r2: reference hasn't been converted yet)
+  if (!displaySrc || displaySrc.startsWith('r2:')) {
     return (
       <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
+    );
+  }
+
+  // Show placeholder if image failed to load
+  if (hasError) {
+    return (
+      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+        <ImageIcon className="w-1/3 h-1/3 text-gray-300" />
+      </div>
     );
   }
 
@@ -46,7 +63,7 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError }: Im
       wrapperClassName={className}
       style={{ width: '100%', height: '100%', display: 'block' }}
       effect="opacity"
-      onError={onError}
+      onError={handleError}
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
       }

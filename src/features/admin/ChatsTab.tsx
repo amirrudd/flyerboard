@@ -4,6 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { MessageSquare, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatPrice } from "../../lib/priceFormatter";
 
 export function ChatsTab() {
     const [expandedChatId, setExpandedChatId] = useState<Id<"chats"> | null>(null);
@@ -100,7 +101,7 @@ export function ChatsTab() {
                                     {chatDetails.ad && (
                                         <div className="md:col-span-2">
                                             <span className="font-medium text-gray-700">Flyer:</span>{" "}
-                                            {chatDetails.ad.title} - ${chatDetails.ad.price}
+                                            {chatDetails.ad.title} - {formatPrice(chatDetails.ad.price)}
                                         </div>
                                     )}
                                 </div>

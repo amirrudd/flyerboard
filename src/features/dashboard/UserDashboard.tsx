@@ -15,6 +15,7 @@ import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
+import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -784,7 +785,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h3 className="font-semibold text-gray-800 flex-1 min-w-0">{ad.title}</h3>
                                 <p className="text-lg font-bold text-primary-600 whitespace-nowrap">
-                                  ${ad.price.toLocaleString()}
+                                  {formatPrice(ad.price)}
                                 </p>
                               </div>
 
@@ -950,7 +951,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                       {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
                                     </p>
                                     <div className="text-lg font-bold text-primary-600">
-                                      ${chat.ad?.price?.toLocaleString() || 0} AUD
+                                      {formatPriceWithCurrency(chat.ad?.price || 0)}
                                     </div>
                                   </div>
                                 </div>
@@ -1061,7 +1062,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 {savedAd.ad!.title}
                               </h3>
                               <p className="text-lg font-bold text-primary-600 mb-2">
-                                ${savedAd.ad!.price.toLocaleString()} AUD
+                                {formatPriceWithCurrency(savedAd.ad!.price)}
                               </p>
                               <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                                 {savedAd.ad!.description}

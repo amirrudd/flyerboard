@@ -36,12 +36,13 @@ export async function uploadImageToR2(
     }
 
     // Step 1: Compress and convert to WebP with adaptive settings
-    // Compression quality adjusts based on network speed for optimal total time
+    // Quality adjusts based on network speed, resolution is preserved (max 2048px)
     onProgress?.(10);
 
     const settings = await getOptimalCompressionSettings();
     const compressedFile = await imageCompression(file, {
         maxSizeMB: settings.maxSizeMB,
+        maxWidthOrHeight: 2048, // Preserve resolution, prevent downscaling
         useWebWorker: true,
         fileType: 'image/webp',
         initialQuality: settings.quality,
@@ -137,10 +138,11 @@ export async function compressImage(
     onProgress?.(10);
 
     const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,
+        maxSizeMB: 10, // Safety net, won't constrain normal images
+        maxWidthOrHeight: 2048, // Preserve resolution for preview
         useWebWorker: true,
         fileType: 'image/webp',
-        initialQuality: 0.9, // 90% quality for crisp display
+        initialQuality: 0.88, // Balanced quality for crisp display
     });
 
     onProgress?.(70);

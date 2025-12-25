@@ -54,55 +54,55 @@ export async function estimateNetworkSpeed(): Promise<number | null> {
     }
 }
 
+
 /**
  * Get optimal compression settings based on network speed
  * 
- * IMPORTANT: Quality is kept consistent (90%) for all users to ensure
- * ads look good regardless of uploader's connection speed.
- * Only maxSizeMB is adjusted to optimize upload time.
+ * IMPORTANT: Resolution is preserved (max 2048px on longest side) to ensure
+ * ads look sharp and clear. Quality is adjusted based on network speed
+ * to optimize upload time while maintaining visual quality.
  */
 export async function getOptimalCompressionSettings(): Promise<CompressionSettings> {
     const speed = await estimateNetworkSpeed();
 
-    // Consistent quality for all users - ads should look good for everyone
-    const QUALITY = 0.9; // 90% quality for all connections
-
     // If we can't determine speed, use balanced settings
     if (speed === null) {
         return {
-            quality: QUALITY,
-            maxSizeMB: 1,
+            quality: 0.88,
+            maxSizeMB: 10, // Safety net, won't constrain normal images
             label: 'Balanced (unknown connection)',
         };
     }
 
-    // Fast connection (>5 Mbps): Allow larger files
-    // Less aggressive compression = faster processing
+    // Fast connection (>5 Mbps): Higher quality, preserve resolution
+    // Result: ~2-4MB for high-res photos, sharp and clear
     if (speed > 5) {
         return {
-            quality: QUALITY,
-            maxSizeMB: 1.5,
-            label: 'Fast connection - larger files OK',
+            quality: 0.92,
+            maxSizeMB: 10, // Safety net, won't constrain normal images
+            label: 'Fast connection - high quality',
         };
     }
 
-    // Medium connection (1-5 Mbps): Standard compression
+    // Medium connection (1-5 Mbps): Balanced quality
+    // Result: ~1.5-3MB for high-res photos, still sharp
     if (speed >= 1) {
         return {
-            quality: QUALITY,
-            maxSizeMB: 1,
-            label: 'Medium connection - standard compression',
+            quality: 0.88,
+            maxSizeMB: 10, // Safety net, won't constrain normal images
+            label: 'Medium connection - balanced quality',
         };
     }
 
-    // Slow connection (<1 Mbps): More aggressive size reduction
-    // Same quality, but compress harder to reduce file size
+    // Slow connection (<1 Mbps): Lower quality but still preserve resolution
+    // Result: ~1-2MB for high-res photos, acceptable quality
     return {
-        quality: QUALITY,
-        maxSizeMB: 0.8,
-        label: 'Slow connection - aggressive compression',
+        quality: 0.85,
+        maxSizeMB: 10, // Safety net, won't constrain normal images
+        label: 'Slow connection - optimized quality',
     };
 }
+
 
 /**
  * Calculate estimated total time (compression + upload)

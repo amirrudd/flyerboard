@@ -3,6 +3,7 @@ import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { Search } from "lucide-react";
 import { memo, useCallback } from "react";
+import { formatPrice } from "../../lib/priceFormatter";
 
 interface Ad {
   _id: Id<"ads">;
@@ -125,7 +126,7 @@ export const AdsGrid = memo(function AdsGrid({
                       {ad.location}
                     </p>
                     <p className="text-sm font-medium text-gray-900">
-                      ${ad.price.toLocaleString()}
+                      {formatPrice(ad.price)}
                     </p>
                   </div>
                   <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">

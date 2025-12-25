@@ -18,6 +18,7 @@ import {
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { StarRating } from "../../components/ui/StarRating";
+import { formatPrice } from "../../lib/priceFormatter";
 
 export function UsersTab() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -322,7 +323,7 @@ export function UsersTab() {
                                                             <p className="font-medium text-sm text-gray-900 truncate">
                                                                 {ad.title}
                                                             </p>
-                                                            <p className="text-xs text-gray-600">${ad.price}</p>
+                                                            <p className="text-xs text-gray-600">{formatPrice(ad.price)}</p>
                                                         </div>
                                                         <span
                                                             className={`px-2 py-1 rounded text-xs ${ad.isDeleted

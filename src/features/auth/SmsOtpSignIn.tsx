@@ -434,7 +434,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             : 'translate-x-full opacity-0 pointer-events-none'
                             }`}
                     >
-                        <div className="space-y-3 px-1">
+                        <div className="space-y-3" style={{ transform: 'translateZ(0)' }}>
                             <div>
                                 <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
                                     What's Your Name?
@@ -445,9 +445,6 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="userName" className="text-xs sm:text-sm font-medium text-neutral-700">
-                                    Your Name
-                                </label>
                                 <div className="relative group">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors z-10" />
                                     <input
@@ -459,7 +456,11 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         placeholder="John Smith"
                                         maxLength={50}
                                         value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
+                                        onChange={(e) => {
+                                            // Only allow letters (including accented), spaces, hyphens, apostrophes, and periods
+                                            const value = e.target.value.replace(/[^a-zA-Z\u00C0-\u017F\s'-\.]/g, '');
+                                            setUserName(value);
+                                        }}
                                         required={step === 3}
                                     />
                                 </div>

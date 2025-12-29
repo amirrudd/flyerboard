@@ -22,10 +22,11 @@ interface HeaderProps {
 }
 
 // Location selector component
-const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, align = 'left' }: {
+const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, align = 'left', compact = false }: {
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
   align?: 'left' | 'right';
+  compact?: boolean;
 }) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -160,13 +161,21 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
   return (
     <div className="relative location-dropdown">
       <button
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
+        className={compact
+          ? "w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+          : "flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
+        }
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
+        title={compact ? (selectedLocation || "All Locations") : undefined}
       >
-        <MapPin className="w-4 h-4" />
-        <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <MapPin className={compact ? "w-5 h-5 text-gray-700" : "w-4 h-4"} />
+        {!compact && (
+          <>
+            <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </>
+        )}
       </button>
 
       {isOpen && (
@@ -342,11 +351,12 @@ const MobileHeader = memo(function MobileHeader({
           ) : (
             <>
               {/* Location Selector */}
-              <div className="flex-shrink-1 min-w-0">
+              <div className="flex-shrink-0">
                 <LocationSelector
                   selectedLocation={selectedLocation}
                   setSelectedLocation={setSelectedLocation}
                   align="right"
+                  compact={true}
                 />
               </div>
 

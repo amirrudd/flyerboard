@@ -456,7 +456,11 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         placeholder="John Smith"
                                         maxLength={50}
                                         value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
+                                        onChange={(e) => {
+                                            // Only allow letters (including accented), spaces, hyphens, apostrophes, and periods
+                                            const value = e.target.value.replace(/[^a-zA-Z\u00C0-\u017F\s'-\.]/g, '');
+                                            setUserName(value);
+                                        }}
                                         required={step === 3}
                                     />
                                 </div>

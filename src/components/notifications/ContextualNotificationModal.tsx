@@ -61,7 +61,12 @@ export function ContextualNotificationModal({
             !isDismissed;
 
         setShouldShow(shouldShowModal);
-    }, [isOpen, isSupported, permission, dismissalKey]);
+
+        // If we shouldn't show, call onClose immediately to allow navigation
+        if (!shouldShowModal) {
+            onClose();
+        }
+    }, [isOpen, isSupported, permission, dismissalKey, onClose]);
 
     const handleEnable = async () => {
         const success = await subscribe();

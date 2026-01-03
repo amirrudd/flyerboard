@@ -169,7 +169,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           }
           rightNode={<div />}
         />
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <div className="content-max-width mx-auto container-padding py-12 text-center">
           <div className="bg-white rounded-lg p-12 shadow-sm max-w-lg mx-auto">
             <Frown className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-neutral-800 mb-2">Ad Not Found</h2>
@@ -201,7 +201,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       <div className="min-h-screen bg-gray-50">
         {/* Header skeleton */}
         <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="content-max-width mx-auto container-padding">
             <div className="flex items-center justify-between h-14">
               <button
                 onClick={onBack}
@@ -220,7 +220,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         </header>
 
         {/* Loading content */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="content-max-width mx-auto container-padding py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-lg overflow-hidden shadow-sm">
@@ -322,7 +322,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         }
       />
 
-      <div className="flex-1 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-bottom-nav md:pb-6">
+      <div className="flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">

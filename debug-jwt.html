@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JWT Decoder</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background: yellow;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>JWT Token Decoder</h1>
+    <p>Paste your JWT token below:</p>
+    <textarea id="jwtInput" placeholder="Paste JWT token here..."></textarea>
+    <button onclick="decodeJWT()">Decode</button>
+    <div id="output"></div>
+
+    <script>
+        function decodeJWT() {
+            const jwt = document.getElementById('jwtInput').value.trim();
+            const output = document.getElementById('output');
+
+            if (!jwt) {
+                output.innerHTML = '<p style="color: red;">Please paste a JWT token</p>';
+                return;
+            }
+
+            try {
+                const parts = jwt.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format');
+                }
+
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+
+                output.innerHTML = `
+                    <h2>Header</h2>
+                    <pre>${JSON.stringify(header, null, 2)}</pre>
+                    
+                    <h2>Payload</h2>
+                    <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    
+                    <h2>Key Information</h2>
+                    <pre>Issuer (iss): <span class="highlight">${payload.iss || 'NOT FOUND'}</span>
+Subject (sub): ${payload.sub || 'NOT FOUND'}
+Audience (aud): ${payload.aud || 'NOT FOUND'}
+Expiration: ${payload.exp ? new Date(payload.exp * 1000).toISOString() : 'NOT FOUND'}</pre>
+
+                    <h2>Expected Configuration</h2>
+                    <pre>CONVEX_AUTH_ISSUER should be: <span class="highlight">${payload.iss || 'UNKNOWN'}</span></pre>
+                `;
+            } catch (e) {
+                output.innerHTML = `<p style="color: red;">Error decoding JWT: ${e.message}</p>`;
+            }
+        }
+
+        // Auto-decode from localStorage if available
+        window.addEventListener('load', () => {
+            const keys = Object.keys(localStorage);
+            const jwtKey = keys.find(k => k.includes('convexAuthJWT') || k.includes('sessionToken'));
+            if (jwtKey) {
+                const token = localStorage.getItem(jwtKey);
+                if (token) {
+                    document.getElementById('jwtInput').value = token;
+                    document.getElementById('output').innerHTML = '<p style="color: green;">Found JWT in localStorage. Click "Decode" to inspect it.</p>';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -330,7 +330,7 @@ const MobileHeader = memo(function MobileHeader({
 
 
       {/* Main Mobile Header Bar */}
-      <div className="flex items-center justify-between h-14 px-4 gap-2">
+      <div className="flex items-center justify-between h-14 container-padding gap-2">
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -378,7 +378,7 @@ const MobileHeader = memo(function MobileHeader({
 
       {/* Expandable Search Overlay */}
       {searchExpanded && (
-        <div className="mobile-search-container border-t border-gray-100 bg-white px-4 py-3 animate-fade-in">
+        <div className="mobile-search-container border-t border-gray-100 bg-white container-padding py-3 animate-fade-in">
           <div className="space-y-3">
             <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
               <input
@@ -432,9 +432,9 @@ export const Header = memo(function Header({
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
-      <div className="max-w-[1440px] mx-auto">
+      <div className="content-max-width mx-auto">
         {/* Desktop Header */}
-        <div className={`hidden md:flex items-center justify-between h-14 px-4 ${centerNode ? 'relative' : ''}`}>
+        <div className={`hidden md:flex items-center justify-between h-14 container-padding ${centerNode ? 'relative' : ''}`}>
           {/* Left section - Logo and Location */}
           <div className="flex items-center gap-6 flex-shrink-0">
             {leftNode ? leftNode : (
@@ -493,7 +493,7 @@ export const Header = memo(function Header({
         {/* Mobile Header */}
         <div className="md:hidden">
           {leftNode || centerNode || rightNode ? (
-            <div className="flex items-center justify-between h-14 px-4">
+            <div className="flex items-center justify-between h-14 container-padding">
               <div className="flex items-center gap-3">
                 {leftNode}
               </div>

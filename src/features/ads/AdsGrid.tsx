@@ -10,6 +10,7 @@ interface Ad {
   title: string;
   description: string;
   price: number;
+  previousPrice?: number;
   location: string;
   categoryId: Id<"categories">;
   images: string[];
@@ -52,8 +53,8 @@ export const AdsGrid = memo(function AdsGrid({
   }, [onAdClick]);
 
   const gridClasses = `grid gap-3 sm:gap-4 ${sidebarCollapsed
-    ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-    : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+    ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
+    : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
     }`;
 
   return (
@@ -127,9 +128,16 @@ export const AdsGrid = memo(function AdsGrid({
                     <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
                       {ad.location}
                     </p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatPrice(ad.price)}
-                    </p>
+                    <div className="flex flex-col items-start sm:items-end">
+                      {ad.previousPrice && ad.previousPrice > ad.price && (
+                        <p className="text-xs text-gray-400 line-through">
+                          {formatPrice(ad.previousPrice)}
+                        </p>
+                      )}
+                      <p className="text-sm font-medium text-gray-900">
+                        {formatPrice(ad.price)}
+                      </p>
+                    </div>
                   </div>
                   <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
                     <span>{ad.views} views</span>

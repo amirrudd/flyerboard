@@ -9,23 +9,12 @@ import { Header } from "./Header";
 export function Layout() {
     const { isAuthenticated } = useSession();
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [authKey, setAuthKey] = useState(0);
     const [isModalDismissable, setIsModalDismissable] = useState(true);
-
-    // Re-render child components when user logs in to show authenticated features
-    useEffect(() => {
-        if (isAuthenticated) {
-            // Force re-render of child components to show authenticated features
-            // Note: Don't close the auth modal here - let SmsOtpSignIn handle it
-            // (new users need to see step 3 for name collection)
-            setAuthKey(prev => prev + 1);
-        }
-    }, [isAuthenticated]);
 
     return (
         <div className="flex flex-col h-screen overflow-hidden">
             <main className="flex-1 overflow-y-auto mobile-scroll-container">
-                <Outlet key={authKey} context={{ setShowAuthModal }} />
+                <Outlet context={{ setShowAuthModal }} />
             </main>
 
             {/* Bottom Nav - positioned outside flex flow for proper fixed positioning */}

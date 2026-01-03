@@ -4,6 +4,7 @@ import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
 import { Menu, MapPin, ChevronDown, Loader2, Navigation, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { useSession } from "@descope/react-sdk";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { debounce } from "../../lib/performanceUtils";
 
@@ -412,6 +413,7 @@ export const Header = memo(function Header({
   rightNode,
 }: HeaderProps) {
   const navigate = useNavigate();
+  const { isAuthenticated } = useSession();
 
   // Debounced search handler to prevent excessive re-renders
   const debouncedSetSearchQuery = useMemo(
@@ -476,6 +478,7 @@ export const Header = memo(function Header({
             {rightNode ? rightNode : (
               <HeaderRightActions
                 user={user}
+                isAuthenticated={isAuthenticated}
                 onPostClick={() => {
                   if (user) {
                     navigate('/post', { state: { from: window.location.pathname } });

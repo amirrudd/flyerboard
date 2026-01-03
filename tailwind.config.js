@@ -125,6 +125,10 @@ module.exports = {
         '.content-max-width': {
           'max-width': 'min(88vw, 2400px)',
         },
+        // Optimal reading width for static content pages
+        '.content-width-reading': {
+          'max-width': '960px',
+        },
       })
     }
   ],

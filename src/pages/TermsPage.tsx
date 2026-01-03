@@ -39,7 +39,7 @@ export function TermsPage() {
                 rightNode={<div />}
             />
             <div className="min-h-screen bg-white py-12 container-padding pb-bottom-nav md:pb-12">
-                <div className="max-w-3xl mx-auto">
+                <div className="content-width-reading mx-auto">
 
                     <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 mb-12">
                         <h2 className="text-xl font-semibold mb-4 mt-0">Table of Contents</h2>

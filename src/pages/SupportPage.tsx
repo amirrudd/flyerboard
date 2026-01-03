@@ -50,7 +50,7 @@ export default function SupportPage() {
                 rightNode={<div />}
             />
             <div className="min-h-screen bg-white py-12 container-padding pb-bottom-nav md:pb-12">
-                <div className="max-w-3xl mx-auto space-y-8">
+                <div className="content-width-reading mx-auto space-y-8">
                     <div className="text-center space-y-4">
                         <p className="text-gray-600 max-w-xl mx-auto">
                             We're here to help. If you have any issues or questions, please reach out to us directly or fill out the form below.

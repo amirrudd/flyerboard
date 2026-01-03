@@ -124,17 +124,17 @@ export const AdsGrid = memo(function AdsGrid({
                   <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-sm sm:text-base">
                     {ad.title}
                   </h3>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
-                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 flex-1 min-w-0">
                       {ad.location}
                     </p>
-                    <div className="flex flex-col items-start sm:items-end">
+                    <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                       {ad.previousPrice && ad.previousPrice > ad.price && (
                         <p className="text-xs text-gray-400 line-through">
                           {formatPrice(ad.previousPrice)}
                         </p>
                       )}
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
                         {formatPrice(ad.price)}
                       </p>
                     </div>

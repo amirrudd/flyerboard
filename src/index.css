@@ -16,14 +16,6 @@
     --bottom-nav-height: calc(72px + var(--safe-area-inset-bottom));
   }
 
-  /* Proportional font scaling for high-res displays (2K+) */
-  /* Base font scales from 16px at 1920px to ~19px at 2560px */
-  @media (min-width: 1921px) {
-    html {
-      font-size: clamp(16px, 0.833vw, 20px);
-    }
-  }
-
   body {
     @apply bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900;
   }
@@ -283,6 +275,7 @@ select:focus {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

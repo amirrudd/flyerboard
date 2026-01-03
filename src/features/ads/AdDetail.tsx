@@ -221,8 +221,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
         {/* Loading content */}
         <div className="content-max-width mx-auto container-padding py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-[2] min-w-0 space-y-6">
               <div className="bg-white rounded-lg overflow-hidden shadow-sm">
                 <div className="aspect-video bg-gray-200 animate-pulse"></div>
               </div>
@@ -232,10 +232,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
               </div>
             </div>
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
-                <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+            {/* Sidebar skeleton - Flexible with max width */}
+            <div className="lg:flex-1 lg:max-w-[400px]">
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
+                  <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -323,9 +326,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       />
 
       <div className="flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main Content - takes priority in flex layout */}
+          <div className="flex-[2] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
@@ -445,8 +448,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="sticky top-21 self-start">
+          {/* Sidebar - Flexible with max width on large screens */}
+          <div className="lg:flex-1 lg:max-w-[400px] sticky top-21 self-start">
             <div className="space-y-6">
               {/* Seller Info */}
               <div className="bg-white rounded-lg p-6 shadow-sm">

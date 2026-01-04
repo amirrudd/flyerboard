@@ -73,7 +73,7 @@ For every task, the following rules must always be respected:
 - Do not pause for confirmation unless the task is truly impossible or unreasonably ambiguous
 - When clarification is needed, make a safe, minimal assumption and proceed
 ## Testing Data
-- **Test Phone Number**: Use only `0466666666` for testing
+- **Test Phone Number**: Use any Audtralian mobile number wiht "000000" as pin for testing
 ## Context & Knowledge Base
 Before starting any task, check if relevant context exists in `.agent/gatheredContext/`:
 - **Image uploads/compression**: `image-upload.md` - covers adaptive compression, quality settings, non-blocking UX

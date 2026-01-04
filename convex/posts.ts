@@ -66,11 +66,26 @@ export const updateAd = mutation({
       throw createError("You can only update your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
+    // Handle price history logic
+    let previousPrice = existingAd.previousPrice;
+    if (args.price !== existingAd.price) {
+      // Price is being changed
+      if (args.price < existingAd.price) {
+        // Price is being lowered - save the old price
+        previousPrice = existingAd.price;
+      } else {
+        // Price is being raised - clear previous price
+        previousPrice = undefined;
+      }
+    }
+    // If price unchanged, keep previousPrice as is
+
     await ctx.db.patch(args.adId, {
       title: args.title,
       description: args.description,
       extendedDescription: args.extendedDescription,
       price: args.price,
+      previousPrice,
       location: args.location,
       categoryId: args.categoryId,
       images: args.images,

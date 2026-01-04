@@ -80,7 +80,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                 }
             />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="content-max-width mx-auto container-padding py-6">
                 {/* Tabs Navigation */}
                 <div className="bg-white rounded-lg shadow-sm mb-6 p-2">
                     <div className="flex gap-2 overflow-x-auto">

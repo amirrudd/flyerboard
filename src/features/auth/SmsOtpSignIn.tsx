@@ -341,7 +341,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                     Verify Your Australian Phone Number
                                 </h3>
                                 <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
-                                    We verify users to keep the Board scam-free. Your number remains private.
+                                    We verify users to keep the Board <span className="font-semibold">scam-free.</span> Your number remains private.
                                 </p>
                             </div>
 

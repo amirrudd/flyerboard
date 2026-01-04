@@ -8,6 +8,7 @@ import { HomePage } from "./pages/HomePage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
 import { UserSyncProvider } from "./context/UserSyncContext";
 
+import { useSession } from "@descope/react-sdk";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // Lazy: Load on-demand when navigating to these routes
@@ -22,12 +23,19 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 
 // Loading fallback for lazy-loaded routes
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+  <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <p className="mt-4 text-neutral-500 font-medium animate-pulse">Checking authentication...</p>
   </div>
 );
 
 export default function App() {
+  const { isSessionLoading } = useSession();
+
+  if (isSessionLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <ErrorBoundary>
       <UserSyncProvider>

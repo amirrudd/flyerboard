@@ -157,3 +157,69 @@ export const migrateLegacyImagesToR2 = internalAction({
     }
   },
 });
+
+/**
+ * Update category names and add Baby & Kids category
+ * - Rename "Temporary Hire" to "Gigs & Temp Work"
+ * - Rename "Rent & Hire" to "Equipment Rental"
+ * - Add new "Baby & Kids" category
+ * Run this once to update existing database
+ */
+export const updateCategoryNames = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const updates = [];
+    const added = [];
+
+    // Rename "Temporary Hire" to "Gigs & Temp Work"
+    const temporaryHire = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", "temporary-hire"))
+      .first();
+
+    if (temporaryHire) {
+      await ctx.db.patch(temporaryHire._id, {
+        name: "Gigs & Temp Work",
+        slug: "gigs-temp-work",
+      });
+      updates.push({ old: "Temporary Hire", new: "Gigs & Temp Work" });
+    }
+
+    // Rename "Rent & Hire" to "Equipment Rental"
+    const rentHire = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", "rent-hire"))
+      .first();
+
+    if (rentHire) {
+      await ctx.db.patch(rentHire._id, {
+        name: "Equipment Rental",
+        slug: "equipment-rental",
+      });
+      updates.push({ old: "Rent & Hire", new: "Equipment Rental" });
+    }
+
+    // Add "Baby & Kids" category if it doesn't exist
+    const babyKids = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", "baby-kids"))
+      .first();
+
+    if (!babyKids) {
+      const id = await ctx.db.insert("categories", {
+        name: "Baby & Kids",
+        slug: "baby-kids",
+        icon: "Baby",
+      });
+      added.push({ id, name: "Baby & Kids" });
+    }
+
+    return {
+      success: true,
+      message: `Updated ${updates.length} categories, added ${added.length} new categories`,
+      updated: updates,
+      added: added,
+    };
+  },
+});
+

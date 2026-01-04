@@ -10,6 +10,9 @@ import {
     Watch,
     Book,
     PawPrint,
+    Palette,
+    CalendarClock,
+    Baby,
     LayoutGrid,
     LucideIcon
 } from "lucide-react";
@@ -24,11 +27,16 @@ export const categoryIcons: Record<string, LucideIcon> = {
     "services": Wrench,
     "fashion": Shirt,
     "sports": Dumbbell,
-    "jobs": Briefcase,
-    "temporary-hire": Briefcase,
+    "gigs-temp-work": Briefcase,
+    "jobs-freelance": Briefcase, // Legacy slug support
+    "temporary-hire": Briefcase, // Legacy slug support
     "personal-items": Watch,
     "books-media": Book,
     "pets-animals": PawPrint,
+    "art": Palette,
+    "equipment-rental": CalendarClock,
+    "rent-hire": CalendarClock, // Legacy slug support
+    "baby-kids": Baby,
 
     // By icon name (for database-driven icons)
     "Car": Car,
@@ -42,6 +50,9 @@ export const categoryIcons: Record<string, LucideIcon> = {
     "Watch": Watch,
     "Book": Book,
     "PawPrint": PawPrint,
+    "Palette": Palette,
+    "CalendarClock": CalendarClock,
+    "Baby": Baby,
 };
 
 /**

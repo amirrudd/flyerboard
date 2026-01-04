@@ -4,6 +4,9 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      maxWidth: {
+        '8xl': '1920px',  // For 2K displays - reduces side gaps
+      },
       fontFamily: {
         sans: ["Plus Jakarta Sans", ...fontFamily.sans],
         display: ["Plus Jakarta Sans", ...fontFamily.sans],
@@ -89,6 +92,10 @@ module.exports = {
         "88": "22rem",
         "112": "28rem",
         "128": "32rem",
+        // Container padding design tokens
+        'container-x-mobile': '2%',
+        'container-x-tablet': '3%',
+        'container-x-desktop': '4%',
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-out forwards",
@@ -106,5 +113,23 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addComponents }) {
+      addComponents({
+        // Proportional padding that scales with viewport
+        '.container-padding': {
+          'padding-left': 'clamp(1rem, 1.3vw, 2rem)',
+          'padding-right': 'clamp(1rem, 1.3vw, 2rem)',
+        },
+        // Proportional max-width that scales with viewport (capped at 2400px)
+        '.content-max-width': {
+          'max-width': 'min(88vw, 2400px)',
+        },
+        // Optimal reading width for static content pages
+        '.content-width-reading': {
+          'max-width': '960px',
+        },
+      })
+    }
+  ],
 };

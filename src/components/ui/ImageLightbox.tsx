@@ -87,7 +87,7 @@ export function ImageLightbox({
 
             {/* Main image container */}
             <div
-                className="relative w-full h-full flex items-center justify-center px-4 sm:px-8 pt-16 pb-28 sm:pb-32"
+                className="relative w-full h-full flex items-center justify-center container-padding pt-16 pb-28 sm:pb-32"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="relative w-full h-full flex items-center justify-center">

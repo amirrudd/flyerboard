@@ -23,6 +23,15 @@ vi.mock('../../lib/performanceUtils', () => ({
     debounce: (fn: Function) => fn,
 }));
 
+// Mock Descope useSession hook
+vi.mock('@descope/react-sdk', () => ({
+    useSession: () => ({
+        isAuthenticated: false,
+        isSessionLoading: false,
+        sessionToken: null,
+    }),
+}));
+
 describe('Header', () => {
     const renderHeader = (props = {}) => {
         return render(

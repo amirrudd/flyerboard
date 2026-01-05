@@ -57,10 +57,13 @@ export const clearAndCreateSampleData = mutation({
       { name: "Services", slug: "services", icon: "Wrench" },
       { name: "Fashion", slug: "fashion", icon: "Shirt" },
       { name: "Sports & Recreation", slug: "sports", icon: "Dumbbell" },
-      { name: "Temporary Hire", slug: "temporary-hire", icon: "Briefcase" },
+      { name: "Gigs & Temp Work", slug: "gigs-temp-work", icon: "Briefcase" },
       { name: "Personal Items", slug: "personal-items", icon: "Watch" },
       { name: "Books & Media", slug: "books-media", icon: "Book" },
       { name: "Pets & Animals", slug: "pets-animals", icon: "PawPrint" },
+      { name: "Art", slug: "art", icon: "Palette" },
+      { name: "Equipment Rental", slug: "equipment-rental", icon: "CalendarClock" },
+      { name: "Baby & Kids", slug: "baby-kids", icon: "Baby" },
     ];
 
     const categoryIds = [];
@@ -212,7 +215,7 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Freelance Web Developer Available",
         description: "Experienced full-stack developer available for short-term projects. Specializing in React, Node.js, and modern web technologies.",
-        extendedDescription: "Professional web developer with 5+ years experience in building responsive websites and web applications. Available for temporary hire on projects ranging from 1 week to 3 months. Portfolio includes e-commerce sites, corporate websites, and custom web applications.",
+        extendedDescription: "Professional web developer with 5+ years experience in building responsive websites and web applications. Available for freelance work on projects ranging from 1 week to 3 months. Portfolio includes e-commerce sites, corporate websites, and custom web applications.",
         price: 85,
         location: "Sydney, CBD",
         latitude: -33.8688,

@@ -570,7 +570,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           }
         />
 
-        <div className="flex-1 w-full md:max-w-7xl md:mx-auto sm:px-6 lg:px-8 py-6 pb-bottom-nav md:pb-6">
+        <div className="flex-1 w-full content-max-width md:mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1 md:sticky md:top-21 md:self-start">
@@ -784,9 +784,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               {/* Title and Price */}
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h3 className="font-semibold text-gray-800 flex-1 min-w-0">{ad.title}</h3>
-                                <p className="text-lg font-bold text-primary-600 whitespace-nowrap">
-                                  {formatPrice(ad.price)}
-                                </p>
+                                <div className="flex flex-col items-end">
+                                  {ad.previousPrice && ad.previousPrice > ad.price && (
+                                    <p className="text-xs text-gray-400 line-through">
+                                      {formatPrice(ad.previousPrice)}
+                                    </p>
+                                  )}
+                                  <p className="text-lg font-bold text-primary-600 whitespace-nowrap">
+                                    {formatPrice(ad.price)}
+                                  </p>
+                                </div>
                               </div>
 
                               {/* Stats and Status */}

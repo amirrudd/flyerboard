@@ -157,7 +157,7 @@ export function HomePage() {
         setSelectedLocation={setSelectedLocation}
       />
 
-      <div className="max-w-[1440px] mx-auto px-4 py-6 w-full">
+      <div className="content-max-width mx-auto container-padding py-6 w-full">
         <div className="flex gap-8 items-start">
           <div className="hidden md:block sticky top-21 self-start flex-shrink-0">
             <Sidebar

@@ -3,6 +3,7 @@ import { User, LogIn } from "lucide-react";
 
 interface HeaderRightActionsProps {
     user: any;
+    isAuthenticated?: boolean;
     onPostClick: () => void;
     onDashboardClick: () => void;
     onSignInClick: () => void;
@@ -10,10 +11,14 @@ interface HeaderRightActionsProps {
 
 export const HeaderRightActions = memo(function HeaderRightActions({
     user,
+    isAuthenticated,
     onPostClick,
     onDashboardClick,
     onSignInClick,
 }: HeaderRightActionsProps) {
+    // Determine if authenticated based on prop OR presence of user object
+    const isAuthed = isAuthenticated !== undefined ? isAuthenticated : !!user;
+
     return (
         <>
             <button
@@ -23,10 +28,10 @@ export const HeaderRightActions = memo(function HeaderRightActions({
                 Pin Your Flyer
             </button>
 
-            {user ? (
+            {isAuthed ? (
                 <button
                     onClick={onDashboardClick}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                 >
                     <User className="w-4 h-4" />
                     My Dashboard
@@ -34,7 +39,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
             ) : (
                 <button
                     onClick={onSignInClick}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                 >
                     <LogIn className="w-4 h-4" />
                     Sign In

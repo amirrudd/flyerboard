@@ -36,6 +36,7 @@ import type * as ratings from "../ratings.js";
 import type * as reports from "../reports.js";
 import type * as router from "../router.js";
 import type * as sampleData from "../sampleData.js";
+import type * as updateRentHireIcon from "../updateRentHireIcon.js";
 import type * as upload_urls from "../upload_urls.js";
 import type * as users from "../users.js";
 
@@ -74,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   reports: typeof reports;
   router: typeof router;
   sampleData: typeof sampleData;
+  updateRentHireIcon: typeof updateRentHireIcon;
   upload_urls: typeof upload_urls;
   users: typeof users;
 }>;

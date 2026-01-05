@@ -29,8 +29,8 @@ export function AboutUsPage() {
                 }
                 rightNode={<div />}
             />
-            <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 pb-bottom-nav md:pb-12">
-                <div className="max-w-3xl mx-auto">
+            <div className="min-h-screen bg-white py-12 container-padding pb-bottom-nav md:pb-12">
+                <div className="content-width-reading mx-auto">
                     {/* Logo Hero */}
                     <div className="flex justify-center mb-8">
                         <img

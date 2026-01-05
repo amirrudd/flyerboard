@@ -94,7 +94,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
     <div className="fixed inset-x-0 top-0 bottom-[calc(72px+env(safe-area-inset-bottom))] md:relative md:inset-auto md:h-full bg-white flex flex-col z-40">
       {/* Fixed Header */}
       <header className="absolute top-0 left-0 right-0 h-16 z-50 bg-white border-b border-neutral-200 shadow-sm md:relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="content-max-width mx-auto container-padding h-full">
           <div className="flex items-center justify-between h-full">
             <button
               onClick={() => {
@@ -118,7 +118,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
       </header>
 
       {/* Content area - flex-1 fills space below header */}
-      <div className={`flex-1 min-h-0 mt-16 md:mt-0 ${selectedChatId ? 'overflow-hidden' : 'overflow-y-auto mobile-scroll-container px-4 sm:px-6 lg:px-8 py-6 pb-24'} md:overflow-visible md:px-4 md:sm:px-6 md:lg:px-8 md:py-6 md:pb-6 max-w-7xl mx-auto w-full`}>
+      <div className={`flex-1 min-h-0 mt-16 md:mt-0 ${selectedChatId ? 'overflow-hidden' : 'overflow-y-auto mobile-scroll-container container-padding py-6 pb-24'} md:overflow-visible md:container-padding md:py-6 md:pb-6 content-max-width mx-auto w-full`}>
         <div className={`${selectedChatId ? 'h-full min-h-0' : ''} grid grid-cols-1 lg:grid-cols-3 ${selectedChatId ? 'gap-0' : 'gap-6'} lg:gap-6`}>
           {/* Chat List - Hidden on mobile when chat is selected */}
           <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>

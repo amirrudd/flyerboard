@@ -16,6 +16,7 @@ const applicationTables = {
     title: v.string(),
     description: v.string(),
     price: v.number(),
+    previousPrice: v.optional(v.number()), // Previous price for showing price reductions
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),

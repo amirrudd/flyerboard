@@ -2,7 +2,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Image as ImageIcon } from "lucide-react";
 
 interface ImageDisplayProps {
@@ -15,10 +15,11 @@ interface ImageDisplayProps {
   fallback?: string;
   variant?: "small" | "large";
   onError?: () => void;
+  onClick?: () => void;
   priority?: boolean; // For above-the-fold images (first 6)
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "", onError, priority = false }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError, onClick, priority = false }: ImageDisplayProps) {
   const [hasError, setHasError] = useState(false);
 
   // Use imageRef if provided, otherwise fall back to src
@@ -39,6 +40,11 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, prio
     onError?.();
   };
 
+  // Reset error state when displaySrc changes
+  useEffect(() => {
+    setHasError(false);
+  }, [displaySrc]);
+
   // Show skeleton while loading (or if r2: reference hasn't been converted yet)
   if (!displaySrc || displaySrc.startsWith('r2:')) {
     return (
@@ -55,17 +61,17 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, prio
     );
   }
 
-  // Show actual image with lazy loading and fade-in effect
+  // Show actual image - no wrapper, matching skeleton structure
   return (
     <LazyLoadImage
       src={displaySrc}
       alt={alt}
       className={className}
       wrapperClassName={className}
-      style={{ width: '100%', height: '100%', display: 'block' }}
+      onClick={onClick}
       effect="opacity"
-      threshold={300} // Start loading 300px before entering viewport
-      visibleByDefault={priority} // Skip lazy loading for priority images
+      threshold={300}
+      visibleByDefault={priority}
       onError={handleError}
       placeholder={
         <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />

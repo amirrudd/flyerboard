@@ -246,4 +246,53 @@ describe('AdDetail - Share Functionality', () => {
             });
         });
     });
+
+    describe('Layout Consistency', () => {
+        // Tests to ensure skeleton and loaded states have consistent layout
+        // to prevent "compressed layout" bug caused by missing w-full class
+
+        it('should have w-full class on content container in loaded state', async () => {
+            Object.defineProperty(global, 'navigator', {
+                value: { clipboard: mockClipboard },
+                writable: true,
+                configurable: true,
+            });
+
+            const { container } = renderAdDetail();
+
+            await waitFor(() => {
+                expect(screen.getAllByText('Test Flyer Title')[0]).toBeInTheDocument();
+            });
+
+            // Find the content container (flex-1 with content-max-width)
+            const contentContainer = container.querySelector('.content-max-width.mx-auto');
+            expect(contentContainer).toBeInTheDocument();
+            expect(contentContainer).toHaveClass('w-full');
+        });
+
+        it('should have w-full class on content container in skeleton state', () => {
+            // Return undefined to trigger skeleton state
+            (useQuery as any).mockReset();
+            (useQuery as any).mockReturnValue(undefined);
+
+            const { container } = render(
+                <BrowserRouter>
+                    <AdDetail
+                        adId={'loading-id' as any}
+                        onBack={mockOnBack}
+                        onShowAuth={mockOnShowAuth}
+                    />
+                </BrowserRouter>
+            );
+
+            // Should show loading state
+            expect(screen.getByText('Loading...')).toBeInTheDocument();
+
+            // Find the content container in skeleton state (the one with flex-1, not the header)
+            const contentContainer = container.querySelector('.flex-1.content-max-width.mx-auto');
+            expect(contentContainer).toBeInTheDocument();
+            expect(contentContainer).toHaveClass('w-full');
+        });
+    });
 });
+

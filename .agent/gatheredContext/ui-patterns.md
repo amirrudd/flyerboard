@@ -550,6 +550,62 @@ it('handles click', async () => {
 });
 ```
 
+## Flex Layout Width Patterns
+
+### Content Container in flex-col Parent
+
+**Problem**: When using `flex flex-col` as a parent layout, child containers with `max-width` and `mx-auto` (for centering) but **no explicit width** can collapse during rendering, especially when their children use percentage-based widths.
+
+**Root Cause**: 
+- `max-width` only constrains upper bound, it doesn't set actual width
+- In `flex-col`, children don't auto-stretch horizontally by default
+- Percentage-based children (`lg:w-[70%]`, `lg:w-[30%]`) create circular dependency: parent width depends on children, children are % of parent
+- CSS resolves this by shrinking to fit content → "compressed layout" bug
+
+**Fix Pattern**: Always add `w-full` to content containers inside `flex-col` parents:
+
+```tsx
+{/* ❌ BAD - Missing width, can cause compressed layout */}
+<div className="flex flex-col min-h-screen">
+  <header>...</header>
+  <div className="flex-1 content-max-width mx-auto container-padding">
+    <div className="flex lg:flex-row gap-8">
+      <div className="lg:w-[70%]">...</div>  {/* 70% of WHAT? */}
+      <div className="lg:w-[30%]">...</div>
+    </div>
+  </div>
+</div>
+
+{/* ✅ GOOD - w-full ensures container takes 100% width */}
+<div className="flex flex-col min-h-screen">
+  <header>...</header>
+  <div className="w-full flex-1 content-max-width mx-auto container-padding">
+    <div className="flex lg:flex-row gap-8">
+      <div className="lg:w-[70%]">...</div>  {/* 70% of parent's 100% width */}
+      <div className="lg:w-[30%]">...</div>
+    </div>
+  </div>
+</div>
+```
+
+**Symptom**: Page appears "compressed" or narrow during initial load or hard refresh, then expands once content loads.
+
+**Where this applies**:
+- Page layouts with `flex-col` outer wrapper
+- Content containers using `content-max-width` or custom max-width
+- Two-column layouts with percentage widths
+- Skeleton vs loaded state transitions
+
+### Skeleton and Loaded State Consistency
+
+**Rule**: Skeleton layouts must have **identical container structure and dimensions** as loaded layouts to prevent layout shift.
+
+**Checklist**:
+- ✅ Same container classes (including `w-full`)
+- ✅ Same flex/grid structure
+- ✅ Same height for image placeholders (use `aspect-video`, `aspect-square`, etc.)
+- ✅ Same sidebar/main column widths
+
 ## Common Mistakes to Avoid
 
 ❌ **Don't**: Block UI during async operations
@@ -566,3 +622,10 @@ it('handles click', async () => {
 
 ❌ **Don't**: Use generic error messages
 ✅ **Do**: Provide specific, actionable feedback
+
+❌ **Don't**: Use `max-width` + `mx-auto` without `w-full` in `flex-col` layouts
+✅ **Do**: Always add `w-full` to ensure proper width reference for percentage children
+
+❌ **Don't**: Have skeleton layouts with different structure than loaded layouts
+✅ **Do**: Match container structure exactly (same classes, same flex/grid hierarchy)
+

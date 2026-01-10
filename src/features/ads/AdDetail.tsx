@@ -198,7 +198,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   if (!displayAd) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="bg-gray-50 flex flex-col">
         {/* Header skeleton */}
         <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
           <div className="content-max-width mx-auto container-padding">
@@ -219,25 +219,68 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           </div>
         </header>
 
-        {/* Loading content */}
-        <div className="content-max-width mx-auto container-padding py-6">
+        {/* Loading content - MATCHES LOADED STRUCTURE EXACTLY */}
+        <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* Main Content - 70% */}
             <div className="lg:w-[70%] min-w-0 space-y-6">
+              {/* Image Gallery skeleton */}
               <div className="bg-white rounded-lg overflow-hidden shadow-sm">
-                <div className="aspect-video bg-gray-200 animate-pulse"></div>
+                <div className="relative aspect-video bg-gray-200 shimmer"></div>
               </div>
+
+              {/* Ad Information skeleton */}
               <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
-                <div className="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="h-8 bg-gray-200 rounded shimmer mb-2 w-3/4"></div>
+                    <div className="h-10 bg-gray-200 rounded shimmer w-1/3"></div>
+                  </div>
+                  <div className="text-right">
+                    <div className="h-5 w-16 bg-gray-200 rounded shimmer mb-1"></div>
+                    <div className="h-5 w-24 bg-gray-200 rounded shimmer"></div>
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <div className="h-6 bg-gray-200 rounded shimmer mb-3 w-1/4"></div>
+                  <div className="h-4 bg-gray-200 rounded shimmer mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded shimmer mb-2 w-5/6"></div>
+                  <div className="h-4 bg-gray-200 rounded shimmer w-2/3"></div>
+                </div>
+                <div className="h-5 bg-gray-200 rounded shimmer w-1/2"></div>
+              </div>
+
+              {/* Map skeleton */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="h-6 bg-gray-200 rounded shimmer mb-4 w-1/4"></div>
+                <div className="h-48 bg-gray-200 rounded shimmer"></div>
               </div>
             </div>
-            {/* Sidebar skeleton - 30% of container width, capped at 400px */}
-            <div className="lg:w-[30%] lg:max-w-[400px]">
+
+            {/* Sidebar skeleton - 30% with sticky positioning */}
+            <div className="lg:w-[30%] lg:max-w-[400px] sticky top-21 self-start">
               <div className="space-y-6">
+                {/* Seller Info skeleton */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
-                  <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded shimmer mb-4 w-1/2"></div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 shimmer"></div>
+                    <div className="flex-1">
+                      <div className="h-5 bg-gray-200 rounded shimmer mb-2 w-2/3"></div>
+                      <div className="h-4 bg-gray-200 rounded shimmer w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="h-12 bg-gray-200 rounded shimmer"></div>
+                </div>
+
+                {/* Quick Actions skeleton */}
+                <div className="bg-white rounded-lg p-6 shadow-sm hidden sm:block">
+                  <div className="h-6 bg-gray-200 rounded shimmer mb-4 w-1/2"></div>
+                  <div className="space-y-3">
+                    <div className="h-10 bg-gray-200 rounded shimmer"></div>
+                    <div className="h-10 bg-gray-200 rounded shimmer"></div>
+                    <div className="h-10 bg-gray-200 rounded shimmer"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -326,7 +369,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         }
       />
 
-      <div className="flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
+      <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
@@ -334,17 +377,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="bg-white rounded-lg overflow-hidden shadow-sm">
               <div className="relative aspect-video bg-neutral-100">
                 {images.length > 0 ? (
-                  <div
-                    className="w-full h-full cursor-pointer"
+                  <ImageDisplay
+                    imageRef={images[currentImageIndex]}
+                    alt={`${displayAd.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-full object-contain cursor-pointer"
+                    variant="large"
                     onClick={() => setShowLightbox(true)}
-                  >
-                    <ImageDisplay
-                      imageRef={images[currentImageIndex]}
-                      alt={`${displayAd.title} - Image ${currentImageIndex + 1}`}
-                      className="w-full h-full object-contain"
-                      variant="large"
-                    />
-                  </div>
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center">

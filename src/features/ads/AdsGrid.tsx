@@ -99,7 +99,7 @@ export const AdsGrid = memo(function AdsGrid({
               <div
                 key={ad._id}
                 onClick={() => handleAdClick(ad)}
-                className={`listing-card bg-white border rounded-md overflow-hidden hover:border-gray-300 transition-all duration-200 cursor-pointer group ${isNew ? 'border-primary-400 animate-fade-in' : 'border-gray-200'
+                className={`listing-card bg-white border rounded-xl overflow-hidden shadow-sm hover:border-gray-300 transition-all duration-200 cursor-pointer group ${isNew ? 'border-primary-400 animate-fade-in' : 'border-neutral-100'
                   }`}
               >
                 <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">

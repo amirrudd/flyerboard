@@ -3,6 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ErrorBoundary } from './ErrorBoundary';
 
+// Mock Descope SDK (required by ErrorFallback)
+vi.mock('@descope/react-sdk', () => ({
+    useDescope: () => ({
+        logout: vi.fn().mockResolvedValue(undefined),
+    }),
+}));
+
 // Component that throws an error for testing
 function ThrowError({ shouldThrow = false }: { shouldThrow?: boolean }) {
     if (shouldThrow) {

@@ -3,6 +3,16 @@ import { useSession, useUser } from "@descope/react-sdk";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { logDebug, logError } from "./logger";
+import { isAuthError } from "./useAuthRecovery";
+
+interface UserSyncState {
+    /** Whether the user has been successfully synced to Convex database */
+    isSynced: boolean;
+    /** Whether sync failed (could indicate auth issues) */
+    syncFailed: boolean;
+    /** Whether sync is currently in progress */
+    isSyncing: boolean;
+}
 
 /**
  * Hook that automatically syncs Descope user to Convex on authentication.
@@ -15,7 +25,11 @@ export function useDescopeUserSync() {
     const { isAuthenticated, isSessionLoading } = useSession();
     const { user } = useUser();
     const syncDescopeUser = useMutation(api.descopeAuth.syncDescopeUser);
-    const [isUserSynced, setIsUserSynced] = useState(false);
+    const [syncState, setSyncState] = useState<UserSyncState>({
+        isSynced: false,
+        syncFailed: false,
+        isSyncing: false,
+    });
 
     useEffect(() => {
         if (isAuthenticated && !isSessionLoading && user) {
@@ -28,6 +42,8 @@ export function useDescopeUserSync() {
                 hasPhone: !!user.phone,
             });
 
+            setSyncState(prev => ({ ...prev, isSyncing: true }));
+
             // Await the sync to ensure user exists in database before marking as synced
             syncDescopeUser({
                 name: user.name,
@@ -35,17 +51,26 @@ export function useDescopeUserSync() {
             })
                 .then(() => {
                     logDebug("User successfully synced to Convex");
-                    setIsUserSynced(true);
+                    setSyncState({ isSynced: true, syncFailed: false, isSyncing: false });
                 })
                 .catch((error) => {
                     logError("Failed to sync Descope user to Convex", error);
-                    setIsUserSynced(false);
+
+                    // Check if this is an auth error - if so, the ErrorBoundary
+                    // will handle showing the recovery UI
+                    if (isAuthError(error)) {
+                        logError("Sync failed due to authentication issue - user should re-authenticate");
+                    }
+
+                    setSyncState({ isSynced: false, syncFailed: true, isSyncing: false });
                 });
         } else {
             // Reset sync status when user logs out
-            setIsUserSynced(false);
+            setSyncState({ isSynced: false, syncFailed: false, isSyncing: false });
         }
     }, [isAuthenticated, isSessionLoading, user, syncDescopeUser]);
 
-    return isUserSynced;
+    // Return boolean for backward compatibility
+    return syncState.isSynced;
 }
+

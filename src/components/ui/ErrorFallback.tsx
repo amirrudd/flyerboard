@@ -1,5 +1,8 @@
-import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Home, RefreshCw, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { isAuthError } from '../../lib/useAuthRecovery';
+import { useDescope } from '@descope/react-sdk';
 
 interface ErrorFallbackProps {
     error: Error | null;
@@ -10,10 +13,18 @@ interface ErrorFallbackProps {
 /**
  * User-friendly error fallback UI component displayed when an error is caught by ErrorBoundary.
  * Provides options to retry or navigate home, with optional detailed error info in development.
+ * 
+ * For authentication errors, provides a "Sign Out & Try Again" option to help users
+ * recover from stuck auth states (expired tokens, sync failures, etc).
  */
 export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackProps) {
     const navigate = useNavigate();
+    const sdk = useDescope();
     const isDevelopment = import.meta.env.DEV;
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    // Check if this is an authentication-related error
+    const isAuthRelatedError = isAuthError(error);
 
     const handleGoHome = () => {
         resetError();
@@ -22,6 +33,22 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
 
     const handleTryAgain = () => {
         resetError();
+    };
+
+    /**
+     * Handle sign out for auth errors.
+     * Logs out the user and navigates to home to allow fresh login.
+     */
+    const handleSignOutAndRetry = async () => {
+        setIsLoggingOut(true);
+        try {
+            await sdk.logout();
+        } catch (e) {
+            // Even if logout fails, continue to reset and navigate
+            console.error('Logout failed during error recovery:', e);
+        }
+        resetError();
+        navigate('/');
     };
 
     return (
@@ -36,22 +63,39 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
 
                 {/* Error Message */}
                 <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                    Oops! Something went wrong
+                    {isAuthRelatedError ? 'Session Expired' : 'Oops! Something went wrong'}
                 </h1>
                 <p className="text-gray-600 mb-8">
-                    We're sorry, but something unexpected happened. Please try again or return to the home page.
+                    {isAuthRelatedError
+                        ? 'Your session has expired or is invalid. Please sign out and log in again to continue.'
+                        : "We're sorry, but something unexpected happened. Please try again or return to the home page."
+                    }
                 </p>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                    <button
-                        onClick={handleTryAgain}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
-                        aria-label="Try again"
-                    >
-                        <RefreshCw className="w-5 h-5" />
-                        Try Again
-                    </button>
+                    {isAuthRelatedError ? (
+                        // For auth errors, show Sign Out button as primary action
+                        <button
+                            onClick={handleSignOutAndRetry}
+                            disabled={isLoggingOut}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Sign out and try again"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            {isLoggingOut ? 'Signing out...' : 'Sign Out & Try Again'}
+                        </button>
+                    ) : (
+                        // For non-auth errors, show Try Again as primary
+                        <button
+                            onClick={handleTryAgain}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                            aria-label="Try again"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Try Again
+                        </button>
+                    )}
                     <button
                         onClick={handleGoHome}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
@@ -73,6 +117,12 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                                 <p className="text-sm font-semibold text-gray-700 mb-1">Error Message:</p>
                                 <p className="text-sm text-red-600 font-mono break-words">
                                     {error.message}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Auth Error Detected:</p>
+                                <p className="text-sm text-gray-600 font-mono">
+                                    {isAuthRelatedError ? 'Yes' : 'No'}
                                 </p>
                             </div>
                             {error.stack && (
@@ -98,3 +148,4 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
         </div>
     );
 }
+

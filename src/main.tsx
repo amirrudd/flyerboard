@@ -3,6 +3,7 @@ import { AuthProvider } from "@descope/react-sdk";
 import { ConvexProviderWithAuth } from "convex/react";
 import { ConvexReactClient } from "convex/react";
 import { useDescopeAuth } from "./lib/useDescopeAuth";
+import { AuthRecoveryProvider } from "./context/AuthRecoveryContext";
 import "./index.css";
 import App from "./App";
 
@@ -29,9 +30,11 @@ createRoot(document.getElementById("root")!).render(
     autoRefresh={true}
     sessionTokenViaCookie={false}
   >
-    <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
-      <App />
-    </ConvexProviderWithAuth>
+    <AuthRecoveryProvider>
+      <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
+        <App />
+      </ConvexProviderWithAuth>
+    </AuthRecoveryProvider>
   </AuthProvider>,
 );
 

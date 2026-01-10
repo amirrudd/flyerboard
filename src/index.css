@@ -28,6 +28,23 @@
   h6 {
     @apply font-display tracking-tight;
   }
+
+  /* Ensure pointer cursor on all interactive elements */
+  button,
+  a,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  summary {
+    cursor: pointer;
+  }
+
+  /* Override for disabled buttons */
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 @layer components {

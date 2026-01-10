@@ -38,24 +38,26 @@ export function TermsPage() {
                 }
                 rightNode={<div />}
             />
-            <div className="min-h-screen bg-white py-12 container-padding pb-bottom-nav md:pb-12">
-                <div className="content-width-reading mx-auto">
+            <div className="min-h-screen bg-white py-12 pb-bottom-nav md:pb-12">
+                <div className="content-max-width mx-auto container-padding">
+                    <div className="content-width-reading mx-auto">
 
-                    <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 mb-12">
-                        <h2 className="text-xl font-semibold mb-4 mt-0">Table of Contents</h2>
-                        <ul className="list-none pl-0 space-y-2">
-                            <li><a href="#terms" className="text-primary-600 hover:underline">Terms and Conditions</a></li>
-                            <li><a href="#privacy" className="text-primary-600 hover:underline">Privacy Policy</a></li>
-                        </ul>
+                        <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 mb-12">
+                            <h2 className="text-xl font-semibold mb-4 mt-0">Table of Contents</h2>
+                            <ul className="list-none pl-0 space-y-2">
+                                <li><a href="#terms" className="text-primary-600 hover:underline">Terms and Conditions</a></li>
+                                <li><a href="#privacy" className="text-primary-600 hover:underline">Privacy Policy</a></li>
+                            </ul>
+                        </div>
+
+                        <section id="terms" className="mb-16 scroll-mt-24">
+                            <MarkdownContent content={termsContent} />
+                        </section>
+
+                        <section id="privacy" className="scroll-mt-24">
+                            <MarkdownContent content={privacyContent} />
+                        </section>
                     </div>
-
-                    <section id="terms" className="mb-16 scroll-mt-24">
-                        <MarkdownContent content={termsContent} />
-                    </section>
-
-                    <section id="privacy" className="scroll-mt-24">
-                        <MarkdownContent content={privacyContent} />
-                    </section>
                 </div>
             </div>
         </>

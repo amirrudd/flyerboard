@@ -131,4 +131,37 @@ Use `getDisplayName()` and `getInitials()` from `src/lib/displayName.ts` for con
 - Users can optionally add phone in dashboard for SMS notifications
 - Phone numbers are never used for display names or avatars
 
+## 8. Auth Error Recovery
+
+### ✅ DO: Handle Auth Errors Gracefully
+The `ErrorFallback` component automatically detects authentication-related errors and provides a "Sign Out & Try Again" option:
+- Errors containing "Not authenticated", "Unauthorized", "Token expired", etc. are detected
+- Users see a "Session Expired" message with clear recovery options
+- Clicking "Sign Out & Try Again" logs out and redirects to home for fresh login
+
+### ✅ DO: Use `isAuthError()` Helper
+When handling errors manually, use the `isAuthError` helper from `useAuthRecovery.ts`:
+```tsx
+import { isAuthError } from "../lib/useAuthRecovery";
+
+try {
+  await someMutation();
+} catch (error) {
+  if (isAuthError(error)) {
+    // Handle auth-specific error (e.g., show login modal)
+  }
+}
+```
+
+### ❌ DON'T: Add Proactive Token Refresh
+Descope's `autoRefresh={true}` already handles token refresh efficiently. Do NOT add explicit `refresh()` calls on every page load as this:
+- Consumes API quota unnecessarily
+- May cause race conditions with Descope's automatic refresh
+- Only call `refresh()` when you've detected an actual auth error
+
+### ✅ Context Files
+- Hook: `src/lib/useAuthRecovery.ts` - provides `forceLogout()`, `attemptRecovery()`, `isAuthError()`
+- Context: `src/context/AuthRecoveryContext.tsx` - provides recovery functions throughout app
+- ErrorFallback: `src/components/ui/ErrorFallback.tsx` - auto-detects and handles auth errors
+
 

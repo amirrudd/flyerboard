@@ -570,7 +570,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           }
         />
 
-        <div className="flex-1 w-full content-max-width md:mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
+        <div className="flex-1 w-full content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1 md:sticky md:top-21 md:self-start">

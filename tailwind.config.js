@@ -117,13 +117,22 @@ module.exports = {
     function ({ addComponents }) {
       addComponents({
         // Proportional padding that scales with viewport
+        // Mobile: 0.5rem (8px), scales up on larger screens
         '.container-padding': {
-          'padding-left': 'clamp(1rem, 1.3vw, 2rem)',
-          'padding-right': 'clamp(1rem, 1.3vw, 2rem)',
+          'padding-left': 'clamp(0.5rem, 1.3vw, 2rem)',
+          'padding-right': 'clamp(0.5rem, 1.3vw, 2rem)',
+          '@screen md': {
+            'padding-left': 'clamp(1rem, 1.3vw, 2rem)',
+            'padding-right': 'clamp(1rem, 1.3vw, 2rem)',
+          },
         },
         // Proportional max-width that scales with viewport (capped at 2400px)
+        // Mobile: 96vw (4% total margins), Desktop: 88vw (12% total margins)
         '.content-max-width': {
-          'max-width': 'min(88vw, 2400px)',
+          'max-width': 'min(96vw, 2400px)',
+          '@screen md': {
+            'max-width': 'min(88vw, 2400px)',
+          },
         },
         // Optimal reading width for static content pages
         '.content-width-reading': {

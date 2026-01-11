@@ -41,6 +41,23 @@ vi.mock('../../components/ReportModal', () => ({
     ReportModal: () => <div data-testid="report-modal">Report Modal</div>,
 }));
 
+vi.mock('../../components/ui/ImageDisplay', () => ({
+    ImageDisplay: ({ alt }: { alt: string }) => <img alt={alt} src="mock-image.jpg" />,
+}));
+
+vi.mock('../../components/ui/LocationMap', () => ({
+    LocationMap: () => <div data-testid="location-map">Map</div>,
+}));
+
+vi.mock('../../components/ui/ImageLightbox', () => ({
+    ImageLightbox: () => <div data-testid="image-lightbox">Lightbox</div>,
+}));
+
+vi.mock('../../lib/viewTracker', () => ({
+    trackView: vi.fn(),
+    setFlushCallback: vi.fn(),
+}));
+
 // Import useQuery and useMutation from the mocked module
 import { useQuery, useMutation } from 'convex/react';
 
@@ -88,15 +105,26 @@ describe('AdDetail - Share Functionality', () => {
         // Mock share API (default to not supported)
         mockShare = undefined;
 
-        // Setup mock implementations with sequential returns
-        // AdDetail makes these useQuery calls in order:
-        // 1. getAdById, 2. isAdSaved, 3. getChatForAd, 4. getChatMessages (skip)
-        // Note: loggedInUser query was removed from AdDetail
-        (useQuery as any)
-            .mockReturnValueOnce(mockAd)        // getAdById
-            .mockReturnValueOnce(false)         // isAdSaved
-            .mockReturnValueOnce(null)          // getChatForAd
-            .mockReturnValueOnce(undefined);    // getChatMessages (skip)
+        // Setup mock implementations based on query function called
+        const adContext = {
+            ad: mockAd,
+            isSaved: false,
+            existingChat: null
+        };
+        const mockUser = { _id: 'user-1', name: 'Test User' };
+
+        // Use mockImplementation to return the right value based on the query
+        (useQuery as any).mockImplementation((queryFn: any, args: any) => {
+            // Check the query function/args to determine return value
+            // Since we can't easily inspect the function, return adContext as default
+            if (args === "skip") {
+                return undefined;
+            }
+            // For getAdWithContext, return the context
+            // For getCurrentUser, return user
+            // Since we can't distinguish, just return the adContext for ad queries
+            return adContext;
+        });
 
         // useMutation returns a function that returns a promise
         (useMutation as any).mockReturnValue(vi.fn().mockResolvedValue(undefined));

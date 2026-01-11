@@ -138,8 +138,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const { isAuthenticated } = useSession();
   const { user: descopeUser } = useUser();
 
-  // Fetch real user data from Convex
-  const convexUser = useQuery(api.descopeAuth.getCurrentUser);
+  // Combined query for user data and stats - reduces 2 function calls to 1
+  const userWithStats = useQuery(api.descopeAuth.getCurrentUserWithStats);
+  const convexUser = userWithStats?.user;
+  const userStats = userWithStats?.stats;
 
   // Use Convex user data if available, otherwise fall back to Descope session info or null
   const user = isAuthenticated ? (convexUser || {
@@ -150,11 +152,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     isVerified: false,
     emailNotificationsEnabled: false
   }) : null;
-  const userAds = useQuery(api.posts.getUserAds);
-  const userStats = useQuery(api.users.getUserStats);
-  const sellerChats = useQuery(api.posts.getSellerChats);
-  const buyerChats = useQuery(api.posts.getBuyerChats);
-  const savedAds = useQuery(api.adDetail.getSavedAds);
+
+  // Only fetch when viewing the ads tab
+  const userAds = useQuery(
+    api.posts.getUserAds,
+    activeTab === "ads" ? {} : "skip"
+  );
+
+  // Only fetch when viewing the chats tab
+  const sellerChats = useQuery(
+    api.posts.getSellerChats,
+    activeTab === "chats" ? {} : "skip"
+  );
+  const buyerChats = useQuery(
+    api.posts.getBuyerChats,
+    activeTab === "chats" ? {} : "skip"
+  );
+
+  // Only fetch when viewing the saved tab
+  const savedAds = useQuery(
+    api.adDetail.getSavedAds,
+    activeTab === "saved" ? {} : "skip"
+  );
+
+  // Only fetch when viewing the archived tab
   const archivedChats = useQuery(
     api.messages.getArchivedChats,
     user && activeTab === "archived" ? {} : "skip"
@@ -166,10 +187,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     expandedChatId ? { chatId: expandedChatId } : "skip"
   );
 
-  // Get unread counts for all user ads
+  // Get unread counts - only needed for chats tab
   const unreadCounts = useQuery(
     api.messages.getUnreadCounts,
-    userAds ? { adIds: userAds.map(ad => ad._id) } : "skip"
+    activeTab === "chats" && userAds ? { adIds: userAds.map(ad => ad._id) } : "skip"
   );
 
   const deleteAd = useMutation(api.posts.deleteAd);

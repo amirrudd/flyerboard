@@ -10,7 +10,7 @@ import { useSession } from "@descope/react-sdk";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 import { toast } from "sonner";
-import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
+import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
 
 interface LayoutContext {
@@ -19,6 +19,7 @@ interface LayoutContext {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShowAuthModal } = useOutletContext<LayoutContext>();
 
@@ -89,26 +90,27 @@ export function HomePage() {
     }
   }, [categories, searchParams]);
 
-  // Refresh on mount (when navigating back to home page)
-  useEffect(() => {
-    // Small delay to ensure ads are loaded first
-    const timer = setTimeout(() => {
-      refreshAds();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []); // Empty dependency array = run once on mount
-
-  // Silent refresh when page becomes visible
+  // Silent refresh when page becomes visible (throttled in context - max once per 60s)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshAds();
+        refreshAds(false); // Not forced, will be throttled
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [refreshAds]);
+
+  // Force refresh when navigating back from posting/editing a flyer
+  useEffect(() => {
+    const state = location.state as { forceRefresh?: boolean } | null;
+    if (state?.forceRefresh) {
+      refreshAds(true); // Force refresh to show the new/updated flyer
+      // Clear the state to prevent re-triggering on subsequent renders
+      navigate('/', { replace: true, state: {} });
+    }
+  }, [location.state, refreshAds, navigate]);
 
   // Clear new ad highlights after 5 seconds
   useEffect(() => {

@@ -1,10 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from "react";
-import { useQuery, useMutation, usePaginatedQuery } from "convex/react";
+import { useQuery, usePaginatedQuery, useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
-import { toast } from "sonner";
-import { throttle } from "../lib/performanceUtils";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 
 interface Category {
@@ -28,7 +26,7 @@ interface MarketplaceContextType {
     ads: any; // Ideally import { Doc } from ...
     loadMore: (numItems: number) => void;
     status: "CanLoadMore" | "LoadingMore" | "Exhausted" | "LoadingFirstPage";
-    refreshAds: () => Promise<void>;
+    refreshAds: (forceRefresh?: boolean) => Promise<void>;
     newAdIds: Set<string>;
     clearNewAdIds: () => void;
 }
@@ -83,43 +81,62 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         { initialNumItems: 30 }
     );
 
-    // Query for latest ads (for refresh)
-    const latestAds = useQuery(
-        api.ads.getLatestAds,
-        {
-            categoryId: selectedCategory ?? undefined,
-            search: searchQuery || undefined,
-            location: selectedLocation || undefined,
-            sinceTimestamp: lastRefreshTimestamp.current,
-            limit: 50,
-        }
-    );
+    // Query for latest ads (for refresh) - REMOVED continuous subscription
+    // Now using on-demand query via useConvex below
+
+    // --- On-demand refresh with throttling ---
+    const convex = useConvex();
+    const lastRefreshTime = useRef<number>(0);
+    const REFRESH_THROTTLE_MS = 60000; // 60 seconds
 
     // Refresh function to fetch and merge new ads
-    const refreshAds = useCallback(async () => {
-        if (!latestAds || latestAds.length === 0) {
+    // forceRefresh=true bypasses throttle (used after creating/editing/deleting flyers)
+    const refreshAds = useCallback(async (forceRefresh = false) => {
+        const now = Date.now();
+
+        // Skip if refresh was called too recently (unless forced)
+        if (!forceRefresh && now - lastRefreshTime.current < REFRESH_THROTTLE_MS) {
             return;
         }
 
-        // Get current ad IDs
-        const currentAdIds = new Set((ads || []).map(ad => ad._id));
+        lastRefreshTime.current = now;
 
-        // Find truly new ads (not in current list)
-        const newAds = latestAds.filter(ad => !currentAdIds.has(ad._id));
+        try {
+            // Fetch latest ads on-demand (not subscription)
+            const latestAds = await convex.query(api.ads.getLatestAds, {
+                categoryId: selectedCategory ?? undefined,
+                search: searchQuery || undefined,
+                location: selectedLocation || undefined,
+                sinceTimestamp: lastRefreshTimestamp.current,
+                limit: 50,
+            });
 
-        if (newAds.length > 0) {
-            // Mark these as new for highlighting
-            setNewAdIds(new Set(newAds.map(ad => ad._id)));
+            if (!latestAds || latestAds.length === 0) {
+                return;
+            }
 
-            // Merge new ads at the beginning
-            const mergedAds = [...newAds, ...(ads || [])];
-            setCachedAds(mergedAds);
-            adsCache.current.set(cacheKey, mergedAds);
+            // Get current ad IDs
+            const currentAdIds = new Set((ads || []).map(ad => ad._id));
 
-            // Update last refresh timestamp
-            lastRefreshTimestamp.current = Date.now();
+            // Find truly new ads (not in current list)
+            const newAds = latestAds.filter(ad => !currentAdIds.has(ad._id));
+
+            if (newAds.length > 0) {
+                // Mark these as new for highlighting
+                setNewAdIds(new Set(newAds.map(ad => ad._id)));
+
+                // Merge new ads at the beginning
+                const mergedAds = [...newAds, ...(ads || [])];
+                setCachedAds(mergedAds);
+                adsCache.current.set(cacheKey, mergedAds);
+
+                // Update last refresh timestamp
+                lastRefreshTimestamp.current = Date.now();
+            }
+        } catch (error) {
+            console.error('Failed to refresh ads:', error);
         }
-    }, [latestAds, ads, cacheKey]);
+    }, [convex, selectedCategory, searchQuery, selectedLocation, ads, cacheKey]);
 
     // Clear new ad IDs (called after animation or user interaction)
     const clearNewAdIds = useCallback(() => {

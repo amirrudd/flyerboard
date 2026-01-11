@@ -134,6 +134,59 @@ export const getCurrentUser = query({
 });
 
 /**
+ * Combined query for dashboard - returns user and stats in one call.
+ * Reduces function invocations by combining getCurrentUser + getUserStats.
+ */
+export const getCurrentUserWithStats = query({
+    handler: async (ctx) => {
+        const userId = await getDescopeUserId(ctx);
+        if (!userId) {
+            return null;
+        }
+
+        const user = await ctx.db.get(userId);
+        if (!user) {
+            return null;
+        }
+
+        // Get user's ads for stats
+        const ads = await ctx.db
+            .query("ads")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.neq(q.field("isDeleted"), true))
+            .collect();
+
+        const activeAds = ads.filter(ad => ad.isActive).length;
+        const totalViews = ads.reduce((sum, ad) => sum + ad.views, 0);
+
+        // Get saved ads count
+        const savedAds = await ctx.db
+            .query("savedAds")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .collect();
+
+        // Get chats count
+        const chats = await ctx.db
+            .query("chats")
+            .withIndex("by_seller", (q) => q.eq("sellerId", userId))
+            .collect();
+
+        return {
+            user,
+            stats: {
+                totalAds: ads.length,
+                activeAds,
+                totalViews,
+                savedAds: savedAds.length,
+                chats: chats.length,
+                averageRating: user.averageRating || 0,
+                ratingCount: user.ratingCount || 0,
+            },
+        };
+    },
+});
+
+/**
  * Gets the current user's ID, or null if not authenticated.
  * This replaces getAuthUserId for Descope authentication.
  */

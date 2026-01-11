@@ -30,6 +30,62 @@ export const getAdById = query({
   },
 });
 
+/**
+ * Combined query for ad detail page - reduces 4 separate queries to 1.
+ * Returns ad data, seller info, saved status, and existing chat in a single call.
+ */
+export const getAdWithContext = query({
+  args: { adId: v.id("ads") },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+
+    const ad = await ctx.db.get(args.adId);
+    if (!ad || ad.isDeleted) {
+      return null;
+    }
+
+    // Get seller info
+    const seller = await ctx.db.get(ad.userId);
+
+    // Check if saved (only if authenticated)
+    let isSaved = false;
+    let existingChat = null;
+
+    if (userId) {
+      const savedAd = await ctx.db
+        .query("savedAds")
+        .withIndex("by_user_and_ad", (q) =>
+          q.eq("userId", userId).eq("adId", args.adId)
+        )
+        .unique();
+      isSaved = !!savedAd;
+
+      // Get existing chat
+      existingChat = await ctx.db
+        .query("chats")
+        .withIndex("by_ad_and_buyer", (q) =>
+          q.eq("adId", args.adId).eq("buyerId", userId)
+        )
+        .unique();
+    }
+
+    return {
+      ad: {
+        ...ad,
+        seller: seller ? {
+          name: seller.name,
+          averageRating: seller.averageRating || 0,
+          ratingCount: seller.ratingCount || 0,
+          image: seller.image,
+          isVerified: seller.isVerified,
+        } : null,
+      },
+      isSaved,
+      existingChat,
+    };
+  },
+});
+
 export const incrementViews = mutation({
   args: { adId: v.id("ads") },
   handler: async (ctx, args) => {
@@ -43,6 +99,35 @@ export const incrementViews = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Batch increment views for multiple ads in a single mutation.
+ * Used by the frontend view tracker to reduce function calls.
+ * Silently skips deleted or non-existent ads.
+ */
+export const batchIncrementViews = mutation({
+  args: { adIds: v.array(v.id("ads")) },
+  handler: async (ctx, args) => {
+    let successCount = 0;
+
+    for (const adId of args.adIds) {
+      const ad = await ctx.db.get(adId);
+      if (ad && !ad.isDeleted) {
+        await ctx.db.patch(adId, {
+          views: ad.views + 1,
+        });
+        successCount++;
+      }
+    }
+
+    logOperation("Batch views incremented", {
+      requested: args.adIds.length,
+      succeeded: successCount
+    });
+
+    return { success: true, count: successCount };
   },
 });
 

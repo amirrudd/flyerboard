@@ -71,14 +71,19 @@ describe('UserDashboard', () => {
     it('should render dashboard tabs when user is logged in', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
+        // Order: getCurrentUserWithStats, getUserAds, sellerChats(skip), buyerChats(skip), savedAds(skip), archivedChats(skip), chatMessages(skip), unreadCounts(skip)
         vi.mocked(useQuery)
-            .mockReturnValueOnce({ _id: 'user1', name: 'Test User' }) // getCurrentUser
-            .mockReturnValueOnce([]) // getUserAds
-            .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
-            .mockReturnValueOnce([]) // getSellerChats
-            .mockReturnValueOnce([]) // getBuyerChats
-            .mockReturnValueOnce([]) // getSavedAds
-            .mockReturnValueOnce([]); // getArchivedChats
+            .mockReturnValueOnce({  // getCurrentUserWithStats (combined)
+                user: { _id: 'user1', name: 'Test User' },
+                stats: { totalAds: 0, totalViews: 0 }
+            })
+            .mockReturnValueOnce([]) // getUserAds (ads tab is active by default)
+            .mockReturnValueOnce(undefined) // sellerChats (skipped - not chats tab)
+            .mockReturnValueOnce(undefined) // buyerChats (skipped - not chats tab)
+            .mockReturnValueOnce(undefined) // savedAds (skipped - not saved tab)
+            .mockReturnValueOnce(undefined) // archivedChats (skipped)
+            .mockReturnValueOnce(undefined) // chatMessages (skipped)
+            .mockReturnValueOnce(undefined); // unreadCounts (skipped)
 
         renderDashboard();
 
@@ -92,30 +97,30 @@ describe('UserDashboard', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
         // Provide enough mock return values for multiple render cycles
-        const user = { _id: 'user1', name: 'Test User', email: 'test@test.com' };
-        const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
+        const userWithStats = {
+            user: { _id: 'user1', name: 'Test User', email: 'test@test.com' },
+            stats: { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 }
+        };
 
         vi.mocked(useQuery)
-            // First render cycle
-            .mockReturnValueOnce(user)  // getCurrentUser
-            .mockReturnValueOnce([])    // getUserAds
-            .mockReturnValueOnce(stats) // getUserStats
-            .mockReturnValueOnce([])    // getSellerChats
-            .mockReturnValueOnce([])    // getBuyerChats
-            .mockReturnValueOnce([])    // getSavedAds
-            .mockReturnValueOnce(undefined) // getArchivedChats (skipped)
+            // First render cycle - order: getCurrentUserWithStats, getUserAds, then skipped queries
+            .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
+            .mockReturnValueOnce([])    // getUserAds (ads tab active)
+            .mockReturnValueOnce(undefined) // sellerChats (skipped)
+            .mockReturnValueOnce(undefined) // buyerChats (skipped)
+            .mockReturnValueOnce(undefined) // savedAds (skipped)
+            .mockReturnValueOnce(undefined) // archivedChats (skipped)
             .mockReturnValueOnce(undefined) // getChatMessages (skipped)
-            .mockReturnValueOnce({})    // getUnreadCounts
+            .mockReturnValueOnce(undefined) // getUnreadCounts (skipped)
             // Second render cycle (React may re-render)
-            .mockReturnValueOnce(user)
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce(stats)
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce([])
+            .mockReturnValueOnce(userWithStats)
             .mockReturnValueOnce([])
             .mockReturnValueOnce(undefined)
             .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce({})
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce(undefined)
             // Default for any remaining calls
             .mockReturnValue(undefined);
 
@@ -130,14 +135,19 @@ describe('UserDashboard', () => {
     it('should call onPostAd when button is clicked', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
+        // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
-            .mockReturnValueOnce({ _id: 'user1', name: 'Test User' }) // getCurrentUser
+            .mockReturnValueOnce({  // getCurrentUserWithStats
+                user: { _id: 'user1', name: 'Test User' },
+                stats: { totalAds: 0, totalViews: 0 }
+            })
             .mockReturnValueOnce([]) // getUserAds
-            .mockReturnValueOnce({ totalAds: 0, totalViews: 0 }) // getUserStats
-            .mockReturnValueOnce([]) // getSellerChats
-            .mockReturnValueOnce([]) // getBuyerChats
-            .mockReturnValueOnce([]) // getSavedAds
-            .mockReturnValueOnce([]); // getArchivedChats
+            .mockReturnValueOnce(undefined) // sellerChats (skipped)
+            .mockReturnValueOnce(undefined) // buyerChats (skipped)
+            .mockReturnValueOnce(undefined) // savedAds (skipped)
+            .mockReturnValueOnce(undefined) // archivedChats (skipped)
+            .mockReturnValueOnce(undefined) // chatMessages (skipped)
+            .mockReturnValueOnce(undefined); // unreadCounts (skipped)
 
         renderDashboard();
 
@@ -165,19 +175,21 @@ describe('UserDashboard', () => {
             })),
         });
 
-        const user = { _id: 'user1', name: 'Test User', email: 'test@test.com' };
-        const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
+        const userWithStats = {
+            user: { _id: 'user1', name: 'Test User', email: 'test@test.com' },
+            stats: { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 }
+        };
 
+        // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
-            .mockReturnValueOnce(user)
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce(stats)
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce({})
+            .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
+            .mockReturnValueOnce([])    // getUserAds (will be fetched after redirect to ads tab)
+            .mockReturnValueOnce(undefined) // sellerChats (skipped)
+            .mockReturnValueOnce(undefined) // buyerChats (skipped)
+            .mockReturnValueOnce(undefined) // savedAds (skipped)
+            .mockReturnValueOnce(undefined) // archivedChats (skipped)
+            .mockReturnValueOnce(undefined) // chatMessages (skipped)
+            .mockReturnValueOnce(undefined) // unreadCounts (skipped)
             .mockReturnValue(undefined);
 
         // Render with archived tab in URL

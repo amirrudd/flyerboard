@@ -1,5 +1,3 @@
-
-
 import { useQuery, useMutation } from "convex/react";
 import { Header } from "../layout/Header";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
@@ -22,6 +20,7 @@ import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
 import { ImageLightbox } from "../../components/ui/ImageLightbox";
 import { formatPriceWithCurrency } from "../../lib/priceFormatter";
+import { trackView, setFlushCallback } from "../../lib/viewTracker";
 
 
 interface AdDetailProps {
@@ -47,9 +46,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showMessageNotificationModal, setShowMessageNotificationModal] = useState(false);
   const [showLikeNotificationModal, setShowLikeNotificationModal] = useState(false);
 
-  const ad = useQuery(api.adDetail.getAdById, { adId });
-  const isAdSaved = useQuery(api.adDetail.isAdSaved, { adId });
-  const existingChat = useQuery(api.adDetail.getChatForAd, { adId });
+  // Combined query for ad data, saved status, and existing chat
+  const adContext = useQuery(api.adDetail.getAdWithContext, { adId });
+  const ad = adContext?.ad;
+  const isAdSaved = adContext?.isSaved ?? false;
+  const existingChat = adContext?.existingChat;
+
   const messages = useQuery(
     api.adDetail.getChatMessages,
     chatId ? { chatId } : "skip"
@@ -58,7 +60,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const saveAd = useMutation(api.adDetail.saveAd);
   const sendFirstMessage = useMutation(api.adDetail.sendFirstMessage);
   const sendMessage = useMutation(api.adDetail.sendMessage);
-  const incrementViews = useMutation(api.adDetail.incrementViews);
+  const batchIncrementViews = useMutation(api.adDetail.batchIncrementViews);
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
@@ -77,12 +79,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [adId]);
 
+  // Set up view tracker flush callback (once per component lifecycle)
   useEffect(() => {
-    // Increment views when component mounts
-    incrementViews({ adId }).catch(() => {
-      // Ignore errors for view counting
+    setFlushCallback(async (adIds: string[]) => {
+      await batchIncrementViews({ adIds: adIds as Id<"ads">[] });
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchIncrementViews]);
+
+  useEffect(() => {
+    // Track view - batched and deduplicated by viewTracker
+    trackView(adId);
   }, [adId]); // Only re-run if adId changes
 
   const handleSave = async () => {

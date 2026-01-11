@@ -43,7 +43,7 @@ describe('PostAdPage - Navigation Tests', () => {
         expect(screen.getByTestId('post-ad-component')).toBeInTheDocument();
     });
 
-    it('should navigate to home when onBack is called from home', () => {
+    it('should navigate to home with forceRefresh when onBack is called from home', () => {
         mockUseLocation.mockReturnValue({
             state: { from: '/' },
         });
@@ -57,7 +57,8 @@ describe('PostAdPage - Navigation Tests', () => {
         const backButton = screen.getByTestId('back-button');
         backButton.click();
 
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        // Should navigate to home with forceRefresh flag to update ads list
+        expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
     });
 
     it('should navigate to dashboard when onBack is called from dashboard', () => {
@@ -77,7 +78,7 @@ describe('PostAdPage - Navigation Tests', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
 
-    it('should navigate to home when onBack is called from ad detail page', () => {
+    it('should navigate to home with forceRefresh when onBack is called from ad detail page', () => {
         mockUseLocation.mockReturnValue({
             state: { from: '/ad/123' },
         });
@@ -91,10 +92,11 @@ describe('PostAdPage - Navigation Tests', () => {
         const backButton = screen.getByTestId('back-button');
         backButton.click();
 
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        // Non-dashboard routes navigate to home with forceRefresh
+        expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
     });
 
-    it('should navigate to home when no from state is provided', () => {
+    it('should navigate to home with forceRefresh when no from state is provided', () => {
         mockUseLocation.mockReturnValue({
             state: {},
         });
@@ -108,7 +110,8 @@ describe('PostAdPage - Navigation Tests', () => {
         const backButton = screen.getByTestId('back-button');
         backButton.click();
 
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        // Default behavior: navigate to home with forceRefresh
+        expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
     });
 
     it('should pass editingAd to PostAd component when provided', () => {

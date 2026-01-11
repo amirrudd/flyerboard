@@ -13,7 +13,8 @@ export function PostAdPage() {
         if (from === '/dashboard') {
             navigate('/dashboard');
         } else {
-            navigate('/');
+            // Pass forceRefresh flag to trigger immediate refresh on home page
+            navigate('/', { state: { forceRefresh: true } });
         }
     };
 

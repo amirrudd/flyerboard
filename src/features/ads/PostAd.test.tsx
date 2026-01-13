@@ -237,22 +237,19 @@ describe('PostAd', () => {
 
         const titleInput = screen.getByPlaceholderText('Enter a descriptive title') as HTMLInputElement;
         const descriptionTextarea = screen.getByPlaceholderText('Describe your item...') as HTMLTextAreaElement;
-        const extendedDescriptionTextarea = screen.getByPlaceholderText('Additional details (optional)...') as HTMLTextAreaElement;
         const locationInput = screen.getByPlaceholderText('Enter suburb or postcode') as HTMLInputElement;
 
         // Check maxLength attributes
         expect(titleInput.maxLength).toBe(100);
-        expect(descriptionTextarea.maxLength).toBe(500);
-        expect(extendedDescriptionTextarea.maxLength).toBe(2000);
+        expect(descriptionTextarea.maxLength).toBe(1500);
         expect(locationInput.maxLength).toBe(100);
     });
 
-    it('should display character counters for textareas', () => {
+    it('should display character counter for description textarea', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        // Check for character counters
-        expect(screen.getByText('0 / 500 characters')).toBeInTheDocument();
-        expect(screen.getByText('0 / 2000 characters')).toBeInTheDocument();
+        // Check for character counter
+        expect(screen.getByText('0 / 1500 characters')).toBeInTheDocument();
     });
 
     it('should update character counter when typing', () => {
@@ -262,7 +259,7 @@ describe('PostAd', () => {
 
         fireEvent.change(descriptionTextarea, { target: { value: 'Test description' } });
 
-        expect(screen.getByText('16 / 500 characters')).toBeInTheDocument();
+        expect(screen.getByText('16 / 1500 characters')).toBeInTheDocument();
     });
 
     it('should filter out deleted images when editing a flyer', async () => {
@@ -275,7 +272,6 @@ describe('PostAd', () => {
             _id: 'ad1',
             title: 'Test Ad',
             description: 'Test desc',
-            extendedDescription: '',
             price: 100,
             location: 'Sydney',
             categoryId: 'cat1',

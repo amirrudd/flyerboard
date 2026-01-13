@@ -32,7 +32,6 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
   const [formData, setFormData] = useState({
     title: editingAd?.title || "",
     description: editingAd?.description || "",
-    extendedDescription: editingAd?.extendedDescription || "",
     listingType: (editingAd?.listingType || "sale") as "sale" | "exchange" | "both",
     price: editingAd?.price?.toString() || "",
     exchangeDescription: editingAd?.exchangeDescription || "",
@@ -286,7 +285,6 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           adId: editingAd._id,
           title: formData.title,
           description: formData.description,
-          extendedDescription: formData.extendedDescription || undefined,
           listingType: formData.listingType,
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
@@ -305,7 +303,6 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         const adId = await createAd({
           title: formData.title,
           description: formData.description,
-          extendedDescription: formData.extendedDescription || undefined,
           listingType: formData.listingType,
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
@@ -351,7 +348,6 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           adId,
           title: formData.title,
           description: formData.description,
-          extendedDescription: formData.extendedDescription || undefined,
           listingType: formData.listingType,
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
@@ -507,8 +503,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "sale" }))}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "sale"
-                        ? "bg-primary-600 text-white"
-                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-primary-600 text-white"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50"
                       }`}
                   >
                     <DollarSign className="w-4 h-4" />
@@ -518,8 +514,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "exchange", price: "" }))}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border-l border-r border-neutral-300 transition-colors ${formData.listingType === "exchange"
-                        ? "bg-primary-600 text-white"
-                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-primary-600 text-white"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50"
                       }`}
                   >
                     <Repeat className="w-4 h-4" />
@@ -529,8 +525,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "both" }))}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "both"
-                        ? "bg-primary-600 text-white"
-                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-primary-600 text-white"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50"
                       }`}
                   >
                     <Handshake className="w-4 h-4" />
@@ -655,8 +651,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                maxLength={500}
-                rows={4}
+                maxLength={1500}
+                rows={6}
                 autoComplete="off"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
                 placeholder="Describe your item..."
@@ -664,28 +660,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               />
               <div className="min-h-[20px] mt-1">
                 <p className="text-xs text-neutral-400 text-right">
-                  {formData.description.length} / 500 characters
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Extended Description
-              </label>
-              <textarea
-                name="extendedDescription"
-                value={formData.extendedDescription}
-                onChange={handleInputChange}
-                maxLength={2000}
-                rows={3}
-                autoComplete="off"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                placeholder="Additional details (optional)..."
-              />
-              <div className="min-h-[20px] mt-1">
-                <p className="text-xs text-neutral-400 text-right">
-                  {formData.extendedDescription.length} / 2000 characters
+                  {formData.description.length} / 1500 characters
                 </p>
               </div>
             </div>

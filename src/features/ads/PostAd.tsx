@@ -10,7 +10,7 @@ import { searchLocations, formatLocation, LocationData } from "../../lib/locatio
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
-import { ChevronLeft, Trash2, ChevronDown, Loader2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Trash2, ChevronDown, Loader2, AlertTriangle, DollarSign, Repeat, Handshake } from "lucide-react";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 interface ImageState {
@@ -33,10 +33,13 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
     title: editingAd?.title || "",
     description: editingAd?.description || "",
     extendedDescription: editingAd?.extendedDescription || "",
-    price: editingAd?.price || "",
+    listingType: (editingAd?.listingType || "sale") as "sale" | "exchange" | "both",
+    price: editingAd?.price?.toString() || "",
+    exchangeDescription: editingAd?.exchangeDescription || "",
     location: editingAd?.location || "",
     categoryId: editingAd?.categoryId || "",
   });
+
 
   const [images, setImages] = useState<string[]>(editingAd?.images || []);
   const [imageStates, setImageStates] = useState<Map<string, ImageState>>(new Map());
@@ -169,10 +172,17 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.description || !formData.price || !formData.location || !formData.categoryId) {
+    // Price is only required for "sale" and "both" listing types
+    const needsPrice = formData.listingType === "sale" || formData.listingType === "both";
+    if (!formData.title || !formData.description || !formData.location || !formData.categoryId) {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (needsPrice && !formData.price) {
+      toast.error("Please enter a price for sale listings");
+      return;
+    }
+
 
     if (images.length === 0) {
       toast.error("Please add at least one image");
@@ -277,7 +287,9 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           title: formData.title,
           description: formData.description,
           extendedDescription: formData.extendedDescription || undefined,
-          price: parseFloat(formData.price),
+          listingType: formData.listingType,
+          price: formData.price ? parseFloat(formData.price) : undefined,
+          exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
           categoryId: formData.categoryId as Id<"categories">,
           images: finalImages,
@@ -294,7 +306,9 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           title: formData.title,
           description: formData.description,
           extendedDescription: formData.extendedDescription || undefined,
-          price: parseFloat(formData.price),
+          listingType: formData.listingType,
+          price: formData.price ? parseFloat(formData.price) : undefined,
+          exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
           categoryId: formData.categoryId as Id<"categories">,
           images: [], // Empty initially
@@ -338,7 +352,9 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           title: formData.title,
           description: formData.description,
           extendedDescription: formData.extendedDescription || undefined,
-          price: parseFloat(formData.price),
+          listingType: formData.listingType,
+          price: formData.price ? parseFloat(formData.price) : undefined,
+          exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
           categoryId: formData.categoryId as Id<"categories">,
           images: uploadedRefs,
@@ -481,25 +497,101 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 </div>
               </div>
 
-              <div>
+              {/* Listing Type Selector */}
+              <div className="col-span-1 md:col-span-2">
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Price (AUD) *
+                  Listing Type *
                 </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  name="price"
-                  value={formData.price}
-                  onChange={handlePriceChange}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
-                  placeholder="0"
-                  pattern="[0-9]*"
-                  required
-                />
+                <div className="flex rounded-lg border border-neutral-300 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, listingType: "sale" }))}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "sale"
+                        ? "bg-primary-600 text-white"
+                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    <span>For Sale</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, listingType: "exchange", price: "" }))}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border-l border-r border-neutral-300 transition-colors ${formData.listingType === "exchange"
+                        ? "bg-primary-600 text-white"
+                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                  >
+                    <Repeat className="w-4 h-4" />
+                    <span>Exchange</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, listingType: "both" }))}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "both"
+                        ? "bg-primary-600 text-white"
+                        : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                  >
+                    <Handshake className="w-4 h-4" />
+                    <span>Both</span>
+                  </button>
+                </div>
                 <div className="min-h-[20px] mt-1">
-                  <p className="text-xs text-neutral-400">Enter whole numbers only (no decimals)</p>
+                  <p className="text-xs text-neutral-400">
+                    {formData.listingType === "sale" && "List for sale at a fixed price"}
+                    {formData.listingType === "exchange" && "Open to trading for other items"}
+                    {formData.listingType === "both" && "Accept payment or trade offers"}
+                  </p>
                 </div>
               </div>
+
+              {/* Price Field - conditional on listing type */}
+              {(formData.listingType === "sale" || formData.listingType === "both") && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Price (AUD) *
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    name="price"
+                    value={formData.price}
+                    onChange={handlePriceChange}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                    placeholder="0"
+                    pattern="[0-9]*"
+                    required
+                  />
+                  <div className="min-h-[20px] mt-1">
+                    <p className="text-xs text-neutral-400">Enter whole numbers only (no decimals)</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Exchange Description - conditional on listing type */}
+              {(formData.listingType === "exchange" || formData.listingType === "both") && (
+                <div className={formData.listingType === "exchange" ? "col-span-1 md:col-span-2" : ""}>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    What are you looking for?
+                  </label>
+                  <textarea
+                    name="exchangeDescription"
+                    value={formData.exchangeDescription}
+                    onChange={handleInputChange}
+                    maxLength={500}
+                    rows={2}
+                    autoComplete="off"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                    placeholder="e.g., Looking for rare holographic Pokémon cards, Nintendo games..."
+                  />
+                  <div className="min-h-[20px] mt-1">
+                    <p className="text-xs text-neutral-400 text-right">
+                      {formData.exchangeDescription.length} / 500 characters
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="relative" ref={locationWrapperRef}>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">

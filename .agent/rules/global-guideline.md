@@ -70,8 +70,7 @@ For every task, the following rules must always be respected:
 - After completing a task, update relevant documents in `.agent/gatheredContext/{relevant context document}` when needed
 - Keep project context accurate for future tasks
 ### Decision Making
-- Do not pause for confirmation unless the task is truly impossible or unreasonably ambiguous
-- When clarification is needed, make a safe, minimal assumption and proceed
+- When clarification is needed, make a safe, minimal assumption and proceed unless you've been said otherwise in the task itself. like when we only doing brainstorming or when doing only planning
 ## Testing Data
 - **Test Phone Number**: Use any Audtralian mobile number wiht "000000" as pin for testing
 ## Context & Knowledge Base

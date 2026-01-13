@@ -12,8 +12,13 @@
   title: string;
   description: string;
   extendedDescription?: string;
-  price: number;
+  listingType?: "sale" | "exchange" | "both";  // Type of listing (defaults to "sale")
+  price?: number;              // Required for "sale" and "both" types
+  exchangeDescription?: string;// What seller wants in exchange (for "exchange"/"both")
+  previousPrice?: number;      // For price reduction display
   location: string;
+  latitude?: number;
+  longitude?: number;
   categoryId: Id<"categories">;
   images: string[];              // R2 references or legacy storage IDs
   userId: Id<"users">;
@@ -23,6 +28,7 @@
   _creationTime: number;
 }
 ```
+
 
 **Indexes**:
 - `by_user`: For user's listings

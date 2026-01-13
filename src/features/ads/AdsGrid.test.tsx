@@ -160,4 +160,127 @@ describe('AdsGrid', () => {
         expect(screen.getByText('Free')).toBeInTheDocument();
         expect(screen.getByText('$1,500')).toBeInTheDocument();
     });
+
+    // ============================================================================
+    // LISTING TYPE DISPLAY TESTS (Exchange Feature)
+    // ============================================================================
+
+    it('should display "Open to Trade" for exchange-only listings', () => {
+        const exchangeAds = [{
+            _id: 'ad1' as Id<'ads'>,
+            title: 'Trading Cards',
+            description: 'Looking to trade',
+            listingType: 'exchange' as const,
+            location: 'Sydney',
+            categoryId: 'cat1' as Id<'categories'>,
+            images: ['img1.jpg'],
+            userId: 'user1' as Id<'users'>,
+            isActive: true,
+            views: 20,
+        }];
+
+        render(
+            <AdsGrid
+                ads={exchangeAds}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('Open to Trade')).toBeInTheDocument();
+        // Should NOT show a price
+        expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+    });
+
+    it('should display price with "Trade" badge for "both" listing type', () => {
+        const bothAds = [{
+            _id: 'ad1' as Id<'ads'>,
+            title: 'Sell or Trade Item',
+            description: 'Accept cash or trades',
+            listingType: 'both' as const,
+            price: 250,
+            location: 'Melbourne',
+            categoryId: 'cat1' as Id<'categories'>,
+            images: ['img1.jpg'],
+            userId: 'user1' as Id<'users'>,
+            isActive: true,
+            views: 30,
+        }];
+
+        render(
+            <AdsGrid
+                ads={bothAds}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('$250')).toBeInTheDocument();
+        expect(screen.getByText('• Trade')).toBeInTheDocument();
+    });
+
+    it('should display regular price for sale-only listings', () => {
+        const saleAds = [{
+            _id: 'ad1' as Id<'ads'>,
+            title: 'For Sale Item',
+            description: 'Cash only',
+            listingType: 'sale' as const,
+            price: 100,
+            location: 'Brisbane',
+            categoryId: 'cat1' as Id<'categories'>,
+            images: ['img1.jpg'],
+            userId: 'user1' as Id<'users'>,
+            isActive: true,
+            views: 15,
+        }];
+
+        render(
+            <AdsGrid
+                ads={saleAds}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('$100')).toBeInTheDocument();
+        // Should NOT show trade badge
+        expect(screen.queryByText('• Trade')).not.toBeInTheDocument();
+        expect(screen.queryByText('Open to Trade')).not.toBeInTheDocument();
+    });
+
+    it('should handle legacy ads without listingType as sale', () => {
+        // Legacy ads without listingType should display as regular sale
+        const legacyAds = [{
+            _id: 'ad1' as Id<'ads'>,
+            title: 'Legacy Ad',
+            description: 'Old format',
+            price: 75,
+            location: 'Perth',
+            categoryId: 'cat1' as Id<'categories'>,
+            images: ['img1.jpg'],
+            userId: 'user1' as Id<'users'>,
+            isActive: true,
+            views: 8,
+            // No listingType field
+        }];
+
+        render(
+            <AdsGrid
+                ads={legacyAds}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('$75')).toBeInTheDocument();
+        expect(screen.queryByText('• Trade')).not.toBeInTheDocument();
+    });
 });

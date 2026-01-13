@@ -13,7 +13,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil } from "lucide-react";
+import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil, Repeat } from "lucide-react";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
@@ -456,7 +456,22 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-2xl font-bold text-neutral-800 mb-2">{displayAd.title}</h1>
-                  <p className="text-3xl font-bold text-primary-600">{formatPriceWithCurrency(displayAd.price)}</p>
+                  {/* Price display based on listing type */}
+                  {(!displayAd.listingType || displayAd.listingType === "sale") && displayAd.price !== undefined && (
+                    <p className="text-3xl font-bold text-primary-600">{formatPriceWithCurrency(displayAd.price)}</p>
+                  )}
+                  {displayAd.listingType === "exchange" && (
+                    <p className="text-2xl font-bold text-primary-600 flex items-center gap-2">
+                      <Repeat className="w-6 h-6" />
+                      Open to Trade
+                    </p>
+                  )}
+                  {displayAd.listingType === "both" && displayAd.price !== undefined && (
+                    <p className="text-3xl font-bold text-primary-600 flex items-center gap-2">
+                      {formatPriceWithCurrency(displayAd.price)}
+                      <span className="text-lg font-medium">or Swap</span>
+                    </p>
+                  )}
                 </div>
                 <div className="text-right text-sm text-neutral-500">
                   {ad ? (
@@ -467,6 +482,17 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <p>Posted {timeAgo}</p>
                 </div>
               </div>
+
+              {/* Exchange Description - shown for exchange and both types */}
+              {(displayAd.listingType === "exchange" || displayAd.listingType === "both") && displayAd.exchangeDescription && (
+                <div className="mb-6 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                  <h3 className="text-sm font-semibold text-primary-800 mb-2 flex items-center gap-2">
+                    <Repeat className="w-4 h-4" />
+                    Looking for
+                  </h3>
+                  <p className="text-primary-700">{displayAd.exchangeDescription}</p>
+                </div>
+              )}
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-neutral-800 mb-3">Description</h3>

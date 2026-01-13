@@ -223,3 +223,86 @@ export const updateCategoryNames = internalMutation({
   },
 });
 
+/**
+ * Backfill existing ads with listingType: "sale"
+ * This ensures all existing ads have a consistent listingType value
+ * Run this once after deploying the exchange feature
+ * 
+ * Usage: npx convex run migrations:backfillListingType
+ */
+export const backfillListingType = internalMutation({
+  args: {
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const batchSize = args.batchSize ?? 100;
+
+    // Find ads without listingType
+    const adsToUpdate = await ctx.db
+      .query("ads")
+      .filter((q) => q.eq(q.field("listingType"), undefined))
+      .take(batchSize);
+
+    let updated = 0;
+    for (const ad of adsToUpdate) {
+      await ctx.db.patch(ad._id, {
+        listingType: "sale",
+      });
+      updated++;
+    }
+
+    const remaining = await ctx.db
+      .query("ads")
+      .filter((q) => q.eq(q.field("listingType"), undefined))
+      .take(1);
+
+    return {
+      success: true,
+      message: `Updated ${updated} ads with listingType: "sale"`,
+      updated,
+      hasMore: remaining.length > 0,
+      note: remaining.length > 0 ? "Run again to process more ads" : "All ads have been updated",
+    };
+  },
+});
+
+/**
+ * Add Hobbies & Collectibles category if it doesn't exist
+ * Run this once after deploying the exchange feature
+ * 
+ * Usage: npx convex run migrations:addHobbiesCategory
+ */
+export const addHobbiesCategory = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if category already exists
+    const existing = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", "hobbies-collectibles"))
+      .first();
+
+    if (existing) {
+      return {
+        success: true,
+        message: "Hobbies & Collectibles category already exists",
+        categoryId: existing._id,
+        created: false,
+      };
+    }
+
+    // Create the category
+    const categoryId = await ctx.db.insert("categories", {
+      name: "Hobbies & Collectibles",
+      slug: "hobbies-collectibles",
+      icon: "Gamepad2",
+    });
+
+    return {
+      success: true,
+      message: "Created Hobbies & Collectibles category",
+      categoryId,
+      created: true,
+    };
+  },
+});
+

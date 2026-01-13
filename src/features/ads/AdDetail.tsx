@@ -496,13 +496,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-neutral-800 mb-3">Description</h3>
-                <p className="text-neutral-700 leading-relaxed">{displayAd.description}</p>
-                {displayAd.extendedDescription && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200">
-                    <h4 className="font-medium text-neutral-800 mb-2">Additional Details</h4>
-                    <p className="text-neutral-700 leading-relaxed">{displayAd.extendedDescription}</p>
-                  </div>
-                )}
+                <p className="text-neutral-700 leading-relaxed whitespace-pre-line">{displayAd.description}</p>
               </div>
 
               <div className="flex items-center gap-4 text-sm text-neutral-600">

@@ -10,7 +10,6 @@ export const createAd = mutation({
   args: {
     title: v.string(),
     description: v.string(),
-    extendedDescription: v.optional(v.string()),
     listingType: v.optional(v.union(v.literal("sale"), v.literal("exchange"), v.literal("both"))),
     price: v.optional(v.number()),
     exchangeDescription: v.optional(v.string()),
@@ -35,7 +34,6 @@ export const createAd = mutation({
     const adId = await ctx.db.insert("ads", {
       title: args.title,
       description: args.description,
-      extendedDescription: args.extendedDescription,
       listingType,
       price: args.price,
       exchangeDescription: args.exchangeDescription,
@@ -58,7 +56,6 @@ export const updateAd = mutation({
     adId: v.id("ads"),
     title: v.string(),
     description: v.string(),
-    extendedDescription: v.optional(v.string()),
     listingType: v.optional(v.union(v.literal("sale"), v.literal("exchange"), v.literal("both"))),
     price: v.optional(v.number()),
     exchangeDescription: v.optional(v.string()),
@@ -106,7 +103,6 @@ export const updateAd = mutation({
     await ctx.db.patch(args.adId, {
       title: args.title,
       description: args.description,
-      extendedDescription: args.extendedDescription,
       listingType,
       price: args.price,
       exchangeDescription: args.exchangeDescription,

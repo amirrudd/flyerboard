@@ -26,7 +26,7 @@ const applicationTables = {
     isActive: v.boolean(),
     isDeleted: v.optional(v.boolean()), // Logical delete flag
     views: v.number(),
-    extendedDescription: v.optional(v.string()),
+
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
   })

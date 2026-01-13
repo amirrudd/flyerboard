@@ -121,7 +121,7 @@ module.exports = {
         '.container-padding': {
           'padding-left': 'clamp(0.5rem, 1.3vw, 2rem)',
           'padding-right': 'clamp(0.5rem, 1.3vw, 2rem)',
-          '@screen md': {
+          '@media (min-width: 768px)': {
             'padding-left': 'clamp(1rem, 1.3vw, 2rem)',
             'padding-right': 'clamp(1rem, 1.3vw, 2rem)',
           },
@@ -130,7 +130,7 @@ module.exports = {
         // Mobile: 96vw (4% total margins), Desktop: 88vw (12% total margins)
         '.content-max-width': {
           'max-width': 'min(96vw, 2400px)',
-          '@screen md': {
+          '@media (min-width: 768px)': {
             'max-width': 'min(88vw, 2400px)',
           },
         },

@@ -78,7 +78,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "2020 Toyota Camry Hybrid - Excellent Condition",
         description: "Pristine Toyota Camry Hybrid with leather seats, navigation system, and comprehensive service history. One careful owner.",
-        extendedDescription: "This beautiful Toyota Camry Hybrid comes with premium leather interior, heated seats, dual-zone climate control, and advanced safety features including lane departure warning and automatic emergency braking. Recently serviced with new tyres.",
         price: 32900,
         location: "Sydney, CBD",
         latitude: -33.8688,
@@ -99,7 +98,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Luxury 3BR Penthouse with Harbour Views",
         description: "Stunning penthouse apartment featuring panoramic harbour views, marble kitchen, rooftop terrace, and premium finishes.",
-        extendedDescription: "This exceptional penthouse offers 180-degree harbour views from every room. Features include Italian marble throughout, Miele appliances, wine cellar, private lift access, and a 100sqm rooftop terrace with outdoor kitchen.",
         price: 1200,
         location: "Sydney, Northern Beaches",
         latitude: -33.7969,
@@ -121,7 +119,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "MacBook Pro M3 16-inch - Brand New Sealed",
         description: "Latest MacBook Pro with M3 chip, 16GB RAM, 512GB SSD. Still sealed in original packaging with full Apple warranty.",
-        extendedDescription: "Brand new MacBook Pro 16-inch with the powerful M3 Pro chip, 16GB unified memory, and 512GB SSD storage. Features the stunning Liquid Retina XDR display, advanced camera and audio, and all-day battery life.",
         price: 3499,
         location: "Melbourne, CBD",
         latitude: -37.8136,
@@ -141,7 +138,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Vintage Leather Sofa Set - 3 Piece",
         description: "Beautiful vintage brown leather sofa set including 3-seater, 2-seater, and armchair. Excellent condition with rich patina.",
-        extendedDescription: "This stunning vintage leather furniture set features genuine top-grain leather with beautiful aging. The set includes a 3-seater sofa, 2-seater loveseat, and matching armchair. Perfect for creating a sophisticated living space.",
         price: 2800,
         location: "Brisbane, South Bank",
         latitude: -27.4705,
@@ -160,7 +156,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "iPhone 15 Pro Max 256GB - Space Black",
         description: "Brand new iPhone 15 Pro Max in Space Black, 256GB storage. Unopened box with full warranty and all accessories included.",
-        extendedDescription: "Latest iPhone 15 Pro Max featuring the powerful A17 Pro chip, advanced camera system with 5x telephoto zoom, and titanium design. Includes original box, charging cable, and documentation. Never used, still sealed.",
         price: 1899,
         location: "Perth, Fremantle",
         latitude: -32.0569,
@@ -180,7 +175,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Mountain Bike - Trek X-Caliber 8",
         description: "Excellent condition Trek X-Caliber 8 mountain bike. Perfect for trails and city riding. Recently serviced with new components.",
-        extendedDescription: "This Trek X-Caliber 8 features a lightweight aluminum frame, 29-inch wheels, and reliable Shimano components. Recently had a full service including new brake pads, chain, and tune-up. Great for both mountain trails and urban commuting.",
         price: 1250,
         location: "Adelaide, CBD",
         latitude: -34.9285,
@@ -198,7 +192,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Designer Handbag - Authentic Louis Vuitton",
         description: "Authentic Louis Vuitton Neverfull MM in Damier Ebene canvas. Excellent condition with minimal wear. Includes dust bag and authenticity card.",
-        extendedDescription: "This timeless Louis Vuitton Neverfull MM is perfect for everyday use. Features the iconic Damier Ebene canvas, natural cowhide leather trim, and gold-tone hardware. Interior has red Alcantara lining. Purchased from official LV store.",
         price: 1200,
         location: "Melbourne, South Yarra",
         latitude: -37.8386,
@@ -216,7 +209,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Freelance Web Developer Available",
         description: "Experienced full-stack developer available for short-term projects. Specializing in React, Node.js, and modern web technologies.",
-        extendedDescription: "Professional web developer with 5+ years experience in building responsive websites and web applications. Available for freelance work on projects ranging from 1 week to 3 months. Portfolio includes e-commerce sites, corporate websites, and custom web applications.",
         price: 85,
         location: "Sydney, CBD",
         latitude: -33.8688,
@@ -234,7 +226,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Vintage Vinyl Record Collection",
         description: "Rare collection of vintage vinyl records from the 60s-80s. Includes Beatles, Pink Floyd, Led Zeppelin, and more classic rock albums.",
-        extendedDescription: "Carefully curated collection of over 50 vintage vinyl records in excellent condition. All records have been stored properly and play without issues. Includes original sleeves and some rare first pressings. Perfect for collectors or music enthusiasts.",
         price: 850,
         location: "Melbourne, Fitzroy",
         latitude: -37.7964,
@@ -252,7 +243,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Complete Harry Potter Book Set - First Editions",
         description: "Complete set of Harry Potter books, first edition hardcovers in pristine condition. All seven books included with dust jackets.",
-        extendedDescription: "Rare complete set of Harry Potter first edition hardcover books. All books are in excellent condition with original dust jackets intact. Perfect for collectors or as a special gift for Harry Potter fans. Books have been stored in protective sleeves.",
         price: 2400,
         location: "Brisbane, New Farm",
         latitude: -27.4689,
@@ -270,7 +260,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Golden Retriever Puppies - Purebred",
         description: "Adorable Golden Retriever puppies ready for their forever homes. Vaccinated, microchipped, and health checked by vet.",
-        extendedDescription: "Beautiful litter of Golden Retriever puppies from champion bloodlines. All puppies have been vaccinated, microchipped, and health checked. Parents are both on-site and have excellent temperaments. Puppies are well-socialized and ready to go to loving homes.",
         price: 1800,
         location: "Perth, Joondalup",
         latitude: -31.7448,
@@ -289,7 +278,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Pokémon Card Collection - Rare Holos",
         description: "Trading my rare holographic Pokémon cards! Have Charizard, Blastoise, and Venusaur plus many more first editions.",
-        extendedDescription: "Looking to trade my collection of rare holographic Pokémon cards from the original Base Set. Cards are in near-mint condition, stored in protective sleeves. Includes Charizard, Blastoise, Venusaur, and various energy cards. Willing to trade for other rare cards or vintage gaming items.",
         listingType: "exchange" as const,
         exchangeDescription: "Looking for rare Japanese Pokémon cards, vintage Nintendo games, or other collectible card games like Magic: The Gathering.",
         location: "Melbourne, Fitzroy",
@@ -307,7 +295,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Vintage LEGO Star Wars Sets",
         description: "Trading complete vintage LEGO Star Wars sets including Millennium Falcon and X-Wing from 1999-2005 era.",
-        extendedDescription: "Offering several vintage LEGO Star Wars sets for trade. All sets are complete with instructions and minifigures. Includes 7190 Millennium Falcon, 7140 X-Wing, and 7110 Landspeeder. Looking for other vintage LEGO sets or collectibles.",
         listingType: "exchange" as const,
         exchangeDescription: "Want vintage LEGO Castle, Space, or Technic sets from the 80s-90s. Also interested in Star Wars memorabilia.",
         location: "Sydney, Parramatta",
@@ -326,7 +313,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Nintendo Switch OLED + Game Collection",
         description: "Switch OLED with 15 games including Zelda, Mario, Pokémon. Selling or open to trades for Steam Deck or PS5.",
-        extendedDescription: "Nintendo Switch OLED model in excellent condition with carrying case and pro controller. Game collection includes Zelda: Tears of the Kingdom, Mario Odyssey, Pokémon Scarlet, and 12 more top titles. All games are physical copies with cases.",
         listingType: "both" as const,
         price: 650,
         exchangeDescription: "Would trade for Steam Deck, PS5 Digital Edition, or high-end gaming peripherals.",
@@ -345,7 +331,6 @@ export const clearAndCreateSampleData = mutation({
       {
         title: "Vintage Guitar - 1985 Fender Stratocaster",
         description: "Classic 1985 Fender Strat in sunburst. Sell for $2,200 or swap for acoustic guitar or music equipment.",
-        extendedDescription: "Authentic 1985 Fender Stratocaster in beautiful sunburst finish. All original parts, plays beautifully with great sustain. Minor wear consistent with age. Includes original hard case. A true collector's piece.",
         listingType: "both" as const,
         price: 2200,
         exchangeDescription: "Looking for high-end acoustic guitars (Taylor, Martin) or professional recording equipment.",

@@ -13,6 +13,7 @@ import {
     Palette,
     CalendarClock,
     Baby,
+    Gamepad2,
     LayoutGrid,
     LucideIcon
 } from "lucide-react";
@@ -37,6 +38,7 @@ export const categoryIcons: Record<string, LucideIcon> = {
     "equipment-rental": CalendarClock,
     "rent-hire": CalendarClock, // Legacy slug support
     "baby-kids": Baby,
+    "hobbies-collectibles": Gamepad2,
 
     // By icon name (for database-driven icons)
     "Car": Car,
@@ -53,6 +55,7 @@ export const categoryIcons: Record<string, LucideIcon> = {
     "Palette": Palette,
     "CalendarClock": CalendarClock,
     "Baby": Baby,
+    "Gamepad2": Gamepad2,
 };
 
 /**

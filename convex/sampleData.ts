@@ -64,6 +64,7 @@ export const clearAndCreateSampleData = mutation({
       { name: "Art", slug: "art", icon: "Palette" },
       { name: "Equipment Rental", slug: "equipment-rental", icon: "CalendarClock" },
       { name: "Baby & Kids", slug: "baby-kids", icon: "Baby" },
+      { name: "Hobbies & Collectibles", slug: "hobbies-collectibles", icon: "Gamepad2" },
     ];
 
     const categoryIds = [];
@@ -283,6 +284,82 @@ export const clearAndCreateSampleData = mutation({
         userId: userIds[0], // Sarah Chen
         isActive: true,
         views: 234,
+      },
+      // Exchange-only flyers (new listing type)
+      {
+        title: "Pokémon Card Collection - Rare Holos",
+        description: "Trading my rare holographic Pokémon cards! Have Charizard, Blastoise, and Venusaur plus many more first editions.",
+        extendedDescription: "Looking to trade my collection of rare holographic Pokémon cards from the original Base Set. Cards are in near-mint condition, stored in protective sleeves. Includes Charizard, Blastoise, Venusaur, and various energy cards. Willing to trade for other rare cards or vintage gaming items.",
+        listingType: "exchange" as const,
+        exchangeDescription: "Looking for rare Japanese Pokémon cards, vintage Nintendo games, or other collectible card games like Magic: The Gathering.",
+        location: "Melbourne, Fitzroy",
+        latitude: -37.7964,
+        longitude: 144.9784,
+        categoryId: categoryIds[14], // Hobbies & Collectibles
+        images: [
+          "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=800&h=600&fit=crop"
+        ],
+        userId: userIds[1], // Mike Johnson
+        isActive: true,
+        views: 89,
+      },
+      {
+        title: "Vintage LEGO Star Wars Sets",
+        description: "Trading complete vintage LEGO Star Wars sets including Millennium Falcon and X-Wing from 1999-2005 era.",
+        extendedDescription: "Offering several vintage LEGO Star Wars sets for trade. All sets are complete with instructions and minifigures. Includes 7190 Millennium Falcon, 7140 X-Wing, and 7110 Landspeeder. Looking for other vintage LEGO sets or collectibles.",
+        listingType: "exchange" as const,
+        exchangeDescription: "Want vintage LEGO Castle, Space, or Technic sets from the 80s-90s. Also interested in Star Wars memorabilia.",
+        location: "Sydney, Parramatta",
+        latitude: -33.8151,
+        longitude: 151.0011,
+        categoryId: categoryIds[14], // Hobbies & Collectibles
+        images: [
+          "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1568702846914-96b305d2ebb7?w=800&h=600&fit=crop"
+        ],
+        userId: userIds[2], // Emma Wilson
+        isActive: true,
+        views: 67,
+      },
+      // Both (sale + exchange) flyers
+      {
+        title: "Nintendo Switch OLED + Game Collection",
+        description: "Switch OLED with 15 games including Zelda, Mario, Pokémon. Selling or open to trades for Steam Deck or PS5.",
+        extendedDescription: "Nintendo Switch OLED model in excellent condition with carrying case and pro controller. Game collection includes Zelda: Tears of the Kingdom, Mario Odyssey, Pokémon Scarlet, and 12 more top titles. All games are physical copies with cases.",
+        listingType: "both" as const,
+        price: 650,
+        exchangeDescription: "Would trade for Steam Deck, PS5 Digital Edition, or high-end gaming peripherals.",
+        location: "Brisbane, South Bank",
+        latitude: -27.4705,
+        longitude: 153.0260,
+        categoryId: categoryIds[2], // Electronics
+        images: [
+          "https://images.unsplash.com/photo-1612801799890-4ba4760b6590?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=800&h=600&fit=crop"
+        ],
+        userId: userIds[3], // David Park
+        isActive: true,
+        views: 178,
+      },
+      {
+        title: "Vintage Guitar - 1985 Fender Stratocaster",
+        description: "Classic 1985 Fender Strat in sunburst. Sell for $2,200 or swap for acoustic guitar or music equipment.",
+        extendedDescription: "Authentic 1985 Fender Stratocaster in beautiful sunburst finish. All original parts, plays beautifully with great sustain. Minor wear consistent with age. Includes original hard case. A true collector's piece.",
+        listingType: "both" as const,
+        price: 2200,
+        exchangeDescription: "Looking for high-end acoustic guitars (Taylor, Martin) or professional recording equipment.",
+        location: "Adelaide, Norwood",
+        latitude: -34.9185,
+        longitude: 138.6346,
+        categoryId: categoryIds[14], // Hobbies & Collectibles
+        images: [
+          "https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1516924962500-2b4b3b99ea02?w=800&h=600&fit=crop"
+        ],
+        userId: userIds[4], // Lisa Brown
+        isActive: true,
+        views: 145,
       }
     ];
 

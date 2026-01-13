@@ -1,7 +1,7 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
-import { Search } from "lucide-react";
+import { Search, Repeat } from "lucide-react";
 import { memo, useCallback } from "react";
 import { formatPrice } from "../../lib/priceFormatter";
 
@@ -9,8 +9,10 @@ interface Ad {
   _id: Id<"ads">;
   title: string;
   description: string;
-  price: number;
+  listingType?: "sale" | "exchange" | "both";
+  price?: number;
   previousPrice?: number;
+  exchangeDescription?: string;
   location: string;
   categoryId: Id<"categories">;
   images: string[];
@@ -129,14 +131,29 @@ export const AdsGrid = memo(function AdsGrid({
                       {ad.location}
                     </p>
                     <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-                      {ad.previousPrice && ad.previousPrice > ad.price && (
+                      {/* Previous price strikethrough - only for sale/both with price reduction */}
+                      {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (
                         <p className="text-xs text-gray-400 line-through">
                           {formatPrice(ad.previousPrice)}
                         </p>
                       )}
-                      <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                        {formatPrice(ad.price)}
-                      </p>
+                      {/* Price display based on listing type */}
+                      {(!ad.listingType || ad.listingType === "sale") && ad.price !== undefined && (
+                        <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                          {formatPrice(ad.price)}
+                        </p>
+                      )}
+                      {ad.listingType === "exchange" && (
+                        <p className="text-sm font-medium text-primary-600 whitespace-nowrap flex items-center gap-1">
+                          <Repeat className="w-3.5 h-3.5" />
+                          Open to Trade
+                        </p>
+                      )}
+                      {ad.listingType === "both" && ad.price !== undefined && (
+                        <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                          {formatPrice(ad.price)} <span className="text-primary-600 text-xs">• Trade</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">

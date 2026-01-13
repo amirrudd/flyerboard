@@ -15,8 +15,10 @@ const applicationTables = {
   ads: defineTable({
     title: v.string(),
     description: v.string(),
-    price: v.number(),
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("exchange"), v.literal("both"))), // Optional for backward compatibility, defaults to "sale"
+    price: v.optional(v.number()), // Optional - required only for "sale" or "both" listing types
     previousPrice: v.optional(v.number()), // Previous price for showing price reductions
+    exchangeDescription: v.optional(v.string()), // What the user is looking for in exchange
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),

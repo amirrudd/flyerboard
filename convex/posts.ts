@@ -11,7 +11,9 @@ export const createAd = mutation({
     title: v.string(),
     description: v.string(),
     extendedDescription: v.optional(v.string()),
-    price: v.number(),
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("exchange"), v.literal("both"))),
+    price: v.optional(v.number()),
+    exchangeDescription: v.optional(v.string()),
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
@@ -22,11 +24,21 @@ export const createAd = mutation({
       throw createError("Must be logged in to create a flyer", { operation: "createAd" });
     }
 
+    // Default to "sale" if not specified (backward compatibility)
+    const listingType = args.listingType || "sale";
+
+    // Validate price is provided for sale and both listing types
+    if ((listingType === "sale" || listingType === "both") && (args.price === undefined || args.price === null)) {
+      throw createError("Price is required for sale listings", { operation: "createAd", listingType });
+    }
+
     const adId = await ctx.db.insert("ads", {
       title: args.title,
       description: args.description,
       extendedDescription: args.extendedDescription,
+      listingType,
       price: args.price,
+      exchangeDescription: args.exchangeDescription,
       location: args.location,
       categoryId: args.categoryId,
       images: args.images,
@@ -35,10 +47,11 @@ export const createAd = mutation({
       views: 0,
     });
 
-    logOperation("Flyer created", { adId, userId, categoryId: args.categoryId });
+    logOperation("Flyer created", { adId, userId, categoryId: args.categoryId, listingType });
     return adId;
   },
 });
+
 
 export const updateAd = mutation({
   args: {
@@ -46,7 +59,9 @@ export const updateAd = mutation({
     title: v.string(),
     description: v.string(),
     extendedDescription: v.optional(v.string()),
-    price: v.number(),
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("exchange"), v.literal("both"))),
+    price: v.optional(v.number()),
+    exchangeDescription: v.optional(v.string()),
     location: v.string(),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
@@ -66,9 +81,17 @@ export const updateAd = mutation({
       throw createError("You can only update your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
 
-    // Handle price history logic
+    // Default to existing listingType, or "sale" for backward compatibility
+    const listingType = args.listingType || existingAd.listingType || "sale";
+
+    // Validate price is provided for sale and both listing types
+    if ((listingType === "sale" || listingType === "both") && (args.price === undefined || args.price === null)) {
+      throw createError("Price is required for sale listings", { operation: "updateAd", listingType });
+    }
+
+    // Handle price history logic - only for listings with prices
     let previousPrice = existingAd.previousPrice;
-    if (args.price !== existingAd.price) {
+    if (args.price !== undefined && existingAd.price !== undefined && args.price !== existingAd.price) {
       // Price is being changed
       if (args.price < existingAd.price) {
         // Price is being lowered - save the old price
@@ -78,23 +101,26 @@ export const updateAd = mutation({
         previousPrice = undefined;
       }
     }
-    // If price unchanged, keep previousPrice as is
+    // If price unchanged or not applicable, keep previousPrice as is
 
     await ctx.db.patch(args.adId, {
       title: args.title,
       description: args.description,
       extendedDescription: args.extendedDescription,
+      listingType,
       price: args.price,
+      exchangeDescription: args.exchangeDescription,
       previousPrice,
       location: args.location,
       categoryId: args.categoryId,
       images: args.images,
     });
 
-    logOperation("Flyer updated", { adId: args.adId, userId });
+    logOperation("Flyer updated", { adId: args.adId, userId, listingType });
     return args.adId;
   },
 });
+
 
 export const deleteAd = mutation({
   args: {

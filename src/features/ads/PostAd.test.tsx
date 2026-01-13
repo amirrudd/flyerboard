@@ -397,4 +397,86 @@ describe('PostAd', () => {
         fireEvent.change(priceInput, { target: { value: '' } });
         expect(priceInput.value).toBe('');
     });
+
+    // ============================================================================
+    // LISTING TYPE TESTS (Exchange Feature)
+    // ============================================================================
+
+    it('should render listing type selector with three options', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        expect(screen.getByText('Listing Type *')).toBeInTheDocument();
+        expect(screen.getByText('For Sale')).toBeInTheDocument();
+        expect(screen.getByText('Exchange')).toBeInTheDocument();
+        expect(screen.getByText('Both')).toBeInTheDocument();
+    });
+
+    it('should default to "sale" listing type and show price field', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        // Price field should be visible for sale type
+        expect(screen.getByText('Price (AUD) *')).toBeInTheDocument();
+        // Exchange description should NOT be visible
+        expect(screen.queryByText('What are you looking for?')).not.toBeInTheDocument();
+    });
+
+    it('should hide price field when "exchange" type is selected', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const exchangeButton = screen.getByText('Exchange');
+        fireEvent.click(exchangeButton);
+
+        // Price field should be hidden for exchange type
+        expect(screen.queryByText('Price (AUD) *')).not.toBeInTheDocument();
+        // Exchange description should be visible
+        expect(screen.getByText('What are you looking for?')).toBeInTheDocument();
+    });
+
+    it('should show both price and exchange fields when "both" type is selected', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        const bothButton = screen.getByText('Both');
+        fireEvent.click(bothButton);
+
+        // Both fields should be visible
+        expect(screen.getByText('Price (AUD) *')).toBeInTheDocument();
+        expect(screen.getByText('What are you looking for?')).toBeInTheDocument();
+    });
+
+    it('should clear price when switching to "exchange" type', () => {
+        render(<PostAd onBack={mockOnBack} />);
+
+        // Enter a price first
+        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        fireEvent.change(priceInput, { target: { value: '100' } });
+        expect(priceInput.value).toBe('100');
+
+        // Switch to exchange type
+        const exchangeButton = screen.getByText('Exchange');
+        fireEvent.click(exchangeButton);
+
+        // Price field should be gone
+        expect(screen.queryByPlaceholderText('0')).not.toBeInTheDocument();
+    });
+
+    it('should pre-fill listing type when editing an exchange flyer', () => {
+        const editingAd = {
+            _id: 'ad1',
+            title: 'Trade Item',
+            description: 'Looking to trade',
+            listingType: 'exchange' as const,
+            exchangeDescription: 'Want gaming items',
+            location: 'Sydney',
+            categoryId: 'cat1',
+            images: ['img.jpg'],
+        };
+
+        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+
+        // Price field should be hidden
+        expect(screen.queryByText('Price (AUD) *')).not.toBeInTheDocument();
+        // Exchange description should be visible and pre-filled
+        expect(screen.getByText('What are you looking for?')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Want gaming items')).toBeInTheDocument();
+    });
 });

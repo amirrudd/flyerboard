@@ -61,6 +61,9 @@ For every task, the following rules must always be respected:
 - No refactors, redesigns, or "improvements" unless explicitly requested
 - Keep changes small, readable, and consistent with the current style
 - Output only the new or changed code unless full context is absolutely necessary
+- Prefer a clean, readable code over cleverness
+- **DRY Principle (Don't Repeat Yourself)**: Extract duplicated logic into reusable components, functions, or utilities. If the same code appears in multiple places, consider creating a shared abstraction
+- There should be no redundant comment/ redundant code unless the code is marked with TODO and needed for later use
 ### Testing & Quality Assurance
 - **Always add tests** when fixing bugs or adding features
 - Run tests after task completion to ensure no regressions

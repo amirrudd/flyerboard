@@ -76,3 +76,8 @@ unhoistableHeaders: new Set(["x-amz-checksum-crc32"])
 **Decision**: Use `location.state.forceRefresh` for immediate updates.
 
 **Why**: Throttled refresh needed bypass after user actions.
+
+### DRY Principle (Don't Repeat Yourself)
+**Decision**: Extract duplicated logic into reusable components, functions, or utilities.
+
+**Why**: Reduces maintenance burden, ensures consistency, and improves code quality. When the same code appears in multiple places, create a shared abstraction.

@@ -38,3 +38,4 @@ convex/               # Backend functions and schema
 - **Responsive design**: Mobile-first, sidebar collapses on mobile (<768px)
 - **Route-based code splitting**: React.lazy() for all routes except HomePage to reduce initial bundle size
 - **PWA support**: Installable app with push notifications
+- **DRY Principle**: Extract duplicated logic into reusable components, functions, or utilities to maintain code quality and reduce maintenance burden

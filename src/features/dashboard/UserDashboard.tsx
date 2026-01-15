@@ -39,8 +39,7 @@ import {
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 
-// Feature flags
-const FEATURE_IDENTITY_VERIFICATION = false; // Set to true when identity verification is ready for production
+// Feature flags removed - now using database-driven flags
 
 interface UserDashboardProps {
   onBack: () => void;
@@ -191,6 +190,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const unreadCounts = useQuery(
     api.messages.getUnreadCounts,
     activeTab === "chats" && userAds ? { adIds: userAds.map(ad => ad._id) } : "skip"
+  );
+
+  // Get feature flag for identity verification
+  const isVerificationEnabled = useQuery(
+    api.featureFlags.getFeatureFlag,
+    { key: "userSelfVerification" }
   );
 
   const deleteAd = useMutation(api.posts.deleteAd);
@@ -592,9 +597,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
         />
 
         <div className="flex-1 w-full content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 md:gap-6">
             {/* Sidebar */}
-            <div className="lg:col-span-1 md:sticky md:top-21 md:self-start">
+            <div className="md:col-span-1 md:sticky md:top-21 md:self-start">
               {!convexUser || userStats === undefined ? (
                 <UserProfileSkeleton />
               ) : (
@@ -715,7 +720,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             </div>
 
             {/* Main Content */}
-            <div className="lg:col-span-3">
+            <div className="md:col-span-3">
               {/* Email collection banner - show on all tabs if no email */}
               {user && user._id !== "temp-id" && !user.email && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
@@ -1161,7 +1166,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </button>
                   </form>
 
-                  {FEATURE_IDENTITY_VERIFICATION && (
+                  {isVerificationEnabled && (
                     <div className="border-t border-gray-200 pt-6 mb-8">
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Verification</h3>
                       <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">

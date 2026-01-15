@@ -451,7 +451,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                         {(() => {
                           const cat = categories?.find(c => c._id === formData.categoryId);
                           if (!cat) return "Select a category";
-                          const Icon = getCategoryIcon(cat.slug);
+                          const Icon = getCategoryIcon(cat.icon);
                           return (
                             <>
                               <Icon className="w-4 h-4 text-neutral-500" />
@@ -469,7 +469,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   {showCategoryDropdown && (
                     <div className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {(categories || []).map((category: any) => {
-                        const Icon = getCategoryIcon(category.slug);
+                        const Icon = getCategoryIcon(category.icon);
                         return (
                           <button
                             key={category._id}

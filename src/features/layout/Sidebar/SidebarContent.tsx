@@ -62,8 +62,8 @@ export const SidebarContent = memo(function SidebarContent({
                     type="button"
                     onClick={handleSelectAllCategories}
                     className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${!selectedCategory
-                            ? 'text-primary-700 bg-primary-50'
-                            : 'text-gray-700 hover:bg-gray-100'
+                        ? 'text-primary-700 bg-primary-50'
+                        : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <LayoutGrid className={`w-5 h-5 ${!selectedCategory ? "text-primary-700" : "text-gray-500"}`} />
@@ -79,7 +79,7 @@ export const SidebarContent = memo(function SidebarContent({
                     ))
                 ) : (
                     categories.map((category) => {
-                        const Icon = getCategoryIcon(category.slug, category.icon);
+                        const Icon = getCategoryIcon(category.icon);
                         const isSelected = selectedCategory === category._id;
                         return (
                             <button
@@ -87,8 +87,8 @@ export const SidebarContent = memo(function SidebarContent({
                                 key={category._id}
                                 onClick={() => handleSelectCategory(category._id)}
                                 className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${isSelected
-                                        ? 'text-primary-700 bg-primary-50'
-                                        : 'text-gray-700 hover:bg-gray-100'
+                                    ? 'text-primary-700 bg-primary-50'
+                                    : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                             >
                                 <Icon className={`w-5 h-5 ${isSelected ? "text-primary-700" : "text-gray-500"}`} />

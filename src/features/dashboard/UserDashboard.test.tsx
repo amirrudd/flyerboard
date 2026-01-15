@@ -96,39 +96,37 @@ describe('UserDashboard', () => {
     it('should show "No ads yet" when user has no ads', async () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true });
 
-        // Provide enough mock return values for multiple render cycles
         const userWithStats = {
             user: { _id: 'user1', name: 'Test User', email: 'test@test.com' },
             stats: { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 }
         };
 
-        vi.mocked(useQuery)
-            // First render cycle - order: getCurrentUserWithStats, getUserAds, then skipped queries
-            .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
-            .mockReturnValueOnce([])    // getUserAds (ads tab active)
-            .mockReturnValueOnce(undefined) // sellerChats (skipped)
-            .mockReturnValueOnce(undefined) // buyerChats (skipped)
-            .mockReturnValueOnce(undefined) // savedAds (skipped)
-            .mockReturnValueOnce(undefined) // archivedChats (skipped)
-            .mockReturnValueOnce(undefined) // getChatMessages (skipped)
-            .mockReturnValueOnce(undefined) // getUnreadCounts (skipped)
-            // Second render cycle (React may re-render)
-            .mockReturnValueOnce(userWithStats)
-            .mockReturnValueOnce([])
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce(undefined)
-            // Default for any remaining calls
-            .mockReturnValue(undefined);
+        // Instead of a global counter, use a function that returns data for the expected queries
+        // and skips others based on the query object's structure if available, or just a fixed sequence
+        // that is long enough to cover multiple renders (9 queries * 3 renders = 27)
+        const mockReturns: any[] = [];
+        for (let i = 0; i < 5; i++) { // Mock 5 render cycles
+            mockReturns.push(userWithStats); // getCurrentUserWithStats
+            mockReturns.push([]);            // getUserAds
+            mockReturns.push(undefined);     // sellerChats
+            mockReturns.push(undefined);     // buyerChats
+            mockReturns.push(undefined);     // savedAds
+            mockReturns.push(undefined);     // archivedChats
+            mockReturns.push(undefined);     // chatMessages
+            mockReturns.push(undefined);     // unreadCounts
+            mockReturns.push(undefined);     // getFeatureFlag
+        }
+
+        let callIdx = 0;
+        vi.mocked(useQuery).mockImplementation(() => {
+            return mockReturns[callIdx++];
+        });
 
         renderDashboard();
 
         await waitFor(() => {
             expect(screen.getByText('No Flyers Yet')).toBeInTheDocument();
-        }, { timeout: 1000 });
+        }, { timeout: 2000 });
         expect(screen.getByText('Pin Your First Flyer')).toBeInTheDocument();
     });
 

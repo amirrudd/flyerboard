@@ -138,6 +138,13 @@ const applicationTables = {
     .index("by_recipient", ["recipientId"])
     .index("by_recipient_chat", ["recipientId", "chatId"])
     .index("by_created_at", ["createdAt"]),
+
+  featureFlags: defineTable({
+    key: v.string(),           // Unique identifier (e.g., "userSelfVerification")
+    enabled: v.boolean(),      // Whether the flag is enabled
+    description: v.string(),   // Human-readable description
+  })
+    .index("by_key", ["key"]),
 };
 
 // Extend the auth tables to add custom fields

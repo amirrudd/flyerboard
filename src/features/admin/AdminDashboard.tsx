@@ -9,20 +9,23 @@ import {
     FileText,
     AlertTriangle,
     MessageSquare,
-    Search,
     Shield,
+    LayoutGrid,
+    Flag,
 } from "lucide-react";
 import { UsersTab } from "./UsersTab";
 import { FlyersTab } from "./FlyersTab";
 import { ReportsTab } from "./ReportsTab";
 import { ChatsTab } from "./ChatsTab";
+import { CategoriesTab } from "./CategoriesTab";
+import { FeatureFlagsTab } from "./FeatureFlagsTab";
 
 interface AdminDashboardProps {
     onBack: () => void;
 }
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
-    const [activeTab, setActiveTab] = useState<"users" | "flyers" | "reports" | "chats">("users");
+    const [activeTab, setActiveTab] = useState<"users" | "flyers" | "reports" | "chats" | "categories" | "flags">("users");
 
     const isAdmin = useQuery(api.admin.isCurrentUserAdmin);
 
@@ -89,6 +92,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                             { id: "flyers", label: "Flyers", icon: FileText },
                             { id: "reports", label: "Reports", icon: AlertTriangle },
                             { id: "chats", label: "Chats", icon: MessageSquare },
+                            { id: "categories", label: "Categories", icon: LayoutGrid },
+                            { id: "flags", label: "Feature Flags", icon: Flag },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -111,6 +116,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                     {activeTab === "flyers" && <FlyersTab />}
                     {activeTab === "reports" && <ReportsTab />}
                     {activeTab === "chats" && <ChatsTab />}
+                    {activeTab === "categories" && <CategoriesTab />}
+                    {activeTab === "flags" && <FeatureFlagsTab />}
                 </div>
             </div>
         </div>

@@ -31,8 +31,9 @@ Quick verification before marking a task complete.
 - [ ] Solutions follow architecture guidelines and docs
 - [ ] Unit tests added for critical logic
 - [ ] No redundant comments or dead code (except TODOs)
-- [ ] Feature logic verified in code
+- [ ] Logic and state verified in code (Mental check)
 - [ ] Responsive logic verified (Tailwind/CSS)
+- [ ] **Identify Reusable Patterns**: Check if any new logic or process can be a **Skill** or **Workflow**
 
 ## When to Update Documentation
 

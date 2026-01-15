@@ -16,6 +16,7 @@ import type * as categories from "../categories.js";
 import type * as crons from "../crons.js";
 import type * as deleteR2Images from "../deleteR2Images.js";
 import type * as descopeAuth from "../descopeAuth.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as image_actions from "../image_actions.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   deleteR2Images: typeof deleteR2Images;
   descopeAuth: typeof descopeAuth;
+  featureFlags: typeof featureFlags;
   http: typeof http;
   image_actions: typeof image_actions;
   "lib/adminAuth": typeof lib_adminAuth;

@@ -198,6 +198,17 @@ export const verifyIdentity = mutation({
       throw new Error("Must be logged in to verify identity");
     }
 
+    // Check if user self-verification feature is enabled
+    const featureFlag = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", "userSelfVerification"))
+      .first();
+
+    // If flag exists and is disabled, reject the request
+    if (featureFlag && !featureFlag.enabled) {
+      throw new Error("Identity verification is currently disabled");
+    }
+
     await ctx.db.patch(userId, { isVerified: true });
 
     return { success: true };

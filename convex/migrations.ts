@@ -395,3 +395,46 @@ export const ensureAllCategories = internalMutation({
   },
 });
 
+/**
+ * Seed default feature flags.
+ * This is safe to run multiple times (idempotent) - it only creates flags that don't exist.
+ * 
+ * Usage: npx convex run migrations:seedFeatureFlags
+ */
+export const seedFeatureFlags = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const defaultFlags = [
+      {
+        key: "userSelfVerification",
+        description: "Allow users to self-verify their identity from their dashboard",
+        enabled: true,
+      },
+    ];
+
+    const results = {
+      created: [] as string[],
+      existing: [] as string[],
+    };
+
+    for (const flag of defaultFlags) {
+      const existing = await ctx.db
+        .query("featureFlags")
+        .withIndex("by_key", (q) => q.eq("key", flag.key))
+        .first();
+
+      if (existing) {
+        results.existing.push(flag.key);
+      } else {
+        await ctx.db.insert("featureFlags", flag);
+        results.created.push(flag.key);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Created ${results.created.length} flags, ${results.existing.length} already existed`,
+      results,
+    };
+  },
+});

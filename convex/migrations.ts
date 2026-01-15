@@ -306,3 +306,92 @@ export const addHobbiesCategory = internalMutation({
   },
 });
 
+/**
+ * Ensure all canonical categories exist and have correct names/icons.
+ * This is safe to run multiple times (idempotent).
+ * 
+ * Usage: npx convex run migrations:ensureAllCategories
+ */
+export const ensureAllCategories = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const canonicalCategories = [
+      { name: "Vehicles", slug: "vehicles", icon: "Car" },
+      { name: "Real Estate", slug: "real-estate", icon: "Home" },
+      { name: "Electronics", slug: "electronics", icon: "Smartphone" },
+      { name: "Home & Garden", slug: "home-garden", icon: "Armchair" },
+      { name: "Services", slug: "services", icon: "Wrench" },
+      { name: "Fashion", slug: "fashion", icon: "Shirt" },
+      { name: "Sports & Recreation", slug: "sports", icon: "Dumbbell" },
+      { name: "Gigs & Temp Work", slug: "gigs-temp-work", icon: "Briefcase" },
+      { name: "Personal Items", slug: "personal-items", icon: "Watch" },
+      { name: "Books & Media", slug: "books-media", icon: "Book" },
+      { name: "Pets & Animals", slug: "pets-animals", icon: "PawPrint" },
+      { name: "Art", slug: "art", icon: "Palette" },
+      { name: "Equipment Rental", slug: "equipment-rental", icon: "CalendarClock" },
+      { name: "Baby & Kids", slug: "baby-kids", icon: "Baby" },
+      { name: "Hobbies & Collectibles", slug: "hobbies-collectibles", icon: "Gamepad2" },
+    ];
+
+    const results = {
+      added: [] as string[],
+      updated: [] as string[],
+      legacy: [] as string[],
+    };
+
+    // First, handle legacy renames based on old slugs
+    const legacyMappings = [
+      { oldSlug: "temporary-hire", newSlug: "gigs-temp-work" },
+      { oldSlug: "rent-hire", newSlug: "equipment-rental" },
+    ];
+
+    for (const mapping of legacyMappings) {
+      const existingLegacy = await ctx.db
+        .query("categories")
+        .withIndex("by_slug", (q) => q.eq("slug", mapping.oldSlug))
+        .first();
+
+      if (existingLegacy) {
+        // Find existing new slug if any (to avoid conflict)
+        const targetExist = await ctx.db
+          .query("categories")
+          .withIndex("by_slug", (q) => q.eq("slug", mapping.newSlug))
+          .first();
+
+        if (!targetExist) {
+          await ctx.db.patch(existingLegacy._id, { slug: mapping.newSlug });
+          results.legacy.push(`${mapping.oldSlug} -> ${mapping.newSlug}`);
+        }
+      }
+    }
+
+    // Now ensure all canonical categories are correct
+    for (const cat of canonicalCategories) {
+      const existing = await ctx.db
+        .query("categories")
+        .withIndex("by_slug", (q) => q.eq("slug", cat.slug))
+        .first();
+
+      if (existing) {
+        // Update if name or icon changed
+        if (existing.name !== cat.name || existing.icon !== cat.icon) {
+          await ctx.db.patch(existing._id, {
+            name: cat.name,
+            icon: cat.icon,
+          });
+          results.updated.push(cat.name);
+        }
+      } else {
+        // Create missing category
+        await ctx.db.insert("categories", cat);
+        results.added.push(cat.name);
+      }
+    }
+
+    return {
+      success: true,
+      results,
+    };
+  },
+});
+

@@ -1,73 +1,100 @@
 ---
 trigger: model_decision
-description: Only when working on the Web app. Excelues KMP reletaed files and folders like "mobile" package
+description: Only when working on the Web app. Excludes mobile platform files and folders like "mobile" and "mobile-api" packages.
 ---
 
-## Your Role
-You are a **senior/tech lead full-stack web developer** and **UI/UX design expert** specializing in modern web applications. Your responsibilities include:
-- Building responsive, mobile-friendly web interfaces with exceptional UX
-- Implementing smooth interactions and animations
-- Writing clean, maintainable React/TypeScript code
-- Ensuring accessibility and performance best practices
-- Creating pixel-perfect implementations from design requirements
-- Balancing aesthetic excellence with functional requirements
-
-
 # FlyerBoard Web Application Guidelines
+
 > **Platform**: Responsive Web Application  
-> **Technology**: React, TypeScript, Vite, Tailwind CSS  
-> **Location**: `/Users/amir.rudd/flyerBoard/FlyerBoard/src`  
-> **NOT for**: Native Android/iOS applications
+> **Technology**: React 19, TypeScript, Vite, Tailwind CSS  
+> **Location**: `src/`  
+> **NOT for**: Native Android/iOS applications (see `kmp-native-app-guideline.md`)
+
+## Your Role
+
+You are a **senior full-stack web developer** and **UI/UX expert**. Your focus is:
+- Building responsive, mobile-friendly web interfaces
+- Writing clean, maintainable React/TypeScript code
+- Shipping features quickly while maintaining quality
+- Balancing speed with good enough quality
+
 ## Technology Stack
-- **Framework**: React 18+ with TypeScript
+
+- **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS + custom design tokens
 - **Testing**: Vitest + React Testing Library
-- **State Management**: React hooks, Convex queries
-- **Routing**: React Router
-## UI/UX Requirements
-You are a senior/tech lead full stack developer specialized in web applications and also a UI/UX designer expert.
-### Design Principles
-- UI design must follow best practices and be responsive and mobile friendly
-- Interactions should be smooth with appropriate animations
-- Follow existing design system and component patterns
+- **State Management**: React hooks, Context API, Convex queries
+- **Routing**: React Router v7
+
+## Design Principles
+
+- Mobile-first: design for mobile, enhance for desktop
+- Follow existing component patterns
+- Keep UI simple and functional
+- Smooth interactions where it matters (forms, navigation)
+
 ## Web-Specific Critical Patterns
-### Responsive Design (Mobile Web)
-- Use Tailwind `md:` prefix for desktop-only features (sidebar nav, sticky positioning)
-- Hide complex navigation on mobile if bottom nav provides same functionality
-- Test mobile viewports (< 768px) for scroll behavior and layout issues
-- Use `MemoryRouter` with `initialEntries` for testing URL-based navigation
-- Validate that mobile users can't access desktop-only tabs via URL manipulation
-- **Context Files**: See `.agent/gatheredContext/responsive-design-best-practices.md`
-### Scroll Behavior
-- Use `useRef` for scroll intent tracking to prevent race conditions between competing scroll effects
-- Priority-based scroll handling: explicit intents (back button) take priority over auto-scroll
-- Check for external navigation before scrolling on mount to respect browser scroll restoration
-- Avoid `behavior: 'instant'` - use `'smooth'` for better UX unless immediate scroll is critical
-- When multiple useEffects manage scroll, coordinate them with a single source of truth (ref or state)
+
+### Responsive Design
+- Use Tailwind `md:` prefix for desktop-only features
+- Test mobile viewport (< 768px) for key flows
+- **Context**: See `.agent/gatheredContext/frontend/responsive-design-best-practices.md`
+
 ### UI Components & Patterns
-- **Context Files**: See `.agent/gatheredContext/ui-patterns.md`
-- Follow established component usage, loading states, modals, and form patterns
-- Use existing component library consistently
-### Image Upload (Web-Specific)
+- Follow established component patterns
+- Use toast notifications for user feedback
+- Show loading states for async operations
+- **Context**: See `.agent/gatheredContext/frontend/ui-patterns.md`
+
+### Image Upload (Web)
 - Use `browser-image-compression` library
-- Quality setting: `0.9` (90%)
-- Show upload progress with smooth animations
+- Quality: `0.9` (90%) - NEVER lower
 - Non-blocking UX during compression
-- **Context Files**: See `.agent/gatheredContext/image-upload.md`
-## Testing (Web-Specific)
-### Test Coverage
-- Always add tests when fixing bugs or adding features
+- **Context**: See `.agent/gatheredContext/features/image-upload.md`
+
+### Authentication UI
+- Use `useSession()` from Descope for UI auth state
+- Implement auth guards that show login modal
+- **Context**: See `.agent/gatheredContext/features/authentication.md`
+
+## Testing
+
+- Add tests when fixing bugs or adding features
+- Mock `useSession()` for auth-related tests
 - Test mobile-specific behavior with `matchMedia` mocks
-- Test URL navigation with `MemoryRouter` for query param handling
-- Update test count in comments when adding new tests
-### Testing Tools
-- **Unit/Integration**: Vitest
-- **Component Testing**: React Testing Library
-- **E2E**: (if applicable)
+- Use `MemoryRouter` for URL navigation tests
+
+## Common Web Pitfalls (Avoid)
+
+### ❌ Critical Pitfalls
+- Not handling loading states (user sees blank screen)
+- Not handling error states (user gets stuck)
+- Using Convex queries for UI auth state (causes flicker)
+- Not testing on mobile viewport
+
+### ❌ React Pitfalls
+- Missing dependency array items in hooks
+- Not cleaning up subscriptions/timers in useEffect
+
 ## Context & Knowledge Base
-Web-specific context files in `.agent/gatheredContext/`:
-- **UI components/patterns**: `ui-patterns.md` - covers component usage, loading states, modals, forms
-- **Responsive design**: `responsive-design-best-practices.md` - covers mobile-first patterns
-- **Image uploads/compression**: `image-upload.md` - covers adaptive compression, quality settings, non-blocking UX
-Also reference global context files as needed (see `global-guideline.md`).
+
+**Quick Reference**: See `.agent/gatheredContext/INDEX.md` for navigation.
+
+**Web-Specific Context**:
+- **UI patterns**: `frontend/ui-patterns.md`
+- **Responsive design**: `frontend/responsive-design-best-practices.md`
+- **Routing**: `frontend/routing-navigation.md`
+- **Image uploads**: `features/image-upload.md`
+
+Also reference `global-guideline.md` for critical patterns.
+
+## Web Task Checklist
+
+Before completing a web task:
+
+- [ ] Responsive logic verified in code (Tailwind `md:`, etc.)
+- [ ] Loading states implemented
+- [ ] Error states handled
+- [ ] Tests added/updated
+- [ ] **Note**: AI does not perform autonomous visual checks in the browser unless explicitly directed by the user.

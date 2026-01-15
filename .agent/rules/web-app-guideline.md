@@ -1,6 +1,6 @@
 ---
 trigger: model_decision
-description: Only when working on the Web app. Excludes KMP related files and folders like "mobile" package
+description: Only when working on the Web app. Excludes mobile platform files and folders like "mobile" and "mobile-api" packages.
 ---
 
 # FlyerBoard Web Application Guidelines

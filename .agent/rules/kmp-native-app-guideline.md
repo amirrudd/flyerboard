@@ -1,6 +1,6 @@
 ---
 trigger: model_decision
-description: Only when working on KMP mobile app folder like "mobile" package
+description: Only when working on mobile platform folders like "mobile" and "mobile-api" packages.
 ---
 
 # FlyerBoard KMP Native App Guidelines

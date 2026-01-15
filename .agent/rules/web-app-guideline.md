@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: Only when working on the Web app. Excelues KMP reletaed files and folders like "mobile" package
 ---
 
 ## Your Role

@@ -4,6 +4,7 @@ import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -13,8 +14,11 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil, Repeat } from "lucide-react";
+import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil, Repeat, MessageCircle } from "lucide-react";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
+import { BottomSheet } from "../../components/ui/BottomSheet";
+import { SellerProfile } from "../../components/ui/SellerProfile";
+import { ChatMessages } from "../../components/ui/ChatMessages";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
@@ -33,6 +37,8 @@ interface AdDetailProps {
 export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
+  const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
+  const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [chatId, setChatId] = useState<Id<"chats"> | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -514,55 +520,20 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             </div>
           </div>
 
-          {/* Sidebar - 30% of container width, capped at 400px */}
-          <div className="lg:w-[30%] lg:max-w-[400px] sticky top-21 self-start">
+          {/* Sidebar - 30% of container width, capped at 400px - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:block lg:w-[30%] lg:max-w-[400px] sticky top-21 self-start">
             <div className="space-y-6">
               {/* Seller Info */}
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-neutral-800 mb-4">Seller Information</h3>
                 <div className="flex items-center gap-3 mb-4">
-                  {displayAd.seller?.image && !avatarImageError ? (
-                    <ImageDisplay
-                      src={displayAd.seller.image}
-                      alt={displayAd.seller.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                      onError={() => setAvatarImageError(true)}
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-lg">
-                      {displayAd.seller ? getInitials(displayAd.seller) : "U"}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    {displayAd.seller ? (
-                      <p className="font-medium text-neutral-800 flex items-center gap-1">
-                        {getDisplayName(displayAd.seller)}
-                        {displayAd.seller.isVerified && (
-                          <div title="Verified User" className="relative">
-                            <img src="/verified-badge.svg" alt="Verified Seller" className="w-10 h-10" />
-                          </div>
-                        )}
-                      </p>
-                    ) : (
-                      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
-                    )}
-                    {displayAd.seller ? (
-                      <div
-                        onClick={() => setShowReviewListModal(true)}
-                        className="cursor-pointer hover:opacity-70 transition-opacity inline-block"
-                        title="View all reviews"
-                      >
-                        <StarRating
-                          rating={displayAd.seller.averageRating || 0}
-                          count={displayAd.seller.ratingCount || 0}
-                          size="sm"
-                          showCount={true}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
-                    )}
-                  </div>
+                  <SellerProfile
+                    seller={displayAd.seller}
+                    avatarImageError={avatarImageError}
+                    onAvatarError={() => setAvatarImageError(true)}
+                    onRatingClick={() => setShowReviewListModal(true)}
+                    size="md"
+                  />
                   {user && displayAd.userId !== user._id && (
                     <button
                       onClick={() => setShowReportProfileModal(true)}
@@ -612,9 +583,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 )}
               </div>
 
-              {/* Chat Section */}
+              {/* Chat Section - Desktop only */}
               {showChat && (
-                <div className="bg-white rounded-lg shadow-sm">
+                <div className="bg-white rounded-lg shadow-sm hidden lg:block">
                   <div className="p-4 border-b border-neutral-200">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-neutral-800">Chat with Seller</h3>
@@ -627,29 +598,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     </div>
                   </div>
 
-                  {messages && messages.length > 0 && (
-                    <div className="h-64 overflow-y-auto p-4 space-y-3" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
-                      {messages.map((message) => (
-                        <div
-                          key={message._id}
-                          className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} `}
-                        >
-                          <div
-                            className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-neutral-100 text-neutral-900'
-                              }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
-                              }`}>
-                              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+
+                  <ChatMessages messages={messages || []} />
+
 
                   <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-neutral-200' : ''}`}>
                     <div className="flex gap-2">
@@ -724,6 +675,138 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           </div>
         </div>
       </div>
+
+      {/* Mobile FABs - Using Portal to ensure fixed positioning works */}
+      {user && displayAd.userId !== user._id && createPortal(
+        <div className="lg:hidden">
+          <button
+            onClick={() => setShowMobileSellerSheet(true)}
+            className="fixed right-4 bg-white border border-neutral-200 p-2 rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all z-40"
+            style={{ bottom: 'calc(var(--bottom-nav-height) + 5rem)' }}
+            title="Seller Info"
+          >
+            <div className="flex items-center gap-1">
+              {displayAd.seller?.image && !avatarImageError ? (
+                <ImageDisplay
+                  src={displayAd.seller.image}
+                  alt={displayAd.seller.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                  onError={() => setAvatarImageError(true)}
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold text-sm">
+                  {displayAd.seller ? getInitials(displayAd.seller) : "U"}
+                </div>
+              )}
+            </div>
+          </button>
+
+          {/* Message Seller FAB */}
+          <button
+            onClick={() => setShowMobileChatSheet(true)}
+            className="fixed right-4 bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 hover:scale-105 active:scale-95 transition-all z-40"
+            style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}
+            title="Message Seller"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </button>
+        </div>,
+        document.body
+      )}
+
+      {/* Mobile Seller Info Bottom Sheet */}
+      <BottomSheet
+        isOpen={showMobileSellerSheet}
+        onClose={() => setShowMobileSellerSheet(false)}
+        title="Seller Information"
+      >
+        <div className="p-4 space-y-4">
+          <SellerProfile
+            seller={displayAd.seller}
+            avatarImageError={avatarImageError}
+            onAvatarError={() => setAvatarImageError(true)}
+            onRatingClick={() => {
+              setShowMobileSellerSheet(false);
+              setShowReviewListModal(true);
+            }}
+            size="lg"
+          />
+
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => {
+                setShowMobileSellerSheet(false);
+                setShowMobileChatSheet(true);
+              }}
+              className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Message Seller
+            </button>
+            <button
+              onClick={() => {
+                setShowMobileSellerSheet(false);
+                setShowRatingModal(true);
+              }}
+              className="w-full bg-white text-primary-600 border border-primary-600 py-3 px-4 rounded-lg hover:bg-primary-50 transition-colors font-medium"
+            >
+              Rate Seller
+            </button>
+            <button
+              onClick={() => {
+                setShowMobileSellerSheet(false);
+                setShowReportProfileModal(true);
+              }}
+              className="w-full bg-white text-neutral-600 border border-neutral-300 py-3 px-4 rounded-lg hover:bg-neutral-50 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <Flag className="w-4 h-4" />
+              Report Seller
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* Mobile Chat Bottom Sheet */}
+      <BottomSheet
+        isOpen={showMobileChatSheet}
+        onClose={() => setShowMobileChatSheet(false)}
+        title="Chat with Seller"
+      >
+        <ChatMessages messages={messages || []} />
+
+        <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-neutral-200' : ''}`}>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSendMessage();
+                  // Create chat if needed and show notification
+                  if (!chatId) {
+                    setShowChat(true);
+                  }
+                }
+              }}
+              placeholder="Type your message..."
+              className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
+            />
+            <button
+              onClick={() => {
+                handleSendMessage();
+                if (!chatId) {
+                  setShowChat(true);
+                }
+              }}
+              disabled={!messageText.trim()}
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Report Modal */}
       <ReportModal

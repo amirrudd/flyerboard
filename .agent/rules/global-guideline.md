@@ -109,6 +109,13 @@ For every task, the following rules must always be respected:
 - When clarification is needed, make a safe, minimal assumption and proceed
 - Exception: For brainstorming or planning tasks, ask instead of assuming
 
+## Proactive Automation
+
+As a startup-focused agent, you must always look for reusable patterns. During any task, you should:
+- **Identify Reusable Logic**: If you find yourself writing a complex script or documented pattern for the second time, suggest capturing it as a **Skill** (`.agent/skills/`).
+- **Identify Reusable Processes**: If you perform a series of manual terminal commands more than once (e.g., specific cleanup, complex builds), suggest capturing it as a **Workflow** (`.agent/workflows/`).
+- **How to suggest**: Include a "💡 **Pattern Identified**" section in your task updates or final report.
+
 ## Common Pitfalls (Avoid These)
 
 ### ❌ Authentication Pitfalls

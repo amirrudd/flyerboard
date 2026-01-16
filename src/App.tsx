@@ -23,9 +23,9 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 
 // Loading fallback for lazy-loaded routes
 const PageLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-50">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-    <p className="mt-4 text-neutral-500 font-medium animate-pulse">Checking authentication...</p>
+  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    <p className="mt-4 text-muted-foreground font-medium animate-pulse">Checking authentication...</p>
   </div>
 );
 

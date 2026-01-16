@@ -4,6 +4,7 @@ import { ConvexProviderWithAuth } from "convex/react";
 import { ConvexReactClient } from "convex/react";
 import { useDescopeAuth } from "./lib/useDescopeAuth";
 import { AuthRecoveryProvider } from "./context/AuthRecoveryContext";
+import { ThemeProvider } from "./components/ThemeProvider";
 import "./index.css";
 import App from "./App";
 
@@ -31,9 +32,11 @@ createRoot(document.getElementById("root")!).render(
     sessionTokenViaCookie={false}
   >
     <AuthRecoveryProvider>
-      <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
-        <App />
-      </ConvexProviderWithAuth>
+      <ThemeProvider defaultTheme="system" storageKey="flyerboard-ui-theme">
+        <ConvexProviderWithAuth client={convex} useAuth={useDescopeAuth}>
+          <App />
+        </ConvexProviderWithAuth>
+      </ThemeProvider>
     </AuthRecoveryProvider>
   </AuthProvider>,
 );

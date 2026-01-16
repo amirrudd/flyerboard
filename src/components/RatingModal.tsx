@@ -81,22 +81,22 @@ export function RatingModal({
     const displayRating = hoverRating || rating;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-sm modal-scroll-lock">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-scroll-lock">
+            <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Rate {userName}</h2>
+                    <h2 className="text-xl font-semibold text-foreground">Rate {userName}</h2>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        className="p-1 rounded-full hover:bg-accent transition-colors"
                     >
-                        <X className="w-5 h-5 text-gray-500" />
+                        <X className="w-5 h-5 text-muted-foreground" />
                     </button>
                 </div>
 
                 {/* Star Rating */}
                 <div className="mb-6">
-                    <p className="text-sm text-gray-600 mb-3">How would you rate your experience?</p>
+                    <p className="text-sm text-muted-foreground mb-3">How would you rate your experience?</p>
                     <div className="flex gap-2 justify-center">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -111,7 +111,7 @@ export function RatingModal({
                                 <Star
                                     className={`w-10 h-10 transition-colors ${star <= displayRating
                                         ? 'text-yellow-400'
-                                        : 'text-gray-300'
+                                        : 'text-muted'
                                         }`}
                                     fill={star <= displayRating ? "currentColor" : "none"}
                                     strokeWidth={1.5}
@@ -120,7 +120,7 @@ export function RatingModal({
                         ))}
                     </div>
                     {rating > 0 && (
-                        <p className="text-center text-sm text-gray-600 mt-2">
+                        <p className="text-center text-sm text-muted-foreground mt-2">
                             {rating === 1 && "Poor"}
                             {rating === 2 && "Fair"}
                             {rating === 3 && "Good"}
@@ -132,7 +132,7 @@ export function RatingModal({
 
                 {/* Comment */}
                 <div className="mb-6">
-                    <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="comment" className="block text-sm font-medium text-muted-foreground mb-2">
                         Comment (optional)
                     </label>
                     <textarea
@@ -144,9 +144,9 @@ export function RatingModal({
                         autoComplete="off"
                         placeholder="Share your experience..."
                         disabled={isSubmitting}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none disabled:opacity-50"
+                        className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none disabled:opacity-50 bg-background text-foreground placeholder:text-muted-foreground"
                     />
-                    <p className="text-xs text-gray-500 mt-1">{comment.length}/500 characters</p>
+                    <p className="text-xs text-muted-foreground mt-1">{comment.length}/500 characters</p>
                 </div>
 
                 {/* Actions */}
@@ -155,7 +155,7 @@ export function RatingModal({
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -163,7 +163,7 @@ export function RatingModal({
                         type="button"
                         onClick={handleSubmit}
                         disabled={isSubmitting || rating === 0}
-                        className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? (
                             <span className="flex items-center justify-center gap-2">

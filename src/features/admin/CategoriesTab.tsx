@@ -153,7 +153,7 @@ export function CategoriesTab() {
     if (categories === undefined) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-600 border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
             </div>
         );
     }
@@ -163,14 +163,14 @@ export function CategoriesTab() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Categories</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h2 className="text-xl font-bold text-foreground">Categories</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
                         Manage flyer categories and their icons
                     </p>
                 </div>
                 <button
                     onClick={handleOpenAddForm}
-                    className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium shadow-sm"
                 >
                     <Plus className="w-5 h-5" />
                     Add Category
@@ -178,28 +178,28 @@ export function CategoriesTab() {
             </div>
 
             {/* Categories List */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-muted/50 border-b border-border">
                         <tr>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Icon
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Name
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
                                 Slug
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
                                 Parent
                             </th>
-                            <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-border">
                         {categories.map((category) => {
                             const Icon = getCategoryIcon(category.icon);
                             const parent = category.parentId
@@ -207,43 +207,43 @@ export function CategoriesTab() {
                                 : null;
 
                             return (
-                                <tr key={category._id} className="hover:bg-gray-50">
+                                <tr key={category._id} className="hover:bg-muted/30 transition-colors">
                                     <td className="px-4 py-3">
-                                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center">
-                                            <Icon className="w-5 h-5 text-primary-600" />
+                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+                                            <Icon className="w-5 h-5 text-primary" />
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className="font-medium text-gray-900">
+                                        <span className="font-medium text-foreground">
                                             {category.name}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 hidden md:table-cell">
-                                        <code className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                        <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
                                             {category.slug}
                                         </code>
                                     </td>
                                     <td className="px-4 py-3 hidden lg:table-cell">
                                         {parent ? (
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-sm text-muted-foreground font-medium">
                                                 {parent.name}
                                             </span>
                                         ) : (
-                                            <span className="text-sm text-gray-400">—</span>
+                                            <span className="text-sm text-muted-foreground/40">—</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => handleOpenEditForm(category)}
-                                                className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors border border-transparent hover:border-primary/20"
                                                 title="Edit category"
                                             >
                                                 <Pencil className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setDeletingCategory(category)}
-                                                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
                                                 title="Delete category"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -257,7 +257,7 @@ export function CategoriesTab() {
                 </table>
 
                 {categories.length === 0 && (
-                    <div className="px-4 py-12 text-center text-gray-500">
+                    <div className="px-4 py-12 text-center text-muted-foreground">
                         No categories found. Add your first category to get started.
                     </div>
                 )}
@@ -266,15 +266,15 @@ export function CategoriesTab() {
             {/* Add/Edit Form Modal */}
             {showAddForm &&
                 createPortal(
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-card border border-border rounded-lg p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900">
+                                <h3 className="text-lg font-semibold text-foreground">
                                     {editingCategory ? "Edit Category" : "Add Category"}
                                 </h3>
                                 <button
                                     onClick={handleCloseForm}
-                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -283,14 +283,14 @@ export function CategoriesTab() {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* Name */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                                         Name *
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => handleNameChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none"
+                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                         placeholder="e.g., Electronics"
                                         maxLength={50}
                                         required
@@ -299,7 +299,7 @@ export function CategoriesTab() {
 
                                 {/* Slug */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                                         Slug *
                                     </label>
                                     <input
@@ -311,25 +311,25 @@ export function CategoriesTab() {
                                                 slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                                             }))
                                         }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none font-mono text-sm"
+                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm"
                                         placeholder="e.g., electronics"
                                         required
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1">
                                         URL-friendly identifier (auto-generated from name)
                                     </p>
                                 </div>
 
                                 {/* Icon Picker */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                                         Icon *
                                     </label>
                                     <div className="relative">
                                         <button
                                             type="button"
                                             onClick={() => setShowIconPicker(!showIconPicker)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none flex items-center justify-between bg-white"
+                                            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none flex items-center justify-between"
                                         >
                                             <span className="flex items-center gap-2">
                                                 {hasIcon(formData.icon) ? (
@@ -337,7 +337,7 @@ export function CategoriesTab() {
                                                         const IconComponent = iconMap[formData.icon];
                                                         return (
                                                             <>
-                                                                <IconComponent className="w-5 h-5 text-gray-600" />
+                                                                <IconComponent className="w-5 h-5 text-muted-foreground" />
                                                                 <span>{formData.icon}</span>
                                                             </>
                                                         );
@@ -354,7 +354,7 @@ export function CategoriesTab() {
                                                 )}
                                             </span>
                                             <ChevronDown
-                                                className={`w-5 h-5 text-gray-400 transition-transform ${showIconPicker ? "rotate-180" : ""}`}
+                                                className={`w-5 h-5 text-muted-foreground transition-transform ${showIconPicker ? "rotate-180" : ""}`}
                                             />
                                         </button>
 
@@ -370,7 +370,7 @@ export function CategoriesTab() {
 
                                 {/* Parent Category */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                                         Parent Category (optional)
                                     </label>
                                     <select
@@ -383,7 +383,7 @@ export function CategoriesTab() {
                                                     : null,
                                             }))
                                         }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none"
+                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                     >
                                         <option value="">No parent (top-level)</option>
                                         {parentCategories
@@ -394,7 +394,7 @@ export function CategoriesTab() {
                                                 </option>
                                             ))}
                                     </select>
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1">
                                         Make this a subcategory of another category
                                     </p>
                                 </div>
@@ -404,19 +404,19 @@ export function CategoriesTab() {
                                     <button
                                         type="button"
                                         onClick={handleCloseForm}
-                                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors"
+                                        className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted font-medium transition-colors"
                                         disabled={isSubmitting}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 font-medium transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
                                                 Saving...
                                             </>
                                         ) : (
@@ -436,17 +436,17 @@ export function CategoriesTab() {
             {/* Delete Confirmation Modal */}
             {deletingCategory &&
                 createPortal(
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-2xl">
                             <div className="flex items-start gap-4 mb-4">
-                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                                    <AlertTriangle className="w-6 h-6 text-destructive" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    <h3 className="text-lg font-semibold text-foreground mb-2">
                                         Delete Category
                                     </h3>
-                                    <p className="text-gray-600 text-sm">
+                                    <p className="text-muted-foreground text-sm">
                                         Are you sure you want to delete "{deletingCategory.name}"?
                                         This action cannot be undone.
                                     </p>
@@ -458,14 +458,14 @@ export function CategoriesTab() {
                             <div className="flex gap-3 mt-6">
                                 <button
                                     onClick={() => setDeletingCategory(null)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors"
+                                    className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted font-medium transition-colors"
                                     disabled={isSubmitting}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 font-medium transition-opacity disabled:opacity-50"
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? "Deleting..." : "Delete"}

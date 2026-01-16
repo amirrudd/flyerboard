@@ -22,6 +22,13 @@
 - Focus on content, not chrome
 - Consistent spacing and alignment
 
+### Dark Mode & Semantic Theming
+- **Semantic Tokens**: Use functional names (e.g., `bg-background`, `text-foreground`) instead of hardcoded colors.
+- **HSL Variables**: Defined in `index.css` for both `:root` and `.dark` scopes.
+- **System Sync**: Automatic detection of `prefers-color-scheme`.
+- **FOUC Prevention**: Early theme application via inline script to prevent "Flash of Unstyled Content".
+- **Brand Consistency**: Maintain primary brand colors (e.g., red) with adjusted foregrounds for accessibility.
+
 ## Key Components
 
 ### CircularProgress

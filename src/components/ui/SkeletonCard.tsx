@@ -2,7 +2,7 @@ import React from 'react';
 
 export const SkeletonCard = () => {
     return (
-        <div className="bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm h-full">
+        <div className="bg-card border border-border rounded-xl shadow-sm h-full overflow-hidden">
             {/* Image Placeholder */}
             <div className="aspect-[4/3] w-full shimmer" />
 

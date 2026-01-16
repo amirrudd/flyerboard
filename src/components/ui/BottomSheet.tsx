@@ -49,20 +49,20 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
             {/* Sheet */}
             <div
                 ref={sheetRef}
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl animate-slide-up max-h-[85vh] flex flex-col"
+                className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl shadow-xl animate-slide-up max-h-[85vh] flex flex-col"
                 style={{ paddingBottom: 'calc(var(--safe-area-inset-bottom) + 16px)' }}
             >
                 {/* Handle bar */}
                 <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-12 h-1.5 bg-neutral-300 rounded-full" />
+                    <div className="w-12 h-1.5 bg-muted rounded-full" />
                 </div>
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 pb-3 border-b border-neutral-200">
-                    <h3 className="text-lg font-semibold text-neutral-800">{title}</h3>
+                <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
+                    <h3 className="text-lg font-semibold text-foreground">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="p-2 -mr-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                        className="p-2 -mr-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>

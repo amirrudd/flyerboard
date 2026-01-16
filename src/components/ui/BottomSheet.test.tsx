@@ -93,7 +93,7 @@ describe('BottomSheet', () => {
     it('should render with handle bar', () => {
         render(<BottomSheet {...defaultProps} />);
 
-        const handleBar = document.querySelector('.w-12.h-1\\.5.bg-neutral-300.rounded-full');
+        const handleBar = document.querySelector('.w-12.h-1\\.5.bg-muted.rounded-full');
         expect(handleBar).toBeInTheDocument();
     });
 

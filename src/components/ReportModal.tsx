@@ -93,28 +93,28 @@ export function ReportModal({
 
     return createPortal(
         <div
-            className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
             onClick={handleClose}
         >
             <div
-                className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-white/20 max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-border max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                        <h2 className="text-2xl font-bold text-neutral-900">Report {getReportTypeLabel()}</h2>
+                        <h2 className="text-2xl font-bold text-foreground">Report {getReportTypeLabel()}</h2>
                         {reportedEntityName && (
-                            <p className="text-neutral-500 text-sm mt-1">{reportedEntityName}</p>
+                            <p className="text-muted-foreground text-sm mt-1">{reportedEntityName}</p>
                         )}
-                        <p className="text-neutral-600 text-sm mt-2">
+                        <p className="text-muted-foreground text-sm mt-2">
                             Help us understand what's wrong with this {getReportTypeLabel()}.
                         </p>
                     </div>
                     <button
                         onClick={handleClose}
                         disabled={isSubmitting}
-                        className="p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-50"
+                        className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                     >
                         <X className="w-6 h-6" />
                     </button>
@@ -124,7 +124,7 @@ export function ReportModal({
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Reason Selection */}
                     <div>
-                        <label htmlFor="reason" className="block text-sm font-medium text-neutral-700 mb-2">
+                        <label htmlFor="reason" className="block text-sm font-medium text-muted-foreground mb-2">
                             Why are you reporting this?
                         </label>
                         <select
@@ -132,7 +132,7 @@ export function ReportModal({
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             disabled={isSubmitting}
-                            className="w-full px-4 py-3 pr-10 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-4 py-3 pr-10 rounded-xl bg-background border border-input focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 shadow-sm hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
                         >
                             <option value="">Select a reason...</option>
                             {REPORT_REASONS.map((r) => (
@@ -145,7 +145,7 @@ export function ReportModal({
 
                     {/* Optional Description */}
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
+                        <label htmlFor="description" className="block text-sm font-medium text-muted-foreground mb-2">
                             Additional details (optional)
                         </label>
                         <textarea
@@ -157,9 +157,9 @@ export function ReportModal({
                             maxLength={500}
                             autoComplete="off"
                             placeholder="Provide any additional context that might help us review this report..."
-                            className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+                            className="w-full px-4 py-3 rounded-xl bg-background border border-input focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 shadow-sm hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed resize-none text-foreground placeholder:text-muted-foreground"
                         />
-                        <p className="text-xs text-neutral-500 mt-1">{description.length}/500 characters</p>
+                        <p className="text-xs text-muted-foreground mt-1">{description.length}/500 characters</p>
                     </div>
 
                     {/* Actions */}
@@ -168,14 +168,14 @@ export function ReportModal({
                             type="button"
                             onClick={handleClose}
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-3 rounded-xl bg-neutral-100 text-neutral-700 font-semibold hover:bg-neutral-200 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-3 rounded-xl bg-accent text-foreground font-semibold hover:bg-muted active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting || !reason}
-                            className="flex-1 px-4 py-3 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            className="flex-1 px-4 py-3 rounded-xl bg-primary text-white font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -190,7 +190,7 @@ export function ReportModal({
                 </form>
 
                 {/* Privacy Notice */}
-                <p className="text-xs text-neutral-500 mt-4 text-center">
+                <p className="text-xs text-muted-foreground mt-4 text-center">
                     Reports are reviewed by our team. False reports may result in action against your account.
                 </p>
             </div>

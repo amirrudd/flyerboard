@@ -6,6 +6,34 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 359 71% 36%;
+    /* #9e1b1e - Darker Red */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 359 71% 36%;
+
+    --radius: 0.5rem;
+
     /* Safe Area Insets - CSS Variables for consistent usage */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
@@ -14,10 +42,45 @@
 
     /* Mobile bottom nav height + safe area */
     --bottom-nav-height: calc(72px + var(--safe-area-inset-bottom));
+    --primary-bright: 359 80% 45%;
+    /* High-contrast variant for text readability */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 359 71% 36%;
+    /* Red brand color */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 359 71% 36%;
+    --primary-bright: 0 100% 75%;
+    /* High-contrast variant for text readability on dark backgrounds */
   }
 
   body {
-    @apply bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
   }
 
   h1,
@@ -49,11 +112,11 @@
 
 @layer components {
   .auth-input-field {
-    @apply w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all duration-200 shadow-sm hover:border-neutral-300;
+    @apply w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 shadow-sm hover:border-accent;
   }
 
   .auth-button {
-    @apply w-full px-4 py-3 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+    @apply w-full px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
   }
 }
 
@@ -92,19 +155,19 @@
 
   /* Glassmorphism */
   .glass {
-    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-sm;
+    @apply bg-white/70 dark:bg-neutral-900/70 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-sm;
   }
 
   /* Mobile-optimized glass (no blur for better performance) */
   @media (max-width: 768px) {
     .glass {
-      @apply bg-white border border-neutral-200/50 shadow-sm;
+      @apply bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800 shadow-sm;
       backdrop-filter: none;
     }
   }
 
   .glass-hover {
-    @apply hover:bg-white/80 transition-all duration-300;
+    @apply hover:bg-white/80 dark:hover:bg-neutral-800/80 transition-all duration-300;
   }
 
   .glass-dark {
@@ -113,7 +176,7 @@
 
   /* Text Gradients */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70;
   }
 
   /* Scrollbar */
@@ -216,7 +279,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neutral-300 rounded-full hover:bg-neutral-400 transition-colors;
+  @apply bg-neutral-300 dark:bg-neutral-700 rounded-full hover:bg-neutral-400 dark:hover:bg-neutral-600 transition-colors;
 }
 
 /* Smooth Transitions */
@@ -279,12 +342,12 @@
 input:focus,
 textarea:focus,
 select:focus {
-  @apply outline-none ring-2 ring-primary-500/20 border-primary-500;
+  @apply outline-none ring-2 ring-primary/20 border-primary;
 }
 
 /* Loading Shimmer */
 .shimmer {
-  @apply relative overflow-hidden bg-neutral-200;
+  @apply relative overflow-hidden bg-muted;
 }
 
 .shimmer::after {
@@ -292,9 +355,17 @@ select:focus {
   @apply absolute inset-0 -translate-x-full;
   background: linear-gradient(90deg,
       transparent,
-      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0.05),
       transparent);
   animation: shimmer 1.5s infinite;
+}
+
+/* Add specialized dark mode shimmer if needed, but rgba(255,255,255,0.05) works well for both */
+.dark .shimmer::after {
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.03),
+      transparent);
 }
 
 @keyframes shimmer {

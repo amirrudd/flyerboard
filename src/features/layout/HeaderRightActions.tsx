@@ -23,7 +23,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
         <>
             <button
                 onClick={onPostClick}
-                className="h-10 px-4 text-base font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-none"
+                className="h-10 px-4 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors shadow-none"
             >
                 Pin Your Flyer
             </button>
@@ -31,7 +31,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
             {isAuthed ? (
                 <button
                     onClick={onDashboardClick}
-                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <User className="w-4 h-4" />
                     My Dashboard
@@ -39,7 +39,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
             ) : (
                 <button
                     onClick={onSignInClick}
-                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="flex items-center justify-center gap-2 min-w-[140px] px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <LogIn className="w-4 h-4" />
                     Sign In

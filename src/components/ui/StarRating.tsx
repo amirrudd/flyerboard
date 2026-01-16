@@ -41,7 +41,7 @@ export function StarRating({
             <div key={i} className="relative inline-block">
                 {/* Empty star (background) */}
                 <Star
-                    className={`${sizeClasses[size]} text-gray-300`}
+                    className={`${sizeClasses[size]} text-muted-foreground/30`}
                     fill="currentColor"
                     strokeWidth={0}
                 />
@@ -67,12 +67,12 @@ export function StarRating({
         <div className={`flex items-center gap-1 ${className}`}>
             <div className="flex items-center gap-0.5">{stars}</div>
             {showCount && count > 0 && (
-                <span className={`${textSizeClasses[size]} text-gray-600 ml-1`}>
+                <span className={`${textSizeClasses[size]} text-muted-foreground ml-1`}>
                     {rating.toFixed(1)} ({count})
                 </span>
             )}
             {showCount && count === 0 && (
-                <span className={`${textSizeClasses[size]} text-gray-500 ml-1`}>
+                <span className={`${textSizeClasses[size]} text-muted-foreground ml-1`}>
                     No ratings yet
                 </span>
             )}

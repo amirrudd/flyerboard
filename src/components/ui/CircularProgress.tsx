@@ -14,11 +14,18 @@ export function CircularProgress({
     progress,
     size = 120,
     strokeWidth = 8,
-    color = '#ea580c', // primary-600
-    backgroundColor = '#f3f4f6', // gray-100
+    color,
+    backgroundColor,
     children,
     className = '',
 }: CircularProgressProps) {
+    // Compute colors from CSS variables if not provided
+    const computedStyle = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+    const primaryHsl = computedStyle?.getPropertyValue('--primary').trim();
+    const mutedHsl = computedStyle?.getPropertyValue('--muted').trim();
+
+    const progressColor = color || (primaryHsl ? `hsl(${primaryHsl})` : '#9e1b1e');
+    const bgColor = backgroundColor || (mutedHsl ? `hsl(${mutedHsl})` : '#e5e7eb');
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const offset = circumference - (progress / 100) * circumference;
@@ -35,7 +42,7 @@ export function CircularProgress({
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke={backgroundColor}
+                    stroke={bgColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                 />
@@ -44,7 +51,7 @@ export function CircularProgress({
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke={color}
+                    stroke={progressColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeDasharray={circumference}

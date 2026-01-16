@@ -307,7 +307,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 <button
                     type="button"
                     onClick={handleBackToPhone}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors z-50"
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors z-50"
                     aria-label="Go back to phone number"
                 >
                     <ArrowLeft className="w-6 h-6" />
@@ -318,7 +318,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 <button
                     type="button"
                     onClick={handleBackToOtp}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors z-50"
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors z-50"
                     aria-label="Go back to verification code"
                 >
                     <ArrowLeft className="w-6 h-6" />
@@ -337,20 +337,20 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     >
                         <div className="space-y-3">
                             <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
+                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
                                     Verify Your Australian Phone Number
                                 </h3>
-                                <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
-                                    We verify users to keep the Board <span className="font-semibold">scam-free.</span> Your number remains private.
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                    We verify users to keep the Board <span className="font-semibold text-foreground">scam-free.</span> Your number remains private.
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="phoneNumber" className="text-xs sm:text-sm font-medium text-neutral-700">
+                                <label htmlFor="phoneNumber" className="text-xs sm:text-sm font-medium text-foreground/80">
                                     Your Mobile Number (Australia only)
                                 </label>
                                 <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors z-10" />
+                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
                                     <input
                                         id="phoneNumber"
                                         className="auth-input-field pl-12"
@@ -368,8 +368,8 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         required={step === 1}
                                     />
                                 </div>
-                                <p className="text-xs text-neutral-500">
-                                    By continuing you agree to our <Link to="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.
+                                <p className="text-xs text-muted-foreground">
+                                    By continuing you agree to our <Link to="/terms" className="text-primary hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary hover:underline">Privacy Policy</Link>.
                                 </p>
                             </div>
                         </div>
@@ -384,10 +384,10 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     >
                         <div className="space-y-3">
                             <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
+                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
                                     Enter Your Verification Code
                                 </h3>
-                                <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                     We just sent a 6-digit code to {phoneNumber}.
                                 </p>
                             </div>
@@ -404,7 +404,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border-2 border-neutral-300 rounded-lg sm:rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all bg-white"
+                                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border-2 border-input rounded-lg sm:rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-background text-foreground"
                                     />
                                 ))}
                             </div>
@@ -415,7 +415,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                     type="button"
                                     onClick={handleResendCode}
                                     disabled={remainingTime > 0 || isSendingOtp}
-                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
+                                    className="text-sm text-primary hover:text-primary/80 font-medium disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
                                 >
                                     {remainingTime > 0
                                         ? `Resend Code (${remainingTime}s)`
@@ -436,17 +436,17 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     >
                         <div className="space-y-3" style={{ transform: 'translateZ(0)' }}>
                             <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-1">
+                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
                                     What's Your Name?
                                 </h3>
-                                <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                     Help others recognize you on the Board.
                                 </p>
                             </div>
 
                             <div className="space-y-2">
                                 <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors z-10" />
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
                                     <input
                                         id="userName"
                                         ref={nameInputRef}
@@ -464,7 +464,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         required={step === 3}
                                     />
                                 </div>
-                                <p className="text-xs text-neutral-500">
+                                <p className="text-xs text-muted-foreground">
                                     This will be displayed on your flyers and profile.
                                 </p>
                             </div>

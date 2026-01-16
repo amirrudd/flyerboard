@@ -6,10 +6,10 @@ import React from 'react';
  */
 export const UserProfileSkeleton = () => {
     return (
-        <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 shadow-sm mb-6 border border-border">
             <div className="flex items-center gap-3 mb-4">
                 {/* Avatar skeleton - matches w-12 h-12 */}
-                <div className="w-12 h-12 bg-gray-200 rounded-full shimmer" />
+                <div className="w-12 h-12 bg-muted rounded-full shimmer" />
 
                 <div className="flex-1">
                     {/* Name skeleton - matches font-semibold text-gray-800 */}
@@ -36,7 +36,7 @@ export const UserProfileSkeleton = () => {
             </div>
 
             {/* Rating skeleton */}
-            <div className="pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-border">
                 <div className="flex items-center gap-2">
                     {/* Star rating - matches StarRating component height */}
                     <div className="h-4 w-20 rounded shimmer" />
@@ -54,7 +54,7 @@ export const UserProfileSkeleton = () => {
  */
 export const AdListingSkeleton = () => {
     return (
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-border bg-card rounded-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton - matches w-20 h-20 */}
                 <div className="w-20 h-20 rounded-lg shimmer" />
@@ -93,7 +93,7 @@ export const AdListingSkeleton = () => {
  */
 export const SavedAdSkeleton = () => {
     return (
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-border bg-card rounded-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton */}
                 <div className="w-20 h-20 rounded-lg shimmer" />
@@ -126,7 +126,7 @@ export const SavedAdSkeleton = () => {
  */
 export const ChatItemSkeleton = () => {
     return (
-        <div className="border border-gray-200 rounded-lg p-4">
+        <div className="border border-border bg-card rounded-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton */}
                 <div className="w-16 h-16 rounded-lg shimmer" />

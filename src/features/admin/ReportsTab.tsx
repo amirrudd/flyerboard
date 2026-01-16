@@ -29,13 +29,13 @@ export function ReportsTab() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "pending":
-                return "bg-yellow-100 text-yellow-800";
+                return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20";
             case "reviewed":
-                return "bg-blue-100 text-blue-800";
+                return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20";
             case "resolved":
-                return "bg-green-100 text-green-800";
+                return "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20";
             default:
-                return "bg-gray-100 text-gray-800";
+                return "bg-muted text-muted-foreground border border-border";
         }
     };
 
@@ -56,8 +56,8 @@ export function ReportsTab() {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Reports Management</h2>
-                <p className="text-gray-600">Review and manage user-submitted reports</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Reports Management</h2>
+                <p className="text-muted-foreground">Review and manage user-submitted reports</p>
             </div>
 
             {/* Filters */}
@@ -67,8 +67,8 @@ export function ReportsTab() {
                         key={status}
                         onClick={() => setFilterStatus(status as any)}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filterStatus === status
-                                ? "bg-primary-600 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-primary text-white"
+                            : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             }`}
                     >
                         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -79,27 +79,27 @@ export function ReportsTab() {
             {/* Stats */}
             {reports && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-yellow-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-yellow-600">
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                        <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                             {reports.filter((r) => r.status === "pending").length}
                         </div>
-                        <div className="text-sm text-gray-600">Pending</div>
+                        <div className="text-sm text-muted-foreground">Pending</div>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-blue-600">
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             {reports.filter((r) => r.status === "reviewed").length}
                         </div>
-                        <div className="text-sm text-gray-600">Reviewed</div>
+                        <div className="text-sm text-muted-foreground">Reviewed</div>
                     </div>
-                    <div className="bg-green-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-green-600">
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                             {reports.filter((r) => r.status === "resolved").length}
                         </div>
-                        <div className="text-sm text-gray-600">Resolved</div>
+                        <div className="text-sm text-muted-foreground">Resolved</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-gray-600">{reports.length}</div>
-                        <div className="text-sm text-gray-600">Total Reports</div>
+                    <div className="bg-muted border border-border rounded-lg p-4">
+                        <div className="text-2xl font-bold text-foreground">{reports.length}</div>
+                        <div className="text-sm text-muted-foreground">Total Reports</div>
                     </div>
                 </div>
             )}
@@ -108,26 +108,26 @@ export function ReportsTab() {
             <div className="space-y-4">
                 {reports === undefined ? (
                     <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent mx-auto"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
                     </div>
                 ) : reports.length === 0 ? (
                     <div className="text-center py-12">
-                        <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500">No reports found</p>
+                        <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                        <p className="text-muted-foreground">No reports found</p>
                     </div>
                 ) : (
                     reports.map((report) => (
-                        <div key={report._id} className="border border-gray-200 rounded-lg p-4">
+                        <div key={report._id} className="border border-border rounded-lg p-4 bg-card/50">
                             <div className="flex items-start gap-4">
                                 {/* Icon */}
-                                <div className="text-3xl">{getTypeIcon(report.reportType)}</div>
+                                <div className="text-3xl shrink-0">{getTypeIcon(report.reportType)}</div>
 
                                 {/* Report Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold text-gray-900">
+                                                <h3 className="font-semibold text-foreground">
                                                     {report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)}{" "}
                                                     Report
                                                 </h3>
@@ -135,12 +135,12 @@ export function ReportsTab() {
                                                     {report.status}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mb-1">
-                                                <span className="font-medium">Reason:</span> {report.reason}
+                                            <p className="text-sm text-muted-foreground mb-1">
+                                                <span className="font-medium text-foreground">Reason:</span> {report.reason}
                                             </p>
                                             {report.description && (
-                                                <p className="text-sm text-gray-600 mb-2">
-                                                    <span className="font-medium">Details:</span> {report.description}
+                                                <p className="text-sm text-muted-foreground mb-2">
+                                                    <span className="font-medium text-foreground">Details:</span> {report.description}
                                                 </p>
                                             )}
                                         </div>
@@ -148,9 +148,9 @@ export function ReportsTab() {
 
                                     {/* Reporter Info */}
                                     {report.reporter && (
-                                        <div className="text-sm text-gray-600 mb-2">
+                                        <div className="text-sm text-muted-foreground mb-2">
                                             Reported by:{" "}
-                                            <span className="font-medium">
+                                            <span className="font-medium text-foreground">
                                                 {report.reporter.name} ({report.reporter.email})
                                             </span>
                                         </div>
@@ -158,8 +158,8 @@ export function ReportsTab() {
 
                                     {/* Reported Entity Info */}
                                     {report.reportedEntity && (
-                                        <div className="text-sm text-gray-600 mb-3 p-2 bg-gray-50 rounded">
-                                            <span className="font-medium">Reported {report.reportType}:</span>{" "}
+                                        <div className="text-sm text-muted-foreground mb-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+                                            <span className="font-medium text-foreground">Reported {report.reportType}:</span>{" "}
                                             {report.reportType === "ad" && (report.reportedEntity as any).title}
                                             {report.reportType === "profile" && (report.reportedEntity as any).name}
                                             {report.reportType === "chat" && `Chat ID: ${report.reportedEntityId}`}
@@ -167,7 +167,7 @@ export function ReportsTab() {
                                     )}
 
                                     {/* Timestamp */}
-                                    <div className="text-xs text-gray-500 mb-3">
+                                    <div className="text-xs text-muted-foreground/60 mb-3">
                                         Reported {new Date(report.createdAt).toLocaleString()}
                                     </div>
 

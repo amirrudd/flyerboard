@@ -69,7 +69,7 @@ describe('StarRating', () => {
 
     it('displays gray color for empty stars', () => {
         const { container } = render(<StarRating rating={0} />);
-        const emptyStars = container.querySelectorAll('.text-gray-300');
+        const emptyStars = container.querySelectorAll('.text-muted-foreground\\/30');
         expect(emptyStars.length).toBe(5);
     });
 });

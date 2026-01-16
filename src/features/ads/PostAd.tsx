@@ -378,19 +378,19 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header
         leftNode={
           <button
             onClick={handleCancel}
-            className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back</span>
           </button>
         }
         centerNode={
-          <h1 className="text-xl font-semibold text-neutral-800">
+          <h1 className="text-xl font-semibold text-foreground">
             {editingAd ? "Edit Flyer" : "Pin New Flyer"}
           </h1>
         }
@@ -398,7 +398,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           editingAd ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors font-medium"
+              className="flex items-center gap-2 text-destructive hover:opacity-80 transition-colors font-medium"
               disabled={isSubmitting}
             >
               <Trash2 className="w-5 h-5" />
@@ -412,12 +412,12 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
       <div className="flex-1 max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Basic Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Title *
                 </label>
                 <input
@@ -427,7 +427,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   onChange={handleInputChange}
                   maxLength={100}
                   autoComplete="off"
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors bg-background text-foreground placeholder:text-muted-foreground"
                   placeholder="Enter a descriptive title"
                   required
                 />
@@ -437,14 +437,14 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Category *
                 </label>
                 <div className="relative" ref={categoryWrapperRef}>
                   <button
                     type="button"
                     onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors text-left flex items-center justify-between bg-white"
+                    className="w-full px-3 py-2 border border-input rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-left flex items-center justify-between bg-background text-foreground"
                   >
                     {formData.categoryId ? (
                       <span className="flex items-center gap-2">
@@ -454,20 +454,20 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                           const Icon = getCategoryIcon(cat.icon);
                           return (
                             <>
-                              <Icon className="w-4 h-4 text-neutral-500" />
+                              <Icon className="w-4 h-4 text-muted-foreground" />
                               {cat.name}
                             </>
                           );
                         })()}
                       </span>
                     ) : (
-                      <span className="text-neutral-500">Select a category</span>
+                      <span className="text-muted-foreground">Select a category</span>
                     )}
-                    <ChevronDown className={`w-5 h-5 text-neutral-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showCategoryDropdown && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {(categories || []).map((category: any) => {
                         const Icon = getCategoryIcon(category.icon);
                         return (
@@ -478,10 +478,10 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                               setFormData(prev => ({ ...prev, categoryId: category._id }));
                               setShowCategoryDropdown(false);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center gap-3"
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-3"
                           >
-                            <Icon className="w-4 h-4 text-neutral-500" />
-                            <span className="font-medium text-neutral-700">{category.name}</span>
+                            <Icon className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-foreground">{category.name}</span>
                           </button>
                         );
                       })}
@@ -495,16 +495,16 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
               {/* Listing Type Selector */}
               <div className="col-span-1 md:col-span-2">
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Listing Type *
                 </label>
-                <div className="flex rounded-lg border border-neutral-300 overflow-hidden">
+                <div className="flex rounded-lg border border-input overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "sale" }))}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "sale"
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-primary text-white"
+                      : "bg-background text-muted-foreground hover:bg-accent"
                       }`}
                   >
                     <DollarSign className="w-4 h-4" />
@@ -513,9 +513,9 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "exchange", price: "" }))}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border-l border-r border-neutral-300 transition-colors ${formData.listingType === "exchange"
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border-l border-r border-input transition-colors ${formData.listingType === "exchange"
+                      ? "bg-primary text-white"
+                      : "bg-background text-muted-foreground hover:bg-accent"
                       }`}
                   >
                     <Repeat className="w-4 h-4" />
@@ -525,8 +525,8 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, listingType: "both" }))}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${formData.listingType === "both"
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-primary text-white"
+                      : "bg-background text-muted-foreground hover:bg-accent"
                       }`}
                   >
                     <Handshake className="w-4 h-4" />
@@ -534,7 +534,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   </button>
                 </div>
                 <div className="min-h-[20px] mt-1">
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-muted-foreground">
                     {formData.listingType === "sale" && "List for sale at a fixed price"}
                     {formData.listingType === "exchange" && "Open to trading for other items"}
                     {formData.listingType === "both" && "Accept payment or trade offers"}
@@ -545,7 +545,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               {/* Price Field - conditional on listing type */}
               {(formData.listingType === "sale" || formData.listingType === "both") && (
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Price (AUD) *
                   </label>
                   <input
@@ -554,13 +554,13 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     name="price"
                     value={formData.price}
                     onChange={handlePriceChange}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                    className="w-full px-3 py-2 border border-input rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors bg-background text-foreground placeholder:text-muted-foreground"
                     placeholder="0"
                     pattern="[0-9]*"
                     required
                   />
                   <div className="min-h-[20px] mt-1">
-                    <p className="text-xs text-neutral-400">Enter whole numbers only (no decimals)</p>
+                    <p className="text-xs text-muted-foreground">Enter whole numbers only (no decimals)</p>
                   </div>
                 </div>
               )}
@@ -568,7 +568,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               {/* Exchange Description - conditional on listing type */}
               {(formData.listingType === "exchange" || formData.listingType === "both") && (
                 <div className={formData.listingType === "exchange" ? "col-span-1 md:col-span-2" : ""}>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     What are you looking for?
                   </label>
                   <textarea
@@ -578,11 +578,11 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                     maxLength={500}
                     rows={2}
                     autoComplete="off"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                    className="w-full px-3 py-2 border border-input rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors bg-background text-foreground placeholder:text-muted-foreground"
                     placeholder="e.g., Looking for rare holographic Pokémon cards, Nintendo games..."
                   />
                   <div className="min-h-[20px] mt-1">
-                    <p className="text-xs text-neutral-400 text-right">
+                    <p className="text-xs text-muted-foreground text-right">
                       {formData.exchangeDescription.length} / 500 characters
                     </p>
                   </div>
@@ -590,7 +590,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               )}
 
               <div className="relative" ref={locationWrapperRef}>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Location *
                 </label>
                 <input
@@ -609,28 +609,28 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   onFocus={() => {
                     if (locationSuggestions.length > 0) setShowSuggestions(true);
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg outline-none transition-colors ${!formData.location && locationQuery.length > 0 ? "border-amber-500 focus:border-amber-500 focus:ring-amber-500" : "border-neutral-300 focus:border-primary-600 focus:ring-primary-600"
+                  className={`w-full px-3 py-2 border rounded-lg outline-none transition-colors bg-background text-foreground placeholder:text-muted-foreground ${!formData.location && locationQuery.length > 0 ? "border-amber-500 focus:border-amber-500 focus:ring-amber-500" : "border-input focus:border-primary focus:ring-primary"
                     }`}
                   placeholder="Enter suburb or postcode"
                   required
                 />
                 {isSearchingLocation && (
                   <div className="absolute right-3 top-[38px]">
-                    <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
 
                 {showSuggestions && locationSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {locationSuggestions.map((loc) => (
                       <button
                         key={loc.id}
                         type="button"
                         onClick={() => handleLocationSelect(loc)}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors flex items-center justify-between group"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between group"
                       >
-                        <span className="font-medium text-neutral-700 group-hover:text-neutral-900">{loc.locality}</span>
-                        <span className="text-neutral-400 text-xs group-hover:text-neutral-500">{loc.state} {loc.postcode}</span>
+                        <span className="font-medium text-foreground group-hover:text-foreground">{loc.locality}</span>
+                        <span className="text-muted-foreground text-xs group-hover:text-muted-foreground">{loc.state} {loc.postcode}</span>
                       </button>
                     ))}
                   </div>
@@ -644,7 +644,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Description *
               </label>
               <textarea
@@ -654,20 +654,20 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 maxLength={1500}
                 rows={6}
                 autoComplete="off"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:border-primary-600 focus:ring-1 focus:ring-primary-600 outline-none transition-colors"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors bg-background text-foreground placeholder:text-muted-foreground"
                 placeholder="Describe your item..."
                 required
               />
               <div className="min-h-[20px] mt-1">
-                <p className="text-xs text-neutral-400 text-right">
+                <p className="text-xs text-muted-foreground text-right">
                   {formData.description.length} / 1500 characters
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Images *</h2>
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Images *</h2>
             <ImageUpload
               images={images}
               onImagesChange={setImages}
@@ -680,14 +680,14 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
             <button
               type="button"
               onClick={handleCancel}
-              className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+              className="flex-1 px-6 py-3 border border-input text-foreground rounded-lg hover:bg-accent font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || images.length === 0 || !formData.location}
-              className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? "Saving..." : (editingAd ? "Update Flyer" : "Pin Flyer")}
             </button>
@@ -697,15 +697,15 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-start gap-4 mb-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Flyer</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Delete Flyer</h3>
+                <p className="text-muted-foreground text-sm">
                   Are you sure you want to delete this flyer? This action cannot be undone.
                 </p>
               </div>
@@ -713,14 +713,14 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent font-medium transition-colors"
                 disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-destructive text-white rounded-lg hover:opacity-90 font-medium transition-colors disabled:opacity-50"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Deleting..." : "Delete"}
@@ -733,20 +733,20 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
       {/* Compression Wait Modal */}
       {isWaitingForCompression && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full shadow-2xl">
             <div className="flex flex-col items-center">
               <CircularProgress progress={compressionProgress} size={140} strokeWidth={10}>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600">{compressionProgress}%</div>
-                  <div className="text-xs text-gray-500 mt-1">Compressing</div>
+                  <div className="text-3xl font-bold text-primary">{compressionProgress}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Compressing</div>
                 </div>
               </CircularProgress>
 
-              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
+              <h3 className="text-xl font-semibold text-foreground mt-6 mb-2">
                 Optimizing Images
               </h3>
-              <p className="text-gray-600 text-center text-sm">
+              <p className="text-muted-foreground text-center text-sm">
                 Please wait while we compress your images for faster uploads...
               </p>
             </div>
@@ -757,20 +757,20 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
       {/* Upload Progress Overlay */}
       {isSubmitting && !showDeleteConfirm && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full shadow-2xl">
             <div className="flex flex-col items-center">
               <CircularProgress progress={progressPercent} size={140} strokeWidth={10}>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600">{progressPercent}%</div>
-                  <div className="text-xs text-gray-500 mt-1">Uploading</div>
+                  <div className="text-3xl font-bold text-primary">{progressPercent}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Uploading</div>
                 </div>
               </CircularProgress>
 
-              <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
+              <h3 className="text-xl font-semibold text-foreground mt-6 mb-2">
                 {editingAd ? 'Updating Flyer' : 'Pinning Flyer'}
               </h3>
-              <p className="text-gray-600 text-center text-sm">
+              <p className="text-muted-foreground text-center text-sm">
                 {uploadProgress}
               </p>
             </div>

@@ -58,7 +58,7 @@ export function MobileSidebar({
 
             {/* Sidebar */}
             <div
-                className="fixed top-0 left-0 h-screen w-64 bg-white shadow-2xl z-[70] overflow-y-auto scrollbar-hide pb-bottom-nav"
+                className="fixed top-0 left-0 h-screen w-64 bg-card shadow-2xl z-[70] overflow-y-auto scrollbar-hide pb-bottom-nav"
                 style={{
                     overscrollBehavior: 'contain',
                     touchAction: 'pan-y',

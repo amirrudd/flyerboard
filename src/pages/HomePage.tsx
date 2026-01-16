@@ -147,7 +147,7 @@ export function HomePage() {
   }, [status, loadMore]);
 
   return (
-    <div className="flex flex-col bg-white min-h-full">
+    <div className="flex flex-col bg-background min-h-full">
       <Header
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -194,14 +194,14 @@ export function HomePage() {
               {/* Loading spinner when loading more */}
               {status === "LoadingMore" && (
                 <div className="py-4">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                 </div>
               )}
 
               {/* End of results */}
               {status === "Exhausted" && ads && ads.length > 0 && (
                 <div className="text-center py-8">
-                  <p className="text-neutral-400 text-sm">End of the Board</p>
+                  <p className="text-muted-foreground text-sm">End of the Board</p>
                 </div>
               )}
             </div>

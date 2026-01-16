@@ -56,7 +56,7 @@ export function NotificationPrompt() {
 
     return (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="bg-card rounded-lg shadow-lg border border-border p-4">
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0">
                         <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
@@ -65,10 +65,10 @@ export function NotificationPrompt() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                        <h3 className="text-sm font-semibold text-foreground mb-1">
                             Enable Notifications
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <p className="text-sm text-muted-foreground mb-3">
                             Get notified when you receive new messages from buyers and sellers
                         </p>
 
@@ -82,7 +82,7 @@ export function NotificationPrompt() {
                             </button>
                             <button
                                 onClick={handleDismiss}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                className="px-4 py-2 text-foreground text-sm font-medium hover:bg-accent rounded-lg transition-colors"
                             >
                                 Not now
                             </button>
@@ -91,7 +91,7 @@ export function NotificationPrompt() {
 
                     <button
                         onClick={handleDismiss}
-                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label="Close"
                     >
                         <X className="w-5 h-5" />

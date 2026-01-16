@@ -74,6 +74,13 @@ FlyerBoard is a classified marketplace application where users can post, browse,
 - Use toast notifications for user-facing errors
 - Throw specific error types: "Must be logged in", "Unauthorized", "Not found"
 
+### Error Recovery & Tool Selection
+- **When file edit tools fail repeatedly** (2+ consecutive failures):
+  - If `replace_file_content` or `multi_replace_file_content` fail with "target content not found", switch to `write_to_file` with `Overwrite: true`
+  - This is especially appropriate when making comprehensive changes across a file (e.g., multiple styling updates)
+  - Don't persist with a failing approach—recognize the pattern and adapt quickly
+- **General principle**: When a tool consistently fails, switch strategies rather than retry the same approach
+
 ## Development Rules
 
 For every task, the following rules must always be respected:

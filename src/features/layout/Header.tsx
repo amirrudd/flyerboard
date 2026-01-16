@@ -5,6 +5,7 @@ import { Menu, MapPin, ChevronDown, Loader2, Navigation, Search } from "lucide-r
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
+import { ThemeToggle } from "../../components/ThemeToggle";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { debounce } from "../../lib/performanceUtils";
 
@@ -163,14 +164,14 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     <div className="relative location-dropdown">
       <button
         className={compact
-          ? "w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
-          : "flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
+          ? "w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+          : "flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg hover:bg-accent"
         }
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
         title={compact ? (selectedLocation || "All Locations") : undefined}
       >
-        <MapPin className={compact ? "w-5 h-5 text-gray-700" : "w-4 h-4"} />
+        <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4"} />
         {!compact && (
           <>
             <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
@@ -180,21 +181,21 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       </button>
 
       {isOpen && (
-        <div className={`absolute top-full mt-1 w-72 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${align === 'right' ? 'right-0' : 'left-0'}`}>
-          <div className="p-2 border-b border-gray-100">
+        <div className={`absolute top-full mt-1 w-72 max-w-[90vw] bg-popover border border-border rounded-lg shadow-lg z-50 ${align === 'right' ? 'right-0' : 'left-0'}`}>
+          <div className="p-2 border-b border-border">
             <input
               ref={inputRef}
               type="text"
               placeholder="Enter suburb or postcode..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background text-foreground"
             />
           </div>
 
           <div className="max-h-60 overflow-y-auto py-1">
             {isSearching ? (
-              <div className="px-4 py-2 text-sm text-gray-500 flex items-center gap-2">
+              <div className="px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Searching...
               </div>
@@ -207,32 +208,32 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
                     setIsOpen(false);
                     setQuery("");
                   }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors flex flex-col"
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors flex flex-col"
                 >
-                  <span className="font-medium text-gray-900">{loc.locality}</span>
-                  <span className="text-xs text-gray-500">{loc.state} {loc.postcode}</span>
+                  <span className="font-medium text-foreground">{loc.locality}</span>
+                  <span className="text-xs text-muted-foreground">{loc.state} {loc.postcode}</span>
                 </button>
               ))
             ) : query.length >= 2 ? (
-              <div className="px-4 py-2 text-sm text-gray-500">No locations found</div>
+              <div className="px-4 py-2 text-sm text-muted-foreground">No locations found</div>
             ) : (
               <button
                 onClick={() => {
                   setSelectedLocation("");
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
               >
                 All Locations
               </button>
             )}
           </div>
 
-          <div className="border-t border-gray-100 p-1">
+          <div className="border-t border-border p-1">
             <button
               onClick={detectLocation}
               disabled={isDetectingLocation}
-              className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
             >
               {isDetectingLocation ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -335,18 +336,19 @@ const MobileHeader = memo(function MobileHeader({
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors"
             title={sidebarCollapsed ? "Open menu" : "Close menu"}
           >
-            <Menu className="w-6 h-6 text-gray-700" />
+            <Menu className="w-6 h-6 text-foreground/70" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900 cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
+          <h1 className="text-lg font-bold text-foreground cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
             <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
-            <span>{window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}</span>
+            <span className="truncate">{window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}</span>
           </h1>
         </div>
 
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+          <ThemeToggle />
           {window.location.pathname === '/dashboard' ? (
             <SignOutButton onSignOut={() => navigate('/')} iconOnly />
           ) : (
@@ -367,10 +369,10 @@ const MobileHeader = memo(function MobileHeader({
                   e.stopPropagation();
                   setSearchExpanded(!searchExpanded);
                 }}
-                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors flex-shrink-0"
                 title="Search"
               >
-                <Search className="w-5 h-5 text-gray-700" />
+                <Search className="w-5 h-5 text-foreground/70" />
               </button>
             </>
           )}
@@ -379,7 +381,7 @@ const MobileHeader = memo(function MobileHeader({
 
       {/* Expandable Search Overlay */}
       {searchExpanded && (
-        <div className="mobile-search-container border-t border-gray-100 bg-white container-padding py-3 animate-fade-in">
+        <div className="mobile-search-container border-t border-border bg-background container-padding py-3 animate-fade-in">
           <div className="space-y-3">
             <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
               <input
@@ -388,9 +390,9 @@ const MobileHeader = memo(function MobileHeader({
                 placeholder="Search in flyers..."
                 value={localSearchQuery}
                 onChange={handleSearchChange}
-                className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full h-10 px-4 pl-10 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background text-foreground"
               />
-              <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-3 top-2.5 w-5 h-5 text-muted-foreground/50 pointer-events-none" />
             </form>
           </div>
         </div>
@@ -441,7 +443,7 @@ export const Header = memo(function Header({
           <div className="flex items-center gap-6 flex-shrink-0">
             {leftNode ? leftNode : (
               <>
-                <h1 className="text-xl font-bold text-gray-900 cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
+                <h1 className="text-xl font-bold text-foreground cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
                   <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
                   <span>FlyerBoard</span>
                 </h1>
@@ -464,9 +466,9 @@ export const Header = memo(function Header({
                   placeholder="Search in flyers..."
                   defaultValue={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full h-10 px-4 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                  className="w-full h-10 px-4 pl-10 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background text-foreground"
                 />
-                <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-2.5 w-5 h-5 text-muted-foreground/50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </form>
@@ -475,6 +477,7 @@ export const Header = memo(function Header({
 
           {/* Right section - Actions */}
           <div className="flex items-center gap-4 flex-shrink-0">
+            <ThemeToggle />
             {rightNode ? rightNode : (
               <HeaderRightActions
                 user={user}

@@ -47,7 +47,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
       >
         <div className="space-y-4">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input
               className="auth-input-field pl-12"
               type="email"
@@ -57,7 +57,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
             />
           </div>
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input
               className="auth-input-field pl-12"
               type="password"
@@ -83,7 +83,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
           )}
         </button>
 
-        <div className="text-center text-sm text-neutral-500 mt-4">
+        <div className="text-center text-sm text-muted-foreground mt-4">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
@@ -91,15 +91,15 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
           </span>
           <button
             type="button"
-            className="text-primary-600 hover:text-primary-700 font-semibold hover:underline cursor-pointer transition-colors ml-1"
+            className="text-primary-bright hover:opacity-80 font-semibold hover:underline cursor-pointer transition-opacity ml-1"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
             {flow === "signIn" ? "Sign up" : "Sign in"}
           </button>
         </div>
         {flow === "signUp" && (
-          <p className="text-xs text-neutral-500 mt-2">
-            By signing up you agree to our <Link to="/terms" className="text-primary-600 hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.
+          <p className="text-xs text-muted-foreground mt-2">
+            By signing up you agree to our <Link to="/terms" className="text-primary-bright hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-bright hover:underline">Privacy Policy</Link>.
           </p>
         )}
       </form>

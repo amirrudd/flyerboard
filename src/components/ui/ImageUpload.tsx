@@ -220,8 +220,8 @@ export function ImageUpload({
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
             ${isDragging
-              ? 'border-primary-600 bg-orange-50'
-              : 'border-neutral-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-muted-foreground'
             }
           `}
           onDragOver={handleDragOver}
@@ -240,21 +240,21 @@ export function ImageUpload({
           <div className="space-y-4">
             <div className="text-4xl">📸</div>
             <div>
-              <p className="text-lg font-medium text-neutral-700 mb-2">
+              <p className="text-lg font-medium text-foreground mb-2">
                 {isDragging ? 'Drop images here' : 'Upload Images'}
               </p>
-              <p className="text-sm text-neutral-500 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Drag and drop images here, or click to select files
               </p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition-opacity"
               >
                 Choose Files
               </button>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground/60">
               Supports: JPG, PNG, GIF, WebP, HEIC • Max size: 10MB each • Max {maxImages} images
             </p>
           </div>
@@ -263,11 +263,11 @@ export function ImageUpload({
 
       {/* Image Counter */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-muted-foreground">
           {images.length}/{maxImages} images added
         </p>
         {images.length >= maxImages && (
-          <p className="text-sm text-orange-600">Maximum images reached</p>
+          <p className="text-sm text-primary">Maximum images reached</p>
         )}
       </div>
 
@@ -276,7 +276,7 @@ export function ImageUpload({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((image, index) => (
             <div key={index} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <ImageDisplay
                   src={image}
                   alt={`Upload ${index + 1}`}
@@ -285,7 +285,7 @@ export function ImageUpload({
               </div>
               <button
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-7 h-7 flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
                 title="Remove image"
               >
                 <Trash2 className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function ImageUpload({
       {/* Empty State */}
       {images.length === 0 && (
         <div className="text-center py-4">
-          <p className="text-neutral-500 text-sm">No images added yet</p>
+          <p className="text-muted-foreground text-sm">No images added yet</p>
         </div>
       )}
     </div>

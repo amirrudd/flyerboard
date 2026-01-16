@@ -76,7 +76,7 @@ describe('ImageDisplay', () => {
         // Should show skeleton while fetching storage URL
         const skeleton = screen.getByLabelText('Loading image');
         expect(skeleton).toBeInTheDocument();
-        expect(skeleton).toHaveClass('shimmer', 'bg-gray-200', 'test-class');
+        expect(skeleton).toHaveClass('shimmer', 'bg-muted', 'test-class');
     });
 
     it('should render LazyLoadImage after storage URL is fetched', () => {
@@ -106,7 +106,7 @@ describe('ImageDisplay', () => {
 
         const skeleton = screen.getByLabelText('Loading image');
         expect(skeleton).toBeInTheDocument();
-        expect(skeleton).toHaveClass('shimmer', 'bg-gray-200', 'test-class');
+        expect(skeleton).toHaveClass('shimmer', 'bg-muted', 'test-class');
     });
 
     it('should call onError callback when image fails to load', async () => {
@@ -185,7 +185,7 @@ describe('ImageDisplay', () => {
         // Should show skeleton while R2 reference is being converted
         const skeleton = screen.getByLabelText('Loading image');
         expect(skeleton).toBeInTheDocument();
-        expect(skeleton).toHaveClass('shimmer', 'bg-gray-200', 'test-class');
+        expect(skeleton).toHaveClass('shimmer', 'bg-muted', 'test-class');
     });
 
     it('should show skeleton for R2 references even if imageUrl is still loading', () => {
@@ -218,7 +218,7 @@ describe('ImageDisplay', () => {
         await waitFor(() => {
             const placeholder = screen.getByTestId('image-placeholder-icon');
             expect(placeholder).toBeInTheDocument();
-            expect(placeholder).toHaveClass('w-1/3', 'h-1/3', 'text-gray-300');
+            expect(placeholder).toHaveClass('w-1/3', 'h-1/3', 'text-muted-foreground/30');
         });
 
         // Should no longer show the image

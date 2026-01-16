@@ -25,13 +25,13 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
                 >
                     <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${message.isCurrentUser
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-neutral-100 text-neutral-900'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground'
                             }`}
                     >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         <p
-                            className={`text-xs mt-1 ${message.isCurrentUser ? 'text-orange-200' : 'text-neutral-500'
+                            className={`text-xs mt-1 ${message.isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
                                 }`}
                         >
                             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}

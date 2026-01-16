@@ -48,15 +48,15 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
   // Show skeleton while loading (or if r2: reference hasn't been converted yet)
   if (!displaySrc || displaySrc.startsWith('r2:')) {
     return (
-      <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
+      <div className={`${className} shimmer bg-muted`} aria-label="Loading image" />
     );
   }
 
   // Show placeholder if image failed to load
   if (hasError) {
     return (
-      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
-        <ImageIcon className="w-1/3 h-1/3 text-gray-300" />
+      <div className={`${className} bg-muted flex items-center justify-center`}>
+        <ImageIcon className="w-1/3 h-1/3 text-muted-foreground/30" />
       </div>
     );
   }
@@ -74,7 +74,7 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
       visibleByDefault={priority}
       onError={handleError}
       placeholder={
-        <div className={`${className} shimmer bg-gray-200`} aria-label="Loading image" />
+        <div className={`${className} shimmer bg-muted`} aria-label="Loading image" />
       }
     />
   );

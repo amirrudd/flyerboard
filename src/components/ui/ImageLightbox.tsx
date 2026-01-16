@@ -133,7 +133,7 @@ export function ImageLightbox({
                                     onNavigate(index);
                                 }}
                                 className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentIndex
-                                    ? "border-primary-600 ring-2 ring-primary-600 ring-opacity-50"
+                                    ? "border-primary ring-2 ring-primary ring-opacity-50"
                                     : "border-white/30 hover:border-white/60"
                                     }`}
                             >

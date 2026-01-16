@@ -7,22 +7,22 @@ interface MarkdownContentProps {
 
 export function MarkdownContent({ content }: MarkdownContentProps) {
     return (
-        <div className="prose prose-neutral max-w-none">
+        <div className="prose prose-neutral max-w-none text-foreground dark:prose-invert">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                     h1: ({ children }) => (
-                        <h1 className="text-2xl font-bold text-neutral-900 border-b border-neutral-200 pb-2 mb-6">
+                        <h1 className="text-2xl font-bold text-foreground border-b border-border pb-2 mb-6">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="text-lg font-semibold text-neutral-900 mt-8 mb-4">
+                        <h2 className="text-lg font-semibold text-foreground mt-8 mb-4">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="text-base font-semibold text-neutral-900 mt-6 mb-3">
+                        <h3 className="text-base font-semibold text-foreground mt-6 mb-3">
                             {children}
                         </h3>
                     ),
@@ -37,26 +37,26 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
                     ),
                     table: ({ children }) => (
                         <div className="overflow-x-auto mb-6">
-                            <table className="min-w-full border-collapse border border-neutral-300">
+                            <table className="min-w-full border-collapse border border-border">
                                 {children}
                             </table>
                         </div>
                     ),
                     thead: ({ children }) => (
-                        <thead className="bg-neutral-100">{children}</thead>
+                        <thead className="bg-muted/50">{children}</thead>
                     ),
                     th: ({ children }) => (
-                        <th className="border border-neutral-300 px-4 py-3 text-left font-semibold text-neutral-900">
+                        <th className="border border-border px-4 py-3 text-left font-semibold text-foreground">
                             {children}
                         </th>
                     ),
                     td: ({ children }) => (
-                        <td className="border border-neutral-300 px-4 py-3">
+                        <td className="border border-border px-4 py-3 text-foreground/80">
                             {children}
                         </td>
                     ),
                     blockquote: ({ children }) => (
-                        <blockquote className="text-sm text-neutral-600 bg-neutral-50 p-4 rounded-lg border border-neutral-200 mb-4">
+                        <blockquote className="text-sm text-muted-foreground bg-muted p-4 rounded-lg border border-border mb-4 italic">
                             {children}
                         </blockquote>
                     ),
@@ -64,7 +64,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
                         <strong className="font-semibold">{children}</strong>
                     ),
                     em: ({ children }) => (
-                        <em className="italic text-sm text-neutral-500">{children}</em>
+                        <em className="italic text-sm text-muted-foreground">{children}</em>
                     ),
                 }}
             >

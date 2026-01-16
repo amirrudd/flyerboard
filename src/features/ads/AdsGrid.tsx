@@ -62,12 +62,12 @@ export const AdsGrid = memo(function AdsGrid({
   return (
     <div className="flex-1">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#333333] mb-6">
+        <h2 className="text-2xl font-bold text-foreground mb-6">
           {selectedCategory
             ? `${categories?.find(c => c._id === selectedCategory)?.name} Flyers`
             : 'All Flyers'}
         </h2>
-        <div className="text-neutral-500 text-sm mb-4">
+        <div className="text-muted-foreground text-sm mb-4">
           <div className="h-5 flex items-center">
             {ads ? (
               <>
@@ -101,10 +101,10 @@ export const AdsGrid = memo(function AdsGrid({
               <div
                 key={ad._id}
                 onClick={() => handleAdClick(ad)}
-                className={`listing-card bg-white border rounded-xl overflow-hidden shadow-sm hover:border-gray-300 transition-all duration-200 cursor-pointer group ${isNew ? 'border-primary-400 animate-fade-in' : 'border-neutral-100'
+                className={`listing-card bg-card border rounded-xl overflow-hidden shadow-sm hover:border-accent transition-all duration-200 cursor-pointer group ${isNew ? 'border-primary animate-fade-in' : 'border-border'
                   }`}
               >
-                <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                <div className="aspect-[4/3] bg-muted overflow-hidden relative">
                   <ImageDisplay
                     src={ad.images[0] || ''}
                     alt={ad.title}
@@ -117,46 +117,46 @@ export const AdsGrid = memo(function AdsGrid({
                     </div>
                   )}
                   {isNew && (
-                    <div className="absolute top-2 left-2 bg-primary-600 text-white px-2 py-1 rounded text-xs font-semibold shadow-md">
+                    <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded text-xs font-semibold shadow-md">
                       NEW
                     </div>
                   )}
                 </div>
                 <div className="p-3">
-                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 text-sm sm:text-base">
+                  <h3 className="font-medium text-foreground mb-1 line-clamp-1 text-sm sm:text-base">
                     {ad.title}
                   </h3>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 flex-1 min-w-0">
                       {ad.location}
                     </p>
                     <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                       {/* Previous price strikethrough - only for sale/both with price reduction */}
                       {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (
-                        <p className="text-xs text-gray-400 line-through">
+                        <p className="text-xs text-muted-foreground line-through">
                           {formatPrice(ad.previousPrice)}
                         </p>
                       )}
                       {/* Price display based on listing type */}
                       {(!ad.listingType || ad.listingType === "sale") && ad.price !== undefined && (
-                        <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                        <p className="text-sm font-medium text-foreground whitespace-nowrap">
                           {formatPrice(ad.price)}
                         </p>
                       )}
                       {ad.listingType === "exchange" && (
-                        <p className="text-sm font-medium text-primary-600 whitespace-nowrap flex items-center gap-1">
+                        <p className="text-sm font-medium text-primary-bright whitespace-nowrap flex items-center gap-1">
                           <Repeat className="w-3.5 h-3.5" />
                           Open to Trade
                         </p>
                       )}
                       {ad.listingType === "both" && ad.price !== undefined && (
-                        <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                          {formatPrice(ad.price)} <span className="text-primary-600 text-xs">• Trade</span>
+                        <p className="text-sm font-medium text-foreground whitespace-nowrap">
+                          {formatPrice(ad.price)} <span className="text-primary-bright text-xs">• Trade</span>
                         </p>
                       )}
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
+                  <div className="mt-2 text-xs text-muted-foreground flex justify-between items-center">
                     <span>{ad.views} views</span>
                   </div>
                 </div>
@@ -176,10 +176,10 @@ export const AdsGrid = memo(function AdsGrid({
       {!isLoading && ads && ads.length === 0 && (
         <div className="text-center py-12">
           <div className="flex justify-center mb-4">
-            <Search className="w-16 h-16 text-gray-300" strokeWidth={1.5} />
+            <Search className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} />
           </div>
-          <h3 className="text-xl font-semibold text-[#333333] mb-2">No Flyers Found</h3>
-          <p className="text-neutral-500">Try adjusting your search or filters</p>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No Flyers Found</h3>
+          <p className="text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       )}
     </div>

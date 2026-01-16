@@ -18,18 +18,18 @@ export function AboutUsPage() {
                 leftNode={
                     <button
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <ChevronLeft className="w-5 h-5" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
                 }
                 centerNode={
-                    <h1 className="text-lg md:text-xl font-bold text-gray-900 truncate">About Us</h1>
+                    <h1 className="text-lg md:text-xl font-bold text-foreground truncate">About Us</h1>
                 }
                 rightNode={<div />}
             />
-            <div className="min-h-screen bg-white py-12 pb-bottom-nav md:pb-12">
+            <div className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <div className="content-width-reading mx-auto">
                         {/* Logo Hero */}

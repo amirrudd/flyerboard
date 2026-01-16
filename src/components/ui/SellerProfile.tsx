@@ -43,24 +43,24 @@ export function SellerProfile({
                     onError={onAvatarError}
                 />
             ) : (
-                <div className={`${sizeClass} bg-gray-200 rounded-full flex items-center justify-center text-neutral-600 font-semibold`}>
+                <div className={`${sizeClass} bg-muted rounded-full flex items-center justify-center text-muted-foreground font-semibold`}>
                     {seller ? getInitials(seller) : 'U'}
                 </div>
             )}
             <div className="flex-1">
                 {seller ? (
-                    <p className={`font-medium text-neutral-800 flex items-center gap-1 ${size === 'lg' ? 'text-lg font-semibold' : ''}`}>
+                    <p className={`font-medium text-foreground flex items-center gap-1 ${size === 'lg' ? 'text-lg font-semibold' : ''}`}>
                         {getDisplayName(seller)}
                         {seller.isVerified && (
                             <img
                                 src="/verified-badge.svg"
                                 alt="Verified Seller"
-                                className={size === 'lg' ? 'w-6 h-6' : 'w-10 h-10'}
+                                className={`dark:brightness-125 dark:contrast-125 ${size === 'lg' ? 'w-6 h-6' : 'w-10 h-10'}`}
                             />
                         )}
                     </p>
                 ) : (
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                    <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
                 )}
                 {showRating && seller && (
                     <div
@@ -77,7 +77,7 @@ export function SellerProfile({
                     </div>
                 )}
                 {showRating && !seller && (
-                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-28 bg-muted rounded animate-pulse" />
                 )}
             </div>
         </div>

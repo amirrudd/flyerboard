@@ -347,7 +347,7 @@ describe('ContextualNotificationModal', () => {
             expect(backdrop).toHaveClass('bg-black/50', 'backdrop-blur-sm', 'z-[100]');
 
             // Check for modal content
-            const modal = screen.getByText('Stay Updated on Your Flyer').closest('.bg-white');
+            const modal = screen.getByText('Stay Updated on Your Flyer').closest('.bg-card');
             expect(modal).toHaveClass('rounded-xl', 'shadow-2xl', 'animate-scale-in');
         });
 

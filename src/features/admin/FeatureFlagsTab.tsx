@@ -85,7 +85,7 @@ export function FeatureFlagsTab() {
     if (featureFlags === undefined) {
         return (
             <div className="flex items-center justify-center h-48">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-600 border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
             </div>
         );
     }
@@ -95,9 +95,9 @@ export function FeatureFlagsTab() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <Flag className="w-6 h-6 text-primary-600" />
-                    <h2 className="text-xl font-semibold text-gray-900">Feature Flags</h2>
-                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-sm">
+                    <Flag className="w-6 h-6 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">Feature Flags</h2>
+                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full text-sm">
                         {featureFlags.length} flags
                     </span>
                 </div>
@@ -105,7 +105,7 @@ export function FeatureFlagsTab() {
                     {featureFlags.length === 0 && (
                         <button
                             onClick={seedDefaultFlags}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
                         >
                             <Plus className="w-4 h-4" />
                             Add Default Flags
@@ -113,7 +113,7 @@ export function FeatureFlagsTab() {
                     )}
                     <button
                         onClick={() => setIsCreating(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 transition-opacity"
                     >
                         <Plus className="w-4 h-4" />
                         New Flag
@@ -123,11 +123,11 @@ export function FeatureFlagsTab() {
 
             {/* Create New Flag Form */}
             {isCreating && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 className="font-medium text-gray-900 mb-3">Create New Feature Flag</h3>
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <h3 className="font-medium text-foreground mb-3">Create New Feature Flag</h3>
                     <div className="space-y-3">
                         <div>
-                            <label htmlFor="flag-key" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="flag-key" className="block text-sm font-medium text-muted-foreground mb-1">
                                 Key (unique identifier)
                             </label>
                             <input
@@ -136,11 +136,11 @@ export function FeatureFlagsTab() {
                                 value={newKey}
                                 onChange={(e) => setNewKey(e.target.value)}
                                 placeholder="e.g., newFeatureName"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                             />
                         </div>
                         <div>
-                            <label htmlFor="flag-description" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="flag-description" className="block text-sm font-medium text-muted-foreground mb-1">
                                 Description
                             </label>
                             <input
@@ -149,7 +149,7 @@ export function FeatureFlagsTab() {
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                                 placeholder="What does this flag control?"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                             />
                         </div>
                         <div className="flex gap-2 justify-end">
@@ -159,13 +159,13 @@ export function FeatureFlagsTab() {
                                     setNewKey("");
                                     setNewDescription("");
                                 }}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-background border border-border rounded-lg hover:bg-muted transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleCreate}
-                                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 transition-opacity"
                             >
                                 Create Flag
                             </button>
@@ -176,46 +176,46 @@ export function FeatureFlagsTab() {
 
             {/* Flags List */}
             {featureFlags.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                    <Flag className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-12 text-muted-foreground">
+                    <Flag className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
                     <p className="text-lg font-medium">No feature flags configured</p>
-                    <p className="text-sm">Run <code className="bg-gray-100 px-1 rounded">npx convex run migrations:seedFeatureFlags</code> to seed defaults.</p>
+                    <p className="text-sm">Run <code className="bg-muted px-1 rounded text-foreground">npx convex run migrations:seedFeatureFlags</code> to seed defaults.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {featureFlags.map((flag) => (
                         <div
                             key={flag._id}
-                            className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                            className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:border-muted-foreground/30 transition-colors"
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                    <code className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                                    <code className="text-sm font-medium text-foreground bg-muted px-2 py-0.5 rounded">
                                         {flag.key}
                                     </code>
                                     <span
                                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${flag.enabled
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-gray-100 text-gray-600"
+                                            ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                            : "bg-muted text-muted-foreground"
                                             }`}
                                     >
                                         {flag.enabled ? "Enabled" : "Disabled"}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1">{flag.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{flag.description}</p>
                             </div>
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => handleToggle(flag.key, flag.enabled)}
                                     disabled={pendingToggle === flag.key}
                                     className={`p-2 rounded-lg transition-colors ${flag.enabled
-                                        ? "text-green-600 hover:bg-green-50"
-                                        : "text-gray-400 hover:bg-gray-100"
+                                        ? "text-green-600 hover:bg-green-500/10"
+                                        : "text-muted-foreground hover:bg-muted"
                                         } ${pendingToggle === flag.key ? "opacity-50 cursor-not-allowed" : ""}`}
                                     title={flag.enabled ? "Click to disable" : "Click to enable"}
                                 >
                                     {pendingToggle === flag.key ? (
-                                        <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary-600"></div>
+                                        <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted border-t-primary"></div>
                                     ) : flag.enabled ? (
                                         <ToggleRight className="w-6 h-6" />
                                     ) : (
@@ -224,7 +224,7 @@ export function FeatureFlagsTab() {
                                 </button>
                                 <button
                                     onClick={() => handleDelete(flag.key)}
-                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                                     title="Delete flag"
                                 >
                                     <Trash2 className="w-5 h-5" />
@@ -236,11 +236,11 @@ export function FeatureFlagsTab() {
             )}
 
             {/* Info Card */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-medium text-blue-900 mb-1">About Feature Flags</h3>
-                <p className="text-sm text-blue-700">
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h3 className="font-medium text-blue-700 dark:text-blue-400 mb-1">About Feature Flags</h3>
+                <p className="text-sm text-blue-600/80 dark:text-blue-300/80">
                     Feature flags allow you to enable or disable features without code changes.
-                    To sync flags between environments, add them to the <code className="bg-blue-100 px-1 rounded">seedFeatureFlags</code> migration in <code className="bg-blue-100 px-1 rounded">convex/migrations.ts</code>.
+                    To sync flags between environments, add them to the <code className="bg-blue-500/10 px-1 rounded text-blue-700 dark:text-blue-400">seedFeatureFlags</code> migration in <code className="bg-blue-500/10 px-1 rounded text-blue-700 dark:text-blue-400">convex/migrations.ts</code>.
                 </p>
             </div>
         </div>

@@ -81,3 +81,22 @@ unhoistableHeaders: new Set(["x-amz-checksum-crc32"])
 **Decision**: Extract duplicated logic into reusable components, functions, or utilities.
 
 **Why**: Reduces maintenance burden, ensures consistency, and improves code quality. When the same code appears in multiple places, create a shared abstraction.
+
+---
+
+## Dark Mode & Semantic Theming (Jan 2026)
+
+### Semantic HSL Tokens
+**Decision**: Use HSL CSS variables for all theme-aware colors instead of hardcoded tailwind colors.
+
+**Why**: Enables instant theme switching via a single class (`.dark`) on the document root while supporting Tailwind's opacity modifiers.
+
+### System Preference Sync
+**Decision**: Default to `system` theme and sync with `prefers-color-scheme`.
+
+**Why**: Respects user's OS settings automatically while allowing manual override.
+
+### FOUC Prevention
+**Decision**: Execute an inline blocking script in `<head>` to apply the theme class before the first paint.
+
+**Why**: Eliminates the "Flash of Unstyled Content" where a dark-mode user sees a white screen during initial load.

@@ -20,22 +20,31 @@ function CircleOverlay({ center, radius }: { center: Coordinates; radius: number
     useEffect(() => {
         if (!map) return;
 
+        // Get computed primary color from CSS variable
+        const computedStyle = getComputedStyle(document.documentElement);
+        const primaryHsl = computedStyle.getPropertyValue('--primary').trim();
+        const primaryColor = primaryHsl ? `hsl(${primaryHsl})` : '#9e1b1e';
+
         // Create circle if it doesn't exist
         if (!circleRef.current) {
             circleRef.current = new google.maps.Circle({
                 map,
                 center,
                 radius: 1000, // 1km radius for approximate location
-                strokeColor: '#f97316',
+                strokeColor: primaryColor,
                 strokeOpacity: 0.8,
                 strokeWeight: 2,
-                fillColor: '#f97316',
+                fillColor: primaryColor,
                 fillOpacity: 0.2,
             });
         } else {
             // Update existing circle
             circleRef.current.setCenter(center);
-            circleRef.current.setRadius(1000); // Update to 1km radius
+            circleRef.current.setRadius(1000);
+            circleRef.current.setOptions({
+                strokeColor: primaryColor,
+                fillColor: primaryColor,
+            });
         }
 
         // Cleanup on unmount
@@ -102,8 +111,8 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
 
     if (!apiKey) {
         return (
-            <div className={`h-64 bg-neutral-100 rounded-lg flex items-center justify-center ${className}`}>
-                <div className="text-center text-neutral-500">
+            <div className={`h-64 bg-muted rounded-lg flex items-center justify-center ${className}`}>
+                <div className="text-center text-muted-foreground">
                     <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
                     <p className="text-sm">Map configuration missing</p>
                 </div>
@@ -113,9 +122,9 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
 
     if (loading) {
         return (
-            <div className={`h-64 bg-neutral-100 rounded-lg flex items-center justify-center ${className}`}>
-                <div className="text-center text-neutral-500">
-                    <div className="w-12 h-12 mx-auto mb-2 border-4 border-neutral-300 border-t-primary-600 rounded-full animate-spin"></div>
+            <div className={`h-64 bg-muted rounded-lg flex items-center justify-center ${className}`}>
+                <div className="text-center text-muted-foreground">
+                    <div className="w-12 h-12 mx-auto mb-2 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
                     <p className="text-sm">Loading map...</p>
                 </div>
             </div>
@@ -124,11 +133,11 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
 
     if (error || !coordinates) {
         return (
-            <div className={`h-64 bg-neutral-100 rounded-lg flex items-center justify-center ${className}`}>
-                <div className="text-center text-neutral-500">
+            <div className={`h-64 bg-muted rounded-lg flex items-center justify-center ${className}`}>
+                <div className="text-center text-muted-foreground">
                     <MapPin className="w-12 h-12 mx-auto mb-2" />
                     <p className="text-sm">Unable to load map for this location</p>
-                    {error && <p className="text-xs mt-1 text-neutral-400">{error}</p>}
+                    {error && <p className="text-xs mt-1 text-muted-foreground">{error}</p>}
                 </div>
             </div>
         );

@@ -35,7 +35,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 md:hidden z-50 pb-safe"
+            className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border md:hidden z-50 pb-safe"
             style={{
                 transform: 'translateZ(0)',
                 backfaceVisibility: 'hidden',
@@ -47,7 +47,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             <div className="grid grid-cols-5 items-end px-4 pt-2 pb-4">
                 <Link
                     to="/"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     <Home size={24} />
@@ -56,7 +56,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=saved")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=saved") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=saved") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     <Heart size={24} />
@@ -67,15 +67,15 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     onClick={() => handleAuthGuard("/post")}
                     className="flex flex-col items-center gap-1 -mt-6"
                 >
-                    <div className="bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors">
+                    <div className="bg-primary text-white p-3 rounded-full shadow-lg hover:opacity-90 transition-all active:scale-95 shadow-primary/20">
                         <Plus size={28} />
                     </div>
-                    <span className="text-xs font-medium text-neutral-500">PIN</span>
+                    <span className="text-xs font-medium text-muted-foreground">PIN</span>
                 </button>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=chats")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=chats") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=chats") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     <MessageSquare size={24} />
@@ -84,7 +84,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=ads")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=ads") ? "text-primary-600" : "text-neutral-500 hover:text-neutral-900"
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=ads") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     {user ? <LayoutDashboard size={24} /> : <User size={24} />}

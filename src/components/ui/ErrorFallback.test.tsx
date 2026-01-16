@@ -308,7 +308,7 @@ describe('ErrorFallback', () => {
             expect(mainContainer).toBeInTheDocument();
 
             // Check for card styling
-            const card = container.querySelector('.bg-white.rounded-lg.shadow-lg');
+            const card = container.querySelector('.bg-card.rounded-lg.shadow-lg');
             expect(card).toBeInTheDocument();
         });
 

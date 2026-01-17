@@ -1,6 +1,6 @@
 # UI Patterns & Components
 
-**Last Updated**: 2025-12-25
+**Last Updated**: 2026-01-17
 
 ## Design Philosophy
 
@@ -499,20 +499,29 @@ transition: all 0.2s ease-out;
 
 ## Color Palette
 
-### Primary (Orange)
-- `primary-50`: `#fff7ed` - Backgrounds
-- `primary-600`: `#ea580c` - Main brand color
-- `primary-700`: `#c2410c` - Hover states
+### Brand Colors (Primary - Red)
+- `primary`: `hsl(359 71% 36%)` - Main brand color (#9e1b1e)
+- `primary-foreground`: Light text on primary backgrounds
+- `primary-bright`: High-contrast variant for better text readability
 
-### Neutrals
-- `gray-100`: `#f3f4f6` - Backgrounds
-- `gray-500`: `#6b7280` - Secondary text
-- `gray-900`: `#111827` - Primary text
+### Semantic Tokens (Use These)
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `bg-background` | White | Dark navy | Page backgrounds |
+| `text-foreground` | Dark navy | Light gray | Primary text |
+| `bg-card` | White | Dark navy | Card backgrounds |
+| `text-muted-foreground` | Gray | Light gray | Secondary text |
+| `bg-muted` | Light gray | Dark navy | Muted backgrounds |
+| `bg-destructive` | Red | Dark red | Error states |
+| `border-border` | Light gray | Dark gray | Borders |
 
-### Semantic
-- Success: `green-600` (#16a34a)
-- Error: `red-600` (#dc2626)
-- Warning: `amber-600` (#d97706)
+### Status Colors (Semantic)
+- **Success**: Use `text-green-600 dark:text-green-400` for success states
+- **Error/Destructive**: Use `bg-destructive text-destructive-foreground`
+- **Warning**: Use `text-amber-600 dark:text-amber-400`
+- **Info**: Use `text-blue-600 dark:text-blue-400`
+
+> **Note**: Prefer semantic tokens (`bg-background`, `text-foreground`, etc.) over hardcoded colors (`gray-500`, `neutral-100`) to ensure dark mode compatibility.
 
 ## Accessibility
 

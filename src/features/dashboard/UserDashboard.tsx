@@ -196,7 +196,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Get feature flag for identity verification
   const isVerificationEnabled = useQuery(
     api.featureFlags.getFeatureFlag,
-    { key: "userSelfVerification" }
+    { key: "identityVerification" }
   );
 
   const deleteAd = useMutation(api.posts.deleteAd);

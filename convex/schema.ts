@@ -140,7 +140,7 @@ const applicationTables = {
     .index("by_created_at", ["createdAt"]),
 
   featureFlags: defineTable({
-    key: v.string(),           // Unique identifier (e.g., "userSelfVerification")
+    key: v.string(),           // Unique identifier (e.g., "identityVerification")
     enabled: v.boolean(),      // Whether the flag is enabled
     description: v.string(),   // Human-readable description
   })

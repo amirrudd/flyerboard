@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { checkRateLimit } from "./lib/rateLimit";
 
 /**
  * Submit a report for an ad, profile, or chat
@@ -17,6 +18,9 @@ export const submitReport = mutation({
         if (!userId) {
             throw new Error("Must be logged in to submit a report");
         }
+
+        // Rate limit: 5 reports per hour to prevent abuse
+        await checkRateLimit(ctx, userId, "createReport");
 
         // Validate report type
         const validTypes = ["ad", "profile", "chat"];

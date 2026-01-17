@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getDescopeUserId } from "./lib/auth";
 import { internal } from "./_generated/api";
+import { checkRateLimit } from "./lib/rateLimit";
 
 export const getAdChats = query({
   args: { adId: v.id("ads") },
@@ -105,6 +106,9 @@ export const sendMessage = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    // Rate limit: 60 messages per minute
+    await checkRateLimit(ctx, userId, "sendMessage");
 
     const chat = await ctx.db.get(args.chatId);
     if (!chat) {

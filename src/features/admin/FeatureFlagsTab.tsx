@@ -7,7 +7,7 @@ import { ToggleLeft, ToggleRight, Plus, Trash2, Flag } from "lucide-react";
 // Default flags to seed when the tab is first opened
 const DEFAULT_FLAGS = [
     {
-        key: "userSelfVerification",
+        key: "identityVerification",
         description: "Allow users to self-verify their identity from their dashboard",
         enabled: true,
     },

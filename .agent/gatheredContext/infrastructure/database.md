@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-01-17
 
 ## Schema Overview
 
@@ -11,7 +11,6 @@
 {
   title: string;
   description: string;
-  extendedDescription?: string;
   listingType?: "sale" | "exchange" | "both";  // Type of listing (defaults to "sale")
   price?: number;              // Required for "sale" and "both" types
   exchangeDescription?: string;// What seller wants in exchange (for "exchange"/"both")
@@ -143,6 +142,32 @@ await ctx.db.patch(args.adId, {
 - Allows restoration
 - Preserves data integrity (foreign keys)
 - Enables cleanup jobs later
+
+### Rate Limiting
+**Pattern**: Prevent abuse by limiting request frequency per user
+**Location**: `convex/lib/rateLimit.ts`
+
+```typescript
+import { checkRateLimit } from "./lib/rateLimit";
+
+// In mutation handler, after auth check:
+await checkRateLimit(ctx, userId, "createAd");
+```
+
+**Configured Limits**:
+| Operation | Limit | Window |
+|-----------|-------|--------|
+| createAd | 10 | 1 hour |
+| updateAd | 30 | 1 hour |
+| deleteAd | 20 | 1 hour |
+| sendMessage | 60 | 1 minute |
+| createReport | 5 | 1 hour |
+| submitRating | 10 | 1 hour |
+
+**Rationale**:
+- Prevents spam and abuse
+- Protects system resources
+- Uses uploads table for lightweight tracking
 
 ### Optimistic Updates
 **Pattern**: Update immediately, rollback on error

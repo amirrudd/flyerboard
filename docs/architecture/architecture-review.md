@@ -4,7 +4,7 @@
 
 FlyerBoard demonstrates a **modern, well-architected web application** with strong adherence to current best practices. The application leverages cutting-edge technologies and patterns, showing particular strength in real-time features, performance optimization, and mobile-first design.
 
-**Overall Grade: A- (85/100)**
+**Overall Grade: A- (89/100)** *(Updated 2026-01-17)*
 
 ---
 
@@ -21,10 +21,10 @@ FlyerBoard demonstrates a **modern, well-architected web application** with stro
 
 **Evidence:**
 ```json
-"react": "^19.0.0",
-"typescript": "~5.7.2",
-"vite": "^6.2.0",
-"convex": "^1.24.2"
+"react": "^19.2.3",
+"typescript": "~5.9.3",
+"vite": "^7.3.1",
+"convex": "^1.31.3"
 ```
 
 ---
@@ -519,25 +519,28 @@ function Component() {
 
 ---
 
-### 11. **Rate Limiting** ⭐⭐
-**Status: Not Implemented**
+### 11. **Rate Limiting** ⭐⭐⭐⭐⭐
+**Status: Implemented** ✅
 
-**Issue:** No apparent rate limiting on mutations.
+Rate limiting has been implemented in `convex/lib/rateLimit.ts` with configurable limits per operation:
 
-**Recommendation:**
 ```typescript
-// convex/rateLimit.ts
-export const rateLimit = async (ctx, userId, action, limit = 10) => {
-  const key = `${userId}:${action}`;
-  const count = await ctx.db.query("rateLimits")
-    .withIndex("by_key", q => q.eq("key", key))
-    .first();
-  
-  if (count && count.count > limit) {
-    throw new Error("Rate limit exceeded");
-  }
-};
+import { checkRateLimit } from "./lib/rateLimit";
+
+// Usage in mutations:
+await checkRateLimit(ctx, userId, "createAd"); // 10/hour
+await checkRateLimit(ctx, userId, "sendMessage"); // 60/minute
 ```
+
+**Configured Limits:**
+| Operation | Limit | Window |
+|-----------|-------|---------|
+| createAd | 10 | 1 hour |
+| updateAd | 30 | 1 hour |
+| deleteAd | 20 | 1 hour |
+| sendMessage | 60 | 1 minute |
+| createReport | 5 | 1 hour |
+| submitRating | 10 | 1 hour |
 
 ---
 
@@ -578,9 +581,9 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 3. **Configure CSP** - Security hardening
 
 ### Medium Priority (Next Quarter)
-5. **Implement Rate Limiting** - Prevent abuse
+5. ~~**Implement Rate Limiting**~~ ✅ DONE - Prevent abuse
 6. **Formalize Database Migrations** - Safer schema changes
-7. **PWA Support** - Enhanced user experience
+7. ~~**PWA Support**~~ ✅ DONE - Enhanced user experience
 
 ### Low Priority (Future)
 9. **Internationalization** - Market expansion
@@ -613,7 +616,7 @@ export const rateLimit = async (ctx, userId, action, limit = 10) => {
 | PWA | ⚡ Optional | ✅ Implemented | ✅ |
 | i18n | ⚡ Optional | ❌ Missing | ℹ️ |
 | CSP | ✅ Recommended | ❌ Missing | ⚠️ |
-| Rate Limiting | ✅ Essential | ❌ Missing | ⚠️ |
+| Rate Limiting | ✅ Essential | ✅ Implemented | ✅ |
 | Monitoring | ✅ Essential | ⚡ Basic | ⚠️ |
 
 **Legend:**

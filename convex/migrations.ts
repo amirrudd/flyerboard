@@ -406,7 +406,7 @@ export const seedFeatureFlags = internalMutation({
   handler: async (ctx) => {
     const defaultFlags = [
       {
-        key: "userSelfVerification",
+        key: "identityVerification",
         description: "Allow users to self-verify their identity from their dashboard",
         enabled: true,
       },
@@ -435,6 +435,56 @@ export const seedFeatureFlags = internalMutation({
       success: true,
       message: `Created ${results.created.length} flags, ${results.existing.length} already existed`,
       results,
+    };
+  },
+});
+
+/**
+ * Rename feature flag key from userSelfVerification to identityVerification
+ * Run this once to update existing database
+ * 
+ * Usage: npx convex run migrations:renameFeatureFlag
+ */
+export const renameFeatureFlag = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const oldFlag = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", "userSelfVerification"))
+      .first();
+
+    if (!oldFlag) {
+      return {
+        success: true,
+        message: "No flag with key 'userSelfVerification' found. Nothing to rename.",
+        renamed: false,
+      };
+    }
+
+    // Check if new key already exists
+    const newFlag = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", "identityVerification"))
+      .first();
+
+    if (newFlag) {
+      // Delete the old one since new one already exists
+      await ctx.db.delete(oldFlag._id);
+      return {
+        success: true,
+        message: "Deleted old 'userSelfVerification' flag (new 'identityVerification' already exists)",
+        renamed: false,
+        deleted: true,
+      };
+    }
+
+    // Rename by patching the key
+    await ctx.db.patch(oldFlag._id, { key: "identityVerification" });
+
+    return {
+      success: true,
+      message: "Renamed 'userSelfVerification' to 'identityVerification'",
+      renamed: true,
     };
   },
 });

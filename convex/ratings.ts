@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError, logOperation } from "./lib/logger";
+import { checkRateLimit } from "./lib/rateLimit";
 
 /**
  * Submit or update a rating for another user
@@ -19,6 +20,9 @@ export const submitRating = mutation({
         if (!userId) {
             throw createError("Must be logged in to submit ratings", { operation: "submitRating", ratedUserId: args.ratedUserId });
         }
+
+        // Rate limit: 10 ratings per hour to prevent manipulation
+        await checkRateLimit(ctx, userId, "submitRating");
 
         // Prevent self-rating
         if (userId === args.ratedUserId) {

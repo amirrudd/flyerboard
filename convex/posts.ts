@@ -5,7 +5,32 @@ import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { createError, logOperation } from "./lib/logger";
+import { checkRateLimit } from "./lib/rateLimit";
 
+/**
+ * Creates a new flyer listing.
+ * 
+ * @requires Authentication - User must be logged in
+ * @ratelimit 10 requests per hour
+ * @validates Price required for "sale" and "both" listing types
+ * @returns The ID of the newly created ad
+ * @throws "Must be logged in" if user not authenticated
+ * @throws "Price is required" if listing type requires price but none provided
+ * @throws Rate limit error if user exceeds 10 creations per hour
+ * 
+ * @example
+ * ```typescript
+ * const adId = await ctx.runMutation(api.posts.createAd, {
+ *   title: "iPhone 14 Pro",
+ *   description: "Excellent condition",
+ *   listingType: "sale",
+ *   price: 800,
+ *   location: "Sydney, NSW",
+ *   categoryId: "abc123",
+ *   images: ["r2:flyers/xxx/image1.webp"]
+ * });
+ * ```
+ */
 export const createAd = mutation({
   args: {
     title: v.string(),
@@ -22,6 +47,9 @@ export const createAd = mutation({
     if (!userId) {
       throw createError("Must be logged in to create a flyer", { operation: "createAd" });
     }
+
+    // Rate limit: 10 flyer creations per hour
+    await checkRateLimit(ctx, userId, "createAd");
 
     // Default to "sale" if not specified (backward compatibility)
     const listingType = args.listingType || "sale";
@@ -51,6 +79,20 @@ export const createAd = mutation({
 });
 
 
+/**
+ * Updates an existing flyer listing.
+ * 
+ * @requires Authentication - User must be logged in and own the flyer
+ * @ratelimit 30 requests per hour
+ * @validates Price required for "sale" and "both" listing types
+ * @sideEffects Tracks price history (previousPrice) when price is lowered
+ * @returns The ID of the updated ad
+ * @throws "Must be logged in" if user not authenticated
+ * @throws "Flyer not found" if ad doesn't exist
+ * @throws "You can only update your own flyers" if user doesn't own the ad
+ * @throws "Price is required" if listing type requires price
+ * @throws Rate limit error if user exceeds 30 updates per hour
+ */
 export const updateAd = mutation({
   args: {
     adId: v.id("ads"),
@@ -68,6 +110,9 @@ export const updateAd = mutation({
     if (!userId) {
       throw createError("Must be logged in to update a flyer", { operation: "updateAd", adId: args.adId });
     }
+
+    // Rate limit: 30 flyer updates per hour
+    await checkRateLimit(ctx, userId, "updateAd");
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {
@@ -117,7 +162,18 @@ export const updateAd = mutation({
   },
 });
 
-
+/**
+ * Soft-deletes a flyer (marks as deleted, doesn't remove from database).
+ * 
+ * @requires Authentication - User must be logged in and own the flyer
+ * @ratelimit 20 requests per hour
+ * @pattern Soft delete - sets isDeleted=true, isActive=false
+ * @note Images remain in R2 for potential restoration
+ * @returns The ID of the deleted ad
+ * @throws "Must be logged in" if user not authenticated
+ * @throws "Flyer not found" if ad doesn't exist
+ * @throws "You can only delete your own flyers" if user doesn't own the ad
+ */
 export const deleteAd = mutation({
   args: {
     adId: v.id("ads"),
@@ -127,6 +183,9 @@ export const deleteAd = mutation({
     if (!userId) {
       throw createError("Must be logged in to delete a flyer", { operation: "deleteAd", adId: args.adId });
     }
+
+    // Rate limit: 20 flyer deletions per hour
+    await checkRateLimit(ctx, userId, "deleteAd");
 
     const existingAd = await ctx.db.get(args.adId);
     if (!existingAd) {

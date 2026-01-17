@@ -201,7 +201,7 @@ export const verifyIdentity = mutation({
     // Check if user self-verification feature is enabled
     const featureFlag = await ctx.db
       .query("featureFlags")
-      .withIndex("by_key", (q) => q.eq("key", "userSelfVerification"))
+      .withIndex("by_key", (q) => q.eq("key", "identityVerification"))
       .first();
 
     // If flag exists and is disabled, reject the request

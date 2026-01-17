@@ -721,7 +721,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             </div>
 
             {/* Main Content */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-3 min-h-[600px]">
               {/* Email collection banner - show on all tabs if no email */}
               {user && user._id !== "temp-id" && !user.email && (
                 <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">

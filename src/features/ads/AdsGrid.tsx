@@ -61,13 +61,13 @@ export const AdsGrid = memo(function AdsGrid({
 
   return (
     <div className="flex-1">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-6">
+      <div className="mb-6 flex flex-col gap-1 min-h-[92px]">
+        <h2 className="text-2xl font-bold text-foreground">
           {selectedCategory
             ? `${categories?.find(c => c._id === selectedCategory)?.name} Flyers`
             : 'All Flyers'}
         </h2>
-        <div className="text-muted-foreground text-sm mb-4">
+        <div className="text-muted-foreground text-sm">
           <div className="h-5 flex items-center">
             {ads ? (
               <>
@@ -78,7 +78,7 @@ export const AdsGrid = memo(function AdsGrid({
                     : `${ads.length} flyers`}
               </>
             ) : (
-              <div className="h-4 w-20 rounded shimmer" />
+              <div className="h-5 w-20 rounded shimmer" />
             )}
           </div>
         </div>
@@ -174,7 +174,7 @@ export const AdsGrid = memo(function AdsGrid({
       )}
 
       {!isLoading && ads && ads.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-32">
           <div className="flex justify-center mb-4">
             <Search className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} />
           </div>

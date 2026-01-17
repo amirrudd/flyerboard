@@ -147,7 +147,7 @@ export function HomePage() {
   }, [status, loadMore]);
 
   return (
-    <div className="flex flex-col bg-background min-h-full">
+    <div className="flex flex-col bg-background min-h-screen">
       <Header
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -161,7 +161,7 @@ export function HomePage() {
 
       <div className="content-max-width mx-auto container-padding py-6 w-full">
         <div className="flex gap-8 items-start">
-          <div className="hidden md:block sticky top-21 self-start flex-shrink-0">
+          <div className="hidden md:block sticky top-21 self-start flex-shrink-0 min-h-[400px]">
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}
               categories={categories || []}
@@ -173,7 +173,7 @@ export function HomePage() {
           </div>
 
           {/* Main Content - Feed */}
-          <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0">
+          <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0 min-h-[600px]">
             <AdsGrid
               ads={ads}
               categories={categories || []}

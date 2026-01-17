@@ -435,7 +435,7 @@ export const Header = memo(function Header({
   }, [debouncedSetSearchQuery, navigate]);
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-neutral-200/50">
+    <header className="sticky top-0 z-50 glass border-b border-neutral-200/50 h-[57px]">
       <div className="content-max-width mx-auto">
         {/* Desktop Header */}
         <div className={`hidden md:flex items-center justify-between h-14 container-padding ${centerNode ? 'relative' : ''}`}>

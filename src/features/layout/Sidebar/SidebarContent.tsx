@@ -42,8 +42,8 @@ export const SidebarContent = memo(function SidebarContent({
     }, [setSelectedCategory]);
 
     return (
-        <div className="h-full flex flex-col bg-background">
-            <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+        <div className="h-full w-full flex flex-col bg-background">
+            <div className="h-10 px-4 border-b border-border flex items-center justify-between flex-shrink-0">
                 <h3 className="font-medium text-sm text-muted-foreground">Categories</h3>
                 {showCloseButton && (
                     <button
@@ -72,9 +72,9 @@ export const SidebarContent = memo(function SidebarContent({
 
                 {isLoading ? (
                     [...Array(8)].map((_, i) => (
-                        <div key={i} className="w-full px-3 py-2 flex items-center gap-3 animate-pulse">
+                        <div key={i} className="w-full px-3 py-2 rounded-md flex items-center gap-3 animate-pulse">
                             <div className="w-5 h-5 bg-muted rounded-full" />
-                            <div className="h-4 bg-muted rounded w-24" />
+                            <div className="h-5 bg-muted rounded w-24" />
                         </div>
                     ))
                 ) : (

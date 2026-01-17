@@ -92,7 +92,9 @@ module.exports = {
         "glow": "0 0 15px rgba(255, 102, 0, 0.3)", // Brand glow
       },
       spacing: {
+        "14": "3.5rem",   // Standard h-14 equivalent for fixed positioning
         "18": "4.5rem",
+        "21": "5.0625rem", // Supported sticky offset: 81px (57px Header + 24px Top Padding)
         "88": "22rem",
         "112": "28rem",
         "128": "32rem",

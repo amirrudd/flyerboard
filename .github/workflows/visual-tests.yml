@@ -1,0 +1,34 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**/*.tsx'
+      - 'src/**/*.css'
+      - 'tailwind.config.js'
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+        
+      - name: Run visual tests
+        run: npx playwright test --project='Desktop Chrome'
+        
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diff-report
+          path: playwright-report/

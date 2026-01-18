@@ -405,12 +405,12 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               <span className="hidden sm:inline">Delete</span>
             </button>
           ) : (
-            <div className="w-20"></div>
+            <span />
           )
         }
       />
 
-      <div className="flex-1 max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
+      <div className="flex-1 w-full max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-foreground mb-4">Basic Information</h2>

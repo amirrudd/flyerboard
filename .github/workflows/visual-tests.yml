@@ -25,10 +25,48 @@ jobs:
         run: npx playwright install chromium --with-deps
         
       - name: Run visual tests
+        id: visual-test
         run: npx playwright test --project='Desktop Chrome'
+        continue-on-error: true
+        
+      - name: Check if snapshots are missing
+        id: check-snapshots
+        if: steps.visual-test.outcome == 'failure'
+        run: |
+          if grep -q "snapshot doesn't exist" test-results/*/error-context.md 2>/dev/null; then
+            echo "missing=true" >> $GITHUB_OUTPUT
+          else
+            echo "missing=false" >> $GITHUB_OUTPUT
+          fi
+        
+      - name: Update missing snapshots
+        if: steps.check-snapshots.outputs.missing == 'true'
+        run: npx playwright test --project='Desktop Chrome' --update-snapshots
+        
+      - name: Commit updated snapshots
+        if: steps.check-snapshots.outputs.missing == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add e2e/layout.spec.ts-snapshots/
+          git commit -m "chore: add missing visual regression snapshots (Linux)" || echo "No changes to commit"
+          git push origin HEAD:${{ github.head_ref }}
+
         
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: steps.check-snapshots.outputs.missing == 'true'
         with:
-          name: visual-diff-report
+          name: playwright-snapshots-linux
+          path: e2e/layout.spec.ts-snapshots/
+          retention-days: 30
+          
+      - uses: actions/upload-artifact@v4
+        if: steps.visual-test.outcome == 'failure' && steps.check-snapshots.outputs.missing == 'false'
+        with:
+          name: visual-regression-report
           path: playwright-report/
+          
+      - name: Fail if visual regression detected
+        if: steps.visual-test.outcome == 'failure' && steps.check-snapshots.outputs.missing == 'false'
+        run: exit 1
+

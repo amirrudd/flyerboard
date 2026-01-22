@@ -12,8 +12,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 359 71% 36%;
-    /* #9e1b1e - Darker Red */
+    --primary: 5 71% 51%;
+    /* #dc3626 - Red brand color */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,7 +30,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 359 71% 36%;
+    --ring: 5 71% 51%;
 
     --radius: 0.5rem;
 
@@ -42,7 +42,7 @@
 
     /* Mobile bottom nav height + safe area */
     --bottom-nav-height: calc(72px + var(--safe-area-inset-bottom));
-    --primary-bright: 359 80% 45%;
+    --primary-bright: 5 80% 55%;
     /* High-contrast variant for text readability */
   }
 
@@ -56,8 +56,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 359 71% 36%;
-    /* Red brand color */
+    --primary: 5 65% 42%;
+    /* #c72a1e - Darker red for dark mode */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -74,9 +74,9 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 359 71% 36%;
-    --primary-bright: 0 100% 75%;
-    /* High-contrast variant for text readability on dark backgrounds */
+    --ring: 5 65% 42%;
+    --primary-bright: 5 75% 65%;
+    /* Softer, brighter variant for text readability on dark backgrounds */
   }
 
   body {

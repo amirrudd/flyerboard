@@ -25,9 +25,9 @@ module.exports = {
           300: '#fca5a5',
           400: '#f87171',
           500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          800: '#991b1b',
+          600: '#dc3626',  // New brand color
+          700: '#c72a1e',  // Darker variant
+          800: '#a82318',  // Even darker
           900: '#7f1d1d',
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

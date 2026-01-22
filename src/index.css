@@ -131,10 +131,30 @@
     margin-bottom: var(--safe-area-inset-bottom);
   }
 
+  /* Top safe area padding for PWA/notch devices */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Dynamic viewport height with fallback for older browsers */
+  .h-dynamic-screen {
+    height: 100vh;
+    /* Fallback for older browsers */
+    height: 100dvh;
+    /* Dynamic viewport - adjusts with browser chrome */
+  }
+
   /* Mobile-specific padding that accounts for bottom nav + safe area + button height */
   @media (max-width: 1024px) {
     .pb-bottom-nav {
       padding-bottom: calc(var(--bottom-nav-height) + 120px);
+    }
+  }
+
+  /* PWA standalone mode - no extra buffer needed since there's no browser chrome */
+  @media (display-mode: standalone) {
+    .pb-bottom-nav {
+      padding-bottom: var(--bottom-nav-height);
     }
   }
 

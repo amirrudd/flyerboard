@@ -12,7 +12,7 @@ export function Layout() {
     const [isModalDismissable, setIsModalDismissable] = useState(true);
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-dynamic-screen overflow-hidden pt-safe">
             <main className="flex-1 overflow-y-auto mobile-scroll-container">
                 <Outlet context={{ setShowAuthModal }} />
             </main>

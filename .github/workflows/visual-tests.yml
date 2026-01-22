@@ -8,6 +8,9 @@ on:
       - 'src/**/*.css'
       - 'tailwind.config.js'
 
+permissions:
+  contents: write
+
 jobs:
   visual:
     runs-on: ubuntu-latest
@@ -26,15 +29,14 @@ jobs:
         
       - name: Run visual tests
         id: visual-test
-        run: npx playwright test --project='Desktop Chrome'
+        run: npx playwright test --project='Desktop Chrome' 2>&1 | tee test-output.log
         continue-on-error: true
         
       - name: Check if snapshots are missing
         id: check-snapshots
         if: steps.visual-test.outcome == 'failure'
         run: |
-          if grep -q "A snapshot doesn't exist" test-results/*/error-context.md 2>/dev/null || \
-             grep -q "snapshot doesn't exist" test-results/*/error-context.md 2>/dev/null; then
+          if grep -q "snapshot doesn't exist" test-output.log 2>/dev/null; then
             echo "missing=true" >> $GITHUB_OUTPUT
           else
             echo "missing=false" >> $GITHUB_OUTPUT

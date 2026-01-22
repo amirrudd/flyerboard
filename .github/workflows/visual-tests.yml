@@ -55,6 +55,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add e2e/layout.spec.ts-snapshots/
           git commit -m "chore: add missing visual regression snapshots (Linux)" || echo "No changes to commit"
+          git pull --rebase origin ${{ github.head_ref }}
           git push origin HEAD:${{ github.head_ref }}
 
         

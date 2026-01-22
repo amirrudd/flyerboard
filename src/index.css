@@ -56,8 +56,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 359 71% 36%;
-    /* Red brand color */
+    --primary: 5 65% 42%;
+    /* #c72a1e - Darker red for dark mode */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -74,9 +74,9 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 359 71% 36%;
-    --primary-bright: 0 100% 75%;
-    /* High-contrast variant for text readability on dark backgrounds */
+    --ring: 5 65% 42%;
+    --primary-bright: 5 75% 65%;
+    /* Softer, brighter variant for text readability on dark backgrounds */
   }
 
   body {

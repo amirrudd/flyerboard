@@ -43,6 +43,7 @@ export const SidebarContent = memo(function SidebarContent({
 
     return (
         <div className="h-full w-full flex flex-col bg-background">
+            {/* Header - Fixed */}
             <div className="h-10 px-4 border-b border-border flex items-center justify-between flex-shrink-0">
                 <h3 className="font-medium text-sm text-muted-foreground">Categories</h3>
                 {showCloseButton && (
@@ -57,7 +58,8 @@ export const SidebarContent = memo(function SidebarContent({
                 )}
             </div>
 
-            <div className="space-y-1 p-4">
+            {/* Categories - Scrollable */}
+            <div className="flex-1 overflow-y-auto space-y-1 p-4">
                 <button
                     type="button"
                     onClick={handleSelectAllCategories}
@@ -99,29 +101,30 @@ export const SidebarContent = memo(function SidebarContent({
                 )}
             </div>
 
-            <div className="my-4 border-t border-border"></div>
+            {/* Footer - Fixed at bottom */}
+            <div className="flex-shrink-0 border-t border-border pt-4 pb-1.5 px-4">
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {[
+                        { label: "About Us", href: "/about" },
+                        { label: "Support", href: "/support" },
+                        { label: "Terms & Conditions", href: "/terms" },
+                        { label: "Privacy Policy", href: "/terms#privacy" },
+                        { label: "Community Guidelines", href: "/community-guidelines" },
+                        { label: "Contact", href: "/support" },
+                    ].map((link) => (
+                        <Link
+                            key={link.label}
+                            to={link.href}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
+                </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-2 px-2">
-                {[
-                    { label: "About Us", href: "/about" },
-                    { label: "Support", href: "/support" },
-                    { label: "Terms & Conditions", href: "/terms" },
-                    { label: "Privacy Policy", href: "/terms#privacy" },
-                    { label: "Community Guidelines", href: "/community-guidelines" },
-                    { label: "Contact", href: "/support" },
-                ].map((link) => (
-                    <Link
-                        key={link.label}
-                        to={link.href}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    >
-                        {link.label}
-                    </Link>
-                ))}
-            </div>
-
-            <div className="px-2 pt-4 text-[10px] text-muted-foreground/60">
-                © 2025 FlyerBoard
+                <div className="pt-4 text-[10px] text-muted-foreground/60">
+                    © 2025 FlyerBoard
+                </div>
             </div>
         </div>
     );

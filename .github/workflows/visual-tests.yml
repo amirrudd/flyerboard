@@ -38,11 +38,22 @@ jobs:
         id: check-snapshots
         if: steps.visual-test.outcome == 'failure'
         run: |
+          HAS_MISSING=false
+          HAS_REGRESSIONS=false
+          
+          # Check if there are missing snapshots
           if grep -qi "snapshot doesn't exist" test-output.log 2>/dev/null; then
-            echo "missing=true" >> $GITHUB_OUTPUT
-          else
-            echo "missing=false" >> $GITHUB_OUTPUT
+            HAS_MISSING=true
           fi
+          
+          # Check if there are actual visual diffs (regressions)
+          if grep -qi "Screenshot comparison failed" test-output.log 2>/dev/null || \
+             grep -qi "pixels.*different" test-output.log 2>/dev/null; then
+            HAS_REGRESSIONS=true
+          fi
+          
+          echo "missing=$HAS_MISSING" >> $GITHUB_OUTPUT
+          echo "has_regressions=$HAS_REGRESSIONS" >> $GITHUB_OUTPUT
         
       - name: Update missing snapshots
         if: steps.check-snapshots.outputs.missing == 'true'
@@ -54,9 +65,13 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add e2e/layout.spec.ts-snapshots/
-          git commit -m "chore: add missing visual regression snapshots (Linux)" || echo "No changes to commit"
-          git pull --rebase origin ${{ github.head_ref }}
-          git push origin HEAD:${{ github.head_ref }}
+          if git diff --staged --quiet; then
+            echo "No new snapshots to commit"
+          else
+            git commit -m "chore: add missing visual regression snapshots (Linux)"
+            git pull --rebase origin ${{ github.head_ref }}
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
         
       - uses: actions/upload-artifact@v4
@@ -67,12 +82,14 @@ jobs:
           retention-days: 30
           
       - uses: actions/upload-artifact@v4
-        if: steps.visual-test.outcome == 'failure' && steps.check-snapshots.outputs.missing == 'false'
+        if: steps.check-snapshots.outputs.has_regressions == 'true'
         with:
           name: visual-regression-report
           path: playwright-report/
           
       - name: Fail if visual regression detected
-        if: steps.visual-test.outcome == 'failure' && steps.check-snapshots.outputs.missing == 'false'
-        run: exit 1
+        if: steps.check-snapshots.outputs.has_regressions == 'true'
+        run: |
+          echo "❌ Visual regression detected! Check the uploaded report for details."
+          exit 1
 

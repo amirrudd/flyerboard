@@ -74,14 +74,14 @@ jobs:
           fi
 
         
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.check-snapshots.outputs.missing == 'true'
         with:
           name: playwright-snapshots-linux
           path: e2e/layout.spec.ts-snapshots/
           retention-days: 30
           
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.check-snapshots.outputs.has_regressions == 'true'
         with:
           name: visual-regression-report

@@ -174,3 +174,50 @@ describe('PostAdPage - Navigation Tests', () => {
     });
 });
 
+describe('PostAdPage - Route Guard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseLocation.mockReturnValue({ state: {} });
+    });
+
+    it('shows PageLoader and does not navigate while session is loading', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: true });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('Checking authentication...')).toBeInTheDocument();
+        expect(screen.queryByTestId('post-ad-component')).not.toBeInTheDocument();
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('redirects unauthenticated users to home and does not render PostAd', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: false });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+        expect(screen.queryByTestId('post-ad-component')).not.toBeInTheDocument();
+    });
+
+    it('renders PostAd when authenticated', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByTestId('post-ad-component')).toBeInTheDocument();
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+});
+

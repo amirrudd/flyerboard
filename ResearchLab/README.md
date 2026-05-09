@@ -41,14 +41,14 @@ Every idea is rated on three axes (1–5) and given an **Overall** call:
 
 | Idea | Status | Build | Value@0 | Diff | Overall | Notes |
 |------|--------|-------|---------|------|---------|-------|
-| [Moving sale mode](ideas/moving-sale-mode.md) | Seed | 4 | 5 | 5 | **5** | Strongest concrete wedge. Pick this as the niche. |
-| [Printable flyers](ideas/printable-flyers.md) | Seed | 2 | 5 | 5 | **5** | Cheap, on-brand, the only literal "FlyerBoard" feature. |
-| [AI photo-to-listing](ideas/ai-photo-to-listing.md) | Seed | 4 | 5 | 3 | **4** | The front door. Vision LLM + structured output. |
-| [Cross-posting pack](ideas/cross-posting-pack.md) | Seed | 3 | 5 | 4 | **4** | Counterintuitive but solves cold-start. No auto-post. |
-| [Wanted ads](ideas/wanted-ads.md) | Seed | 3 | 4 | 4 | **4** | Sleeper pick — attacks cold-start from demand side. |
-| [Buyer-message copilot](ideas/buyer-message-copilot.md) | Seed | 3 | 3 | 4 | **3** | Bolt-on once volume exists. Scam shield is the unlock. |
-| [Price estimation](ideas/price-estimation.md) | Seed | 4 | 4 | 2 | **2** | High-value but data problem is the whole problem. Ship hedged v0 only. |
-| [Deal finder (buyer)](ideas/deal-finder.md) | Seed | 3 | 2 | 3 | **2** | Defer until listing supply exists. |
+| [Moving sale mode](ideas/moving-sale-mode.md) | Exploring | 4 | 5 | 5 | **5** | Now the *clearest* wedge — Meta's March 2026 AI launch didn't touch multi-item bundles. AU TAM ≈ 1.14M moves/yr. |
+| [Printable flyers](ideas/printable-flyers.md) | Exploring | 3 | 5 | 5 | **5** | Build bumped 2→3 (Cloudflare Browser Run for HTML→PDF). The only physical surface Meta can't replicate. |
+| [Wanted ads](ideas/wanted-ads.md) | Exploring | 3 | 4 | 4 | **4** | Demand side is unclaimed after Meta's supply-side launch. Watch for scam-honeypot and privacy. |
+| [Cross-posting pack](ideas/cross-posting-pack.md) | Exploring | 3 | 3 | 2 | **3** | Funnel-back blocked by Gumtree ToS. Survives as casual-AU-seller tool. |
+| [Buyer-message copilot](ideas/buyer-message-copilot.md) | Exploring | 3 | 3 | 3 | **3** | Auto-replies now commodity (Meta shipped 2026-03-12). Scam-shield is the surviving wedge. |
+| [AI photo-to-listing](ideas/ai-photo-to-listing.md) | Exploring | 4 | 4 | 1 | **2** | Meta shipped this in-app on 2026-03-12 with tone variants. No longer the front door — only useful as a moving-sale component. |
+| [Deal finder (buyer)](ideas/deal-finder.md) | Parked | 3 | 2 | 3 | **2** | Defer until listing supply exists. Native FB alerts are broken; multi-platform monitors already exist. |
+| [Price estimation](ideas/price-estimation.md) | Exploring | 4 | 3 | 1 | **1** | Meta now does this with local comps; we have neither data nor distribution. Reframe as table-stakes inside photo-to-listing. |
 
 ## Quick read on what to build first
 

@@ -1,6 +1,11 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-01-17
+**Last Updated**: 2026-05-09
+
+## Known a11y debt (2026-05-09 audit, F8 — deferred)
+- `RatingModal` (`src/components/RatingModal.tsx`) and `BottomSheet` (`src/components/ui/BottomSheet.tsx`) are portal-rendered overlays without `role="dialog"`. Add `role="dialog"`, `aria-modal="true"`, and `aria-labelledby`/`aria-describedby` references when next touching them.
+- `StarRating` has no keyboard navigation (arrow keys to change rating, Space/Enter to commit).
+- Reusable loader: `src/components/PageLoader.tsx` (extracted from `App.tsx` 2026-05-09). Use this for route-guard loading states; don't recreate the spinner.
 
 ## Design Philosophy
 

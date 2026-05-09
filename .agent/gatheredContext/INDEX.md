@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-05-09
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 

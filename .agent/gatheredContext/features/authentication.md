@@ -5,7 +5,7 @@ description: Rules and architecture for Authentication (Descope + Convex)
 
 # Authentication Architecture & Rules
 
-**Last Updated**: 2025-12-20
+**Last Updated**: 2026-05-09
 
 This project uses a **Hybrid Authentication** approach:
 - **Identity Provider**: [Descope](https://descope.com) handles user identity, OTP verification, and session management.
@@ -23,6 +23,37 @@ if (isAuthenticated) {
   // Show authenticated UI
 }
 ```
+
+### ✅ DO: Guard protected routes at the page level (added 2026-05-09)
+Pages that require auth (`/dashboard`, `/post`, `/admin`) MUST redirect to `/` when the user is not authenticated. Don't rely on the underlying feature component's UI fallback — direct navigation to a protected URL by an unauthenticated user is a real path (deep links, shared URLs, browser history).
+
+**Why:** The 2026-05-09 architecture audit (F1) found `DashboardPage`, `PostAdPage`, and `AdminDashboardPage` rendering their feature components without any auth check or redirect. Unauthenticated users would see the feature's internal "log in" fallback rather than being routed to home where the login modal is the natural action.
+
+**How to apply:** In every protected page component, run `useSession()`, redirect on `!isSessionLoading && !isAuthenticated`, and render `<PageLoader />` while loading or before the redirect lands. Mock `useSession` with `{ isAuthenticated: true, isSessionLoading: false }` in `beforeEach` for that page's tests.
+
+```tsx
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSession } from "@descope/react-sdk";
+import { PageLoader } from "../components/PageLoader";
+
+export function DashboardPage() {
+    const navigate = useNavigate();
+    const { isAuthenticated, isSessionLoading } = useSession();
+
+    useEffect(() => {
+        if (!isSessionLoading && !isAuthenticated) {
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, isSessionLoading, navigate]);
+
+    if (isSessionLoading || !isAuthenticated) return <PageLoader />;
+
+    // ... protected content
+}
+```
+
+`PageLoader` lives at `src/components/PageLoader.tsx` (extracted from `App.tsx` in the same change for reuse). Admin pages still rely on backend `requireAdmin(ctx)` for the actual admin-flag check — the page-level guard only filters out unauthenticated users.
 
 ### ❌ DON'T: Use `api.auth.loggedInUser` for UI State
 Do not use Convex queries (like `api.auth.loggedInUser`) to determine *if* a user is logged in. Convex queries are async and depend on the token bridge, which can cause UI lag or "flicker" where a user appears logged out.

@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-01-17
+**Last Updated**: 2026-05-09
 
 ## Schema Overview
 
@@ -163,6 +163,11 @@ await checkRateLimit(ctx, userId, "createAd");
 | sendMessage | 60 | 1 minute |
 | createReport | 5 | 1 hour |
 | submitRating | 10 | 1 hour |
+| generateUploadUrl | 50 | 1 hour |
+
+**Calling rate-limit from an action (added 2026-05-09):** `checkRateLimit(ctx, ...)` is `MutationCtx`-typed and can't be called from an action directly. Use the `enforceRateLimit` `internalMutation` wrapper in `convex/lib/rateLimit.ts` and invoke via `ctx.runMutation(internal.lib.rateLimit.enforceRateLimit, { userId, operation: "..." })`. The 2026-05-09 audit (F2) found `generateUploadUrl` was declared in the limit table but not enforced; the wrapper closed that gap. Module-path access uses dotted form: `internal.lib.rateLimit.*`, NOT `internal["lib/rateLimit"]` — bracket form fails to type-check against the FilterApi.
+
+**Index gotcha (added 2026-05-09):** `admin.getAllUsers` filters `isActive` post-query (`convex/admin.ts:30`) instead of using the `by_active` index. Acceptable at current scale but will full-scan the users table as it grows. Same pattern is OK in `admin.getAllFlyers` because it uses `by_category` first; the user-list path doesn't have a primary index to combine with.
 
 **Rationale**:
 - Prevents spam and abuse

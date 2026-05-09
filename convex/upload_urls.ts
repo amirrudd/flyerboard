@@ -44,6 +44,11 @@ export const generateProfileUploadUrl = action({
     handler: async (ctx) => {
         const userId = await getUserId(ctx);
 
+        await ctx.runMutation(internal.lib.rateLimit.enforceRateLimit, {
+            userId,
+            operation: "generateUploadUrl",
+        });
+
         // Generate key with proper folder structure
         const key = makeProfileImageKey(userId);
 
@@ -78,6 +83,11 @@ export const generateListingUploadUrl = action({
     },
     handler: async (ctx, args) => {
         const userId = await getUserId(ctx);
+
+        await ctx.runMutation(internal.lib.rateLimit.enforceRateLimit, {
+            userId,
+            operation: "generateUploadUrl",
+        });
 
         // Generate key with proper folder structure
         const key = makeListingImageKey(args.postId);

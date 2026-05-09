@@ -36,10 +36,7 @@ export function ImageUpload({
 
   // Detect network speed on mount
   useEffect(() => {
-    getOptimalCompressionSettings().then(settings => {
-      setCompressionSettings(settings);
-      console.log('Adaptive compression:', settings.label);
-    });
+    getOptimalCompressionSettings().then(setCompressionSettings);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

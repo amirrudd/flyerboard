@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { CircularProgress } from "../../components/ui/CircularProgress";
@@ -24,7 +24,7 @@ interface ImageState {
 
 interface PostAdProps {
   onBack: () => void;
-  editingAd?: any;
+  editingAd?: Doc<"ads">;
   origin?: string;
 }
 

@@ -1,6 +1,6 @@
 # Storage & R2 Integration
 
-**Last Updated**: 2025-12-20
+**Last Updated**: 2026-05-09
 
 ## Overview
 FlyerBoard uses Cloudflare R2 (S3-compatible) for image storage with direct uploads via presigned URLs.
@@ -35,6 +35,7 @@ Store R2 reference in Convex database
 - Uses AWS SDK S3 client (R2 is S3-compatible)
 - Generates temporary upload URLs (1 hour expiry)
 - Includes authentication check
+- Includes rate-limit check via `internal.lib.rateLimit.enforceRateLimit` (added 2026-05-09 — see `infrastructure/database.md` for the action-from-mutation pattern). Limit: 50/hour per user, key `generateUploadUrl`.
 - Disables checksums to avoid CORS issues
 
 ```typescript

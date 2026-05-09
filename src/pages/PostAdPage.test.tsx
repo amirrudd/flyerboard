@@ -14,6 +14,12 @@ vi.mock('../features/ads/PostAd', () => ({
     ),
 }));
 
+// Mock Descope so the route-guard's useSession() resolves authenticated.
+const mockUseSession = vi.fn();
+vi.mock('@descope/react-sdk', () => ({
+    useSession: () => mockUseSession(),
+}));
+
 const mockNavigate = vi.fn();
 const mockUseLocation = vi.fn();
 
@@ -29,6 +35,7 @@ vi.mock('react-router-dom', async () => {
 describe('PostAdPage - Navigation Tests', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
     });
 
     it('should render PostAd component', () => {

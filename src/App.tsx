@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./features/layout/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { PageLoader } from "./components/PageLoader";
 // Eager: Critical for initial render
 import { HomePage } from "./pages/HomePage";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
@@ -20,14 +21,6 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
-
-// Loading fallback for lazy-loaded routes
-const PageLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    <p className="mt-4 text-muted-foreground font-medium animate-pulse">Checking authentication...</p>
-  </div>
-);
 
 export default function App() {
   const { isSessionLoading } = useSession();

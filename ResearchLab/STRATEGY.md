@@ -109,3 +109,41 @@ Paid unlocks:
 - Beating FB on traffic.
 - Auto-posting to other platforms via unofficial APIs (ToS minefield).
 - Building deal-finder / saved search before there's listing supply to find.
+
+## 2026-05-09 reality check
+
+Two cross-cutting findings from a feasibility pass on every idea in `ideas/` invalidate parts of this doc. Captured here so the next iteration of strategy starts from current ground, not the original sketch.
+
+**1. Meta shipped the AI seller copilot inside Marketplace on 2026-03-12.**
+Photo-to-listing, AI auto-replies, AI-suggested prices using local comps, tone variants (Recommended/Friendly/Professional/Concise), AI seller-profile summaries — all native, all wired to their full liquidity. Hands-on review (Value Added Resource by Liz Morton) reports it "performed better than many of the various AI listing tools competing marketplaces have launched."
+
+What this breaks in the doc above:
+- The "AI seller copilot is the product" thesis (top of page) needs sharpening — *Meta is now an AI seller copilot too*. We can't claim the abstraction. We have to claim a specific surface Meta won't / can't cover.
+- The 30-day plan: Week 1 (photo-to-listing, price suggestion) and Week 4 (auto-reply templates) are now mostly rebuilding what Meta just shipped. Either drop those weeks or scope them down to "engine for the cross-platform pack and moving-sale flow", not a standalone front door.
+- Differentiation scores in the index dropped: ai-photo-to-listing 4→2, price-estimation 2→1, buyer-message-copilot 3→3 (auto-reply gone, scam-shield survives).
+
+What survives, by elimination, is the stuff Meta can't or won't do:
+- **Multi-item moving sales** (per-listing AI doesn't model a bundled sale event).
+- **Print / physical flyers / noticeboards** (a platform can't ship paper).
+- **Demand-side / wanted ads** (Meta didn't touch buyer-intent structuring).
+- **Scam shield** (Meta has structural incentive *not* to highlight that scams happen on their platform).
+- **Multi-platform output** (Meta won't help a seller post to Gumtree or Instagram).
+
+**2. The cold-start loop's "back-link to FlyerBoard public page" assumption doesn't hold on Gumtree.**
+The diagram in *Cold-start loop* assumes "Each share links back to the FlyerBoard public page." Gumtree's posting policy explicitly prohibits *"Links to other competitive auto, job, real estate, dating, or classifieds websites"* and *"Links that redirect users to external e-commerce or sales platforms"* in both ad body and replies. FlyerBoard is by definition a competitive classifieds site. So the Gumtree leg of the loop is a ToS violation; on Facebook Marketplace tracking links flag as spam (Jan 2026 enforcement = instant 30-day ban first violation, permanent ban second within 90 days); on local FB Buy/Swap/Sell groups external links are usually mod-removed.
+
+The back-link only reliably works on **Instagram Story** (and email, word-of-mouth, and the printable flyer's QR code). Not from Gumtree, not from FB, not from FB groups. The "public listing page is the growth surface" claim is still right — but the way traffic *reaches* that surface is print, IG, and direct sharing, not classifieds back-links.
+
+**Implication for the build order in *30-day build plan*:**
+Original Week 1 (photo-to-listing wedge) is no longer a wedge. Suggested re-prioritisation given the above:
+
+1. **Printable flyers + public listing page** (Week 1) — the only growth surface that survives both findings, and the literal namesake. Cheap to build.
+2. **Moving sale mode shell** (Week 2) — the wrapper everything else stacks into; clearest wedge after Meta's launch.
+3. **Cross-posting pack** without back-links to Gumtree (Week 3) — useful seller-side utility, just don't pretend it's a funnel.
+4. **Photo-to-listing + price** (Week 4) — engine for #2 and #3, not a standalone front door. Scope it down.
+5. **Wanted ads** (later) — unclaimed demand surface; needs a scam-shield in place first.
+6. **Scam shield** (later) — the surviving piece of the buyer-message copilot wedge.
+
+Auto-replies, deal-finder, and standalone price-estimation drop out of the near-term plan.
+
+This is a **proposal**, not a decision. The original 30-day plan above stays in place until you re-write it.

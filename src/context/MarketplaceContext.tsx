@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from "react";
 import { useQuery, usePaginatedQuery, useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 
@@ -23,7 +23,7 @@ interface MarketplaceContextType {
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     isCategoriesLoading: boolean;
-    ads: any; // Ideally import { Doc } from ...
+    ads: Doc<"ads">[] | undefined;
     loadMore: (numItems: number) => void;
     status: "CanLoadMore" | "LoadingMore" | "Exhausted" | "LoadingFirstPage";
     refreshAds: (forceRefresh?: boolean) => Promise<void>;
@@ -49,8 +49,8 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // --- Client-Side Cache ---
     // Cache ads by filter combination to prevent reloads when switching categories
-    const adsCache = useRef<Map<string, any[]>>(new Map());
-    const [cachedAds, setCachedAds] = useState<any[] | undefined>(undefined);
+    const adsCache = useRef<Map<string, Doc<"ads">[]>>(new Map());
+    const [cachedAds, setCachedAds] = useState<Doc<"ads">[] | undefined>(undefined);
 
     // Track new ads for highlighting
     const [newAdIds, setNewAdIds] = useState<Set<string>>(new Set());

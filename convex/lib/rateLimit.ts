@@ -1,4 +1,5 @@
-import { MutationCtx } from "../_generated/server";
+import { internalMutation, MutationCtx } from "../_generated/server";
+import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 
 /**
@@ -103,6 +104,20 @@ export async function checkRateLimit(
         await ctx.db.delete(record._id);
     }
 }
+
+/**
+ * Internal mutation wrapper so actions can enforce rate limits.
+ * Actions can't access MutationCtx directly; they call this via ctx.runMutation.
+ */
+export const enforceRateLimit = internalMutation({
+    args: {
+        userId: v.id("users"),
+        operation: v.string(),
+    },
+    handler: async (ctx, args) => {
+        await checkRateLimit(ctx, args.userId, args.operation);
+    },
+});
 
 /**
  * Rate limit check that returns a boolean instead of throwing.

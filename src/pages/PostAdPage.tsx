@@ -1,11 +1,25 @@
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSession } from "@descope/react-sdk";
 import { PostAd } from "../features/ads/PostAd";
+import { PageLoader } from "../components/PageLoader";
 
 export function PostAdPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isAuthenticated, isSessionLoading } = useSession();
     const editingAd = location.state?.editingAd;
     const from = location.state?.from || '/';
+
+    useEffect(() => {
+        if (!isSessionLoading && !isAuthenticated) {
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, isSessionLoading, navigate]);
+
+    if (isSessionLoading || !isAuthenticated) {
+        return <PageLoader />;
+    }
 
     const handleBack = () => {
         // If posting from dashboard, navigate back to dashboard

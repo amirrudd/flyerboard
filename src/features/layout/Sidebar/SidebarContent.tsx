@@ -41,42 +41,47 @@ export const SidebarContent = memo(function SidebarContent({
         setSelectedCategory(categoryId);
     }, [setSelectedCategory]);
 
+    const itemBase = "relative w-full text-left pl-4 pr-3 py-2 rounded-lg transition-all duration-200 text-sm flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background";
+
     return (
         <div className="h-full w-full flex flex-col bg-background">
             {/* Header - Fixed */}
-            <div className="h-10 px-4 border-b border-border flex items-center justify-between flex-shrink-0">
-                <h3 className="font-medium text-sm text-muted-foreground">Categories</h3>
+            <div className="h-10 px-4 border-b border-border/70 flex items-center justify-between flex-shrink-0">
+                <h3 className="kicker">Categories</h3>
                 {showCloseButton && (
                     <button
                         onClick={() => setSidebarCollapsed(true)}
-                        className="p-2 -mr-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                        className="p-2 -mr-2 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         title="Close menu"
                         aria-label="Close menu"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-5 h-5" strokeWidth={2} />
                     </button>
                 )}
             </div>
 
             {/* Categories - Scrollable */}
-            <div className="flex-1 overflow-y-auto space-y-1 p-4">
+            <nav className="flex-1 overflow-y-auto space-y-0.5 p-3" aria-label="Categories">
                 <button
                     type="button"
                     onClick={handleSelectAllCategories}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${!selectedCategory
-                        ? 'text-primary-bright bg-primary/10'
-                        : 'text-foreground hover:bg-accent'
+                    className={`${itemBase} font-medium ${!selectedCategory
+                        ? 'text-foreground bg-muted/70'
+                        : 'text-foreground/85 hover:bg-muted/50 hover:text-foreground'
                         }`}
                 >
-                    <LayoutGrid className={`w-5 h-5 ${!selectedCategory ? "text-primary-bright" : "text-muted-foreground"}`} />
-                    All Categories
+                    {!selectedCategory && (
+                        <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" aria-hidden />
+                    )}
+                    <LayoutGrid className={`w-[18px] h-[18px] flex-shrink-0 ${!selectedCategory ? "text-primary" : "text-muted-foreground"}`} strokeWidth={2} />
+                    <span className="truncate">All Categories</span>
                 </button>
 
                 {isLoading ? (
                     [...Array(8)].map((_, i) => (
-                        <div key={i} className="w-full px-3 py-2 rounded-md flex items-center gap-3 animate-pulse">
-                            <div className="w-5 h-5 bg-muted rounded-full" />
-                            <div className="h-5 bg-muted rounded w-24" />
+                        <div key={i} className="w-full px-4 py-2 rounded-lg flex items-center gap-3">
+                            <div className="w-[18px] h-[18px] shimmer rounded-md flex-shrink-0" />
+                            <div className="h-4 shimmer rounded w-24" />
                         </div>
                     ))
                 ) : (
@@ -88,42 +93,45 @@ export const SidebarContent = memo(function SidebarContent({
                                 type="button"
                                 key={category._id}
                                 onClick={() => handleSelectCategory(category._id)}
-                                className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center gap-3 ${isSelected
-                                    ? 'text-primary-bright bg-primary/10'
-                                    : 'text-foreground hover:bg-accent'
+                                className={`${itemBase} font-medium ${isSelected
+                                    ? 'text-foreground bg-muted/70'
+                                    : 'text-foreground/85 hover:bg-muted/50 hover:text-foreground'
                                     }`}
                             >
-                                <Icon className={`w-5 h-5 ${isSelected ? "text-primary-bright" : "text-muted-foreground"}`} />
+                                {isSelected && (
+                                    <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" aria-hidden />
+                                )}
+                                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} strokeWidth={2} />
                                 <span className="truncate">{category.name}</span>
                             </button>
                         );
                     })
                 )}
-            </div>
+            </nav>
 
             {/* Footer - Fixed at bottom */}
-            <div className="flex-shrink-0 border-t border-border pt-4 pb-1.5 px-4">
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <div className="flex-shrink-0 border-t border-border/70 pt-4 pb-3 px-4">
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                     {[
-                        { label: "About Us", href: "/about" },
+                        { label: "About", href: "/about" },
                         { label: "Support", href: "/support" },
-                        { label: "Terms & Conditions", href: "/terms" },
-                        { label: "Privacy Policy", href: "/terms#privacy" },
-                        { label: "Community Guidelines", href: "/community-guidelines" },
+                        { label: "Terms", href: "/terms" },
+                        { label: "Privacy", href: "/terms#privacy" },
+                        { label: "Guidelines", href: "/community-guidelines" },
                         { label: "Contact", href: "/support" },
                     ].map((link) => (
                         <Link
                             key={link.label}
                             to={link.href}
-                            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
+                            className="text-[11px] tracking-wide text-muted-foreground hover:text-foreground transition-colors duration-200"
                         >
                             {link.label}
                         </Link>
                     ))}
                 </div>
 
-                <div className="pt-4 text-[10px] text-muted-foreground/60">
-                    © 2025 FlyerBoard
+                <div className="pt-4 text-[10px] tracking-wider uppercase text-muted-foreground/60 font-medium">
+                    © 2026 FlyerBoard
                 </div>
             </div>
         </div>

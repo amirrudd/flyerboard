@@ -14,7 +14,6 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
     const user = isAuthenticated ? { name: "User" } : null;
 
     const isActive = (path: string) => {
-        // Handle dashboard tab states
         if (path.startsWith('/dashboard')) {
             const currentParams = new URLSearchParams(location.search);
             const currentTab = currentParams.get('tab') || 'ads';
@@ -33,9 +32,18 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
         }
     };
 
+    const navItemClass = (active: boolean) =>
+        `relative flex flex-col items-center gap-1 p-2 rounded-xl transition-colors duration-200 active:scale-95 ${
+            active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+        }`;
+
+    const ActiveDot = () => (
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" aria-hidden />
+    );
+
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border md:hidden z-50 pb-safe"
+            className="fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-md border-t border-border/70 md:hidden z-50 pb-safe"
             style={{
                 transform: 'translateZ(0)',
                 backfaceVisibility: 'hidden',
@@ -45,50 +53,52 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             }}
         >
             <div className="grid grid-cols-5 items-end px-4 pt-2 pb-4">
-                <Link
-                    to="/"
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                >
-                    <Home size={24} />
-                    <span className="text-xs font-medium">Home</span>
+                <Link to="/" className={navItemClass(isActive("/"))}>
+                    {isActive("/") && <ActiveDot />}
+                    <Home size={22} strokeWidth={isActive("/") ? 2.25 : 2} />
+                    <span className="text-[11px] font-medium tracking-wide">Home</span>
                 </Link>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=saved")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=saved") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
-                        }`}
+                    className={navItemClass(isActive("/dashboard?tab=saved"))}
                 >
-                    <Heart size={24} />
-                    <span className="text-xs font-medium">Saved</span>
+                    {isActive("/dashboard?tab=saved") && <ActiveDot />}
+                    <Heart size={22} strokeWidth={isActive("/dashboard?tab=saved") ? 2.25 : 2} />
+                    <span className="text-[11px] font-medium tracking-wide">Saved</span>
                 </button>
 
                 <button
                     onClick={() => handleAuthGuard("/post")}
-                    className="flex flex-col items-center gap-1 -mt-6"
+                    className="flex flex-col items-center gap-1 -mt-6 group"
+                    aria-label="Pin Your Flyer"
                 >
-                    <div className="bg-primary text-white p-3 rounded-full shadow-lg hover:opacity-90 transition-all active:scale-95 shadow-primary/20">
-                        <Plus size={28} />
+                    <div className="bg-primary text-primary-foreground p-3 rounded-full shadow-[0_8px_24px_-4px_hsl(var(--primary)/0.45)] hover:shadow-[0_10px_28px_-4px_hsl(var(--primary)/0.55)] transition-all duration-200 group-active:scale-90 ring-4 ring-background">
+                        <Plus size={26} strokeWidth={2.5} />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">PIN</span>
+                    <span className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">PIN</span>
                 </button>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=chats")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=chats") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
-                        }`}
+                    className={navItemClass(isActive("/dashboard?tab=chats"))}
                 >
-                    <MessageSquare size={24} />
-                    <span className="text-xs font-medium">Messages</span>
+                    {isActive("/dashboard?tab=chats") && <ActiveDot />}
+                    <MessageSquare size={22} strokeWidth={isActive("/dashboard?tab=chats") ? 2.25 : 2} />
+                    <span className="text-[11px] font-medium tracking-wide">Messages</span>
                 </button>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=ads")}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive("/dashboard?tab=ads") ? "text-primary-bright" : "text-muted-foreground hover:text-foreground"
-                        }`}
+                    className={navItemClass(isActive("/dashboard?tab=ads"))}
                 >
-                    {user ? <LayoutDashboard size={24} /> : <User size={24} />}
-                    <span className="text-xs font-medium">{user ? "Dashboard" : "Sign In"}</span>
+                    {isActive("/dashboard?tab=ads") && <ActiveDot />}
+                    {user ? (
+                        <LayoutDashboard size={22} strokeWidth={isActive("/dashboard?tab=ads") ? 2.25 : 2} />
+                    ) : (
+                        <User size={22} strokeWidth={2} />
+                    )}
+                    <span className="text-[11px] font-medium tracking-wide">{user ? "Dashboard" : "Sign In"}</span>
                 </button>
             </div>
         </div>

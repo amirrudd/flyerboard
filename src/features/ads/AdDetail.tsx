@@ -182,13 +182,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           rightNode={<div />}
         />
         <div className="content-max-width mx-auto container-padding py-12 text-center">
-          <div className="bg-card border border-border rounded-lg p-12 shadow-sm max-w-lg mx-auto">
-            <Frown className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Ad Not Found</h2>
+          <div className="bg-card ring-1 ring-border/70 rounded-2xl p-12 shadow-card max-w-lg mx-auto">
+            <Frown className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" strokeWidth={1.5} />
+            <h2 className="font-display text-3xl font-semibold text-foreground mb-2 tracking-tight">Ad Not Found</h2>
             <p className="text-muted-foreground mb-6">This ad may have been deleted or removed.</p>
             <button
               onClick={onBack}
-              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition-opacity"
+              className="bg-primary text-primary-foreground px-6 h-11 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25"
             >
               Return to Flyers
             </button>
@@ -237,12 +237,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             {/* Main Content - 70% */}
             <div className="lg:w-[70%] min-w-0 space-y-6">
               {/* Image Gallery skeleton */}
-              <div className="bg-card rounded-lg overflow-hidden shadow-sm border border-border">
+              <div className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
                 <div className="relative aspect-video bg-muted shimmer"></div>
               </div>
 
               {/* Ad Information skeleton */}
-              <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+              <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="h-8 bg-muted rounded shimmer mb-2 w-3/4"></div>
@@ -263,7 +263,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               </div>
 
               {/* Map skeleton */}
-              <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+              <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
                 <div className="h-6 bg-muted rounded shimmer mb-4 w-1/4"></div>
                 <div className="h-48 bg-muted rounded shimmer"></div>
               </div>
@@ -273,7 +273,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="lg:w-[30%] lg:max-w-[400px] sticky top-21 self-start">
               <div className="space-y-6">
                 {/* Seller Info skeleton */}
-                <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+                <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
                   <div className="h-6 bg-muted rounded shimmer mb-4 w-1/2"></div>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-muted shimmer"></div>
@@ -286,7 +286,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 </div>
 
                 {/* Quick Actions skeleton */}
-                <div className="bg-card rounded-lg p-6 shadow-sm hidden sm:block border border-border">
+                <div className="bg-card rounded-2xl p-6 shadow-card hidden sm:block ring-1 ring-border/70">
                   <div className="h-6 bg-muted rounded shimmer mb-4 w-1/2"></div>
                   <div className="space-y-3">
                     <div className="h-10 bg-muted rounded shimmer"></div>
@@ -386,7 +386,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
-            <div className="bg-card rounded-lg overflow-hidden shadow-sm border border-border">
+            <div className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
               <div className="relative aspect-video bg-muted">
                 {images.length > 0 ? (
                   <ImageDisplay
@@ -410,22 +410,24 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                      aria-label="Previous image"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4" strokeWidth={2.25} />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                      aria-label="Next image"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4" strokeWidth={2.25} />
                     </button>
                   </>
                 )}
 
                 {/* Image counter */}
                 {images.length > 1 && (
-                  <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+                  <div className="absolute bottom-4 right-4 bg-background/85 backdrop-blur-md text-foreground ring-1 ring-border/60 px-3 py-1 rounded-full text-xs font-semibold tabular shadow-card">
                     {currentImageIndex + 1} / {images.length}
                   </div>
                 )}
@@ -433,15 +435,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               {/* Thumbnail strip for multiple images */}
               {images.length > 1 && (
-                <div className="p-4 bg-muted">
-                  <div className="flex gap-2 overflow-x-auto">
+                <div className="px-4 py-3 bg-muted/40 border-t border-border/60">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                     {images.map((image: string, index: number) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                          ? 'border-primary ring-2 ring-primary ring-opacity-30'
-                          : 'border-border hover:border-muted-foreground'
+                        aria-label={`Show image ${index + 1}`}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 ${index === currentImageIndex
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background opacity-100'
+                          : 'ring-1 ring-border opacity-70 hover:opacity-100 hover:ring-foreground/20'
                           }`}
                       >
                         <ImageDisplay
@@ -458,64 +461,65 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             </div>
 
             {/* Ad Information */}
-            <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground mb-2">{displayAd.title}</h1>
+            <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
+              <div className="flex items-start justify-between gap-6 mb-5">
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-3 leading-[1.1] tracking-[-0.02em]">{displayAd.title}</h1>
                   {/* Price display based on listing type */}
                   {(!displayAd.listingType || displayAd.listingType === "sale") && displayAd.price !== undefined && (
-                    <p className="text-3xl font-bold text-primary">{formatPriceWithCurrency(displayAd.price)}</p>
+                    <p className="font-display text-4xl font-semibold text-primary tabular leading-none">{formatPriceWithCurrency(displayAd.price)}</p>
                   )}
                   {displayAd.listingType === "exchange" && (
-                    <p className="text-2xl font-bold text-primary-bright flex items-center gap-2">
-                      <Repeat className="w-6 h-6" />
+                    <p className="font-display text-3xl font-semibold text-primary-bright flex items-center gap-2 leading-none">
+                      <Repeat className="w-6 h-6" strokeWidth={2.25} />
                       Open to Trade
                     </p>
                   )}
                   {displayAd.listingType === "both" && displayAd.price !== undefined && (
-                    <p className="text-3xl font-bold text-primary flex items-center gap-2">
+                    <p className="font-display text-4xl font-semibold text-primary flex items-baseline gap-3 tabular leading-none">
                       {formatPriceWithCurrency(displayAd.price)}
-                      <span className="text-lg font-medium text-primary-bright">• Trade</span>
+                      <span className="font-sans text-xs font-semibold tracking-[0.18em] uppercase text-primary-bright">• Trade</span>
                     </p>
                   )}
                 </div>
-                <div className="text-right text-sm">
+                <div className="text-right text-sm flex-shrink-0">
                   {ad ? (
-                    <p><span className="text-primary-bright font-medium">{ad.views}</span> <span className="text-muted-foreground">views</span></p>
+                    <p><span className="font-display text-foreground font-semibold tabular text-base">{ad.views}</span> <span className="text-muted-foreground text-xs uppercase tracking-wider ml-0.5">views</span></p>
                   ) : (
                     <div className="h-5 w-16 bg-muted rounded animate-pulse ml-auto" />
                   )}
-                  <p className="text-muted-foreground">Posted {timeAgo}</p>
+                  <p className="text-muted-foreground text-xs mt-1">Posted {timeAgo}</p>
                 </div>
               </div>
 
               {/* Exchange Description - shown for exchange and both types */}
               {(displayAd.listingType === "exchange" || displayAd.listingType === "both") && displayAd.exchangeDescription && (
-                <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <h3 className="text-sm font-semibold text-primary-bright mb-2 flex items-center gap-2">
-                    <Repeat className="w-4 h-4" />
+                <div className="mb-6 p-5 bg-primary/[0.06] rounded-2xl ring-1 ring-primary/20 relative overflow-hidden">
+                  <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-primary rounded-r-full" aria-hidden />
+                  <h3 className="kicker text-primary mb-2 flex items-center gap-1.5">
+                    <Repeat className="w-3.5 h-3.5" strokeWidth={2.5} />
                     Looking for
                   </h3>
-                  <p className="text-foreground/90">{displayAd.exchangeDescription}</p>
+                  <p className="text-foreground/90 leading-relaxed">{displayAd.exchangeDescription}</p>
                 </div>
               )}
 
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{displayAd.description}</p>
+                <h3 className="kicker mb-3">Description</h3>
+                <p className="text-foreground/80 leading-relaxed whitespace-pre-line text-[15px]">{displayAd.description}</p>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{displayAd.location}</span>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-border/60 pt-4">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-primary" strokeWidth={2} />
+                  <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
             </div>
 
             {/* Map */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Location</h3>
+            <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
+              <h3 className="kicker mb-4">Location</h3>
               <LocationMap location={displayAd.location} />
             </div>
           </div>
@@ -524,8 +528,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           <div className="hidden lg:block lg:w-[30%] lg:max-w-[400px] sticky top-21 self-start">
             <div className="space-y-6">
               {/* Seller Info */}
-              <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Seller Information</h3>
+              <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
+                <h3 className="kicker mb-4">Seller Information</h3>
                 <div className="flex items-center gap-3 mb-4">
                   <SellerProfile
                     seller={displayAd.seller}
@@ -550,14 +554,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     {!showChat && (
                       <button
                         onClick={handleStartChat}
-                        className="w-full bg-primary text-white py-3 px-4 rounded-lg hover:opacity-90 transition-colors font-medium mb-2"
+                        className="w-full bg-primary text-primary-foreground h-11 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-2"
                       >
                         Contact Seller
                       </button>
                     )}
                     <button
                       onClick={() => setShowRatingModal(true)}
-                      className="w-full bg-transparent text-primary border border-primary py-2 px-4 rounded-lg hover:bg-primary/10 transition-colors font-medium"
+                      className="w-full bg-transparent text-primary ring-1 ring-primary/40 hover:ring-primary py-2.5 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Rate Seller
                     </button>
@@ -567,7 +571,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 {user && displayAd.userId === user._id && (
                   <button
                     onClick={() => navigate('/dashboard')}
-                    className="w-full bg-primary text-white py-3 px-4 rounded-lg hover:opacity-90 transition-colors font-medium"
+                    className="w-full bg-primary text-primary-foreground h-11 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Manage Your Flyers
                   </button>
@@ -576,7 +580,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 {!user && (
                   <button
                     onClick={onShowAuth}
-                    className="w-full bg-primary text-white py-3 px-4 rounded-lg hover:opacity-90 transition-colors font-medium"
+                    className="w-full bg-primary text-primary-foreground h-11 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Sign in to contact seller
                   </button>
@@ -585,10 +589,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               {/* Chat Section - Desktop only */}
               {showChat && (
-                <div className="bg-card rounded-lg shadow-sm hidden lg:block border border-border">
+                <div className="bg-card rounded-2xl shadow-card hidden lg:block ring-1 ring-border/70">
                   <div className="p-4 border-b border-border">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">Chat with Seller</h3>
+                      <h3 className="kicker">Chat with Seller</h3>
                       <button
                         onClick={() => setShowChat(false)}
                         className="text-muted-foreground hover:text-foreground"
@@ -611,14 +615,15 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         onChange={(e) => setMessageText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Type your message..."
-                        className="flex-1 px-3 py-2 border border-input bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder:text-muted-foreground"
+                        className="flex-1 h-10 px-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={!messageText.trim()}
-                        className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Send message"
+                        className="bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25"
                       >
-                        Send
+                        <Send className="w-4 h-4" strokeWidth={2.25} />
                       </button>
                     </div>
                   </div>
@@ -626,16 +631,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               )}
 
               {/* Quick Actions */}
-              <div className="bg-card border border-border rounded-lg p-6 shadow-sm hidden sm:block">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+              <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hidden sm:block">
+                <h3 className="kicker mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   {user && displayAd.userId === user._id ? (
                     // Show Edit button for own flyers
                     <button
                       onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-white border border-primary hover:opacity-90 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" strokeWidth={2.25} />
                       Edit Flyer
                     </button>
                   ) : (
@@ -644,9 +649,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       <>
                         <button
                           onClick={handleSave}
-                          className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all shadow-sm active:scale-[0.98] ${isAdSaved
-                            ? 'bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20'
-                            : 'bg-background text-foreground border border-border hover:bg-accent hover:border-muted-foreground'
+                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${isAdSaved
+                            ? 'bg-destructive/[0.08] text-destructive ring-1 ring-destructive/30 hover:bg-destructive/[0.12]'
+                            : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
                           <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
@@ -654,9 +659,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         </button>
                         <button
                           onClick={() => setShowReportModal(true)}
-                          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-background text-foreground border border-border hover:bg-accent hover:border-muted-foreground transition-all shadow-sm active:scale-[0.98]"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                         >
-                          <Flag className="w-4 h-4" />
+                          <Flag className="w-4 h-4" strokeWidth={2} />
                           Report Flyer
                         </button>
                       </>
@@ -664,9 +669,9 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   )}
                   <button
                     onClick={handleShare}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-background text-foreground border border-border hover:bg-accent hover:border-muted-foreground transition-all shadow-sm active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-4 h-4" strokeWidth={2} />
                     Share Flyer
                   </button>
                 </div>
@@ -681,7 +686,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         <div className="lg:hidden">
           <button
             onClick={() => setShowMobileSellerSheet(true)}
-            className="fixed right-4 bg-card border border-border p-2 rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all z-40"
+            className="fixed right-4 bg-card ring-1 ring-border/70 p-2 rounded-full shadow-card-hover hover:scale-105 active:scale-95 transition-all z-40"
             style={{ bottom: 'calc(var(--bottom-nav-height) + 5rem)' }}
             title="Seller Info"
           >
@@ -704,7 +709,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           {/* Message Seller FAB */}
           <button
             onClick={() => setShowMobileChatSheet(true)}
-            className="fixed right-4 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:opacity-90 hover:scale-105 active:scale-95 transition-all z-40"
+            className="fixed right-4 bg-primary text-primary-foreground p-4 rounded-full shadow-[0_8px_24px_-4px_hsl(var(--primary)/0.45)] hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all z-40 ring-4 ring-background"
             style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}
             title="Message Seller"
           >
@@ -738,7 +743,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 setShowMobileSellerSheet(false);
                 setShowMobileChatSheet(true);
               }}
-              className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
+              className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-5 h-5" />
               Message Seller
@@ -748,7 +753,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 setShowMobileSellerSheet(false);
                 setShowRatingModal(true);
               }}
-              className="w-full bg-card text-primary-bright border border-primary py-3 px-4 rounded-lg hover:bg-primary/5 transition-colors font-medium"
+              className="w-full bg-card text-primary ring-1 ring-primary/40 hover:ring-primary py-3 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold"
             >
               Rate Seller
             </button>
@@ -757,7 +762,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 setShowMobileSellerSheet(false);
                 setShowReportProfileModal(true);
               }}
-              className="w-full bg-card text-muted-foreground border border-border py-3 px-4 rounded-lg hover:bg-accent transition-colors font-medium flex items-center justify-center gap-2"
+              className="w-full bg-muted/40 text-foreground ring-1 ring-border py-3 px-4 rounded-full hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all font-medium flex items-center justify-center gap-2"
             >
               <Flag className="w-4 h-4" />
               Report Seller
@@ -790,7 +795,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 }
               }}
               placeholder="Type your message..."
-              className="flex-1 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-background text-foreground"
+              className="flex-1 h-11 px-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
             <button
               onClick={() => {
@@ -800,9 +805,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 }
               }}
               disabled={!messageText.trim()}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Send message"
+              className="bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25 flex-shrink-0"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4" strokeWidth={2.25} />
             </button>
           </div>
         </div>

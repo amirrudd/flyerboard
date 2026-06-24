@@ -2,12 +2,12 @@ import React from 'react';
 
 export const SkeletonCard = () => {
     return (
-        <div className="bg-card border border-border rounded-xl shadow-sm h-full overflow-hidden">
+        <div className="bg-card rounded-xl shadow-card ring-1 ring-border/70 h-full overflow-hidden">
             {/* Image Placeholder */}
             <div className="aspect-[4/3] w-full shimmer" />
 
             {/* Content Placeholder */}
-            <div className="p-3 space-y-3">
+            <div className="px-3.5 pt-3 pb-3.5 space-y-3">
                 {/* Title */}
                 <div className="h-4 w-3/4 rounded shimmer" />
 
@@ -17,8 +17,10 @@ export const SkeletonCard = () => {
                     <div className="h-4 w-1/4 rounded shimmer" />
                 </div>
 
-                {/* Views */}
-                <div className="h-3 w-1/5 rounded shimmer mt-2" />
+                {/* Views row with hairline */}
+                <div className="pt-2 border-t border-border/60">
+                    <div className="h-3 w-1/5 rounded shimmer" />
+                </div>
             </div>
         </div>
     );

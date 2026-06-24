@@ -1,38 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm cream base — calibrated neutrals on a 25–34° hue, single gray family */
+    --background: 34 25% 97.5%;
+    --foreground: 24 14% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 30 20% 99.5%;
+    --card-foreground: 24 14% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 30 20% 99.5%;
+    --popover-foreground: 24 14% 12%;
 
     --primary: 5 71% 51%;
     /* #dc3626 - Red brand color */
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 30 20% 99%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 30 18% 94%;
+    --secondary-foreground: 24 14% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 16% 93%;
+    --muted-foreground: 25 8% 42%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 30 18% 94%;
+    --accent-foreground: 24 14% 18%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 20% 99%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 25 14% 87%;
+    --input: 25 14% 87%;
     --ring: 5 71% 51%;
 
     --radius: 0.5rem;
+
+    /* Tinted shadow channel — carries warm/red hue instead of pure black */
+    --shadow-color: 12 35% 22%;
 
     /* Safe Area Insets - CSS Variables for consistent usage */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -47,40 +53,44 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Warm-tinted off-black — never pure #000 */
+    --background: 24 10% 7%;
+    --foreground: 30 15% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 24 10% 9%;
+    --card-foreground: 30 15% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 24 10% 9%;
+    --popover-foreground: 30 15% 95%;
 
     --primary: 5 65% 42%;
     /* #c72a1e - Darker red for dark mode */
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 30 15% 96%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 24 8% 14%;
+    --secondary-foreground: 30 15% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 24 8% 14%;
+    --muted-foreground: 30 8% 62%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 24 8% 14%;
+    --accent-foreground: 30 15% 95%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 15% 96%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 24 8% 18%;
+    --input: 24 8% 18%;
     --ring: 5 65% 42%;
     --primary-bright: 5 75% 65%;
     /* Softer, brighter variant for text readability on dark backgrounds */
+
+    --shadow-color: 0 0% 0%;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "ss01", "cv11";
   }
 
   h1,
@@ -90,6 +100,14 @@
   h5,
   h6 {
     @apply font-display tracking-tight;
+    text-wrap: balance;
+    font-feature-settings: "ss01", "ss02";
+  }
+
+  /* Tabular numerals for prices, counts, dates — keep columns aligned */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 
   /* Ensure pointer cursor on all interactive elements */
@@ -212,12 +230,44 @@
     will-change: transform, box-shadow;
     /* Contain layout calculations to this element */
     contain: layout style paint;
+    transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 200ms ease-out;
   }
 
   .listing-card:hover {
-    /* Hardware-accelerated transform for smooth hover effect */
-    transform: translateY(-2px) translateZ(0);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* Hardware-accelerated transform for smooth hover effect — warm tinted shadow */
+    transform: translateY(-3px) translateZ(0);
+    box-shadow: 0 4px 10px hsl(var(--shadow-color) / 0.08),
+      0 16px 32px -12px hsl(var(--shadow-color) / 0.18);
+  }
+
+  .listing-card:active {
+    transform: translateY(-1px) scale(0.995) translateZ(0);
+    transition-duration: 80ms;
+  }
+
+  .listing-card:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+    border-radius: 14px;
+  }
+
+  /* Editorial kicker label — small caps, tracked, muted */
+  .kicker {
+    font-family: theme("fontFamily.sans");
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Hairline divider that uses the warm border token */
+  .hairline {
+    background: hsl(var(--border));
+    height: 1px;
+    width: 100%;
   }
 
   /* Optimize image rendering */

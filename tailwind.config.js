@@ -10,7 +10,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", ...fontFamily.sans],
-        display: ["Plus Jakarta Sans", ...fontFamily.sans],
+        display: ['"Fraunces"', "ui-serif", "Georgia", ...fontFamily.serif],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -83,13 +83,16 @@ module.exports = {
         full: "9999px",
       },
       boxShadow: {
-        sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-        DEFAULT: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-        md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-        lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-        xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-        "soft": "0 4px 20px -2px rgba(0, 0, 0, 0.05)", // Custom soft shadow
-        "glow": "0 0 15px rgba(255, 102, 0, 0.3)", // Brand glow
+        sm: "0 1px 2px 0 hsl(var(--shadow-color) / 0.05)",
+        DEFAULT: "0 1px 3px 0 hsl(var(--shadow-color) / 0.08), 0 1px 2px 0 hsl(var(--shadow-color) / 0.05)",
+        md: "0 4px 6px -1px hsl(var(--shadow-color) / 0.08), 0 2px 4px -1px hsl(var(--shadow-color) / 0.05)",
+        lg: "0 10px 15px -3px hsl(var(--shadow-color) / 0.10), 0 4px 6px -2px hsl(var(--shadow-color) / 0.05)",
+        xl: "0 20px 25px -5px hsl(var(--shadow-color) / 0.10), 0 10px 10px -5px hsl(var(--shadow-color) / 0.04)",
+        "soft": "0 4px 20px -2px hsl(var(--shadow-color) / 0.06)",
+        "glow": "0 0 15px hsl(var(--primary) / 0.30)",
+        // Listing card surface: warm-tinted shadow + 1px specular highlight at top
+        "card": "0 1px 2px hsl(var(--shadow-color) / 0.04), 0 2px 8px -2px hsl(var(--shadow-color) / 0.05)",
+        "card-hover": "0 4px 10px hsl(var(--shadow-color) / 0.08), 0 16px 32px -12px hsl(var(--shadow-color) / 0.18)",
       },
       spacing: {
         "14": "3.5rem",   // Standard h-14 equivalent for fixed positioning

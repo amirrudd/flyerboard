@@ -341,12 +341,17 @@ const MobileHeader = memo(function MobileHeader({
           >
             <Menu className="w-6 h-6 text-foreground/70" />
           </button>
-          <h1 className="cursor-pointer flex items-center gap-2 group" onClick={() => navigate('/')}>
-            <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-7 h-7" />
+          <button
+            type="button"
+            className="cursor-pointer flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+            onClick={() => navigate('/')}
+            aria-label="FlyerBoard home"
+          >
+            <img src="/icons/icon-48x48.png" alt="" aria-hidden="true" className="w-7 h-7" />
             <span className="font-display text-lg font-semibold text-foreground tracking-[-0.02em] truncate">
               {window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}
             </span>
-          </h1>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
@@ -443,15 +448,17 @@ export const Header = memo(function Header({
           <div className="flex items-center gap-6 flex-shrink-0">
             {leftNode ? leftNode : (
               <>
-                <h1
-                  className="cursor-pointer flex items-center gap-2.5 group"
+                <button
+                  type="button"
+                  className="cursor-pointer flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
                   onClick={() => navigate('/')}
+                  aria-label="FlyerBoard home"
                 >
-                  <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-7 h-7 transition-transform duration-300 group-hover:rotate-[-4deg]" />
+                  <img src="/icons/icon-48x48.png" alt="" aria-hidden="true" className="w-7 h-7 transition-transform duration-300 group-hover:rotate-[-4deg]" />
                   <span className="font-display text-[22px] font-semibold text-foreground tracking-[-0.02em] leading-none">
                     FlyerBoard
                   </span>
-                </h1>
+                </button>
 
                 {/* Location Selector - Divar style */}
                 <LocationSelector

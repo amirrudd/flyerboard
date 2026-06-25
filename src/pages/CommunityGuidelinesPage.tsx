@@ -35,17 +35,17 @@ export function CommunityGuidelinesPage() {
                     </button>
                 }
                 centerNode={
-                    <h1 className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Community Guidelines</h1>
+                    <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Community Guidelines</span>
                 }
                 rightNode={<div />}
             />
-            <main className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
+            <section className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
                         <MarkdownContent content={guidelinesContent} />
                     </article>
                 </div>
-            </main>
+            </section>
         </>
     );
 }

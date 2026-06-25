@@ -3,29 +3,49 @@ import remarkGfm from "remark-gfm";
 
 interface MarkdownContentProps {
     content: string;
+    /**
+     * Shift rendered heading levels by N (so md `#` becomes <h{1+N}>).
+     * Use when the surrounding page already provides an <h1>.
+     */
+    headingShift?: 0 | 1 | 2;
 }
 
-export function MarkdownContent({ content }: MarkdownContentProps) {
+export function MarkdownContent({ content, headingShift = 0 }: MarkdownContentProps) {
+    const shift = headingShift;
+    const HeadingTag = (level: 1 | 2 | 3): keyof JSX.IntrinsicElements => {
+        const target = Math.min(6, level + shift);
+        return `h${target}` as keyof JSX.IntrinsicElements;
+    };
+
     return (
         <div className="text-foreground/80 text-[15px] leading-relaxed">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                    h1: ({ children }) => (
-                        <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground mb-6">
-                            {children}
-                        </h1>
-                    ),
-                    h2: ({ children }) => (
-                        <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mt-12 mb-4">
-                            {children}
-                        </h2>
-                    ),
-                    h3: ({ children }) => (
-                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mt-8 mb-3">
-                            {children}
-                        </h3>
-                    ),
+                    h1: ({ children }) => {
+                        const Tag = HeadingTag(1);
+                        return (
+                            <Tag className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground mb-6">
+                                {children}
+                            </Tag>
+                        );
+                    },
+                    h2: ({ children }) => {
+                        const Tag = HeadingTag(2);
+                        return (
+                            <Tag className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mt-12 mb-4">
+                                {children}
+                            </Tag>
+                        );
+                    },
+                    h3: ({ children }) => {
+                        const Tag = HeadingTag(3);
+                        return (
+                            <Tag className="font-display text-xl font-semibold tracking-tight text-foreground mt-8 mb-3">
+                                {children}
+                            </Tag>
+                        );
+                    },
                     p: ({ children }) => (
                         <p className="text-[15px] leading-relaxed text-foreground/80 max-w-prose mb-5">{children}</p>
                     ),

@@ -47,7 +47,7 @@ export const SidebarContent = memo(function SidebarContent({
         <div className="h-full w-full flex flex-col bg-background">
             {/* Header - Fixed */}
             <div className="h-10 px-4 border-b border-border/70 flex items-center justify-between flex-shrink-0">
-                <h3 className="kicker">Categories</h3>
+                <h2 className="kicker">Categories</h2>
                 {showCloseButton && (
                     <button
                         onClick={() => setSidebarCollapsed(true)}

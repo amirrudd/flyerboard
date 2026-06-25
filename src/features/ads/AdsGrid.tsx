@@ -78,9 +78,9 @@ export const AdsGrid = memo(function AdsGrid({
         <div className="flex items-end justify-between gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="kicker">{headerKicker}</span>
-            <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
+            <h1 className="font-display text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
               {headerTitle}
-            </h2>
+            </h1>
           </div>
           <div className="hidden sm:flex items-baseline gap-2 text-muted-foreground pb-1">
             {ads ? (

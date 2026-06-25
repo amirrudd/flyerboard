@@ -36,13 +36,22 @@ export function TermsPage() {
                     </button>
                 }
                 centerNode={
-                    <h1 className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Terms & Privacy</h1>
+                    <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Terms & Privacy</span>
                 }
                 rightNode={<div />}
             />
-            <main className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
+            <section className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
+
+                        <header className="mb-10">
+                            <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground">
+                                Terms & Privacy
+                            </h1>
+                            <p className="mt-3 text-muted-foreground text-[15px] max-w-prose">
+                                Our terms of service and how we handle your data.
+                            </p>
+                        </header>
 
                         <nav
                             aria-label="Table of contents"
@@ -72,15 +81,15 @@ export function TermsPage() {
                         </nav>
 
                         <section id="terms" className="mb-16 scroll-mt-24">
-                            <MarkdownContent content={termsContent} />
+                            <MarkdownContent content={termsContent} headingShift={1} />
                         </section>
 
                         <section id="privacy" className="scroll-mt-24">
-                            <MarkdownContent content={privacyContent} />
+                            <MarkdownContent content={privacyContent} headingShift={1} />
                         </section>
                     </article>
                 </div>
-            </main>
+            </section>
         </>
     );
 }

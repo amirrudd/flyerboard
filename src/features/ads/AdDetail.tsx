@@ -177,7 +177,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             </div>
           }
           centerNode={
-            <h1 className="text-xl font-bold text-foreground cursor-pointer" onClick={onBack}>FlyerBoard</h1>
+            <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
           }
           rightNode={<div />}
         />
@@ -222,7 +222,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <ChevronLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back to flyers</span>
               </button>
-              <h1 className="text-xl font-semibold text-foreground">Loading...</h1>
+              <span className="font-display text-xl font-semibold text-foreground tracking-tight">Loading...</span>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
                 <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
@@ -325,7 +325,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           </div>
         }
         centerNode={
-          <h1 className="text-xl font-bold text-foreground cursor-pointer" onClick={onBack}>FlyerBoard</h1>
+          <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
         }
         rightNode={
           <div className="flex items-center gap-4 flex-shrink-0">

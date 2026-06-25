@@ -47,14 +47,17 @@ export default function SupportPage() {
                     </button>
                 }
                 centerNode={
-                    <h1 className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Support Center</h1>
+                    <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Support Center</span>
                 }
                 rightNode={<div />}
             />
-            <main className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
+            <section className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto space-y-10">
                         <header className="text-center space-y-4">
+                            <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground">
+                                Support Center
+                            </h1>
                             <p className="text-[15px] leading-relaxed text-foreground/80 max-w-xl mx-auto">
                                 We're here to help. If you have any issues or questions, please reach out to us directly or fill out the form below.
                             </p>
@@ -206,7 +209,7 @@ export default function SupportPage() {
                         </footer>
                     </article>
                 </div>
-            </main>
+            </section>
         </>
     );
 };

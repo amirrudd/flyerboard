@@ -300,17 +300,25 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
             ? otpDigits.every(d => d !== "")
             : userName.trim().length >= 2;
 
+    // Reused class strings — keep card / heading / input visuals consistent across steps
+    const inputPillClass =
+        "w-full h-11 pl-11 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground";
+    const stepHeadingClass =
+        "font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-1";
+    const stepSubClass =
+        "text-xs sm:text-sm text-muted-foreground leading-relaxed";
+
     return (
-        <div className="w-full relative">
+        <section className="w-full relative">
             {/* Back button - positioned to align with close button in parent */}
             {step === 2 && (
                 <button
                     type="button"
                     onClick={handleBackToPhone}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors z-50"
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors active:scale-[0.98] z-50"
                     aria-label="Go back to phone number"
                 >
-                    <ArrowLeft className="w-6 h-6" />
+                    <ArrowLeft className="w-6 h-6" aria-hidden="true" />
                 </button>
             )}
             {/* Step 3 has no back button - user must complete name collection */}
@@ -318,14 +326,17 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 <button
                     type="button"
                     onClick={handleBackToOtp}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors z-50"
+                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors active:scale-[0.98] z-50"
                     aria-label="Go back to verification code"
                 >
-                    <ArrowLeft className="w-6 h-6" />
+                    <ArrowLeft className="w-6 h-6" aria-hidden="true" />
                 </button>
             )}
 
-            <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : step === 2 ? handleVerifyOtp : handleCompleteSignup} className="flex flex-col gap-3">
+            <form
+                onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : step === 2 ? handleVerifyOtp : handleCompleteSignup}
+                className="flex flex-col gap-3"
+            >
                 {/* Sliding content container - needs overflow hidden for the slide effect */}
                 <div className="relative h-[215px] overflow-hidden">
                     {/* Step 1: Phone Number */}
@@ -336,30 +347,34 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             }`}
                     >
                         <div className="space-y-3">
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
+                            <header>
+                                <h3 className={stepHeadingClass}>
                                     Verify Your Australian Phone Number
                                 </h3>
-                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                <p className={stepSubClass}>
                                     We verify users to keep the Board <span className="font-semibold text-foreground">scam-free.</span> Your number remains private.
                                 </p>
-                            </div>
+                            </header>
 
                             <div className="space-y-2">
                                 <label htmlFor="phoneNumber" className="text-xs sm:text-sm font-medium text-foreground/80">
                                     Your Mobile Number (Australia only)
                                 </label>
                                 <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
+                                    <Smartphone
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10"
+                                        aria-hidden="true"
+                                    />
                                     <input
                                         id="phoneNumber"
-                                        className="auth-input-field pl-12"
+                                        className={`${inputPillClass} tabular-nums`}
                                         type="tel"
                                         name="phoneNumber"
                                         placeholder="0412 345 678"
                                         inputMode="numeric"
                                         pattern="04\d{8}"
                                         maxLength={10}
+                                        autoComplete="tel-national"
                                         value={phoneNumber}
                                         onChange={(e) => {
                                             const value = e.target.value.replace(/\D/g, "");
@@ -369,7 +384,21 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    By continuing you agree to our <Link to="/terms" className="text-primary hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+                                    By continuing you agree to our{" "}
+                                    <Link
+                                        to="/terms"
+                                        className="text-primary hover:underline underline-offset-2 font-medium"
+                                    >
+                                        Terms &amp; Conditions
+                                    </Link>{" "}
+                                    and{" "}
+                                    <Link
+                                        to="/terms#privacy"
+                                        className="text-primary hover:underline underline-offset-2 font-medium"
+                                    >
+                                        Privacy Policy
+                                    </Link>
+                                    .
                                 </p>
                             </div>
                         </div>
@@ -383,17 +412,22 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             }`}
                     >
                         <div className="space-y-3">
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
+                            <header>
+                                <h3 className={stepHeadingClass}>
                                     Enter Your Verification Code
                                 </h3>
-                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                    We just sent a 6-digit code to {phoneNumber}.
+                                <p className={stepSubClass}>
+                                    We just sent a 6-digit code to{" "}
+                                    <span className="tabular-nums font-medium text-foreground">{phoneNumber}</span>.
                                 </p>
-                            </div>
+                            </header>
 
                             {/* 6-digit OTP boxes */}
-                            <div className="flex gap-1.5 sm:gap-2 justify-center py-2">
+                            <div
+                                className="flex gap-1.5 sm:gap-2 justify-center py-2"
+                                role="group"
+                                aria-label="Verification code"
+                            >
                                 {otpDigits.map((digit, index) => (
                                     <input
                                         key={index}
@@ -404,7 +438,8 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border-2 border-input rounded-lg sm:rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-background text-foreground"
+                                        aria-label={`Digit ${index + 1} of 6`}
+                                        className="tabular-nums w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold bg-muted/50 ring-1 ring-border/70 rounded-2xl focus:ring-2 focus:ring-ring focus:bg-card outline-none transition-all text-foreground"
                                     />
                                 ))}
                             </div>
@@ -415,7 +450,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                     type="button"
                                     onClick={handleResendCode}
                                     disabled={remainingTime > 0 || isSendingOtp}
-                                    className="text-sm text-primary hover:text-primary/80 font-medium disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+                                    className="text-sm text-primary font-medium hover:underline underline-offset-2 disabled:text-muted-foreground disabled:no-underline disabled:cursor-not-allowed transition-colors tabular-nums"
                                 >
                                     {remainingTime > 0
                                         ? `Resend Code (${remainingTime}s)`
@@ -435,30 +470,37 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             }`}
                     >
                         <div className="space-y-3" style={{ transform: 'translateZ(0)' }}>
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-1">
+                            <header>
+                                <h3 className={stepHeadingClass}>
                                     What's Your Name?
                                 </h3>
-                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                <p className={stepSubClass}>
                                     Help others recognize you on the Board.
                                 </p>
-                            </div>
+                            </header>
 
                             <div className="space-y-2">
+                                <label htmlFor="userName" className="sr-only">
+                                    Your name
+                                </label>
                                 <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
+                                    <User
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10"
+                                        aria-hidden="true"
+                                    />
                                     <input
                                         id="userName"
                                         ref={nameInputRef}
-                                        className="auth-input-field pl-12"
+                                        className={inputPillClass}
                                         type="text"
                                         name="userName"
                                         placeholder="John Smith"
                                         maxLength={50}
+                                        autoComplete="name"
                                         value={userName}
                                         onChange={(e) => {
                                             // Only allow letters (including accented), spaces, hyphens, apostrophes, and periods
-                                            const value = e.target.value.replace(/[^a-zA-Z\u00C0-\u017F\s'-\.]/g, '');
+                                            const value = e.target.value.replace(/[^a-zA-ZÀ-ſ\s'-\.]/g, '');
                                             setUserName(value);
                                         }}
                                         required={step === 3}
@@ -474,22 +516,22 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
 
                 {/* Fixed button - only label changes */}
                 <button
-                    className="auth-button flex items-center justify-center gap-2 group relative"
+                    className="h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 group relative"
                     type="submit"
                     disabled={!canSubmit || isSendingOtp || isVerifying || isCompletingSignup}
                 >
                     {(isSendingOtp || isVerifying || isCompletingSignup) ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                     ) : (
                         <>
                             <span className="transition-all duration-300">
                                 {step === 1 ? "Get Verification Code" : step === 2 ? "Complete Verification" : "Complete Sign Up"}
                             </span>
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                         </>
                     )}
                 </button>
             </form>
-        </div>
+        </section>
     );
 }

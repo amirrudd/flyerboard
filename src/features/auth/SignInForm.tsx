@@ -45,45 +45,61 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
           });
         }}
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <label htmlFor="auth-email" className="sr-only">
+              Email address
+            </label>
+            <Mail
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors"
+              aria-hidden="true"
+            />
             <input
-              className="auth-input-field pl-12"
+              id="auth-email"
+              className="w-full h-11 pl-11 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
               type="email"
               name="email"
               placeholder="Email address"
+              autoComplete="email"
               required
             />
           </div>
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <label htmlFor="auth-password" className="sr-only">
+              Password
+            </label>
+            <Lock
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors"
+              aria-hidden="true"
+            />
             <input
-              className="auth-input-field pl-12"
+              id="auth-password"
+              className="w-full h-11 pl-11 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
               type="password"
               name="password"
               placeholder="Password"
+              autoComplete={flow === "signIn" ? "current-password" : "new-password"}
               required
             />
           </div>
         </div>
 
         <button
-          className="auth-button flex items-center justify-center gap-2 mt-2 group"
+          className="h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 mt-2 group"
           type="submit"
           disabled={submitting}
         >
           {submitting ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
             <>
               {flow === "signIn" ? "Sign in" : "Create account"}
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
             </>
           )}
         </button>
 
-        <div className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-sm text-muted-foreground mt-4">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
@@ -91,15 +107,29 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
           </span>
           <button
             type="button"
-            className="text-primary-bright hover:opacity-80 font-semibold hover:underline cursor-pointer transition-opacity ml-1"
+            className="text-primary font-semibold hover:underline underline-offset-2 transition-colors ml-1"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
             {flow === "signIn" ? "Sign up" : "Sign in"}
           </button>
-        </div>
+        </p>
         {flow === "signUp" && (
-          <p className="text-xs text-muted-foreground mt-2">
-            By signing up you agree to our <Link to="/terms" className="text-primary-bright hover:underline">Terms &amp; Conditions</Link> and <Link to="/terms#privacy" className="text-primary-bright hover:underline">Privacy Policy</Link>.
+          <p className="text-xs text-muted-foreground mt-2 max-w-prose">
+            By signing up you agree to our{" "}
+            <Link
+              to="/terms"
+              className="text-primary hover:underline underline-offset-2 font-medium"
+            >
+              Terms &amp; Conditions
+            </Link>{" "}
+            and{" "}
+            <Link
+              to="/terms#privacy"
+              className="text-primary hover:underline underline-offset-2 font-medium"
+            >
+              Privacy Policy
+            </Link>
+            .
           </p>
         )}
       </form>

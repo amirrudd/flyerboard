@@ -17,33 +17,35 @@ export function AboutUsPage() {
             <Header
                 leftNode={
                     <button
+                        type="button"
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Go back to home"
+                        className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
                         <ChevronLeft className="w-5 h-5" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
                 }
                 centerNode={
-                    <h1 className="text-lg md:text-xl font-bold text-foreground truncate">About Us</h1>
+                    <h1 className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">About Us</h1>
                 }
                 rightNode={<div />}
             />
-            <div className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
+            <main className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
-                    <div className="content-width-reading mx-auto">
+                    <article className="content-width-reading mx-auto">
                         {/* Logo Hero */}
-                        <div className="flex justify-center mb-8">
+                        <header className="flex justify-center mb-10">
                             <img
                                 src="/icons/icon-512x512.png"
                                 alt="FlyerBoard Logo"
                                 className="w-32 h-32"
                             />
-                        </div>
+                        </header>
                         <MarkdownContent content={aboutContent} />
-                    </div>
+                    </article>
                 </div>
-            </div>
+            </main>
         </>
     );
 }

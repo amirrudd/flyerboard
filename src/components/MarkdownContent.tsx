@@ -7,37 +7,48 @@ interface MarkdownContentProps {
 
 export function MarkdownContent({ content }: MarkdownContentProps) {
     return (
-        <div className="prose prose-neutral max-w-none text-foreground dark:prose-invert">
+        <div className="text-foreground/80 text-[15px] leading-relaxed">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                     h1: ({ children }) => (
-                        <h1 className="text-2xl font-bold text-foreground border-b border-border pb-2 mb-6">
+                        <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground mb-6">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="text-lg font-semibold text-foreground mt-8 mb-4">
+                        <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mt-12 mb-4">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="text-base font-semibold text-foreground mt-6 mb-3">
+                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mt-8 mb-3">
                             {children}
                         </h3>
                     ),
                     p: ({ children }) => (
-                        <p className="mb-4">{children}</p>
+                        <p className="text-[15px] leading-relaxed text-foreground/80 max-w-prose mb-5">{children}</p>
                     ),
                     ul: ({ children }) => (
-                        <ul className="list-disc pl-5 space-y-1 mb-4">{children}</ul>
+                        <ul className="list-disc marker:text-primary pl-5 space-y-2 mb-5 text-foreground/80 max-w-prose">{children}</ul>
                     ),
                     ol: ({ children }) => (
-                        <ol className="list-decimal pl-5 space-y-1 mb-4">{children}</ol>
+                        <ol className="list-decimal marker:text-primary pl-5 space-y-2 mb-5 text-foreground/80 max-w-prose">{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                        <li className="text-[15px] leading-relaxed pl-1">{children}</li>
+                    ),
+                    a: ({ href, children }) => (
+                        <a
+                            href={href}
+                            className="text-primary font-medium hover:underline underline-offset-2 transition-colors"
+                        >
+                            {children}
+                        </a>
                     ),
                     table: ({ children }) => (
-                        <div className="overflow-x-auto mb-6">
-                            <table className="min-w-full border-collapse border border-border">
+                        <div className="overflow-x-auto mb-6 rounded-2xl ring-1 ring-border/70 bg-card">
+                            <table className="min-w-full border-collapse">
                                 {children}
                             </table>
                         </div>
@@ -46,25 +57,33 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
                         <thead className="bg-muted/50">{children}</thead>
                     ),
                     th: ({ children }) => (
-                        <th className="border border-border px-4 py-3 text-left font-semibold text-foreground">
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground border-b border-border">
                             {children}
                         </th>
                     ),
                     td: ({ children }) => (
-                        <td className="border border-border px-4 py-3 text-foreground/80">
+                        <td className="px-4 py-3 text-foreground/80 border-b border-border/60 text-[15px]">
                             {children}
                         </td>
                     ),
                     blockquote: ({ children }) => (
-                        <blockquote className="text-sm text-muted-foreground bg-muted p-4 rounded-lg border border-border mb-4 italic">
+                        <blockquote className="bg-muted/40 ring-1 ring-border/70 rounded-2xl p-5 mb-5 text-foreground/80 italic">
                             {children}
                         </blockquote>
                     ),
                     strong: ({ children }) => (
-                        <strong className="font-semibold">{children}</strong>
+                        <strong className="font-semibold text-foreground">{children}</strong>
                     ),
                     em: ({ children }) => (
-                        <em className="italic text-sm text-muted-foreground">{children}</em>
+                        <em className="italic text-muted-foreground">{children}</em>
+                    ),
+                    hr: () => (
+                        <hr className="my-10 border-0 h-px bg-border" />
+                    ),
+                    code: ({ children }) => (
+                        <code className="px-1.5 py-0.5 rounded-md bg-muted/60 text-foreground text-[0.9em] font-mono">
+                            {children}
+                        </code>
                     ),
                 }}
             >

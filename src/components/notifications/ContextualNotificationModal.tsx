@@ -92,40 +92,43 @@ export function ContextualNotificationModal({
             aria-labelledby={`notification-modal-title-${context}`}
             aria-describedby={`notification-modal-desc-${context}`}
         >
-            <div className="bg-card rounded-xl shadow-2xl border border-border p-6 max-w-md w-full animate-scale-in">
+            <section className="bg-card rounded-xl shadow-2xl ring-1 ring-border/70 p-6 sm:p-7 max-w-md w-full animate-scale-in">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-2xl" aria-hidden="true">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-2xl ring-1 ring-primary/15" aria-hidden="true">
                             {config.icon}
                         </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
+                        <p className="kicker text-muted-foreground mb-1">Stay in the loop</p>
                         <h3
                             id={`notification-modal-title-${context}`}
-                            className="text-lg font-semibold text-foreground mb-2"
+                            className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2"
                         >
                             {config.title}
                         </h3>
                         <p
                             id={`notification-modal-desc-${context}`}
-                            className="text-sm text-muted-foreground mb-4"
+                            className="text-[15px] leading-relaxed text-foreground/80 mb-5 max-w-prose"
                         >
                             {config.message}
                         </p>
 
                         <div className="flex gap-3">
                             <button
+                                type="button"
                                 onClick={handleEnable}
                                 disabled={isLoading}
-                                className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                                className="flex-1 h-11 px-4 bg-primary text-primary-foreground text-sm font-semibold rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                 aria-label="Enable push notifications"
                             >
                                 {isLoading ? 'Enabling...' : 'Enable Notifications'}
                             </button>
                             <button
+                                type="button"
                                 onClick={handleDismiss}
-                                className="px-4 py-2.5 text-foreground text-sm font-medium hover:bg-muted rounded-lg transition-colors"
+                                className="h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border text-sm font-medium rounded-full hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 aria-label="Dismiss notification prompt"
                             >
                                 Not now
@@ -134,14 +137,15 @@ export function ContextualNotificationModal({
                     </div>
 
                     <button
+                        type="button"
                         onClick={handleDismiss}
-                        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex-shrink-0 text-muted-foreground hover:text-foreground rounded-full p-2 hover:bg-muted/60 transition-colors"
                         aria-label="Close notification prompt"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
     );
 

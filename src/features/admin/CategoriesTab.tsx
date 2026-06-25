@@ -159,47 +159,49 @@ export function CategoriesTab() {
     }
 
     return (
-        <div className="space-y-6">
+        <section className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <header className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                    <h2 className="text-xl font-bold text-foreground">Categories</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">Taxonomy</h3>
+                    <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Categories</h2>
+                    <p className="text-[15px] text-muted-foreground mt-1">
                         Manage flyer categories and their icons
                     </p>
                 </div>
                 <button
+                    type="button"
                     onClick={handleOpenAddForm}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium shadow-sm"
+                    className="inline-flex items-center gap-2 h-11 px-4 bg-primary text-primary-foreground rounded-full font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" aria-hidden="true" />
                     Add Category
                 </button>
-            </div>
+            </header>
 
             {/* Categories List */}
-            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-card ring-1 ring-border/70 rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full">
-                    <thead className="bg-muted/50 border-b border-border">
+                    <thead className="bg-muted/40">
                         <tr>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            <th scope="col" className="text-left px-4 py-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
                                 Icon
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            <th scope="col" className="text-left px-4 py-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
                                 Name
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+                            <th scope="col" className="text-left px-4 py-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase hidden md:table-cell">
                                 Slug
                             </th>
-                            <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+                            <th scope="col" className="text-left px-4 py-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase hidden lg:table-cell">
                                 Parent
                             </th>
-                            <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            <th scope="col" className="text-right px-4 py-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody>
                         {categories.map((category) => {
                             const Icon = getCategoryIcon(category.icon);
                             const parent = category.parentId
@@ -207,10 +209,10 @@ export function CategoriesTab() {
                                 : null;
 
                             return (
-                                <tr key={category._id} className="hover:bg-muted/30 transition-colors">
+                                <tr key={category._id} className="border-b border-border/60 last:border-b-0 hover:bg-muted/40 transition-colors">
                                     <td className="px-4 py-3">
-                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                                            <Icon className="w-5 h-5 text-primary" />
+                                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                                            <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
@@ -219,7 +221,7 @@ export function CategoriesTab() {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 hidden md:table-cell">
-                                        <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                                        <code className="text-sm text-muted-foreground bg-muted/60 px-2 py-1 rounded-full tabular-nums">
                                             {category.slug}
                                         </code>
                                     </td>
@@ -235,18 +237,22 @@ export function CategoriesTab() {
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
+                                                type="button"
                                                 onClick={() => handleOpenEditForm(category)}
-                                                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors border border-transparent hover:border-primary/20"
+                                                aria-label={`Edit ${category.name}`}
+                                                className="h-8 w-8 inline-flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all active:scale-[0.98]"
                                                 title="Edit category"
                                             >
-                                                <Pencil className="w-4 h-4" />
+                                                <Pencil className="w-4 h-4" aria-hidden="true" />
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={() => setDeletingCategory(category)}
-                                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-transparent hover:border-destructive/20"
+                                                aria-label={`Delete ${category.name}`}
+                                                className="h-8 w-8 inline-flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all active:scale-[0.98]"
                                                 title="Delete category"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-4 h-4" aria-hidden="true" />
                                             </button>
                                         </div>
                                     </td>
@@ -266,31 +272,39 @@ export function CategoriesTab() {
             {/* Add/Edit Form Modal */}
             {showAddForm &&
                 createPortal(
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-card border border-border rounded-lg p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="category-form-title"
+                        className="fixed inset-0 bg-foreground/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    >
+                        <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-foreground">
+                                <h2 id="category-form-title" className="font-display text-2xl font-semibold tracking-tight text-foreground">
                                     {editingCategory ? "Edit Category" : "Add Category"}
-                                </h3>
+                                </h2>
                                 <button
+                                    type="button"
                                     onClick={handleCloseForm}
-                                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                    aria-label="Close"
+                                    className="text-muted-foreground hover:text-foreground rounded-full p-2 hover:bg-muted/60 transition-colors"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-5 h-5" aria-hidden="true" />
                                 </button>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* Name */}
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    <label htmlFor="category-name" className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">
                                         Name *
                                     </label>
                                     <input
+                                        id="category-name"
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => handleNameChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70"
                                         placeholder="e.g., Electronics"
                                         maxLength={50}
                                         required
@@ -299,10 +313,11 @@ export function CategoriesTab() {
 
                                 {/* Slug */}
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    <label htmlFor="category-slug" className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">
                                         Slug *
                                     </label>
                                     <input
+                                        id="category-slug"
                                         type="text"
                                         value={formData.slug}
                                         onChange={(e) =>
@@ -311,25 +326,27 @@ export function CategoriesTab() {
                                                 slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                                             }))
                                         }
-                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm"
+                                        className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70 font-mono text-sm tabular-nums"
                                         placeholder="e.g., electronics"
                                         required
                                     />
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-xs text-muted-foreground mt-2">
                                         URL-friendly identifier (auto-generated from name)
                                     </p>
                                 </div>
 
                                 {/* Icon Picker */}
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    <label className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">
                                         Icon *
                                     </label>
                                     <div className="relative">
                                         <button
                                             type="button"
                                             onClick={() => setShowIconPicker(!showIconPicker)}
-                                            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none flex items-center justify-between"
+                                            aria-label="Select icon"
+                                            aria-expanded={showIconPicker}
+                                            className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground flex items-center justify-between"
                                         >
                                             <span className="flex items-center gap-2">
                                                 {hasIcon(formData.icon) ? (
@@ -337,7 +354,7 @@ export function CategoriesTab() {
                                                         const IconComponent = iconMap[formData.icon];
                                                         return (
                                                             <>
-                                                                <IconComponent className="w-5 h-5 text-muted-foreground" />
+                                                                <IconComponent className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                                                                 <span>{formData.icon}</span>
                                                             </>
                                                         );
@@ -346,7 +363,7 @@ export function CategoriesTab() {
                                                     <>
                                                         <img
                                                             src={getIconCdnUrl(formData.icon)}
-                                                            alt={formData.icon}
+                                                            alt=""
                                                             className="w-5 h-5"
                                                         />
                                                         <span>{formData.icon}</span>
@@ -354,6 +371,7 @@ export function CategoriesTab() {
                                                 )}
                                             </span>
                                             <ChevronDown
+                                                aria-hidden="true"
                                                 className={`w-5 h-5 text-muted-foreground transition-transform ${showIconPicker ? "rotate-180" : ""}`}
                                             />
                                         </button>
@@ -370,10 +388,11 @@ export function CategoriesTab() {
 
                                 {/* Parent Category */}
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    <label htmlFor="category-parent" className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">
                                         Parent Category (optional)
                                     </label>
                                     <select
+                                        id="category-parent"
                                         value={formData.parentId || ""}
                                         onChange={(e) =>
                                             setFormData((prev) => ({
@@ -383,7 +402,7 @@ export function CategoriesTab() {
                                                     : null,
                                             }))
                                         }
-                                        className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground"
                                     >
                                         <option value="">No parent (top-level)</option>
                                         {parentCategories
@@ -394,7 +413,7 @@ export function CategoriesTab() {
                                                 </option>
                                             ))}
                                     </select>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-xs text-muted-foreground mt-2">
                                         Make this a subcategory of another category
                                     </p>
                                 </div>
@@ -404,24 +423,24 @@ export function CategoriesTab() {
                                     <button
                                         type="button"
                                         onClick={handleCloseForm}
-                                        className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted font-medium transition-colors"
+                                        className="flex-1 h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full font-medium transition-all disabled:opacity-50"
                                         disabled={isSubmitting}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 font-medium transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-1 h-11 px-4 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" aria-hidden="true"></div>
                                                 Saving...
                                             </>
                                         ) : (
                                             <>
-                                                <Check className="w-4 h-4" />
+                                                <Check className="w-4 h-4" aria-hidden="true" />
                                                 {editingCategory ? "Update" : "Create"}
                                             </>
                                         )}
@@ -436,17 +455,22 @@ export function CategoriesTab() {
             {/* Delete Confirmation Modal */}
             {deletingCategory &&
                 createPortal(
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-2xl">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-category-title"
+                        className="fixed inset-0 bg-foreground/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    >
+                        <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-xl p-6 max-w-md w-full">
                             <div className="flex items-start gap-4 mb-4">
-                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                                    <AlertTriangle className="w-6 h-6 text-destructive" />
+                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center ring-1 ring-destructive/20">
+                                    <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                                    <h2 id="delete-category-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">
                                         Delete Category
-                                    </h3>
-                                    <p className="text-muted-foreground text-sm">
+                                    </h2>
+                                    <p className="text-[15px] text-foreground/80 leading-relaxed">
                                         Are you sure you want to delete "{deletingCategory.name}"?
                                         This action cannot be undone.
                                     </p>
@@ -457,15 +481,17 @@ export function CategoriesTab() {
                             </div>
                             <div className="flex gap-3 mt-6">
                                 <button
+                                    type="button"
                                     onClick={() => setDeletingCategory(null)}
-                                    className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted font-medium transition-colors"
+                                    className="flex-1 h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full font-medium transition-all disabled:opacity-50"
                                     disabled={isSubmitting}
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleDelete}
-                                    className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 font-medium transition-opacity disabled:opacity-50"
+                                    className="flex-1 h-11 px-4 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-destructive/25 transition-all disabled:opacity-50"
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? "Deleting..." : "Delete"}
@@ -475,6 +501,6 @@ export function CategoriesTab() {
                     </div>,
                     document.body
                 )}
-        </div>
+        </section>
     );
 }

@@ -82,9 +82,9 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   if (isSessionLoading || !ad) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center" role="status" aria-live="polite">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">Loading...</h2>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">Loading...</h2>
         </div>
       </div>
     );
@@ -93,10 +93,11 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
   const content = (
     <div className="fixed inset-x-0 top-0 bottom-[calc(72px+env(safe-area-inset-bottom))] md:relative md:inset-auto md:h-full bg-card flex flex-col z-40">
       {/* Fixed Header */}
-      <header className="absolute top-0 left-0 right-0 h-16 z-50 bg-card border-b border-border shadow-sm md:relative">
+      <header className="absolute top-0 left-0 right-0 h-16 z-50 bg-card/95 backdrop-blur-sm ring-1 ring-border/70 md:relative">
         <div className="content-max-width mx-auto container-padding h-full">
           <div className="flex items-center justify-between h-full">
             <button
+              type="button"
               onClick={() => {
                 // On mobile, if chat is selected, go back to conversations list
                 // Otherwise, go back to flyers
@@ -106,13 +107,14 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   onBack();
                 }
               }}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Back"
+              className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back to flyers</span>
+              <span className="hidden sm:inline text-sm font-medium">Back to flyers</span>
             </button>
-            <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate mx-2">Messages for "{ad.title}"</h1>
-            <div className="w-10 sm:w-20"></div>
+            <h1 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-foreground truncate mx-2">Messages for "{ad.title}"</h1>
+            <div className="w-10 sm:w-20" aria-hidden="true"></div>
           </div>
         </div>
       </header>
@@ -121,68 +123,81 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
       <div className={`flex-1 min-h-0 mt-16 md:mt-0 ${selectedChatId ? 'overflow-hidden' : 'overflow-y-auto mobile-scroll-container container-padding py-6 pb-24'} md:overflow-visible md:container-padding md:py-6 md:pb-6 content-max-width mx-auto w-full`}>
         <div className={`${selectedChatId ? 'h-full min-h-0' : ''} grid grid-cols-1 lg:grid-cols-3 ${selectedChatId ? 'gap-0' : 'gap-6'} lg:gap-6`}>
           {/* Chat List - Hidden on mobile when chat is selected */}
-          <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>
-            <div className="bg-card rounded-lg shadow-sm border border-border flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)]">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-foreground">
-                  Conversations ({(chats || []).length})
+          <aside className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : ''}`}>
+            <section className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card flex flex-col lg:flex-none lg:max-h-[calc(100vh-200px)] overflow-hidden">
+              <header className="px-5 py-4 border-b border-border/70">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Inbox</span>
+                <h2 className="mt-1 font-display text-xl font-semibold tracking-tight text-foreground">
+                  Conversations <span className="font-sans text-base font-medium text-muted-foreground tabular-nums">({(chats || []).length})</span>
                 </h2>
-              </div>
+              </header>
 
               <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                 {(chats || []).length === 0 ? (
-                  <div className="p-6 text-center">
-                    <div className="text-4xl mb-4">💬</div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No messages yet</h3>
-                    <p className="text-muted-foreground text-sm">
+                  <div className="p-8 text-center">
+                    <div className="flex justify-center mb-4">
+                      <span className="text-4xl" aria-hidden="true">💬</span>
+                    </div>
+                    <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No messages yet</h3>
+                    <p className="text-[15px] leading-relaxed text-foreground/70 max-w-prose mx-auto">
                       Messages from interested buyers will appear here
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-1 p-2">
-                    {(chats || []).map((chat) => (
-                      <button
-                        key={chat._id}
-                        onClick={() => setSelectedChatId(chat._id)}
-                        className={`w-full text-left p-3 rounded-lg transition-colors border-l-4 ${selectedChatId === chat._id
-                          ? 'bg-primary/10 border-primary'
-                          : 'border-transparent hover:bg-muted'
-                          }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium">
-                            {chat.buyer?.name || "Deleted User"}
-                          </span>
-                          {chat.unreadCount > 0 && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
-                              {chat.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        {chat.latestMessage && (
-                          <p className="text-sm truncate text-muted-foreground">
-                            {chat.latestMessage.content}
-                          </p>
-                        )}
-                        <p className="text-xs mt-1 text-muted-foreground">
-                          {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
+                  <ul className="divide-y divide-border/60">
+                    {(chats || []).map((chat) => {
+                      const isActive = selectedChatId === chat._id;
+                      return (
+                        <li key={chat._id}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedChatId(chat._id)}
+                            aria-current={isActive ? "true" : undefined}
+                            aria-label={`Conversation with ${chat.buyer?.name || "Deleted User"}`}
+                            className={`relative w-full text-left px-5 py-4 transition-colors active:scale-[0.99] ${isActive
+                              ? 'bg-muted/50'
+                              : 'hover:bg-muted/40'
+                              }`}
+                          >
+                            {isActive && (
+                              <span aria-hidden="true" className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-primary" />
+                            )}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-foreground truncate">
+                                {chat.buyer?.name || "Deleted User"}
+                              </span>
+                              {chat.unreadCount > 0 && (
+                                <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full text-[11px] font-semibold tabular-nums bg-primary text-primary-foreground">
+                                  {chat.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                            {chat.latestMessage && (
+                              <p className="text-sm truncate text-muted-foreground">
+                                {chat.latestMessage.content}
+                              </p>
+                            )}
+                            <p className="text-xs mt-1 text-muted-foreground/80 tabular-nums">
+                              {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
+                            </p>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </div>
-            </div>
-          </div>
+            </section>
+          </aside>
 
           {/* Chat Messages - Hidden on mobile when no chat is selected */}
-          <div className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : 'h-full min-h-0'}`}>
+          <section className={`lg:col-span-2 ${!selectedChatId ? 'hidden lg:block' : 'h-full min-h-0'}`}>
             {/* Chat container: flex column with scroll in messages */}
-            <div className="bg-card h-full min-h-0 flex flex-col lg:rounded-lg lg:shadow-sm lg:border lg:border-border">
+            <div className="bg-card h-full min-h-0 flex flex-col lg:rounded-2xl lg:shadow-card lg:ring-1 lg:ring-border/70 overflow-hidden">
               {selectedChat ? (
                 <>
                   {/* Messages - Row 2: fills space, scrollable */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-4" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                     {/* Wrapper to push messages to bottom while allowing scroll */}
                     <div className="flex flex-col space-y-4 min-h-full justify-end">
                       {(messages || []).map((message) => (
@@ -192,15 +207,15 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                             }`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === ad.userId
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card border border-border text-foreground'
+                            className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-lg shadow-sm ${message.senderId === ad.userId
+                              ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                              : 'bg-muted/60 ring-1 ring-border/60 text-foreground rounded-tl-sm'
                               }`}
                           >
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                             <p
-                              className={`text-xs mt-1 ${message.senderId === ad.userId
-                                ? 'text-primary-foreground/70'
+                              className={`text-[11px] mt-1 tabular-nums ${message.senderId === ad.userId
+                                ? 'text-primary-foreground/75'
                                 : 'text-muted-foreground'
                                 }`}
                             >
@@ -214,9 +229,11 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   </div>
 
                   {/* Message Input */}
-                  <form onSubmit={handleSendMessage} className="shrink-0 p-4 border-t border-border">
+                  <form onSubmit={handleSendMessage} className="shrink-0 p-4 border-t border-border/70 bg-card">
+                    <label htmlFor="conversation-message-input" className="sr-only">Type your message</label>
                     <div className="flex gap-2 items-end">
                       <textarea
+                        id="conversation-message-input"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={(e) => {
@@ -229,13 +246,14 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         placeholder="Type your message..."
                         rows={1}
                         autoComplete="off"
-                        className="flex-1 px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none min-h-[42px] max-h-32 overflow-y-auto bg-background text-foreground placeholder:text-muted-foreground"
+                        className="flex-1 px-4 py-2.5 bg-muted/50 ring-1 ring-transparent rounded-2xl focus:ring-ring focus:bg-card focus:outline-none resize-none min-h-[44px] max-h-32 overflow-y-auto text-foreground placeholder:text-muted-foreground/70 transition-all"
                         style={{ fieldSizing: 'content' } as any}
                       />
                       <button
                         type="submit"
                         disabled={!newMessage.trim()}
-                        className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                        aria-label="Send message"
+                        className="h-11 px-5 sm:px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all"
                       >
                         Send
                       </button>
@@ -244,19 +262,21 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center p-6">
-                    <div className="text-6xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                  <div className="text-center p-8 max-w-prose">
+                    <div className="flex justify-center mb-4">
+                      <span className="text-6xl" aria-hidden="true">💬</span>
+                    </div>
+                    <h3 className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">
                       Select a conversation
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-[15px] leading-relaxed text-foreground/70">
                       Choose a conversation from the left to start messaging
                     </p>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
       </div>
 

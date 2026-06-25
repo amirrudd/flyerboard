@@ -583,10 +583,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
             </button>
           }
           centerNode={
-            <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
+            <span className="font-display text-xl font-semibold tracking-tight text-foreground">
               <span className="md:hidden">My dashboard</span>
               <span className="hidden md:inline">FlyerBoard</span>
-            </h1>
+            </span>
           }
           rightNode={
             <div className="flex items-center gap-3">

@@ -485,23 +485,28 @@ export const Header = memo(function Header({
             )}
           </div>
 
-          {/* Right section - Actions */}
+          {/* Right section - Actions. When a consumer supplies rightNode
+              they take full control (and are expected to include
+              ThemeToggle themselves if needed), otherwise we render the
+              default ThemeToggle + HeaderRightActions. */}
           <div className="flex items-center gap-4 flex-shrink-0">
-            <ThemeToggle />
             {rightNode ? rightNode : (
-              <HeaderRightActions
-                user={user}
-                isAuthenticated={isAuthenticated}
-                onPostClick={() => {
-                  if (user) {
-                    navigate('/post', { state: { from: window.location.pathname } });
-                  } else {
-                    setShowAuthModal(true);
-                  }
-                }}
-                onDashboardClick={() => navigate('/dashboard')}
-                onSignInClick={() => setShowAuthModal(true)}
-              />
+              <>
+                <ThemeToggle />
+                <HeaderRightActions
+                  user={user}
+                  isAuthenticated={isAuthenticated}
+                  onPostClick={() => {
+                    if (user) {
+                      navigate('/post', { state: { from: window.location.pathname } });
+                    } else {
+                      setShowAuthModal(true);
+                    }
+                  }}
+                  onDashboardClick={() => navigate('/dashboard')}
+                  onSignInClick={() => setShowAuthModal(true)}
+                />
+              </>
             )}
           </div>
         </div>

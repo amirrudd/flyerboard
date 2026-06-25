@@ -329,9 +329,12 @@
     }
   }
 
-  header {
-    height: 57px;
-  }
+  /* Note: previously a global `header { height: 57px }` rule lived
+     here for the top sticky nav. Removed because it cascaded into
+     <header> elements inside modals/sections (e.g. the SMS OTP flow)
+     and forced them to 57px, causing overflow + overlap with siblings.
+     The sticky nav now sets its own height via the `h-[57px]` utility
+     in Header.tsx. */
 }
 
 /* Custom Scrollbar */

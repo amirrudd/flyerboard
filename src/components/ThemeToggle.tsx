@@ -41,20 +41,28 @@ export function ThemeToggle() {
     return (
         <>
             {/* Desktop: Horizontal toggle */}
-            <div className="hidden sm:flex items-center gap-1 p-1 bg-muted/50 rounded-full border border-border">
+            <div
+                className="hidden sm:flex items-center gap-1 p-1 bg-muted/50 rounded-full ring-1 ring-border/70"
+                role="group"
+                aria-label="Theme selector"
+            >
                 {themeOrder.map((t) => {
                     const Icon = themeConfig[t].icon;
+                    const isSelected = theme === t;
                     return (
                         <button
                             key={t}
+                            type="button"
                             onClick={() => setTheme(t)}
-                            className={`p-1.5 rounded-full transition-all ${theme === t
-                                ? "bg-background text-primary shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
+                            className={`p-1.5 rounded-full transition-all active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background ${isSelected
+                                ? "bg-card text-primary shadow-sm ring-1 ring-border/60"
+                                : "text-muted-foreground hover:text-foreground hover:bg-card/60"
                                 }`}
                             title={themeConfig[t].label}
+                            aria-label={themeConfig[t].label}
+                            aria-pressed={isSelected}
                         >
-                            <Icon size={16} />
+                            <Icon size={16} aria-hidden="true" />
                         </button>
                     );
                 })}
@@ -66,8 +74,8 @@ export function ThemeToggle() {
                     ref={containerRef}
                     onClick={() => !isExpanded && setIsExpanded(true)}
                     className={`absolute top-0 left-0 w-10 flex flex-col items-center transition-all duration-300 ease-out cursor-pointer origin-top z-50 ${isExpanded
-                        ? "bg-muted/90 backdrop-blur-md border border-border p-1 gap-1.5 rounded-[20px] shadow-xl text-foreground"
-                        : "bg-transparent border-transparent p-1 gap-0 rounded-lg hover:bg-muted text-foreground/70"
+                        ? "bg-card/90 backdrop-blur-md ring-1 ring-border/70 p-1 gap-1.5 rounded-full shadow-lg text-foreground"
+                        : "bg-transparent ring-1 ring-transparent p-1 gap-0 rounded-full hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                         }`}
                     style={{
                         height: isExpanded ? "128px" : "40px",
@@ -86,6 +94,7 @@ export function ThemeToggle() {
                         return (
                             <button
                                 key={t}
+                                type="button"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (isExpanded) {
@@ -94,7 +103,7 @@ export function ThemeToggle() {
                                         setIsExpanded(true);
                                     }
                                 }}
-                                className={`flex items-center justify-center w-8 h-8 transition-all duration-300 ${isSelected && isExpanded
+                                className={`flex items-center justify-center w-8 h-8 transition-all duration-300 active:scale-[0.96] ${isSelected && isExpanded
                                     ? "bg-background text-primary shadow-sm rounded-full"
                                     : isSelected && !isExpanded
                                         ? "text-inherit"
@@ -106,9 +115,10 @@ export function ThemeToggle() {
                                     transitionDelay: isExpanded && !isFirst ? `${index * 40}ms` : "0ms",
                                 }}
                                 title={themeConfig[t].label}
+                                aria-label={themeConfig[t].label}
                                 aria-pressed={isSelected}
                             >
-                                <Icon size={20} />
+                                <Icon size={20} aria-hidden="true" />
                             </button>
                         );
                     })}

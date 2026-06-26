@@ -164,32 +164,32 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     <div className="relative location-dropdown">
       <button
         className={compact
-          ? "w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors flex-shrink-0"
-          : "flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg hover:bg-accent"
+          ? "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all duration-150 flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          : "group flex items-center gap-2 pl-2.5 pr-2 py-1.5 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full ring-1 ring-border hover:ring-foreground/20 bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         }
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
         title={compact ? (selectedLocation || "All Locations") : undefined}
       >
-        <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4"} />
+        <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4 text-primary"} strokeWidth={2} />
         {!compact && (
           <>
             <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} strokeWidth={2.25} />
           </>
         )}
       </button>
 
       {isOpen && (
-        <div className={`absolute top-full mt-1 w-72 max-w-[90vw] bg-popover border border-border rounded-lg shadow-lg z-50 ${align === 'right' ? 'right-0' : 'left-0'}`}>
-          <div className="p-2 border-b border-border">
+        <div className={`absolute top-full mt-2 w-80 max-w-[90vw] bg-popover ring-1 ring-border rounded-xl shadow-card-hover z-50 overflow-hidden ${align === 'right' ? 'right-0' : 'left-0'}`}>
+          <div className="p-2.5 border-b border-border/70">
             <input
               ref={inputRef}
               type="text"
-              placeholder="Enter suburb or postcode..."
+              placeholder="Enter suburb or postcode…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background text-foreground"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
           </div>
 
@@ -341,10 +341,17 @@ const MobileHeader = memo(function MobileHeader({
           >
             <Menu className="w-6 h-6 text-foreground/70" />
           </button>
-          <h1 className="text-lg font-bold text-foreground cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
-            <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
-            <span className="truncate">{window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}</span>
-          </h1>
+          <button
+            type="button"
+            className="cursor-pointer flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+            onClick={() => navigate('/')}
+            aria-label="FlyerBoard home"
+          >
+            <img src="/icons/icon-48x48.png" alt="" aria-hidden="true" className="w-7 h-7" />
+            <span className="font-display text-lg font-semibold text-foreground tracking-[-0.02em] truncate">
+              {window.location.pathname === '/dashboard' ? 'My dashboard' : 'FlyerBoard'}
+            </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
@@ -381,20 +388,18 @@ const MobileHeader = memo(function MobileHeader({
 
       {/* Expandable Search Overlay */}
       {searchExpanded && (
-        <div className="mobile-search-container border-t border-border bg-background container-padding py-3 animate-fade-in">
-          <div className="space-y-3">
-            <form className="relative" onSubmit={e => e.preventDefault()} autoComplete="off">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search in flyers..."
-                value={localSearchQuery}
-                onChange={handleSearchChange}
-                className="w-full h-10 px-4 pl-10 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background text-foreground"
-              />
-              <Search className="absolute left-3 top-2.5 w-5 h-5 text-muted-foreground/50 pointer-events-none" />
-            </form>
-          </div>
+        <div className="mobile-search-container border-t border-border/70 bg-background container-padding py-3 animate-fade-in">
+          <form className="relative group" onSubmit={e => e.preventDefault()} autoComplete="off">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search the board…"
+              value={localSearchQuery}
+              onChange={handleSearchChange}
+              className="w-full h-11 pl-11 pr-4 text-sm bg-muted/60 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" strokeWidth={2.25} />
+          </form>
         </div>
       )}
     </>
@@ -435,7 +440,7 @@ export const Header = memo(function Header({
   }, [debouncedSetSearchQuery, navigate]);
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-neutral-200/50 h-[57px]">
+    <header className="sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b border-border/70 h-[57px]">
       <div className="content-max-width mx-auto">
         {/* Desktop Header */}
         <div className={`hidden md:flex items-center justify-between h-14 container-padding ${centerNode ? 'relative' : ''}`}>
@@ -443,10 +448,17 @@ export const Header = memo(function Header({
           <div className="flex items-center gap-6 flex-shrink-0">
             {leftNode ? leftNode : (
               <>
-                <h1 className="text-xl font-bold text-foreground cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
-                  <img src="/icons/icon-48x48.png" alt="FlyerBoard" className="w-8 h-8" />
-                  <span>FlyerBoard</span>
-                </h1>
+                <button
+                  type="button"
+                  className="cursor-pointer flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
+                  onClick={() => navigate('/')}
+                  aria-label="FlyerBoard home"
+                >
+                  <img src="/icons/icon-48x48.png" alt="" aria-hidden="true" className="w-7 h-7 transition-transform duration-300 group-hover:rotate-[-4deg]" />
+                  <span className="font-display text-[22px] font-semibold text-foreground tracking-[-0.02em] leading-none">
+                    FlyerBoard
+                  </span>
+                </button>
 
                 {/* Location Selector - Divar style */}
                 <LocationSelector
@@ -460,38 +472,41 @@ export const Header = memo(function Header({
           {/* Center section - Search Bar */}
           <div className={centerNode ? "absolute left-1/2 -translate-x-1/2" : "flex-1 flex justify-center px-8"}>
             {centerNode ? centerNode : (
-              <form className="relative w-full max-w-2xl" onSubmit={e => e.preventDefault()} autoComplete="off">
+              <form className="relative w-full max-w-2xl group" onSubmit={e => e.preventDefault()} autoComplete="off">
                 <input
                   type="text"
                   placeholder="Search in flyers..."
                   defaultValue={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full h-10 px-4 pl-10 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background text-foreground"
+                  className="w-full h-10 pl-10 pr-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                 />
-                <svg className="absolute left-3 top-2.5 w-5 h-5 text-muted-foreground/50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" strokeWidth={2.25} />
               </form>
             )}
           </div>
 
-          {/* Right section - Actions */}
+          {/* Right section - Actions. When a consumer supplies rightNode
+              they take full control (and are expected to include
+              ThemeToggle themselves if needed), otherwise we render the
+              default ThemeToggle + HeaderRightActions. */}
           <div className="flex items-center gap-4 flex-shrink-0">
-            <ThemeToggle />
             {rightNode ? rightNode : (
-              <HeaderRightActions
-                user={user}
-                isAuthenticated={isAuthenticated}
-                onPostClick={() => {
-                  if (user) {
-                    navigate('/post', { state: { from: window.location.pathname } });
-                  } else {
-                    setShowAuthModal(true);
-                  }
-                }}
-                onDashboardClick={() => navigate('/dashboard')}
-                onSignInClick={() => setShowAuthModal(true)}
-              />
+              <>
+                <ThemeToggle />
+                <HeaderRightActions
+                  user={user}
+                  isAuthenticated={isAuthenticated}
+                  onPostClick={() => {
+                    if (user) {
+                      navigate('/post', { state: { from: window.location.pathname } });
+                    } else {
+                      setShowAuthModal(true);
+                    }
+                  }}
+                  onDashboardClick={() => navigate('/dashboard')}
+                  onSignInClick={() => setShowAuthModal(true)}
+                />
+              </>
             )}
           </div>
         </div>

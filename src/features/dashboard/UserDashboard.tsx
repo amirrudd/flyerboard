@@ -520,11 +520,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Please sign in</h2>
+        <div className="text-center max-w-prose px-6">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground mb-3">Please sign in</h2>
           <button
+            type="button"
             onClick={onBack}
-            className="text-primary-bright hover:underline"
+            className="inline-flex items-center justify-center h-11 px-5 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
           >
             Go back
           </button>
@@ -560,6 +561,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
         <Header
           leftNode={
             <button
+              type="button"
               onClick={() => {
                 // On mobile, if we're not on the default "ads" tab, go back to it first
                 if (isMobile && activeTab !== "ads") {
@@ -573,17 +575,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   onBack();
                 }
               }}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Back"
+              className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
-              <span className="hidden md:inline">back</span>
+              <span className="hidden md:inline text-sm font-medium">back</span>
             </button>
           }
           centerNode={
-            <h1 className="text-xl font-bold text-foreground">
+            <span className="font-display text-xl font-semibold tracking-tight text-foreground">
               <span className="md:hidden">My dashboard</span>
               <span className="hidden md:inline">FlyerBoard</span>
-            </h1>
+            </span>
           }
           rightNode={
             <div className="flex items-center gap-3">
@@ -603,26 +606,28 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
         <div className="flex-1 w-full content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 md:gap-6">
             {/* Sidebar */}
-            <div className="md:col-span-1 md:sticky md:top-21 md:self-start">
+            <aside className="md:col-span-1 md:sticky md:top-21 md:self-start">
               {!convexUser || userStats === undefined ? (
                 <UserProfileSkeleton />
               ) : (
-                <div className="bg-card rounded-lg p-4 shadow-sm mb-6 border border-border">
+                <section className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-5 mb-6" aria-label="Your profile summary">
                   <input
                     ref={profileImageInputRef}
                     type="file"
                     accept="image/*,.heic,.heif"
                     onChange={handleProfileImageUpload}
                     className="hidden"
+                    aria-label="Upload profile picture"
                   />
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
+                  <div className="flex items-center gap-3 mb-5">
+                    <button
+                      type="button"
                       onClick={handleProfileImageClick}
-                      className="w-12 h-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground font-semibold cursor-pointer hover:opacity-80 transition-opacity relative overflow-hidden"
-                      title="Click to upload profile picture"
+                      aria-label="Click to upload profile picture"
+                      className="w-12 h-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground font-semibold hover:opacity-80 active:scale-[0.98] transition-all relative overflow-hidden ring-1 ring-border/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       {uploadingImage ? (
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-foreground border-t-transparent"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" aria-hidden="true"></div>
                       ) : user.image && !imageError ? (
                         <ImageDisplay
                           imageRef={user.image}
@@ -633,43 +638,44 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       ) : (
                         getInitials(user)
                       )}
-                    </div>
-                    <div className="flex-1">
+                    </button>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground max-w-[120px] truncate">{getDisplayName(user)}</h3>
+                        <h3 className="font-display text-base font-semibold tracking-tight text-foreground max-w-[120px] truncate">{getDisplayName(user)}</h3>
                         {user.isVerified && (
                           <div title="Verified User" className="relative">
                             <img src="/verified-badge.svg" alt="Verified User" className="w-11 h-11" />
                           </div>
                         )}
                         <button
+                          type="button"
                           onClick={() => {
                             setActiveTab("profile");
                             setSearchParams({ tab: "profile" }, { replace: true });
                             setShouldScrollToContent(true);
                           }}
-                          className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
-                          title="Edit profile"
+                          aria-label="Edit profile"
+                          className="ml-auto w-8 h-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.95] transition-all flex items-center justify-center"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-2 gap-4 mb-5">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{userStats!.totalAds}</div>
-                      <div className="text-xs text-muted-foreground">Total Ads</div>
+                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">{userStats!.totalAds}</div>
+                      <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Ads</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{userStats!.totalViews}</div>
-                      <div className="text-xs text-muted-foreground">Total Views</div>
+                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">{userStats!.totalViews}</div>
+                      <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Views</div>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-border">
+                  <div className="pt-4 border-t border-border/70">
                     <StarRating
                       rating={userStats!.averageRating || 0}
                       count={userStats!.ratingCount || 0}
@@ -677,11 +683,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       showCount={true}
                     />
                   </div>
-                </div>
+                </section>
               )}
 
-              <nav className="bg-card rounded-lg p-4 shadow-sm hidden md:block border border-border">
-                <div className="space-y-2">
+              <nav className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-4 hidden md:block" aria-label="Dashboard sections">
+                <span className="block px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sections</span>
+                <ul className="space-y-1">
                   {[
                     { id: "ads", label: "My Flyers", icon: LayoutDashboard },
                     {
@@ -693,76 +700,93 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     { id: "saved", label: "Saved Flyers", icon: Heart },
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id as any);
-                        setSearchParams({ tab: tab.id }, { replace: true });
-                        // Trigger scroll when clicking sidebar menu
-                        setShouldScrollToContent(true);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors duration-200 text-sm font-medium flex items-center justify-between ${activeTab === tab.id ? 'text-primary-bright bg-primary/10' : 'text-foreground hover:bg-accent'
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary-bright" : "text-muted-foreground"}`} />
-                        <span>{tab.label}</span>
-                      </div>
-                      {tab.badge && tab.badge > 0 && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
-                          {tab.badge}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                  ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <li key={tab.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(tab.id as any);
+                            setSearchParams({ tab: tab.id }, { replace: true });
+                            // Trigger scroll when clicking sidebar menu
+                            setShouldScrollToContent(true);
+                          }}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`relative w-full text-left pl-4 pr-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium flex items-center justify-between active:scale-[0.99] ${isActive
+                            ? 'text-primary bg-primary/[0.08]'
+                            : 'text-foreground hover:bg-muted/50'
+                            }`}
+                        >
+                          {isActive && (
+                            <span aria-hidden="true" className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />
+                          )}
+                          <span className="flex items-center gap-3">
+                            <tab.icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                            <span>{tab.label}</span>
+                          </span>
+                          {tab.badge && tab.badge > 0 && (
+                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full text-[11px] font-semibold tabular-nums bg-primary text-primary-foreground">
+                              {tab.badge}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </nav>
-            </div>
+            </aside>
 
             {/* Main Content */}
             <div className="md:col-span-3 min-h-[600px]">
               {/* Email collection banner - show on all tabs if no email */}
               {user && user._id !== "temp-id" && !user.email && (
-                <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <section className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-5 mb-6" aria-label="Email setup">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      <Mail className="w-5 h-5" aria-hidden="true" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">
+                    <div className="flex-1 min-w-0">
+                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Stay in the loop</span>
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-1">
                         Get notified when buyers message you
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-[15px] leading-relaxed text-foreground/75 mb-3">
                         Add your email to receive instant notifications about new messages.
                       </p>
                       <button
+                        type="button"
                         onClick={() => {
                           setActiveTab("profile");
                           setSearchParams({ tab: "profile" });
                         }}
-                        className="inline-flex items-center gap-1 text-sm font-medium text-primary-bright hover:opacity-80 hover:underline transition-opacity"
+                        className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary/[0.08] ring-1 ring-primary/30 text-primary text-sm font-semibold hover:bg-primary/[0.14] hover:ring-primary/50 active:scale-[0.98] transition-all"
                       >
                         Add email address →
                       </button>
                     </div>
                   </div>
-                </div>
+                </section>
               )}
 
               {activeTab === "ads" && (
-                <div ref={adsContentRef} className="bg-card border border-border rounded-lg p-3 sm:p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-foreground">My Flyers</h2>
+                <section ref={adsContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="My flyers">
+                  <header className="flex items-center justify-between gap-3 mb-6">
+                    <div>
+                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Your listings</span>
+                      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">My Flyers</h2>
+                    </div>
                     <button
+                      type="button"
                       onClick={onPostAd}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium shadow-sm"
+                      className="inline-flex items-center justify-center h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                     >
                       Pin Next Flyer
                     </button>
-                  </div>
+                  </header>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {userAds === undefined ? (
                       // Loading state - show skeletons
                       <>
@@ -772,13 +796,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       </>
                     ) : userAds.length === 0 ? (
                       // Empty state
-                      <div className="text-center py-12">
-                        <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-muted-foreground/30" /></div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">No Flyers Yet</h3>
-                        <p className="text-muted-foreground mb-4">Start by pinning your first flyer</p>
+                      <div className="text-center py-16">
+                        <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No Flyers Yet</h3>
+                        <p className="text-[15px] text-muted-foreground mb-5 max-w-prose mx-auto">Start by pinning your first flyer</p>
                         <button
+                          type="button"
                           onClick={onPostAd}
-                          className="bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 transition-colors font-medium"
+                          className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                         >
                           Pin Your First Flyer
                         </button>
@@ -786,9 +811,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : (
                       // Loaded state - show ads
                       userAds.map((ad) => (
-                        <div
+                        <article
                           key={ad._id}
-                          className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer bg-card"
+                          className="ring-1 ring-border/70 rounded-2xl p-3 sm:p-4 hover:ring-foreground/15 hover:shadow-card transition-all cursor-pointer bg-card"
                           onClick={() => onEditAd(ad)}
                         >
                           {/* Mobile: Vertical layout, Desktop: Horizontal layout */}
@@ -798,11 +823,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               <ImageDisplay
                                 imageRef={ad.images[0]}
                                 alt={ad.title}
-                                className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded-lg"
+                                className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded-xl ring-1 ring-border/60"
                               />
                             ) : (
-                              <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-lg flex items-center justify-center">
-                                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                              <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60">
+                                <ImageIcon className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
                               </div>
                             )}
 
@@ -810,25 +835,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             <div className="flex-1 min-w-0">
                               {/* Title and Price */}
                               <div className="flex items-start justify-between gap-2 mb-2">
-                                <h3 className="font-semibold text-foreground flex-1 min-w-0">{ad.title}</h3>
+                                <h3 className="font-display text-base font-semibold tracking-tight text-foreground flex-1 min-w-0 leading-snug">{ad.title}</h3>
                                 <div className="flex flex-col items-end">
                                   {ad.previousPrice !== undefined && ad.price !== undefined && ad.previousPrice > ad.price && (
-                                    <p className="text-xs text-muted-foreground line-through">
+                                    <p className="text-xs text-muted-foreground line-through tabular-nums">
                                       {formatPrice(ad.previousPrice)}
                                     </p>
                                   )}
-                                  <p className="text-lg font-bold text-primary-bright whitespace-nowrap">
+                                  <p className="font-display text-lg font-semibold tabular-nums text-primary whitespace-nowrap">
                                     {formatPrice(ad.price || 0)}
                                   </p>
                                 </div>
                               </div>
 
                               {/* Stats and Status */}
-                              <div className="flex items-center gap-3 mb-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {ad.views}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${ad.isActive ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'
+                              <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1 tabular-nums"><Eye className="w-4 h-4" aria-hidden="true" /> {ad.views}</span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ${ad.isActive ? 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400' : 'bg-muted text-muted-foreground ring-border/60'
                                   }`}>
-                                  {ad.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                                  {ad.isActive ? <CheckCircle className="w-3 h-3" aria-hidden="true" /> : <XCircle className="w-3 h-3" aria-hidden="true" />}
                                   {ad.isActive ? 'Active' : 'Inactive'}
                                 </span>
                               </div>
@@ -836,59 +861,65 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               {/* Action Buttons */}
                               <div className="flex items-center gap-2 justify-end">
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setShowMessagesForAd(ad._id);
                                   }}
-                                  className="relative p-2 md:px-3 md:py-1 border border-input text-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center gap-1"
-                                  title="Messages"
+                                  aria-label="Messages"
+                                  className="relative inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
-                                  <MessageSquare className="w-4 h-4" />
+                                  <MessageSquare className="w-4 h-4" aria-hidden="true" />
                                   <span className="hidden md:inline">Messages</span>
                                   {unreadCounts && unreadCounts[ad._id] > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold tabular-nums shadow-sm">
                                       {unreadCounts[ad._id]}
                                     </span>
                                   )}
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleToggleStatus(ad._id);
                                   }}
-                                  className="p-2 md:px-3 md:py-1 border border-input text-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center gap-1"
-                                  title={ad.isActive ? 'Deactivate' : 'Activate'}
+                                  aria-label={ad.isActive ? 'Deactivate' : 'Activate'}
+                                  className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
-                                  {ad.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-primary" />}
+                                  {ad.isActive ? <XCircle className="w-4 h-4" aria-hidden="true" /> : <CheckCircle className="w-4 h-4 text-primary" aria-hidden="true" />}
                                   <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onEditAd(ad);
                                   }}
-                                  className="p-2 md:px-3 md:py-1 border border-input text-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center gap-1"
-                                  title="Edit"
+                                  aria-label="Edit"
+                                  className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" aria-hidden="true" />
                                   <span className="hidden md:inline">Edit</span>
                                 </button>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </article>
                       ))
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
               {activeTab === "chats" && (
-                <div ref={chatsContentRef} className="bg-card border border-border rounded-lg p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">My Messages</h2>
-                  <p className="text-muted-foreground mb-6">Conversations for flyers you're interested in</p>
+                <section ref={chatsContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="My messages">
+                  <header className="mb-6">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Inbox</span>
+                    <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">My Messages</h2>
+                    <p className="text-[15px] leading-relaxed text-foreground/75 mt-1 max-w-prose">Conversations for flyers you're interested in</p>
+                  </header>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {buyerChats === undefined ? (
                       // Loading state - show skeletons
                       <>
@@ -897,41 +928,41 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       </>
                     ) : buyerChats.length === 0 ? (
                       // Empty state
-                      <div className="text-center py-12">
-                        <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-muted-foreground/30" /></div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">No messages yet</h3>
-                        <p className="text-muted-foreground">Start a conversation by messaging sellers on flyers you're interested in</p>
+                      <div className="text-center py-16">
+                        <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No messages yet</h3>
+                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Start a conversation by messaging sellers on flyers you're interested in</p>
                       </div>
                     ) : (
                       // Loaded state - show chats
                       buyerChats.map((chat: any) => (
-                        <div key={chat._id} className="border border-border rounded-lg overflow-hidden bg-card">
+                        <article key={chat._id} className="ring-1 ring-border/70 rounded-2xl overflow-hidden bg-card hover:ring-foreground/15 transition-all">
                           {/* Chat Header */}
                           <div
                             onClick={() => handleChatClick(chat._id)}
-                            className="p-4 hover:bg-accent transition-colors cursor-pointer"
+                            className="p-4 sm:p-5 hover:bg-muted/30 transition-colors cursor-pointer"
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-4 flex-1">
+                              <div className="flex items-start gap-4 flex-1 min-w-0">
                                 {chat.ad?.images?.[0] ? (
                                   <ImageDisplay
                                     imageRef={chat.ad.images[0]}
                                     alt={chat.ad.title}
-                                    className="w-16 h-16 object-cover rounded-lg"
+                                    className="w-16 h-16 object-cover rounded-xl ring-1 ring-border/60 flex-shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                                    <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                  <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60 flex-shrink-0">
+                                    <ImageIcon className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                                   </div>
                                 )}
-                                <div className="flex-1">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div>
-                                      <h3 className="font-semibold text-foreground mb-1">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-3 mb-2">
+                                    <div className="min-w-0">
+                                      <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 truncate">
                                         {chat.ad?.title || "Deleted Flyer"}
                                       </h3>
                                       {!chat.ad?.isActive && chat.ad && (
-                                        <span className="inline-block px-2 py-1 bg-destructive/10 text-destructive text-xs rounded-full mb-1">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 bg-destructive/10 text-destructive text-xs font-medium rounded-full ring-1 ring-destructive/20 mb-1">
                                           Flyer Inactive
                                         </span>
                                       )}
@@ -947,44 +978,46 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         />
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-shrink-0">
                                       {chat.ad && (
                                         <button
+                                          type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleViewFlyer(chat.ad!._id);
                                           }}
-                                          className="text-primary-bright hover:opacity-80 text-sm font-medium"
+                                          className="text-primary hover:underline text-sm font-semibold"
                                         >
                                           View Flyer
                                         </button>
                                       )}
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleArchiveChat(chat._id);
                                         }}
-                                        className="px-3 py-1 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                                        className="inline-flex items-center h-8 px-3 rounded-full bg-muted/40 ring-1 ring-border text-muted-foreground text-sm font-medium hover:bg-muted/70 hover:text-foreground hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                       >
                                         Archive
                                       </button>
                                       {chat.unreadCount > 0 && (
-                                        <span className="bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-medium">
+                                        <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-[11px] font-semibold tabular-nums bg-primary text-primary-foreground">
                                           {chat.unreadCount}
                                         </span>
                                       )}
                                     </div>
                                   </div>
                                   {chat.latestMessage && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                                       "{chat.latestMessage.content}"
                                     </p>
                                   )}
-                                  <div className="flex items-center justify-between mt-2">
-                                    <p className="text-xs text-muted-foreground">
+                                  <div className="flex items-center justify-between mt-2 gap-3">
+                                    <p className="text-xs text-muted-foreground tabular-nums">
                                       {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
                                     </p>
-                                    <div className="text-lg font-bold text-primary-bright">
+                                    <div className="font-display text-lg font-semibold tabular-nums text-primary">
                                       {formatPriceWithCurrency(chat.ad?.price || 0)}
                                     </div>
                                   </div>
@@ -995,7 +1028,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                           {/* Expanded Chat Messages */}
                           {expandedChatId === chat._id && (
-                            <div className="border-t border-border">
+                            <div className="border-t border-border/70">
                               {/* Messages */}
                               <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-muted/30" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
                                 {(chatMessages || []).map((message) => (
@@ -1005,15 +1038,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                       }`}
                                   >
                                     <div
-                                      className={`max-w-xs px-3 py-2 rounded-lg ${message.senderId === user._id
-                                        ? 'bg-primary text-white'
-                                        : 'bg-card text-foreground border border-border'
+                                      className={`max-w-xs px-3.5 py-2 rounded-2xl shadow-sm ${message.senderId === user._id
+                                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                        : 'bg-card text-foreground ring-1 ring-border/60 rounded-tl-sm'
                                         }`}
                                     >
-                                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                                       <p
-                                        className={`text-xs mt-1 ${message.senderId === user._id
-                                          ? 'text-white/70'
+                                        className={`text-[11px] mt-1 tabular-nums ${message.senderId === user._id
+                                          ? 'text-primary-foreground/75'
                                           : 'text-muted-foreground'
                                           }`}
                                       >
@@ -1026,20 +1059,23 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </div>
 
                               {/* Message Input */}
-                              <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border">
+                              <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border/70">
+                                <label htmlFor={`chat-input-${chat._id}`} className="sr-only">Type your message</label>
                                 <div className="flex gap-2">
                                   <input
+                                    id={`chat-input-${chat._id}`}
                                     type="text"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type your message..."
-                                    className="flex-1 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-background text-foreground placeholder:text-muted-foreground"
+                                    className="flex-1 h-11 px-4 bg-muted/50 ring-1 ring-transparent rounded-full focus:ring-ring focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all"
                                     disabled={!chat.ad?.isActive}
                                   />
                                   <button
                                     type="submit"
                                     disabled={!newMessage.trim() || !chat.ad?.isActive}
-                                    className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    aria-label="Send message"
+                                    className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                   >
                                     Send
                                   </button>
@@ -1052,18 +1088,21 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </form>
                             </div>
                           )}
-                        </div>
+                        </article>
                       ))
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
               {activeTab === "saved" && (
-                <div ref={savedContentRef} className="bg-card border border-border rounded-lg p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Saved Ads</h2>
+                <section ref={savedContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Saved flyers">
+                  <header className="mb-6">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Bookmarks</span>
+                    <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Saved Ads</h2>
+                  </header>
 
-                  <div className="grid gap-4">
+                  <div className="grid gap-3 sm:gap-4">
                     {savedAds === undefined ? (
                       // Loading state - show skeletons
                       <>
@@ -1072,56 +1111,60 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       </>
                     ) : savedAds.length === 0 ? (
                       // Empty state
-                      <div className="text-center py-12">
-                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" /></div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">No saved ads</h3>
-                        <p className="text-muted-foreground">Save ads you're interested in to view them here</p>
+                      <div className="text-center py-16">
+                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No saved ads</h3>
+                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Save ads you're interested in to view them here</p>
                       </div>
                     ) : (
                       // Loaded state - show saved ads
                       savedAds.filter(savedAd => savedAd.ad).map((savedAd) => (
-                        <div
+                        <article
                           key={savedAd._id}
                           onClick={() => setSelectedAdId(savedAd.ad!._id)}
-                          className="border border-border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:border-primary cursor-pointer group bg-card"
+                          className="ring-1 ring-border/70 rounded-2xl p-4 hover:ring-foreground/15 hover:shadow-card transition-all duration-300 cursor-pointer group bg-card"
                         >
                           <div className="flex items-start gap-4">
                             <ImageDisplay
                               src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                               alt={savedAd.ad!.title}
-                              className="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                              className="w-20 h-20 object-cover rounded-xl ring-1 ring-border/60 group-hover:scale-[1.03] transition-transform duration-300 flex-shrink-0"
                             />
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 leading-snug group-hover:text-primary transition-colors">
                                 {savedAd.ad!.title}
                               </h3>
-                              <p className="text-lg font-bold text-primary-bright mb-2">
+                              <p className="font-display text-lg font-semibold tabular-nums text-primary mb-2">
                                 {formatPriceWithCurrency(savedAd.ad!.price || 0)}
                               </p>
-                              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-2 leading-relaxed">
                                 {savedAd.ad!.description}
                               </p>
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <span>{savedAd.ad!.location}</span>
+                              <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
+                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {savedAd.ad!.location}</span>
                                 <span>{savedAd.ad!.views} views</span>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </article>
                       ))
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
               {activeTab === "profile" && (
-                <div ref={profileContentRef} className="bg-card border border-border rounded-lg p-6 shadow-sm">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Profile Settings</h2>
+                <section ref={profileContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Profile settings">
+                  <header className="mb-6">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Account</span>
+                    <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Profile Settings</h2>
+                  </header>
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-4 mb-8">
+                  <form onSubmit={handleUpdateProfile} className="space-y-5 mb-8">
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2">Name</label>
+                      <label htmlFor="profile-name-input" className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">Name</label>
                       <input
+                        id="profile-name-input"
                         type="text"
                         value={profileData.name}
                         onChange={(e) => {
@@ -1130,18 +1173,20 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           if (nameError) setNameError("");
                         }}
                         maxLength={15}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-background text-foreground placeholder:text-muted-foreground ${nameError ? 'border-destructive' : 'border-input'
+                        className={`w-full h-11 px-4 bg-muted/50 ring-1 rounded-full focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all ${nameError ? 'ring-destructive focus:ring-destructive' : 'ring-transparent focus:ring-ring'
                           }`}
                         placeholder={getDisplayName(user)}
+                        aria-invalid={nameError ? "true" : undefined}
                       />
                       {nameError && (
-                        <p className="text-sm text-destructive mt-1">{nameError}</p>
+                        <p className="text-sm text-destructive mt-2">{nameError}</p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2">Email</label>
+                      <label htmlFor="profile-email-input" className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">Email</label>
                       <input
+                        id="profile-email-input"
                         type="email"
                         value={profileData.email}
                         onChange={(e) => {
@@ -1150,31 +1195,32 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           if (emailError) setEmailError("");
                         }}
                         maxLength={50}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-background text-foreground placeholder:text-muted-foreground ${emailError ? 'border-destructive' : 'border-input'
+                        className={`w-full h-11 px-4 bg-muted/50 ring-1 rounded-full focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all ${emailError ? 'ring-destructive focus:ring-destructive' : 'ring-transparent focus:ring-ring'
                           }`}
                         placeholder={user.email || "Enter your email"}
+                        aria-invalid={emailError ? "true" : undefined}
                       />
                       {emailError && (
-                        <p className="text-sm text-destructive mt-1">{emailError}</p>
+                        <p className="text-sm text-destructive mt-2">{emailError}</p>
                       )}
                     </div>
 
                     <button
                       type="submit"
-                      className="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition-colors font-medium shadow-lg shadow-primary/20"
+                      className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                     >
                       Update Profile
                     </button>
                   </form>
 
                   {isVerificationEnabled && (
-                    <div className="border-t border-border pt-6 mb-8">
-                      <h3 className="text-lg font-semibold text-foreground mb-4">Identity Verification</h3>
-                      <div className="flex items-center justify-between bg-muted/50 p-4 rounded-lg border border-border">
-                        <div>
-                          <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <div className="border-t border-border/70 pt-6 mb-8">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-4">Identity Verification</h3>
+                      <div className="flex items-center justify-between gap-4 bg-muted/40 p-5 rounded-2xl ring-1 ring-border/60">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-display text-base font-semibold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
                             Status: {user.isVerified ? (
-                              <span className="text-primary-bright flex items-center gap-1">
+                              <span className="text-primary flex items-center gap-1">
                                 Verified
                                 <img src="/verified-badge.svg" alt="Verified" className="w-16 h-16" />
                               </span>
@@ -1182,7 +1228,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               <span className="text-muted-foreground">Unverified</span>
                             )}
                           </h4>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-prose">
                             {user.isVerified
                               ? "Your identity has been verified. A badge is displayed on your profile and flyers."
                               : "Verify your identity to build trust with other users and get a verified badge."}
@@ -1190,8 +1236,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         </div>
                         {!user.isVerified && (
                           <button
+                            type="button"
                             onClick={handleVerifyIdentity}
-                            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm font-medium shadow-sm"
+                            className="inline-flex items-center justify-center h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all flex-shrink-0"
                           >
                             Verify Identity
                           </button>
@@ -1200,27 +1247,27 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     </div>
                   )}
 
-                  <div className="border-t border-border pt-6 mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Notifications</h3>
+                  <div className="border-t border-border/70 pt-6 mb-8">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-4">Notifications</h3>
                     {user.email && (
-                      <div className="bg-muted/50 border border-border p-4 rounded-lg">
+                      <div className="bg-muted/40 ring-1 ring-border/60 p-5 rounded-2xl">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-foreground mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-display text-base font-semibold tracking-tight text-foreground mb-1">
                               Email notifications for new messages
                             </h4>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               Receive email notifications at {user.email} when you get a new message
                             </p>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0" aria-label="Toggle email notifications">
                             <input
                               type="checkbox"
                               checked={user.emailNotificationsEnabled || false}
                               onChange={(e) => handleToggleEmailNotifications(e.target.checked)}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 rounded-full peer bg-muted peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
+                            <div className="w-11 h-6 rounded-full peer bg-muted ring-1 ring-border peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 peer-focus:ring-offset-background peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:ring-1 after:ring-border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:ring-primary">
                             </div>
                           </label>
                         </div>
@@ -1228,57 +1275,63 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     )}
                   </div>
 
-                  <div className="border-t border-border pt-6">
-                    <h3 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h3>
-                    <p className="text-muted-foreground mb-4">
+                  <div className="border-t border-border/70 pt-6">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-destructive mb-4">Danger Zone</h3>
+                    <p className="text-[15px] leading-relaxed text-foreground/75 mb-4 max-w-prose">
                       Deleting your account will permanently remove all your data, including ads, messages, and saved items. This action cannot be undone.
                     </p>
                     <button
+                      type="button"
                       onClick={() => setShowAccountDeleteConfirm(true)}
-                      className="bg-destructive text-destructive-foreground px-6 py-2 rounded-lg hover:opacity-90 transition-colors font-medium shadow-lg shadow-destructive/20"
+                      className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                     >
                       Delete Account
                     </button>
                   </div>
-                </div>
+                </section>
               )}
 
               {activeTab === "archived" && (
-                <div ref={archivedContentRef} className="bg-card border border-border rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-foreground">Archived Messages</h2>
+                <section ref={archivedContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Archived messages">
+                  <header className="flex items-center justify-between gap-3 mb-6">
+                    <div>
+                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Storage</span>
+                      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Archived Messages</h2>
+                    </div>
                     {(archivedChats || []).length > 0 && (
                       <div className="flex items-center gap-2">
                         <button
+                          type="button"
                           onClick={handleSelectAllArchivedChats}
-                          className="px-3 py-1 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                          className="inline-flex items-center h-9 px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                         >
                           {selectedArchivedChats.size === (archivedChats || []).length ? 'Deselect All' : 'Select All'}
                         </button>
                         {selectedArchivedChats.size > 0 && (
                           <button
+                            type="button"
                             onClick={handleDeleteArchivedChats}
-                            className="px-3 py-1 bg-destructive/10 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
+                            className="inline-flex items-center h-9 px-3.5 rounded-full bg-destructive/10 ring-1 ring-destructive/30 text-destructive text-sm font-semibold hover:bg-destructive/20 active:scale-[0.98] transition-all"
                           >
                             Delete Selected ({selectedArchivedChats.size})
                           </button>
                         )}
                       </div>
                     )}
-                  </div>
+                  </header>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {(archivedChats || []).length === 0 ? (
-                      <div className="text-center py-12">
-                        <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-muted-foreground/30" /></div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">No archived messages</h3>
-                        <p className="text-muted-foreground">Archived conversations will appear here</p>
+                      <div className="text-center py-16">
+                        <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No archived messages</h3>
+                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Archived conversations will appear here</p>
                       </div>
                     ) : (
-                      <div>Archived chats will be displayed here</div>
+                      <div className="text-muted-foreground">Archived chats will be displayed here</div>
                     )}
                   </div>
-                </div>
+                </section>
               )}
             </div>
           </div>
@@ -1288,27 +1341,32 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       {/* Delete Flyer Confirmation Modal */}
       {showDeleteConfirm && createPortal(
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+          className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setShowDeleteConfirm(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-flyer-title"
         >
           <div
-            className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl"
+            className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-foreground mb-4">Delete Flyer</h3>
-            <p className="text-muted-foreground mb-6">
+            <h2 id="delete-flyer-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-3">Delete Flyer</h2>
+            <p className="text-[15px] leading-relaxed text-foreground/75 mb-6 max-w-prose">
               Are you sure you want to delete this flyer? This action cannot be undone.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => handleDeleteAd(showDeleteConfirm)}
-                className="flex-1 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-colors shadow-lg shadow-destructive/20"
+                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
               >
                 Delete
               </button>
@@ -1323,27 +1381,32 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       {
         showAccountDeleteConfirm && createPortal(
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+            className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
             onClick={() => setShowAccountDeleteConfirm(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
           >
             <div
-              className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover p-6 w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-semibold text-destructive mb-4">Delete Account</h3>
-              <p className="text-muted-foreground mb-6">
+              <h2 id="delete-account-title" className="font-display text-2xl font-semibold tracking-tight text-destructive mb-3">Delete Account</h2>
+              <p className="text-[15px] leading-relaxed text-foreground/75 mb-6 max-w-prose">
                 Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setShowAccountDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleDeleteAccount}
-                  className="flex-1 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-colors shadow-lg shadow-destructive/20"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                 >
                   Delete Account
                 </button>

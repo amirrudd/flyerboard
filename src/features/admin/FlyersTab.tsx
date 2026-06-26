@@ -58,29 +58,34 @@ export function FlyersTab() {
     const flyers = flyersData?.flyers || [];
 
     return (
-        <div className="space-y-6">
+        <section className="space-y-6">
             {/* Header */}
-            <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Flyer Moderation</h2>
-                <p className="text-muted-foreground">Manage and moderate all flyers on the platform</p>
-            </div>
+            <header>
+                <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">Flyer Moderation</h3>
+                <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground mb-1">All Flyers</h2>
+                <p className="text-[15px] text-muted-foreground">Manage and moderate all flyers on the platform</p>
+            </header>
 
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
+                    <label htmlFor="flyer-search" className="sr-only">Search flyers</label>
                     <input
+                        id="flyer-search"
                         type="text"
                         placeholder="Search flyers by title, description, or location..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground"
+                        className="w-full h-11 pl-10 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                     />
                 </div>
+                <label htmlFor="flyer-filter" className="sr-only">Filter flyers</label>
                 <select
+                    id="flyer-filter"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value as any)}
-                    className="px-4 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground"
+                    className="h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground"
                 >
                     <option value="all">All Flyers</option>
                     <option value="active">Active Only</option>
@@ -91,37 +96,37 @@ export function FlyersTab() {
 
             {/* Stats */}
             {flyersData && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{flyers.length}</div>
-                        <div className="text-sm text-muted-foreground">Total Flyers</div>
-                    </div>
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <article className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm p-4">
+                        <div className="font-display text-2xl font-semibold tabular-nums text-foreground">{flyers.length}</div>
+                        <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-1">Total Flyers</div>
+                    </article>
+                    <article className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm p-4">
+                        <div className="font-display text-2xl font-semibold tabular-nums text-green-600 dark:text-green-400">
                             {flyers.filter((f) => f.isActive && !f.isDeleted).length}
                         </div>
-                        <div className="text-sm text-muted-foreground">Active</div>
-                    </div>
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                        <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-1">Active</div>
+                    </article>
+                    <article className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm p-4">
+                        <div className="font-display text-2xl font-semibold tabular-nums text-yellow-600 dark:text-yellow-400">
                             {flyers.filter((f) => !f.isActive && !f.isDeleted).length}
                         </div>
-                        <div className="text-sm text-muted-foreground">Inactive</div>
-                    </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-1">Inactive</div>
+                    </article>
+                    <article className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm p-4">
+                        <div className="font-display text-2xl font-semibold tabular-nums text-destructive">
                             {flyers.filter((f) => f.isDeleted).length}
                         </div>
-                        <div className="text-sm text-muted-foreground">Deleted</div>
-                    </div>
+                        <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-1">Deleted</div>
+                    </article>
                 </div>
             )}
 
             {/* Flyers List */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {flyersData === undefined ? (
                     <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto" aria-label="Loading flyers"></div>
                     </div>
                 ) : flyers.length === 0 ? (
                     <div className="text-center py-12">
@@ -129,7 +134,7 @@ export function FlyersTab() {
                     </div>
                 ) : (
                     flyers.map((flyer) => (
-                        <div key={flyer._id} className="border border-border rounded-lg p-4 bg-card/50">
+                        <article key={flyer._id} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm p-4 transition-colors hover:ring-foreground/15">
                             <div className="flex flex-col sm:flex-row gap-4">
                                 {/* Image Preview */}
                                 <div className="flex-shrink-0">
@@ -137,11 +142,11 @@ export function FlyersTab() {
                                         <ImageDisplay
                                             imageRef={flyer.images[0]}
                                             alt={flyer.title}
-                                            className="w-full sm:w-32 h-32 object-cover rounded-lg"
+                                            className="w-full sm:w-32 h-32 object-cover rounded-2xl ring-1 ring-border/70"
                                         />
                                     ) : (
-                                        <div className="w-full sm:w-32 h-32 bg-muted rounded-lg flex items-center justify-center">
-                                            <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
+                                        <div className="w-full sm:w-32 h-32 bg-muted rounded-2xl ring-1 ring-border/70 flex items-center justify-center">
+                                            <ImageIcon className="w-8 h-8 text-muted-foreground/50" aria-hidden="true" />
                                         </div>
                                     )}
                                 </div>
@@ -150,23 +155,23 @@ export function FlyersTab() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <div>
-                                            <h3 className="font-semibold text-foreground mb-1">{flyer.title}</h3>
-                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                            <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-1">{flyer.title}</h3>
+                                            <p className="text-[15px] text-foreground/80 line-clamp-2 mb-2 leading-relaxed">
                                                 {flyer.description}
                                             </p>
-                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                <span className="font-bold text-primary-bright">{formatPrice(flyer.price ?? 0)}</span>
+                                            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                                                <span className="font-display font-semibold tabular-nums text-primary">{formatPrice(flyer.price ?? 0)}</span>
                                                 <span>📍 {flyer.location}</span>
-                                                <span>👁️ {flyer.views} views</span>
+                                                <span className="tabular-nums">👁️ {flyer.views} views</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${flyer.isDeleted
-                                                    ? "bg-destructive/10 text-destructive"
+                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ring-1 whitespace-nowrap ${flyer.isDeleted
+                                                    ? "bg-destructive/10 text-destructive ring-destructive/30"
                                                     : flyer.isActive
-                                                        ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                                        : "bg-muted text-muted-foreground"
+                                                        ? "bg-green-500/10 text-green-700 dark:text-green-400 ring-green-500/30"
+                                                        : "bg-muted text-muted-foreground ring-border"
                                                     }`}
                                             >
                                                 {flyer.isDeleted ? "Deleted" : flyer.isActive ? "Active" : "Inactive"}
@@ -183,7 +188,7 @@ export function FlyersTab() {
                                     )}
 
                                     {/* Category and Date */}
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground/60 mb-3">
+                                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground/70 mb-3 tabular-nums">
                                         {flyer.category && <span>Category: {flyer.category.name}</span>}
                                         <span>Posted {new Date(flyer._creationTime).toLocaleDateString()}</span>
                                         <span>{flyer.images.length} images</span>
@@ -193,52 +198,61 @@ export function FlyersTab() {
                                     <div className="flex flex-wrap gap-2">
                                         {flyer.images.length > 0 && (
                                             <button
+                                                type="button"
                                                 onClick={() =>
                                                     setShowImageModal({ adId: flyer._id, images: flyer.images })
                                                 }
-                                                className="px-3 py-1 border border-blue-500/30 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/10 transition-colors flex items-center gap-1"
+                                                className="h-8 px-3 inline-flex items-center gap-1 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
-                                                <Eye className="w-4 h-4" />
+                                                <Eye className="w-4 h-4" aria-hidden="true" />
                                                 Manage Images ({flyer.images.length})
                                             </button>
                                         )}
 
                                         {!flyer.isDeleted && (
                                             <button
+                                                type="button"
                                                 onClick={() => setShowDeleteConfirm(flyer._id)}
-                                                className="px-3 py-1 border border-destructive/30 text-destructive rounded-lg text-sm font-medium hover:bg-destructive/10 transition-colors flex items-center gap-1"
+                                                className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-destructive ring-1 ring-destructive/40 hover:ring-destructive hover:bg-destructive/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-4 h-4" aria-hidden="true" />
                                                 Delete Flyer
                                             </button>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     ))
                 )}
             </div>
 
             {/* Delete Flyer Confirmation Modal */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-scroll-lock">
-                    <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="text-xl font-bold text-foreground mb-2">Delete Flyer</h3>
-                        <p className="text-muted-foreground mb-6">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-flyer-title"
+                    className="fixed inset-0 bg-foreground/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-scroll-lock"
+                >
+                    <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-xl p-6 max-w-md w-full">
+                        <h2 id="delete-flyer-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">Delete Flyer</h2>
+                        <p className="text-[15px] text-foreground/80 leading-relaxed mb-6">
                             Are you sure you want to delete this flyer? This will soft-delete it and hide it from
                             public view.
                         </p>
                         <div className="flex gap-3">
                             <button
+                                type="button"
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted transition-colors"
+                                className="flex-1 h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full font-medium transition-all"
                             >
                                 Cancel
                             </button>
                             <button
+                                type="button"
                                 onClick={() => handleDeleteFlyer(showDeleteConfirm)}
-                                className="flex-1 px-4 py-2 bg-destructive text-white rounded-lg hover:opacity-90 transition-colors shadow-sm"
+                                className="flex-1 h-11 px-4 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-destructive/25 transition-all"
                             >
                                 Delete
                             </button>
@@ -250,18 +264,25 @@ export function FlyersTab() {
 
             {/* Image Management Modal */}
             {showImageModal && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-scroll-lock">
-                    <div className="bg-card border border-border rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="manage-images-title"
+                    className="fixed inset-0 bg-foreground/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-scroll-lock"
+                >
+                    <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-foreground">Manage Images</h3>
+                            <h2 id="manage-images-title" className="font-display text-2xl font-semibold tracking-tight text-foreground">Manage Images</h2>
                             <button
+                                type="button"
                                 onClick={() => setShowImageModal(null)}
-                                className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
+                                aria-label="Close"
+                                className="text-muted-foreground hover:text-foreground rounded-full p-2 hover:bg-muted/60 transition-colors"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5" aria-hidden="true" />
                             </button>
                         </div>
-                        <p className="text-muted-foreground mb-6">
+                        <p className="text-[15px] text-foreground/80 leading-relaxed mb-6">
                             Click the delete button on any image to remove it from this flyer.
                         </p>
 
@@ -271,16 +292,18 @@ export function FlyersTab() {
                                     <ImageDisplay
                                         imageRef={imageRef}
                                         alt={`Image ${index + 1}`}
-                                        className="w-full h-48 object-cover rounded-lg"
+                                        className="w-full h-48 object-cover rounded-2xl ring-1 ring-border/70"
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => handleDeleteImage(showImageModal.adId, imageRef)}
-                                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+                                        className="absolute top-2 right-2 p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 active:scale-[0.98] transition-all opacity-0 group-hover:opacity-100 shadow-sm shadow-destructive/25"
+                                        aria-label={`Delete image ${index + 1}`}
                                         title="Delete this image"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                                     </button>
-                                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    <div className="absolute bottom-2 left-2 bg-foreground/60 text-background text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full">
                                         Image {index + 1}
                                     </div>
                                 </div>
@@ -296,6 +319,6 @@ export function FlyersTab() {
                 </div>,
                 document.body
             )}
-        </div>
+        </section>
     );
 }

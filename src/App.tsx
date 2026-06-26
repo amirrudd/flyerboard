@@ -21,6 +21,7 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 export default function App() {
   const { isSessionLoading } = useSession();
@@ -97,7 +98,14 @@ export default function App() {
                     </Suspense>
                   </ErrorBoundary>
                 } />
-                {/* Add other routes as needed */}
+                {/* Catch-all: any unknown URL renders the branded 404. */}
+                <Route path="*" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <NotFoundPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
               </Route>
             </Routes>
             <Toaster />

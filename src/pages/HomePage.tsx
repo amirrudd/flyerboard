@@ -187,21 +187,26 @@ export function HomePage() {
 
 
             {/* Infinite scroll sentinel and loading states */}
-            <div className="mt-8 flex flex-col items-center">
+            <div className="mt-10 flex flex-col items-center">
               {/* Sentinel element for IntersectionObserver */}
               <div ref={loadMoreSentinelRef} className="h-4" />
 
               {/* Loading spinner when loading more */}
               {status === "LoadingMore" && (
-                <div className="py-4">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <div className="py-4 flex items-center gap-3 text-muted-foreground">
+                  <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-border border-t-primary" />
+                  <span className="kicker">Loading more</span>
                 </div>
               )}
 
               {/* End of results */}
               {status === "Exhausted" && ads && ads.length > 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">End of the Board</p>
+                <div className="text-center py-12 flex flex-col items-center gap-3 w-full max-w-xs">
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="hairline flex-1" />
+                    <span className="kicker shrink-0">End of the Board</span>
+                    <div className="hairline flex-1" />
+                  </div>
                 </div>
               )}
             </div>

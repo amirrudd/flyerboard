@@ -84,9 +84,9 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
 
     if (isLoading) {
         return (
-            <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg p-8">
+            <div className="absolute z-10 w-full mt-1 bg-card ring-1 ring-border/70 rounded-2xl shadow-lg p-8" role="status" aria-live="polite">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
                     <span className="text-sm">Loading icons...</span>
                 </div>
             </div>
@@ -95,7 +95,7 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
 
     if (error) {
         return (
-            <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg p-4">
+            <div className="absolute z-10 w-full mt-1 bg-card ring-1 ring-border/70 rounded-2xl shadow-lg p-4" role="alert">
                 <div className="text-destructive text-sm text-center">
                     Failed to load icons. Please try again.
                 </div>
@@ -104,21 +104,23 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
     }
 
     return (
-        <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg">
+        <div className="absolute z-10 w-full mt-1 bg-card ring-1 ring-border/70 rounded-2xl shadow-lg overflow-hidden">
             {/* Search Input */}
-            <div className="p-2 border-b border-border">
+            <div className="p-3 border-b border-border">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                    <label htmlFor="lucide-icon-search" className="sr-only">Search icons</label>
                     <input
+                        id="lucide-icon-search"
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search 1400+ icons..."
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-border bg-background rounded-md focus:border-primary focus:ring-1 focus:ring-primary outline-none text-foreground"
+                        className="w-full h-10 pl-10 pr-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                         autoFocus
                     />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 px-1">
+                <p className="text-xs text-muted-foreground mt-2 px-1">
                     Search by name or keyword (e.g., "car", "home", "arrow")
                 </p>
             </div>
@@ -130,7 +132,7 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
                         No icons found for "{search}"
                     </div>
                 ) : (
-                    <div className="grid grid-cols-5 gap-1 p-2">
+                    <div className="grid grid-cols-5 gap-1.5 p-3">
                         {filteredIcons.map((iconName) => {
                             const pascalName = kebabToPascal(iconName);
                             const isSelected = value === pascalName;
@@ -139,16 +141,18 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
                                     key={iconName}
                                     type="button"
                                     onClick={() => handleSelect(iconName)}
-                                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-colors ${isSelected
-                                        ? "bg-primary/20 text-primary ring-1 ring-primary"
-                                        : "hover:bg-accent text-foreground"
+                                    className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background ${isSelected
+                                        ? "bg-primary/10 text-primary ring-2 ring-primary"
+                                        : "ring-1 ring-transparent hover:bg-muted/60 hover:ring-border/60 text-foreground"
                                         }`}
                                     title={pascalName}
+                                    aria-label={pascalName}
+                                    aria-pressed={isSelected}
                                 >
                                     {/* SVG from CDN */}
                                     <img
                                         src={`${LUCIDE_CDN_BASE}/icons/${iconName}.svg`}
-                                        alt={pascalName}
+                                        alt=""
                                         className="w-5 h-5 dark:invert dark:brightness-200"
                                         loading="lazy"
                                     />
@@ -163,7 +167,7 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
             </div>
 
             {/* Footer */}
-            <div className="p-2 border-t border-border text-xs text-muted-foreground text-center">
+            <div className="p-2 border-t border-border text-xs text-muted-foreground text-center tabular-nums">
                 {filteredIcons.length} icons shown
                 {search && ` for "${search}"`}
             </div>

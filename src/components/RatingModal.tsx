@@ -81,23 +81,37 @@ export function RatingModal({
     const displayRating = hoverRating || rating;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-scroll-lock">
-            <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm modal-scroll-lock"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rating-modal-title"
+        >
+            <section className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover max-w-md w-full p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-foreground">Rate {userName}</h2>
+                <header className="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                        <p className="kicker text-muted-foreground mb-1">Leave a review</p>
+                        <h2
+                            id="rating-modal-title"
+                            className="font-display text-2xl font-semibold tracking-tight text-foreground"
+                        >
+                            Rate {userName}
+                        </h2>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-full hover:bg-accent transition-colors"
+                        aria-label="Close rating dialog"
+                        className="text-muted-foreground hover:text-foreground rounded-full p-2 hover:bg-muted/60 transition-colors"
                     >
-                        <X className="w-5 h-5 text-muted-foreground" />
+                        <X className="w-5 h-5" />
                     </button>
-                </div>
+                </header>
 
                 {/* Star Rating */}
-                <div className="mb-6">
-                    <p className="text-sm text-muted-foreground mb-3">How would you rate your experience?</p>
-                    <div className="flex gap-2 justify-center">
+                <section className="mb-6">
+                    <h3 className="kicker mb-3">How would you rate your experience?</h3>
+                    <div className="flex gap-2 justify-center" role="radiogroup" aria-label="Star rating">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
@@ -105,13 +119,15 @@ export function RatingModal({
                                 onClick={() => setRating(star)}
                                 onMouseEnter={() => setHoverRating(star)}
                                 onMouseLeave={() => setHoverRating(0)}
-                                className="transition-transform hover:scale-110 focus:outline-none"
+                                aria-label={`Rate ${star} ${star === 1 ? 'star' : 'stars'}`}
+                                aria-pressed={star <= rating}
+                                className="transition-transform hover:scale-110 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
                                 disabled={isSubmitting}
                             >
                                 <Star
                                     className={`w-10 h-10 transition-colors ${star <= displayRating
                                         ? 'text-yellow-400'
-                                        : 'text-muted'
+                                        : 'text-muted-foreground/40'
                                         }`}
                                     fill={star <= displayRating ? "currentColor" : "none"}
                                     strokeWidth={1.5}
@@ -120,7 +136,7 @@ export function RatingModal({
                         ))}
                     </div>
                     {rating > 0 && (
-                        <p className="text-center text-sm text-muted-foreground mt-2">
+                        <p className="text-center text-sm font-medium text-foreground/80 mt-3 tabular">
                             {rating === 1 && "Poor"}
                             {rating === 2 && "Fair"}
                             {rating === 3 && "Good"}
@@ -128,11 +144,11 @@ export function RatingModal({
                             {rating === 5 && "Excellent"}
                         </p>
                     )}
-                </div>
+                </section>
 
                 {/* Comment */}
-                <div className="mb-6">
-                    <label htmlFor="comment" className="block text-sm font-medium text-muted-foreground mb-2">
+                <section className="mb-6">
+                    <label htmlFor="comment" className="kicker block mb-2">
                         Comment (optional)
                     </label>
                     <textarea
@@ -144,10 +160,10 @@ export function RatingModal({
                         autoComplete="off"
                         placeholder="Share your experience..."
                         disabled={isSubmitting}
-                        className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none disabled:opacity-50 bg-background text-foreground placeholder:text-muted-foreground"
+                        className="w-full px-4 py-3 rounded-2xl bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all resize-none disabled:opacity-50 text-foreground placeholder:text-muted-foreground/70 text-[15px] leading-relaxed"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">{comment.length}/500 characters</p>
-                </div>
+                    <p className="text-xs text-muted-foreground mt-1 tabular">{comment.length}/500 characters</p>
+                </section>
 
                 {/* Actions */}
                 <div className="flex gap-3">
@@ -155,7 +171,7 @@ export function RatingModal({
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
+                        className="flex-1 h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full font-medium transition-all disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -163,7 +179,7 @@ export function RatingModal({
                         type="button"
                         onClick={handleSubmit}
                         disabled={isSubmitting || rating === 0}
-                        className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 h-11 px-4 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                         {isSubmitting ? (
                             <span className="flex items-center justify-center gap-2">
@@ -175,7 +191,7 @@ export function RatingModal({
                         )}
                     </button>
                 </div>
-            </div>
+            </section>
         </div>,
         document.body
     );

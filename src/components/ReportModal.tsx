@@ -93,38 +93,49 @@ export function ReportModal({
 
     return createPortal(
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
+            className="fixed inset-0 bg-foreground/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in modal-scroll-lock"
             onClick={handleClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-modal-title"
         >
-            <div
-                className="bg-card rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-border max-h-[90vh] overflow-y-auto"
+            <section
+                className="bg-card ring-1 ring-border/70 rounded-2xl p-7 sm:p-8 w-full max-w-md shadow-card-hover transform transition-all max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex justify-between items-start mb-6">
+                <header className="flex justify-between items-start gap-4 mb-6">
                     <div>
-                        <h2 className="text-2xl font-bold text-foreground">Report {getReportTypeLabel()}</h2>
+                        <p className="kicker text-muted-foreground mb-1">Report</p>
+                        <h2
+                            id="report-modal-title"
+                            className="font-display text-2xl font-semibold tracking-tight text-foreground"
+                        >
+                            Report {getReportTypeLabel()}
+                        </h2>
                         {reportedEntityName && (
                             <p className="text-muted-foreground text-sm mt-1">{reportedEntityName}</p>
                         )}
-                        <p className="text-muted-foreground text-sm mt-2">
+                        <p className="text-[15px] leading-relaxed text-foreground/80 mt-2 max-w-prose">
                             Help us understand what's wrong with this {getReportTypeLabel()}.
                         </p>
                     </div>
                     <button
+                        type="button"
                         onClick={handleClose}
                         disabled={isSubmitting}
-                        className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        aria-label="Close report dialog"
+                        className="text-muted-foreground hover:text-foreground rounded-full p-2 hover:bg-muted/60 transition-colors disabled:opacity-50"
                     >
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5" />
                     </button>
-                </div>
+                </header>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Reason Selection */}
                     <div>
-                        <label htmlFor="reason" className="block text-sm font-medium text-muted-foreground mb-2">
+                        <label htmlFor="reason" className="kicker block mb-2">
                             Why are you reporting this?
                         </label>
                         <select
@@ -132,7 +143,7 @@ export function ReportModal({
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             disabled={isSubmitting}
-                            className="w-full px-4 py-3 pr-10 rounded-xl bg-background border border-input focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 shadow-sm hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+                            className="w-full h-11 px-4 pr-10 rounded-full bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-card outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
                         >
                             <option value="">Select a reason...</option>
                             {REPORT_REASONS.map((r) => (
@@ -145,7 +156,7 @@ export function ReportModal({
 
                     {/* Optional Description */}
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-muted-foreground mb-2">
+                        <label htmlFor="description" className="kicker block mb-2">
                             Additional details (optional)
                         </label>
                         <textarea
@@ -157,9 +168,9 @@ export function ReportModal({
                             maxLength={500}
                             autoComplete="off"
                             placeholder="Provide any additional context that might help us review this report..."
-                            className="w-full px-4 py-3 rounded-xl bg-background border border-input focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200 shadow-sm hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed resize-none text-foreground placeholder:text-muted-foreground"
+                            className="w-full px-4 py-3 rounded-2xl bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-card outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-none text-foreground placeholder:text-muted-foreground/70 text-[15px] leading-relaxed"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">{description.length}/500 characters</p>
+                        <p className="text-xs text-muted-foreground mt-1 tabular">{description.length}/500 characters</p>
                     </div>
 
                     {/* Actions */}
@@ -168,14 +179,14 @@ export function ReportModal({
                             type="button"
                             onClick={handleClose}
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-3 rounded-xl bg-accent text-foreground font-semibold hover:bg-muted active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-11 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting || !reason}
-                            className="flex-1 px-4 py-3 rounded-xl bg-primary text-white font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            className="flex-1 h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -190,10 +201,10 @@ export function ReportModal({
                 </form>
 
                 {/* Privacy Notice */}
-                <p className="text-xs text-muted-foreground mt-4 text-center">
+                <p className="text-xs text-muted-foreground mt-4 text-center max-w-prose mx-auto">
                     Reports are reviewed by our team. False reports may result in action against your account.
                 </p>
-            </div>
+            </section>
         </div>,
         document.body
     );

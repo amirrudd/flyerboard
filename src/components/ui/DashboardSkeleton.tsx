@@ -6,7 +6,7 @@ import React from 'react';
  */
 export const UserProfileSkeleton = () => {
     return (
-        <div className="bg-card rounded-lg p-4 shadow-sm mb-6 border border-border">
+        <div className="bg-card ring-1 ring-border/70 rounded-2xl p-4 shadow-lg mb-6">
             <div className="flex items-center gap-3 mb-4">
                 {/* Avatar skeleton - matches w-12 h-12 */}
                 <div className="w-12 h-12 bg-muted rounded-full shimmer" />
@@ -54,10 +54,10 @@ export const UserProfileSkeleton = () => {
  */
 export const AdListingSkeleton = () => {
     return (
-        <div className="border border-border bg-card rounded-lg p-4">
+        <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton - matches w-20 h-20 */}
-                <div className="w-20 h-20 rounded-lg shimmer" />
+                <div className="w-20 h-20 rounded-2xl shimmer" />
 
                 <div className="flex-1">
                     {/* Title skeleton - matches font-semibold text-gray-800 mb-1 */}
@@ -76,9 +76,9 @@ export const AdListingSkeleton = () => {
 
                         {/* Action buttons skeleton - hidden on mobile */}
                         <div className="hidden md:flex items-center gap-2">
-                            <div className="h-8 w-20 rounded-lg shimmer" />
-                            <div className="h-8 w-20 rounded-lg shimmer" />
-                            <div className="h-8 w-16 rounded-lg shimmer" />
+                            <div className="h-9 w-20 rounded-full shimmer" />
+                            <div className="h-9 w-20 rounded-full shimmer" />
+                            <div className="h-9 w-16 rounded-full shimmer" />
                         </div>
                     </div>
                 </div>
@@ -93,10 +93,10 @@ export const AdListingSkeleton = () => {
  */
 export const SavedAdSkeleton = () => {
     return (
-        <div className="border border-border bg-card rounded-lg p-4">
+        <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton */}
-                <div className="w-20 h-20 rounded-lg shimmer" />
+                <div className="w-20 h-20 rounded-2xl shimmer" />
 
                 <div className="flex-1">
                     {/* Title skeleton */}
@@ -126,10 +126,10 @@ export const SavedAdSkeleton = () => {
  */
 export const ChatItemSkeleton = () => {
     return (
-        <div className="border border-border bg-card rounded-lg p-4">
+        <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-lg p-4">
             <div className="flex items-start gap-4">
                 {/* Image skeleton */}
-                <div className="w-16 h-16 rounded-lg shimmer" />
+                <div className="w-16 h-16 rounded-2xl shimmer" />
 
                 <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
@@ -145,7 +145,7 @@ export const ChatItemSkeleton = () => {
                         </div>
 
                         {/* Button skeleton */}
-                        <div className="h-8 w-24 rounded-lg shimmer" />
+                        <div className="h-9 w-24 rounded-full shimmer" />
                     </div>
 
                     {/* Message preview skeleton */}

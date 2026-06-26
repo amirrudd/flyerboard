@@ -81,12 +81,17 @@
 
     --border: 24 8% 18%;
     --input: 24 8% 18%;
-    --ring: 5 65% 42%;
+    /* Brighter ring in dark mode so focus indicators stay visible.
+       The dark --primary (5 65% 42%) only hits ~2.86:1 vs the dark
+       background and fails WCAG AA for UI components. */
+    --ring: 5 75% 60%;
     --primary-bright: 5 75% 65%;
-    /* Softer, brighter variant for text readability on dark backgrounds */
+    /* Softer, brighter variant for text readability on dark backgrounds.
+       Measured 6.22:1 vs --background and 3.36:1 vs --primary-foreground. */
 
     --shadow-color: 0 0% 0%;
   }
+
 
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
@@ -139,6 +144,20 @@
 }
 
 @layer utilities {
+
+  /* Dark mode WCAG AA contrast override: text-primary / fill-primary /
+     stroke-primary use the brighter variant so they meet 4.5:1 against
+     the dark warm background. bg-primary stays on the darker --primary
+     so the brand CTA pill keeps white-on-red at 5.78:1. */
+  .dark .text-primary {
+    color: hsl(var(--primary-bright));
+  }
+  .dark .fill-primary {
+    fill: hsl(var(--primary-bright));
+  }
+  .dark .stroke-primary {
+    stroke: hsl(var(--primary-bright));
+  }
 
   /* Safe area utilities */
   .pb-safe {

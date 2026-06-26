@@ -395,6 +395,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
+            <div className="ambient-glow">
             <motion.div {...whileInView(0)} className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
               <div className="relative aspect-video bg-muted">
                 {images.length > 0 ? (
@@ -468,6 +469,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 </div>
               )}
             </motion.div>
+            </div>
 
             {/* Ad Information */}
             <motion.div {...whileInView(0.05)} className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">

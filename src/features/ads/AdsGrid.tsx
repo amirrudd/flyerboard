@@ -157,8 +157,8 @@ export const AdsGrid = memo(function AdsGrid({
                     priority={isPriority}
                   />
 
-                  {/* Bottom-gradient overlay for badge legibility on bright images */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Warm-tint gradient — always present at rest, deepens on hover */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
 
                   {ad.images.length > 1 && (
                     <div className="absolute bottom-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular">

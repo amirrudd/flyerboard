@@ -19,6 +19,8 @@ const ROUTES = [
   { path: '/support', label: 'Support' },
   { path: '/post', label: 'Post Ad (likely auth-gated)' },
   { path: '/dashboard', label: 'Dashboard (likely auth-gated)' },
+  { path: '/admin', label: 'Admin (denied for non-admins)' },
+  { path: '/this-does-not-exist', label: '404 catch-all' },
 ];
 
 function color(s, c) {

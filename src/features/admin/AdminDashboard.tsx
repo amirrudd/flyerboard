@@ -41,20 +41,36 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     // Show access denied if not admin
     if (!isAdmin) {
         return (
-            <main className="min-h-screen bg-background flex items-center justify-center">
-                <div className="text-center">
-                    <Shield className="w-16 h-16 text-destructive mx-auto mb-4" aria-hidden="true" />
-                    <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-foreground mb-2">Access Denied</h2>
-                    <p className="text-muted-foreground mb-6 text-[15px]">You don't have permission to access this page.</p>
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="bg-primary text-primary-foreground h-11 px-6 rounded-full font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    >
-                        Go Back
-                    </button>
-                </div>
-            </main>
+            <section className="min-h-screen bg-background flex items-center justify-center py-12 pb-bottom-nav md:pb-12">
+                <article className="content-width-reading mx-auto text-center container-padding">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-destructive/[0.08] ring-1 ring-destructive/30 mb-8">
+                        <Shield className="w-9 h-9 text-destructive" strokeWidth={1.5} aria-hidden="true" />
+                    </div>
+                    <p className="kicker text-destructive mb-3">Restricted</p>
+                    <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground mb-4">
+                        Access Denied
+                    </h1>
+                    <p className="text-[15px] leading-relaxed text-foreground/80 max-w-prose mx-auto mb-10">
+                        You don't have permission to access this page. If you believe this is
+                        a mistake, get in touch with the FlyerBoard team.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                            Go Back
+                        </button>
+                        <a
+                            href="/support"
+                            className="inline-flex items-center justify-center h-11 px-5 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                            Contact support
+                        </a>
+                    </div>
+                </article>
+            </section>
         );
     }
 

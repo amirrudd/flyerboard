@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { Header } from "../features/layout/Header";
 import { ChevronLeft } from 'lucide-react';
@@ -8,6 +10,7 @@ import guidelinesContent from "../content/community-guidelines.md?raw";
 export function CommunityGuidelinesPage() {
     const { hash } = useLocation();
     const navigate = useNavigate();
+    const { whileInView } = useMotionPrefs();
 
     useEffect(() => {
         if (hash) {
@@ -42,7 +45,9 @@ export function CommunityGuidelinesPage() {
             <section className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
-                        <MarkdownContent content={guidelinesContent} />
+                        <motion.div {...whileInView()}>
+                            <MarkdownContent content={guidelinesContent} />
+                        </motion.div>
                     </article>
                 </div>
             </section>

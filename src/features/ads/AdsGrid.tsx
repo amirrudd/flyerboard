@@ -5,6 +5,7 @@ import { Search, Repeat } from "lucide-react";
 import { memo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
+import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 
 interface Ad {
   _id: Id<"ads">;
@@ -40,11 +41,6 @@ interface AdsGridProps {
   newAdIds?: Set<string>;
 }
 
-// Cap the staggered entry to the first viewport-worth of cards.
-// Anything past this gets an instant fade so paginated loads don't feel slow.
-const STAGGER_CAP = 18;
-const STAGGER_STEP = 0.028;
-
 export const AdsGrid = memo(function AdsGrid({
   ads,
   categories,
@@ -55,9 +51,17 @@ export const AdsGrid = memo(function AdsGrid({
   isLoadingMore = false,
   newAdIds = new Set(),
 }: AdsGridProps) {
+  const { staggerCard } = useMotionPrefs();
+
   const handleAdClick = useCallback((ad: Ad) => {
     onAdClick(ad);
   }, [onAdClick]);
+
+  const handleSpotlightMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--spotlight-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--spotlight-y', `${e.clientY - rect.top}px`);
+  }, []);
 
   const gridClasses = `grid gap-4 sm:gap-5 ${sidebarCollapsed
     ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
@@ -78,7 +82,7 @@ export const AdsGrid = memo(function AdsGrid({
         <div className="flex items-end justify-between gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="kicker">{headerKicker}</span>
-            <h1 className="font-display text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
+            <h1 className="font-display font-display-var text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
               {headerTitle}
             </h1>
           </div>
@@ -123,7 +127,6 @@ export const AdsGrid = memo(function AdsGrid({
           {ads.map((ad, index) => {
             const isNew = newAdIds.has(ad._id);
             const isPriority = index < 6;
-            const stagger = index < STAGGER_CAP ? index * STAGGER_STEP : 0;
             const isExchange = ad.listingType === "exchange";
 
             return (
@@ -138,14 +141,9 @@ export const AdsGrid = memo(function AdsGrid({
                     handleAdClick(ad);
                   }
                 }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: stagger,
-                  duration: 0.4,
-                  ease: [0.2, 0.8, 0.2, 1],
-                }}
-                className={`listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
+                onMouseMove={handleSpotlightMove}
+                {...staggerCard(index)}
+                className={`spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
                   isNew
                     ? 'ring-primary/40'
                     : 'ring-border/70 hover:ring-foreground/15'

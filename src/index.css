@@ -272,6 +272,53 @@
     border-radius: 14px;
   }
 
+  /* Spotlight border — cursor-tracked radial glow on listing cards */
+  .spotlight-card {
+    position: relative;
+  }
+
+  .spotlight-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(
+      circle 140px at var(--spotlight-x, -200%) var(--spotlight-y, -200%),
+      hsl(var(--primary) / 0.13),
+      transparent 65%
+    );
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .spotlight-card:hover::before {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spotlight-card::before {
+      display: none;
+    }
+  }
+
+  /* Variable-weight Fraunces hover on hero headings */
+  .font-display-var {
+    font-variation-settings: 'wght' 500;
+    transition: font-variation-settings 350ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .font-display-var:hover {
+    font-variation-settings: 'wght' 650;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .font-display-var {
+      transition: none;
+    }
+  }
+
   /* Editorial kicker label — small caps, tracked, muted */
   .kicker {
     font-family: theme("fontFamily.sans");

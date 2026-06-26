@@ -4,6 +4,8 @@ import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect, useRef } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -36,6 +38,8 @@ interface AdDetailProps {
 
 export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
+  const { whileInView } = useMotionPrefs();
+  const heartControls = useAnimation();
   const [showChat, setShowChat] = useState(false);
   const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
   const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
@@ -101,9 +105,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     try {
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
-
-      // Show notification modal only when saving (not removing)
       if (result.saved) {
+        heartControls.start({
+          scale: [1, 1.35, 0.9, 1],
+          transition: { duration: 0.3, ease: "easeOut" },
+        });
         setShowLikeNotificationModal(true);
       }
     } catch (error) {
@@ -339,16 +345,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               </button>
               {user && displayAd.userId !== user._id && (
                 <>
-                  <button
+                  <motion.button
                     onClick={handleSave}
+                    whileTap={{ scale: 0.88 }}
                     className={`p-2 rounded-lg transition-colors ${isAdSaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     title={isAdSaved ? "Remove from saved" : "Save ad"}
                   >
-                    <Heart className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} />
-                  </button>
+                    <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
+                      <Heart className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} />
+                    </motion.span>
+                  </motion.button>
                   <button
                     onClick={() => setShowReportModal(true)}
                     className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
@@ -386,7 +395,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
-            <div className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
+            <motion.div {...whileInView(0)} className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
               <div className="relative aspect-video bg-muted">
                 {images.length > 0 ? (
                   <ImageDisplay
@@ -458,10 +467,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
 
             {/* Ad Information */}
-            <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
+            <motion.div {...whileInView(0.05)} className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
               <div className="flex items-start justify-between gap-6 mb-5">
                 <div className="min-w-0 flex-1">
                   <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-3 leading-[1.1] tracking-[-0.02em]">{displayAd.title}</h1>
@@ -515,13 +524,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Map */}
-            <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
+            <motion.div {...whileInView(0.1)} className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
               <h3 className="kicker mb-4">Location</h3>
               <LocationMap location={displayAd.location} />
-            </div>
+            </motion.div>
           </div>
 
           {/* Sidebar - 30% of container width, capped at 400px - Hidden on mobile, shown on desktop */}

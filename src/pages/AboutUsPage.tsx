@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { Header } from "../features/layout/Header";
 import { ChevronLeft } from 'lucide-react';
@@ -11,6 +13,8 @@ export function AboutUsPage() {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    const { whileInView } = useMotionPrefs();
 
     return (
         <>
@@ -35,14 +39,16 @@ export function AboutUsPage() {
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
                         {/* Logo Hero */}
-                        <header className="flex justify-center mb-10">
+                        <motion.header {...whileInView()} className="flex justify-center mb-10">
                             <img
                                 src="/icons/icon-512x512.png"
                                 alt="FlyerBoard Logo"
                                 className="w-32 h-32"
                             />
-                        </header>
-                        <MarkdownContent content={aboutContent} />
+                        </motion.header>
+                        <motion.div {...whileInView(0.05)}>
+                            <MarkdownContent content={aboutContent} />
+                        </motion.div>
                     </article>
                 </div>
             </section>

@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { Header } from "../features/layout/Header";
 import { ChevronLeft } from 'lucide-react';
@@ -9,6 +11,7 @@ import privacyContent from "../content/privacy-policy.md?raw";
 export function TermsPage() {
     const { hash } = useLocation();
     const navigate = useNavigate();
+    const { whileInView } = useMotionPrefs();
 
     useEffect(() => {
         if (hash) {
@@ -44,16 +47,16 @@ export function TermsPage() {
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
 
-                        <header className="mb-10">
+                        <motion.header {...whileInView()} className="mb-10">
                             <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground">
                                 Terms & Privacy
                             </h1>
                             <p className="mt-3 text-muted-foreground text-[15px] max-w-prose">
                                 Our terms of service and how we handle your data.
                             </p>
-                        </header>
+                        </motion.header>
 
-                        <nav
+                        <motion.nav {...whileInView(0.05)}
                             aria-label="Table of contents"
                             className="bg-card ring-1 ring-border/70 rounded-2xl p-6 mb-12 shadow-sm"
                         >
@@ -78,15 +81,15 @@ export function TermsPage() {
                                     </a>
                                 </li>
                             </ul>
-                        </nav>
+                        </motion.nav>
 
-                        <section id="terms" className="mb-16 scroll-mt-24">
+                        <motion.section {...whileInView(0.05)} id="terms" className="mb-16 scroll-mt-24">
                             <MarkdownContent content={termsContent} headingShift={1} />
-                        </section>
+                        </motion.section>
 
-                        <section id="privacy" className="scroll-mt-24">
+                        <motion.section {...whileInView(0.05)} id="privacy" className="scroll-mt-24">
                             <MarkdownContent content={privacyContent} headingShift={1} />
-                        </section>
+                        </motion.section>
                     </article>
                 </div>
             </section>

@@ -2,7 +2,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { Search, Repeat } from "lucide-react";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
@@ -57,10 +57,17 @@ export const AdsGrid = memo(function AdsGrid({
     onAdClick(ad);
   }, [onAdClick]);
 
+  const rafRef = useRef<number>(0);
   const handleSpotlightMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--spotlight-x', `${e.clientX - rect.left}px`);
-    e.currentTarget.style.setProperty('--spotlight-y', `${e.clientY - rect.top}px`);
+    const el = e.currentTarget;
+    const x = e.clientX;
+    const y = e.clientY;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--spotlight-x', `${x - rect.left}px`);
+      el.style.setProperty('--spotlight-y', `${y - rect.top}px`);
+    });
   }, []);
 
   const gridClasses = `grid gap-4 sm:gap-5 ${sidebarCollapsed

@@ -3,7 +3,7 @@ import { Header } from "../layout/Header";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
@@ -64,6 +64,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const displaySaved = optimisticSaved !== null ? optimisticSaved : isAdSaved;
 
   const allCategories = useQuery(api.categories.getCategories);
+  const adCategory = useMemo(
+    () => allCategories?.find(c => c._id === displayAd?.categoryId),
+    [allCategories, displayAd?.categoryId]
+  );
   const existingChat = adContext?.existingChat;
 
   const messages = useQuery(
@@ -407,18 +411,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         {displayAd && (
           <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
             <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
-            {allCategories && displayAd.categoryId && (() => {
-              const cat = allCategories.find(c => c._id === displayAd.categoryId);
-              return cat ? (
-                <>
-                  <span>/</span>
-                  <button
-                    onClick={() => { onBack(); }}
-                    className="hover:text-foreground transition-colors"
-                  >{cat.name}</button>
-                </>
-              ) : null;
-            })()}
+            {adCategory && (
+              <>
+                <span>/</span>
+                <button onClick={onBack} className="hover:text-foreground transition-colors">
+                  {adCategory.name}
+                </button>
+              </>
+            )}
             <span>/</span>
             <span className="text-foreground/70 line-clamp-1 max-w-[180px] sm:max-w-xs">{displayAd.title}</span>
           </nav>

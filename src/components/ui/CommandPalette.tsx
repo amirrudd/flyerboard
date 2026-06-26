@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -48,14 +48,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const categories = useQuery(api.categories.getCategories);
 
-  const matchedCategories =
-    debouncedQuery && categories
-      ? categories
-          .filter((c) =>
-            c.name.toLowerCase().includes(debouncedQuery.toLowerCase())
-          )
-          .slice(0, 3)
-      : [];
+  const matchedCategories = useMemo(
+    () =>
+      debouncedQuery && categories
+        ? categories
+            .filter(c => c.name.toLowerCase().includes(debouncedQuery.toLowerCase()))
+            .slice(0, 3)
+        : [],
+    [categories, debouncedQuery]
+  );
 
   const handleSelectListing = useCallback(
     (id: string) => {

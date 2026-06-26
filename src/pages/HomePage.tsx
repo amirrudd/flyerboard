@@ -9,6 +9,7 @@ import { useSession } from "@descope/react-sdk";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AdsFilterBar } from "../features/ads/AdsFilterBar";
+import { useAdFilters } from "../hooks/useAdFilters";
 
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
@@ -46,10 +47,10 @@ export function HomePage() {
   // Use Descope session for authentication state
   const { isAuthenticated } = useSession();
 
-  // Client-side sort/filter from URL params
-  const sort = searchParams.get("sort") || "newest";
-  const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined;
-  const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
+  // Client-side sort/filter — operates on the currently-loaded page only.
+  // For large datasets (multiple paginated pages) the sort order is approximate;
+  // pushing sort/filter down to the Convex query would require backend index changes.
+  const { sort, minPrice, maxPrice } = useAdFilters();
 
   const filteredAds = useMemo(() => {
     if (!ads) return ads;

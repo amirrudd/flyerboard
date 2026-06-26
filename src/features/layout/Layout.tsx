@@ -5,11 +5,24 @@ import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
 import { useState, useEffect } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Header } from "./Header";
+import { CommandPalette } from "../../components/ui/CommandPalette";
 
 export function Layout() {
     const { isAuthenticated } = useSession();
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [isModalDismissable, setIsModalDismissable] = useState(true);
+    const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+                e.preventDefault();
+                setShowCommandPalette(prev => !prev);
+            }
+        };
+        document.addEventListener("keydown", handleKey);
+        return () => document.removeEventListener("keydown", handleKey);
+    }, []);
 
     return (
         <div className="flex flex-col h-dynamic-screen overflow-hidden pt-safe bg-background">
@@ -54,6 +67,10 @@ export function Layout() {
             )}
 
 
+            <CommandPalette
+                open={showCommandPalette}
+                onClose={() => setShowCommandPalette(false)}
+            />
         </div>
     );
 }

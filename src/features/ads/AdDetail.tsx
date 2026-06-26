@@ -60,6 +60,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const adContext = useQuery(api.adDetail.getAdWithContext, { adId });
   const ad = adContext?.ad;
   const isAdSaved = adContext?.isSaved ?? false;
+  const [optimisticSaved, setOptimisticSaved] = useState<boolean | null>(null);
+  const displaySaved = optimisticSaved !== null ? optimisticSaved : isAdSaved;
+
+  const allCategories = useQuery(api.categories.getCategories);
   const existingChat = adContext?.existingChat;
 
   const messages = useQuery(
@@ -102,6 +106,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   }, [adId]); // Only re-run if adId changes
 
   const handleSave = async () => {
+    if (!user) {
+      toast.error("Please sign in to save ads");
+      return;
+    }
+    const next = !displaySaved;
+    setOptimisticSaved(next);
     try {
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
@@ -112,8 +122,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         });
         setShowLikeNotificationModal(true);
       }
+      setOptimisticSaved(null);
     } catch (error) {
-      toast.error("Please sign in to save ads");
+      setOptimisticSaved(null);
+      toast.error("Failed to save ad");
     }
   };
 
@@ -348,14 +360,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <motion.button
                     onClick={handleSave}
                     whileTap={{ scale: 0.88 }}
-                    className={`p-2 rounded-lg transition-colors ${isAdSaved
+                    className={`p-2 rounded-lg transition-colors ${displaySaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
-                    title={isAdSaved ? "Remove from saved" : "Save ad"}
+                    title={displaySaved ? "Remove from saved" : "Save ad"}
                   >
                     <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
-                      <Heart className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} />
+                      <Heart className="w-5 h-5" fill={displaySaved ? "currentColor" : "none"} />
                     </motion.span>
                   </motion.button>
                   <button
@@ -391,6 +403,27 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       />
 
       <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
+        {/* Breadcrumbs */}
+        {displayAd && (
+          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
+            {allCategories && displayAd.categoryId && (() => {
+              const cat = allCategories.find(c => c._id === displayAd.categoryId);
+              return cat ? (
+                <>
+                  <span>/</span>
+                  <button
+                    onClick={() => { onBack(); }}
+                    className="hover:text-foreground transition-colors"
+                  >{cat.name}</button>
+                </>
+              ) : null;
+            })()}
+            <span>/</span>
+            <span className="text-foreground/70 line-clamp-1 max-w-[180px] sm:max-w-xs">{displayAd.title}</span>
+          </nav>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
@@ -660,13 +693,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       <>
                         <button
                           onClick={handleSave}
-                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${isAdSaved
+                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${displaySaved
                             ? 'bg-destructive/[0.08] text-destructive ring-1 ring-destructive/30 hover:bg-destructive/[0.12]'
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
-                          <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
-                          {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                          <Heart className="w-4 h-4" fill={displaySaved ? "currentColor" : "none"} />
+                          {displaySaved ? 'Remove from Saved' : 'Save Ad'}
                         </button>
                         <button
                           onClick={() => setShowReportModal(true)}

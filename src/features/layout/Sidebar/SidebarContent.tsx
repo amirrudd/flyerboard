@@ -130,7 +130,7 @@ export const SidebarContent = memo(function SidebarContent({
                     ))}
                 </div>
 
-                <div className="pt-4 text-[10px] tracking-wider uppercase text-muted-foreground/60 font-medium">
+                <div className="pt-4 text-[10px] tracking-wider uppercase text-muted-foreground font-medium">
                     © 2026 FlyerBoard
                 </div>
             </div>

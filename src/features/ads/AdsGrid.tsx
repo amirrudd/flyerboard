@@ -186,9 +186,9 @@ export const AdsGrid = memo(function AdsGrid({
                 </div>
 
                 <div className="px-3.5 pt-3 pb-3.5">
-                  <h3 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+                  <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
                     {ad.title}
-                  </h3>
+                  </h2>
                   <div className="mt-1 flex items-baseline justify-between gap-2">
                     <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
                       {ad.location}

@@ -15,6 +15,7 @@ export function AdsFilterBar() {
       {/* Sort */}
       <div className="relative">
         <select
+          aria-label="Sort listings"
           value={sort}
           onChange={e => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
           className="h-8 pl-3 pr-7 rounded-full bg-card ring-1 ring-border/70 text-xs font-semibold text-foreground appearance-none cursor-pointer hover:ring-foreground/20 transition-all focus:outline-none focus:ring-primary/50"

@@ -371,7 +371,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     title={displaySaved ? "Remove from saved" : "Save ad"}
                   >
                     <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
-                      <Heart className="w-5 h-5" fill={displaySaved ? "currentColor" : "none"} />
+                      <Heart className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
                     </motion.span>
                   </motion.button>
                   <button
@@ -479,7 +479,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               {/* Thumbnail strip for multiple images */}
               {images.length > 1 && (
                 <div className="px-4 py-3 bg-muted/40 border-t border-border/60">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide p-1 -m-1">
                     {images.map((image: string, index: number) => (
                       <button
                         key={index}
@@ -698,7 +698,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
-                          <Heart className="w-4 h-4" fill={displaySaved ? "currentColor" : "none"} />
+                          <Heart className="w-4 h-4" weight={displaySaved ? "fill" : "regular"} />
                           {displaySaved ? 'Remove from Saved' : 'Save Ad'}
                         </button>
                         <button

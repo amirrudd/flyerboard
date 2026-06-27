@@ -129,8 +129,7 @@ export function RatingModal({
                                         ? 'text-yellow-400'
                                         : 'text-muted-foreground/40'
                                         }`}
-                                    fill={star <= displayRating ? "currentColor" : "none"}
- weight="light"
+                                    weight={star <= displayRating ? "fill" : "light"}
                                 />
                             </button>
                         ))}

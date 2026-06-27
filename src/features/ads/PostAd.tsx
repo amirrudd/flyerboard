@@ -253,7 +253,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         setProgressPercent(20);
 
         // Keep track of existing image keys (from database)
-        // Funnel to only include images that haven't been removed by user
+        // Filter to only include images that haven't been removed by user
         const existingImageKeys = (editingAd.images || []).filter((imgKey: string) =>
           images.includes(imgKey)
         );

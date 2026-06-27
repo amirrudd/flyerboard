@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ReportModal } from "../../components/ReportModal";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
-import { Flag, CaretLeft } from '@phosphor-icons/react';
+import { CaretLeft } from '@phosphor-icons/react';
 
 interface AdMessagesProps {
   adId: Id<"ads">;
@@ -255,7 +255,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         aria-label="Send message"
                         className="h-11 px-5 sm:px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all"
                       >
-                        PaperPlane
+                        Send
                       </button>
                     </div>
                   </form>

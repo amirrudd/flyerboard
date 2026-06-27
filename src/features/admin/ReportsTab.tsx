@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
-import { Warning, CheckCircle, Clock, XCircle } from '@phosphor-icons/react';
+import { Warning, CheckCircle, Clock } from '@phosphor-icons/react';
 
 export function ReportsTab() {
     const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "reviewed" | "resolved">(
@@ -62,7 +62,7 @@ export function ReportsTab() {
             </header>
 
             {/* Filters */}
-            <nav aria-label="Funnel reports by status" className="flex gap-2 overflow-x-auto scrollbar-hide">
+            <nav aria-label="Filter reports by status" className="flex gap-2 overflow-x-auto scrollbar-hide">
                 {["all", "pending", "reviewed", "resolved"].map((status) => {
                     const isActive = filterStatus === status;
                     return (

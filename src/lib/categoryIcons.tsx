@@ -1,3 +1,9 @@
+// NOTE: This file (and LucideIconPicker.tsx) intentionally stays on lucide-react,
+// even though the rest of the app migrated to @phosphor-icons/react. Category icons
+// are stored in the DB as Lucide icon-name slugs (e.g. "Car", "Home") via the admin
+// LucideIconPicker, and getIconCdnUrl() builds lucide-static CDN URLs from them.
+// "Finishing" the migration here would require a data migration of every category's
+// stored `icon` field — don't swap these to Phosphor without that.
 import {
     Car,
     Home,

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { ChatText, Eye, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { ChatText } from '@phosphor-icons/react';
 import { formatDistanceToNow } from "date-fns";
 import { formatPrice } from "../../lib/priceFormatter";
 

@@ -12,7 +12,6 @@ import {
     CaretDown,
     X,
     Check,
-    GridFour,
 } from '@phosphor-icons/react';
 import { getCategoryIcon, iconMap, hasIcon, getIconCdnUrl } from "../../lib/categoryIcons";
 import { LucideIconPicker } from "../../components/ui/LucideIconPicker";
@@ -239,7 +238,7 @@ export function CategoriesTab() {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenEditForm(category)}
-                                                aria-label={`PencilSimple ${category.name}`}
+                                                aria-label={`Edit `}
                                                 className="h-8 w-8 inline-flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all active:scale-[0.98]"
                                                 title="Edit category"
                                             >
@@ -269,7 +268,7 @@ export function CategoriesTab() {
                 )}
             </div>
 
-            {/* Add/PencilSimple Form Modal */}
+            {/* Add/Edit Form Modal */}
             {showAddForm &&
                 createPortal(
                     <div

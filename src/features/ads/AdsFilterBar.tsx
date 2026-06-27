@@ -8,7 +8,7 @@ export function AdsFilterBar() {
     <div className="flex items-center gap-2.5 mb-5 flex-wrap">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Sliders className="w-3.5 h-3.5" />
-        <span className="kicker">Funnel</span>
+        <span className="kicker">Filter</span>
       </div>
       <div className="w-px h-4 bg-border/70" />
 

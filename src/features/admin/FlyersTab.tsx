@@ -66,11 +66,11 @@ export function FlyersTab() {
                 <p className="text-[15px] text-muted-foreground">Manage and moderate all flyers on the platform</p>
             </header>
 
-            {/* MagnifyingGlass and Filters */}
+            {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
                     <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
-                    <label htmlFor="flyer-search" className="sr-only">MagnifyingGlass flyers</label>
+                    <label htmlFor="flyer-search" className="sr-only">Search flyers</label>
                     <input
                         id="flyer-search"
                         type="text"
@@ -80,7 +80,7 @@ export function FlyersTab() {
                         className="w-full h-11 pl-10 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                     />
                 </div>
-                <label htmlFor="flyer-filter" className="sr-only">Funnel flyers</label>
+                <label htmlFor="flyer-filter" className="sr-only">Filter flyers</label>
                 <select
                     id="flyer-filter"
                     value={filterStatus}

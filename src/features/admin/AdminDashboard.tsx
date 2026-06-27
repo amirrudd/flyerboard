@@ -112,7 +112,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             />
 
             <main className="content-max-width mx-auto container-padding py-6">
-                {/* Tabs NavigationArrow */}
+                {/* Tabs Navigation */}
                 <nav
                     aria-label="Admin sections"
                     className="bg-card ring-1 ring-border/70 rounded-2xl shadow-sm mb-6 px-2 pt-2"

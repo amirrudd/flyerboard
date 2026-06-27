@@ -24,17 +24,12 @@ import {
   Heart,
   Archive,
   User,
-  Plus,
-  SignOut,
   CaretLeft,
-  Trash,
   PencilSimple,
   Eye,
   CheckCircle,
   XCircle,
   MapPin,
-  MagnifyingGlass,
-  Funnel,
   Image as ImageIcon,
   Envelope
 } from '@phosphor-icons/react';
@@ -919,7 +914,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
                                   <PencilSimple className="w-4 h-4" aria-hidden="true" />
-                                  <span className="hidden md:inline">PencilSimple</span>
+                                  <span className="hidden md:inline">Edit</span>
                                 </button>
                               </div>
                             </div>
@@ -1097,7 +1092,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     aria-label="Send message"
                                     className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                   >
-                                    PaperPlane
+                                    Send
                                   </button>
                                 </div>
                                 {!chat.ad?.isActive && (

@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, X } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 export type NotificationContext = 'post-flyer' | 'send-message' | 'like-flyer';

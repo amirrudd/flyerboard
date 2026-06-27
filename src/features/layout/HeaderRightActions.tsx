@@ -33,7 +33,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
                     onClick={onDashboardClick}
                     className="flex items-center justify-center gap-2 min-w-[140px] h-10 px-3 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    <User className="w-4 h-4"  />
+                    <User className="w-4 h-4" />
                     My Dashboard
                 </button>
             ) : (
@@ -41,7 +41,7 @@ export const HeaderRightActions = memo(function HeaderRightActions({
                     onClick={onSignInClick}
                     className="flex items-center justify-center gap-2 min-w-[140px] h-10 px-3 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    <SignIn className="w-4 h-4"  />
+                    <SignIn className="w-4 h-4" />
                     Sign In
                 </button>
             )}

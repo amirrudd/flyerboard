@@ -98,7 +98,7 @@ export function ImageLightbox({
                     />
                 </div>
 
-                {/* NavigationArrow buttons */}
+                {/* Navigation buttons */}
                 {images.length > 1 && (
                     <>
                         <button

@@ -340,7 +340,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="hidden sm:inline">Back to flyers</span>
             </button>
@@ -448,7 +448,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </div>
                 )}
 
-                {/* NavigationArrow arrows for multiple images */}
+                {/* Navigation arrows for multiple images */}
                 {images.length > 1 && (
                   <>
                     <button
@@ -679,13 +679,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <h3 className="kicker mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   {user && displayAd.userId === user._id ? (
-                    // Show PencilSimple button for own flyers
+                    // Show Edit button for own flyers
                     <button
                       onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
                       className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
                       <PencilSimple className="w-4 h-4" weight="bold" />
-                      PencilSimple Flyer
+                      Edit Flyer
                     </button>
                   ) : (
                     // Show Save and Report buttons for other users' flyers

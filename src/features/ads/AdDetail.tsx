@@ -65,8 +65,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   const allCategories = useQuery(api.categories.getCategories);
   const adCategory = useMemo(
-    () => allCategories?.find(c => c._id === displayAd?.categoryId),
-    [allCategories, displayAd?.categoryId]
+    () => Array.isArray(allCategories) ? allCategories.find(c => c._id === ad?.categoryId) : undefined,
+    [allCategories, ad?.categoryId]
   );
   const existingChat = adContext?.existingChat;
 

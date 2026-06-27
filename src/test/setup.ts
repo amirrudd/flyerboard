@@ -1,6 +1,19 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// framer-motion whileInView uses IntersectionObserver — not available in jsdom
+class MockIntersectionObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+    constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
+}
+Object.defineProperty(globalThis, 'IntersectionObserver', {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+});
+
 // Mock window.scrollTo
 Object.defineProperty(window, 'scrollTo', {
     value: vi.fn(),

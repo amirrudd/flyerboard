@@ -2,9 +2,10 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { Search, Repeat } from "lucide-react";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
+import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 
 interface Ad {
   _id: Id<"ads">;
@@ -40,11 +41,6 @@ interface AdsGridProps {
   newAdIds?: Set<string>;
 }
 
-// Cap the staggered entry to the first viewport-worth of cards.
-// Anything past this gets an instant fade so paginated loads don't feel slow.
-const STAGGER_CAP = 18;
-const STAGGER_STEP = 0.028;
-
 export const AdsGrid = memo(function AdsGrid({
   ads,
   categories,
@@ -55,9 +51,24 @@ export const AdsGrid = memo(function AdsGrid({
   isLoadingMore = false,
   newAdIds = new Set(),
 }: AdsGridProps) {
+  const { staggerCard } = useMotionPrefs();
+
   const handleAdClick = useCallback((ad: Ad) => {
     onAdClick(ad);
   }, [onAdClick]);
+
+  const rafRef = useRef<number>(0);
+  const handleSpotlightMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const el = e.currentTarget;
+    const x = e.clientX;
+    const y = e.clientY;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--spotlight-x', `${x - rect.left}px`);
+      el.style.setProperty('--spotlight-y', `${y - rect.top}px`);
+    });
+  }, []);
 
   const gridClasses = `grid gap-4 sm:gap-5 ${sidebarCollapsed
     ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
@@ -78,7 +89,7 @@ export const AdsGrid = memo(function AdsGrid({
         <div className="flex items-end justify-between gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="kicker">{headerKicker}</span>
-            <h1 className="font-display text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
+            <h1 className="font-display font-display-var text-3xl sm:text-4xl font-medium text-foreground leading-[1.05] tracking-[-0.02em]">
               {headerTitle}
             </h1>
           </div>
@@ -123,7 +134,6 @@ export const AdsGrid = memo(function AdsGrid({
           {ads.map((ad, index) => {
             const isNew = newAdIds.has(ad._id);
             const isPriority = index < 6;
-            const stagger = index < STAGGER_CAP ? index * STAGGER_STEP : 0;
             const isExchange = ad.listingType === "exchange";
 
             return (
@@ -138,14 +148,9 @@ export const AdsGrid = memo(function AdsGrid({
                     handleAdClick(ad);
                   }
                 }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: stagger,
-                  duration: 0.4,
-                  ease: [0.2, 0.8, 0.2, 1],
-                }}
-                className={`listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
+                onMouseMove={handleSpotlightMove}
+                {...staggerCard(index)}
+                className={`spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
                   isNew
                     ? 'ring-primary/40'
                     : 'ring-border/70 hover:ring-foreground/15'
@@ -159,8 +164,8 @@ export const AdsGrid = memo(function AdsGrid({
                     priority={isPriority}
                   />
 
-                  {/* Bottom-gradient overlay for badge legibility on bright images */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Warm-tint gradient — always present at rest, deepens on hover */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
 
                   {ad.images.length > 1 && (
                     <div className="absolute bottom-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular">
@@ -181,9 +186,9 @@ export const AdsGrid = memo(function AdsGrid({
                 </div>
 
                 <div className="px-3.5 pt-3 pb-3.5">
-                  <h3 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+                  <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
                     {ad.title}
-                  </h3>
+                  </h2>
                   <div className="mt-1 flex items-baseline justify-between gap-2">
                     <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
                       {ad.location}

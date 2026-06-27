@@ -3,7 +3,9 @@ import { Header } from "../layout/Header";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -36,6 +38,8 @@ interface AdDetailProps {
 
 export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
+  const { whileInView } = useMotionPrefs();
+  const heartControls = useAnimation();
   const [showChat, setShowChat] = useState(false);
   const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
   const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
@@ -56,6 +60,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const adContext = useQuery(api.adDetail.getAdWithContext, { adId });
   const ad = adContext?.ad;
   const isAdSaved = adContext?.isSaved ?? false;
+  const [optimisticSaved, setOptimisticSaved] = useState<boolean | null>(null);
+  const displaySaved = optimisticSaved !== null ? optimisticSaved : isAdSaved;
+
+  const allCategories = useQuery(api.categories.getCategories);
+  const adCategory = useMemo(
+    () => Array.isArray(allCategories) ? allCategories.find(c => c._id === ad?.categoryId) : undefined,
+    [allCategories, ad?.categoryId]
+  );
   const existingChat = adContext?.existingChat;
 
   const messages = useQuery(
@@ -98,16 +110,26 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   }, [adId]); // Only re-run if adId changes
 
   const handleSave = async () => {
+    if (!user) {
+      toast.error("Please sign in to save ads");
+      return;
+    }
+    const next = !displaySaved;
+    setOptimisticSaved(next);
     try {
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
-
-      // Show notification modal only when saving (not removing)
       if (result.saved) {
+        heartControls.start({
+          scale: [1, 1.35, 0.9, 1],
+          transition: { duration: 0.3, ease: "easeOut" },
+        });
         setShowLikeNotificationModal(true);
       }
+      setOptimisticSaved(null);
     } catch (error) {
-      toast.error("Please sign in to save ads");
+      setOptimisticSaved(null);
+      toast.error("Failed to save ad");
     }
   };
 
@@ -339,16 +361,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               </button>
               {user && displayAd.userId !== user._id && (
                 <>
-                  <button
+                  <motion.button
                     onClick={handleSave}
-                    className={`p-2 rounded-lg transition-colors ${isAdSaved
+                    whileTap={{ scale: 0.88 }}
+                    className={`p-2 rounded-lg transition-colors ${displaySaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
-                    title={isAdSaved ? "Remove from saved" : "Save ad"}
+                    title={displaySaved ? "Remove from saved" : "Save ad"}
                   >
-                    <Heart className="w-5 h-5" fill={isAdSaved ? "currentColor" : "none"} />
-                  </button>
+                    <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
+                      <Heart className="w-5 h-5" fill={displaySaved ? "currentColor" : "none"} />
+                    </motion.span>
+                  </motion.button>
                   <button
                     onClick={() => setShowReportModal(true)}
                     className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
@@ -382,11 +407,29 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       />
 
       <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
+        {/* Breadcrumbs */}
+        {displayAd && (
+          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
+            {adCategory && (
+              <>
+                <span>/</span>
+                <button onClick={onBack} className="hover:text-foreground transition-colors">
+                  {adCategory.name}
+                </button>
+              </>
+            )}
+            <span>/</span>
+            <span className="text-foreground/70 line-clamp-1 max-w-[180px] sm:max-w-xs">{displayAd.title}</span>
+          </nav>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content - 70% of container width */}
           <div className="lg:w-[70%] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
-            <div className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
+            <div className="ambient-glow">
+            <motion.div {...whileInView(0)} className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
               <div className="relative aspect-video bg-muted">
                 {images.length > 0 ? (
                   <ImageDisplay
@@ -458,10 +501,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </div>
                 </div>
               )}
+            </motion.div>
             </div>
 
             {/* Ad Information */}
-            <div className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
+            <motion.div {...whileInView(0.05)} className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
               <div className="flex items-start justify-between gap-6 mb-5">
                 <div className="min-w-0 flex-1">
                   <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-3 leading-[1.1] tracking-[-0.02em]">{displayAd.title}</h1>
@@ -515,13 +559,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Map */}
-            <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
+            <motion.div {...whileInView(0.1)} className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
               <h3 className="kicker mb-4">Location</h3>
               <LocationMap location={displayAd.location} />
-            </div>
+            </motion.div>
           </div>
 
           {/* Sidebar - 30% of container width, capped at 400px - Hidden on mobile, shown on desktop */}
@@ -649,13 +693,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       <>
                         <button
                           onClick={handleSave}
-                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${isAdSaved
+                          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${displaySaved
                             ? 'bg-destructive/[0.08] text-destructive ring-1 ring-destructive/30 hover:bg-destructive/[0.12]'
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
-                          <Heart className="w-4 h-4" fill={isAdSaved ? "currentColor" : "none"} />
-                          {isAdSaved ? 'Remove from Saved' : 'Save Ad'}
+                          <Heart className="w-4 h-4" fill={displaySaved ? "currentColor" : "none"} />
+                          {displaySaved ? 'Remove from Saved' : 'Save Ad'}
                         </button>
                         <button
                           onClick={() => setShowReportModal(true)}

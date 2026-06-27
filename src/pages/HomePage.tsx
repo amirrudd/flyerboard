@@ -7,7 +7,9 @@ import { AdsGrid } from "../features/ads/AdsGrid";
 import { useSession } from "@descope/react-sdk";
 // AuthModal removed, using global one from Layout
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { AdsFilterBar } from "../features/ads/AdsFilterBar";
+import { useAdFilters } from "../hooks/useAdFilters";
 
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
@@ -44,6 +46,21 @@ export function HomePage() {
 
   // Use Descope session for authentication state
   const { isAuthenticated } = useSession();
+
+  // Client-side sort/filter — operates on the currently-loaded page only.
+  // For large datasets (multiple paginated pages) the sort order is approximate;
+  // pushing sort/filter down to the Convex query would require backend index changes.
+  const { sort, minPrice, maxPrice } = useAdFilters();
+
+  const filteredAds = useMemo(() => {
+    if (!ads) return ads;
+    let result = [...ads];
+    if (minPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price >= minPrice);
+    if (maxPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price <= maxPrice);
+    if (sort === "price_asc") result.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    if (sort === "price_desc") result.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
+    return result;
+  }, [ads, sort, minPrice, maxPrice]);
   // For now, just use a simple user object when authenticated
   // TODO: Fetch actual user data from Convex once Descope integration is complete
   const user = isAuthenticated ? { name: "User" } : null;
@@ -174,8 +191,9 @@ export function HomePage() {
 
           {/* Main Content - Feed */}
           <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0 min-h-[600px]">
+            <AdsFilterBar />
             <AdsGrid
-              ads={ads}
+              ads={filteredAds}
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}

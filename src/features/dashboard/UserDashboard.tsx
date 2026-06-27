@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -42,6 +44,19 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 
 // Feature flags removed - now using database-driven flags
 
+function CountUp({ value, reduced }: { value: number; reduced: boolean }) {
+  const motionValue = useMotionValue(reduced ? value : 0);
+  const rounded = useTransform(motionValue, Math.round);
+
+  useEffect(() => {
+    if (reduced) return;
+    const controls = animate(motionValue, value, { duration: 0.7, ease: "easeOut" });
+    return controls.stop;
+  }, [value, reduced]);
+
+  return <motion.span>{rounded}</motion.span>;
+}
+
 interface UserDashboardProps {
   onBack: () => void;
   onPostAd: () => void;
@@ -50,6 +65,7 @@ interface UserDashboardProps {
 
 export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps) {
   const navigate = useNavigate();
+  const { whileInView, reduced } = useMotionPrefs();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
   const { isMobile } = useDeviceInfo();
@@ -610,7 +626,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               {!convexUser || userStats === undefined ? (
                 <UserProfileSkeleton />
               ) : (
-                <section className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-5 mb-6" aria-label="Your profile summary">
+                <motion.section {...whileInView()} className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-5 mb-6" aria-label="Your profile summary">
                   <input
                     ref={profileImageInputRef}
                     type="file"
@@ -666,11 +682,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   <div className="grid grid-cols-2 gap-4 mb-5">
                     <div className="text-center">
-                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">{userStats!.totalAds}</div>
+                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">
+                        <CountUp value={userStats!.totalAds} reduced={reduced} />
+                      </div>
                       <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Ads</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">{userStats!.totalViews}</div>
+                      <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">
+                        <CountUp value={userStats!.totalViews} reduced={reduced} />
+                      </div>
                       <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Views</div>
                     </div>
                   </div>
@@ -683,7 +703,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       showCount={true}
                     />
                   </div>
-                </section>
+                </motion.section>
               )}
 
               <nav className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-4 hidden md:block" aria-label="Dashboard sections">

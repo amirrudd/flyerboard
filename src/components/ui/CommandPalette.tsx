@@ -87,11 +87,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
-      <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50" aria-hidden="true" onMouseDown={onClose} />
 
       <motion.div
         className="relative w-full max-w-xl bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover overflow-hidden"

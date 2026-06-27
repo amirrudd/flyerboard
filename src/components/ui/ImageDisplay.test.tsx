@@ -44,8 +44,8 @@ vi.mock('react-lazy-load-image-component', () => ({
     },
 }));
 
-// Mock lucide-react
-vi.mock('lucide-react', () => ({
+// Mock @phosphor-icons/react
+vi.mock('@phosphor-icons/react', () => ({
     Image: ({ className }: any) => <div data-testid="image-placeholder-icon" className={className} />,
 }));
 

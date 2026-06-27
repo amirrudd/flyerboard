@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ReportModal } from "../../components/ReportModal";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
-import { Flag, ChevronLeft } from "lucide-react";
+import { Flag, CaretLeft } from '@phosphor-icons/react';
 
 interface AdMessagesProps {
   adId: Id<"ads">;
@@ -110,7 +110,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               aria-label="Back"
               className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <CaretLeft className="w-5 h-5" />
               <span className="hidden sm:inline text-sm font-medium">Back to flyers</span>
             </button>
             <h1 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-foreground truncate mx-2">Messages for "{ad.title}"</h1>
@@ -255,7 +255,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                         aria-label="Send message"
                         className="h-11 px-5 sm:px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all"
                       >
-                        Send
+                        PaperPlane
                       </button>
                     </div>
                   </form>

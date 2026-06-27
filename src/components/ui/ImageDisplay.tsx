@@ -3,7 +3,7 @@ import { api } from "../../../convex/_generated/api";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
 import { useState, useEffect } from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon } from '@phosphor-icons/react';
 
 interface ImageDisplayProps {
   // New prop (preferred)

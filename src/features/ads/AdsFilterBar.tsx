@@ -1,4 +1,4 @@
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Sliders, CaretDown } from '@phosphor-icons/react';
 import { useAdFilters } from "../../hooks/useAdFilters";
 
 export function AdsFilterBar() {
@@ -7,8 +7,8 @@ export function AdsFilterBar() {
   return (
     <div className="flex items-center gap-2.5 mb-5 flex-wrap">
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={2} />
-        <span className="kicker">Filter</span>
+        <Sliders className="w-3.5 h-3.5" />
+        <span className="kicker">Funnel</span>
       </div>
       <div className="w-px h-4 bg-border/70" />
 
@@ -24,7 +24,7 @@ export function AdsFilterBar() {
           <option value="price_asc">Price: Low → High</option>
           <option value="price_desc">Price: High → Low</option>
         </select>
-        <ChevronDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+        <CaretDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
       </div>
 
       {/* Price range */}

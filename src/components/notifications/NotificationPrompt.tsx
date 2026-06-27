@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X } from '@phosphor-icons/react';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useSession } from '@descope/react-sdk';
 

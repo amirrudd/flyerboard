@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../../lib/priceFormatter";
 
@@ -98,7 +98,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <MagnifyingGlass className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             type="text"

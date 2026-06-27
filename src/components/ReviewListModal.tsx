@@ -2,7 +2,7 @@ import { createPortal } from "react-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { X, MessageSquare, Loader2 } from "lucide-react";
+import { X, ChatText, CircleNotch } from '@phosphor-icons/react';
 import { StarRating } from "./ui/StarRating";
 import { ImageDisplay } from "./ui/ImageDisplay";
 import { formatDistanceToNow } from "date-fns";
@@ -68,14 +68,14 @@ export function ReviewListModal({
                     {ratings === undefined ? (
                         // Loading state
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                            <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" />
+                            <CircleNotch className="w-8 h-8 animate-spin mb-3 text-primary" />
                             <p>Loading reviews...</p>
                         </div>
                     ) : ratings.length === 0 ? (
                         // Empty state
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <div className="w-16 h-16 bg-muted/60 ring-1 ring-border/70 rounded-full flex items-center justify-center mb-4">
-                                <MessageSquare className="w-8 h-8 text-muted-foreground/40" />
+                                <ChatText className="w-8 h-8 text-muted-foreground/40" />
                             </div>
                             <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-1">No reviews yet</h3>
                             <p className="text-[15px] leading-relaxed text-foreground/80 max-w-xs mx-auto">

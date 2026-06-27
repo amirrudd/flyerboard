@@ -16,7 +16,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil, Repeat, MessageCircle } from "lucide-react";
+import { Flag, CaretLeft, ShareNetwork, Heart, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
@@ -193,7 +193,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back to flyers</span>
               </button>
             </div>
@@ -205,7 +205,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         />
         <div className="content-max-width mx-auto container-padding py-12 text-center">
           <div className="bg-card ring-1 ring-border/70 rounded-2xl p-12 shadow-card max-w-lg mx-auto">
-            <Frown className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" strokeWidth={1.5} />
+            <SmileySad className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" weight="light" />
             <h2 className="font-display text-3xl font-semibold text-foreground mb-2 tracking-tight">Ad Not Found</h2>
             <p className="text-muted-foreground mb-6">This ad may have been deleted or removed.</p>
             <button
@@ -241,7 +241,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back to flyers</span>
               </button>
               <span className="font-display text-xl font-semibold text-foreground tracking-tight">Loading...</span>
@@ -340,7 +340,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
               <span className="hidden sm:inline">Back to flyers</span>
             </button>
@@ -357,7 +357,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
               >
-                <Share2 className="w-5 h-5" />
+                <ShareNetwork className="w-5 h-5" />
               </button>
               {user && displayAd.userId !== user._id && (
                 <>
@@ -448,7 +448,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </div>
                 )}
 
-                {/* Navigation arrows for multiple images */}
+                {/* NavigationArrow arrows for multiple images */}
                 {images.length > 1 && (
                   <>
                     <button
@@ -456,14 +456,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       aria-label="Previous image"
                       className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronLeft className="w-4 h-4" strokeWidth={2.25} />
+                      <CaretLeft className="w-4 h-4" weight="bold" />
                     </button>
                     <button
                       onClick={nextImage}
                       aria-label="Next image"
                       className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronRight className="w-4 h-4" strokeWidth={2.25} />
+                      <CaretRight className="w-4 h-4" weight="bold" />
                     </button>
                   </>
                 )}
@@ -515,7 +515,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   )}
                   {displayAd.listingType === "exchange" && (
                     <p className="font-display text-3xl font-semibold text-primary-bright flex items-center gap-2 leading-none">
-                      <Repeat className="w-6 h-6" strokeWidth={2.25} />
+                      <Repeat className="w-6 h-6" weight="bold" />
                       Open to Trade
                     </p>
                   )}
@@ -541,7 +541,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <div className="mb-6 p-5 bg-primary/[0.06] rounded-2xl ring-1 ring-primary/20 relative overflow-hidden">
                   <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-primary rounded-r-full" aria-hidden />
                   <h3 className="kicker text-primary mb-2 flex items-center gap-1.5">
-                    <Repeat className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    <Repeat className="w-3.5 h-3.5" weight="bold" />
                     Looking for
                   </h3>
                   <p className="text-foreground/90 leading-relaxed">{displayAd.exchangeDescription}</p>
@@ -555,7 +555,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-border/60 pt-4">
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-primary" strokeWidth={2} />
+                  <MapPin className="w-4 h-4 text-primary" />
                   <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
@@ -667,7 +667,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         aria-label="Send message"
                         className="bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25"
                       >
-                        <Send className="w-4 h-4" strokeWidth={2.25} />
+                        <PaperPlane className="w-4 h-4" weight="bold" />
                       </button>
                     </div>
                   </div>
@@ -679,13 +679,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <h3 className="kicker mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   {user && displayAd.userId === user._id ? (
-                    // Show Edit button for own flyers
+                    // Show PencilSimple button for own flyers
                     <button
                       onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
                       className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
-                      <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                      Edit Flyer
+                      <PencilSimple className="w-4 h-4" weight="bold" />
+                      PencilSimple Flyer
                     </button>
                   ) : (
                     // Show Save and Report buttons for other users' flyers
@@ -705,7 +705,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           onClick={() => setShowReportModal(true)}
                           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                         >
-                          <Flag className="w-4 h-4" strokeWidth={2} />
+                          <Flag className="w-4 h-4" />
                           Report Flyer
                         </button>
                       </>
@@ -715,7 +715,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     onClick={handleShare}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                   >
-                    <Share2 className="w-4 h-4" strokeWidth={2} />
+                    <ShareNetwork className="w-4 h-4" />
                     Share Flyer
                   </button>
                 </div>
@@ -757,7 +757,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}
             title="Message Seller"
           >
-            <MessageCircle className="w-6 h-6" />
+            <ChatCircle className="w-6 h-6" />
           </button>
         </div>,
         document.body
@@ -789,7 +789,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               }}
               className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 flex items-center justify-center gap-2"
             >
-              <MessageCircle className="w-5 h-5" />
+              <ChatCircle className="w-5 h-5" />
               Message Seller
             </button>
             <button
@@ -852,7 +852,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               aria-label="Send message"
               className="bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25 flex-shrink-0"
             >
-              <Send className="w-4 h-4" strokeWidth={2.25} />
+              <PaperPlane className="w-4 h-4" weight="bold" />
             </button>
           </div>
         </div>

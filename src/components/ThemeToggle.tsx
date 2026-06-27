@@ -1,4 +1,4 @@
-import { Moon, Sun, Laptop } from "lucide-react";
+import { Moon, Sun, Laptop } from '@phosphor-icons/react';
 import { useTheme } from "./ThemeProvider";
 import { useState, useRef, useEffect } from "react";
 

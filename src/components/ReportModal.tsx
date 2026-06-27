@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
-import { X, Loader2 } from "lucide-react";
+import { X, CircleNotch } from '@phosphor-icons/react';
 
 interface ReportModalProps {
     isOpen: boolean;
@@ -190,7 +190,7 @@ export function ReportModal({
                         >
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <CircleNotch className="w-4 h-4 animate-spin" />
                                     Submitting...
                                 </span>
                             ) : (

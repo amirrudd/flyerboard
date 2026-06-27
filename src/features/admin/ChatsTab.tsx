@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { MessageSquare, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { ChatText, Eye, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { formatDistanceToNow } from "date-fns";
 import { formatPrice } from "../../lib/priceFormatter";
 
@@ -28,7 +28,7 @@ export function ChatsTab() {
             {/* Info Box */}
             <aside className="bg-blue-500/10 ring-1 ring-blue-500/20 rounded-2xl p-4">
                 <div className="flex gap-3">
-                    <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <ChatText className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                         <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-blue-700 dark:text-blue-300 mb-1">Chat Monitoring</h3>
                         <p className="text-sm text-blue-700 dark:text-blue-300/80 leading-relaxed">
@@ -167,7 +167,7 @@ export function ChatsTab() {
             {/* Empty State */}
             {!expandedChatId && (
                 <div className="text-center py-12 ring-2 ring-dashed ring-border rounded-2xl bg-card/10">
-                    <MessageSquare className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" aria-hidden="true" />
+                    <ChatText className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" aria-hidden="true" />
                     <p className="text-muted-foreground">Enter a Chat ID above to view the conversation</p>
                 </div>
             )}

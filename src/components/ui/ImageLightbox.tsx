@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { ImageDisplay } from "./ImageDisplay";
 import { useEffect } from "react";
 
@@ -98,7 +98,7 @@ export function ImageLightbox({
                     />
                 </div>
 
-                {/* Navigation buttons */}
+                {/* NavigationArrow buttons */}
                 {images.length > 1 && (
                     <>
                         <button
@@ -107,7 +107,7 @@ export function ImageLightbox({
                             className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-lg border border-white/20 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Previous image"
                         >
-                            <ChevronLeft className="w-6 h-6" />
+                            <CaretLeft className="w-6 h-6" />
                         </button>
                         <button
                             onClick={handleNext}
@@ -115,7 +115,7 @@ export function ImageLightbox({
                             className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-lg border border-white/20 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Next image"
                         >
-                            <ChevronRight className="w-6 h-6" />
+                            <CaretRight className="w-6 h-6" />
                         </button>
                     </>
                 )}

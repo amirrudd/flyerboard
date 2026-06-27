@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 
 interface StarRatingProps {
     rating: number; // 0-5, supports 0.5 increments

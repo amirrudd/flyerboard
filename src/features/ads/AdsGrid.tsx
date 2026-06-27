@@ -1,7 +1,7 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
-import { Search, Repeat } from "lucide-react";
+import { MagnifyingGlass, Repeat } from '@phosphor-icons/react';
 import { memo, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
@@ -179,7 +179,7 @@ export const AdsGrid = memo(function AdsGrid({
                   )}
                   {isExchange && !isNew && (
                     <div className="absolute top-2.5 left-2.5 bg-background/85 backdrop-blur-sm text-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1 shadow-sm ring-1 ring-border">
-                      <Repeat className="w-3 h-3" strokeWidth={2.25} />
+                      <Repeat className="w-3 h-3" weight="bold" />
                       Trade
                     </div>
                   )}
@@ -206,7 +206,7 @@ export const AdsGrid = memo(function AdsGrid({
                       )}
                       {ad.listingType === "exchange" && (
                         <p className="text-[13px] font-semibold text-primary-bright whitespace-nowrap flex items-center gap-1 leading-none">
-                          <Repeat className="w-3.5 h-3.5" strokeWidth={2.25} />
+                          <Repeat className="w-3.5 h-3.5" weight="bold" />
                           Open to Trade
                         </p>
                       )}
@@ -240,7 +240,7 @@ export const AdsGrid = memo(function AdsGrid({
       {!isLoading && ads && ads.length === 0 && (
         <div className="text-center py-24 sm:py-32">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/60 ring-1 ring-border/60 mb-6">
-            <Search className="w-9 h-9 text-muted-foreground/60" strokeWidth={1.5} />
+            <MagnifyingGlass className="w-9 h-9 text-muted-foreground/60" weight="light" />
           </div>
           <h3 className="font-display text-2xl sm:text-3xl font-medium text-foreground mb-2 tracking-tight">
             No Flyers Found

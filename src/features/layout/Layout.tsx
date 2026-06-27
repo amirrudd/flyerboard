@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
 import { useState, useEffect } from "react";
 import { useSession } from "@descope/react-sdk";

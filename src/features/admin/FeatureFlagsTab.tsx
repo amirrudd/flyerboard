@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useState } from "react";
-import { ToggleLeft, ToggleRight, Plus, Trash2, Flag } from "lucide-react";
+import { ToggleLeft, ToggleRight, Plus, Trash, Flag } from '@phosphor-icons/react';
 
 // Default flags to seed when the tab is first opened
 const DEFAULT_FLAGS = [
@@ -240,7 +240,7 @@ export function FeatureFlagsTab() {
                                     className="w-10 h-10 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-[0.98]"
                                     title="Delete flag"
                                 >
-                                    <Trash2 className="w-5 h-5" aria-hidden="true" />
+                                    <Trash className="w-5 h-5" aria-hidden="true" />
                                 </button>
                             </div>
                         </article>

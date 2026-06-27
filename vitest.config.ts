@@ -16,7 +16,7 @@ export default defineConfig({
         alias: {
             '@': path.resolve(__dirname, './src'),
         },
-        exclude: ['**/node_modules/**', '**/e2e/**'],
+        exclude: ['**/node_modules/**', '**/e2e/**', '**/.claude/worktrees/**'],
         coverage: {
             exclude: [
                 'convex/**',

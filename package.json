@@ -21,6 +21,7 @@
     "@convex-dev/r2": "^0.10.2",
     "@convex-dev/resend": "^0.2.5",
     "@descope/react-sdk": "^2.29.5",
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/js-cookie": "^3.0.6",
     "@vercel/speed-insights": "^2.0.0",

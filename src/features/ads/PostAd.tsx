@@ -10,7 +10,7 @@ import { searchLocations, formatLocation, LocationData } from "../../lib/locatio
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
-import { ChevronLeft, Trash2, ChevronDown, Loader2, AlertTriangle, DollarSign, Repeat, Handshake } from "lucide-react";
+import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 interface ImageState {
@@ -253,7 +253,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
         setProgressPercent(20);
 
         // Keep track of existing image keys (from database)
-        // Filter to only include images that haven't been removed by user
+        // Funnel to only include images that haven't been removed by user
         const existingImageKeys = (editingAd.images || []).filter((imgKey: string) =>
           images.includes(imgKey)
         );
@@ -398,7 +398,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
             aria-label="Back"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors rounded-full px-3 h-10 hover:bg-muted/60 active:scale-[0.98]"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <CaretLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back</span>
           </button>
         }
@@ -416,7 +416,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               className="flex items-center gap-2 text-destructive hover:bg-destructive/10 transition-colors font-medium rounded-full px-3 h-10 ring-1 ring-destructive/30 hover:ring-destructive/60 active:scale-[0.98] disabled:opacity-60"
               disabled={isSubmitting}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash className="w-4 h-4" />
               <span className="hidden sm:inline">Delete</span>
             </button>
           ) : (
@@ -486,7 +486,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                       ) : (
                         <span className="text-muted-foreground/70">Select a category</span>
                       )}
-                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                      <CaretDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showCategoryDropdown && (
@@ -561,7 +561,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                   className="inline-flex w-full md:w-auto p-1 rounded-full bg-muted/50 ring-1 ring-border/70"
                 >
                   {[
-                    { value: "sale", label: "For Sale", icon: DollarSign },
+                    { value: "sale", label: "For Sale", icon: CurrencyDollar },
                     { value: "exchange", label: "Exchange", icon: Repeat },
                     { value: "both", label: "Both", icon: Handshake },
                   ].map(({ value, label, icon: Icon }) => {
@@ -709,7 +709,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
                 />
                 {isSearchingLocation && (
                   <div className="absolute right-4 top-[42px]">
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    <CircleNotch className="w-4 h-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
 
@@ -770,7 +770,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start gap-4 mb-4">
               <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-destructive" />
+                <Warning className="w-6 h-6 text-destructive" />
               </div>
               <div className="flex-1">
                 <h3 id="delete-flyer-title" className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">

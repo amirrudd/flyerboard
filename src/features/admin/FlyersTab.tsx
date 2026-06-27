@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
-import { Search, Trash2, Eye, X, Image as ImageIcon } from "lucide-react";
+import { MagnifyingGlass, Trash, Eye, X, Image as ImageIcon } from '@phosphor-icons/react';
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { formatPrice } from "../../lib/priceFormatter";
 
@@ -66,11 +66,11 @@ export function FlyersTab() {
                 <p className="text-[15px] text-muted-foreground">Manage and moderate all flyers on the platform</p>
             </header>
 
-            {/* Search and Filters */}
+            {/* MagnifyingGlass and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
-                    <label htmlFor="flyer-search" className="sr-only">Search flyers</label>
+                    <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
+                    <label htmlFor="flyer-search" className="sr-only">MagnifyingGlass flyers</label>
                     <input
                         id="flyer-search"
                         type="text"
@@ -80,7 +80,7 @@ export function FlyersTab() {
                         className="w-full h-11 pl-10 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                     />
                 </div>
-                <label htmlFor="flyer-filter" className="sr-only">Filter flyers</label>
+                <label htmlFor="flyer-filter" className="sr-only">Funnel flyers</label>
                 <select
                     id="flyer-filter"
                     value={filterStatus}
@@ -215,7 +215,7 @@ export function FlyersTab() {
                                                 onClick={() => setShowDeleteConfirm(flyer._id)}
                                                 className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-destructive ring-1 ring-destructive/40 hover:ring-destructive hover:bg-destructive/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
-                                                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                <Trash className="w-4 h-4" aria-hidden="true" />
                                                 Delete Flyer
                                             </button>
                                         )}
@@ -301,7 +301,7 @@ export function FlyersTab() {
                                         aria-label={`Delete image ${index + 1}`}
                                         title="Delete this image"
                                     >
-                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                        <Trash className="w-4 h-4" aria-hidden="true" />
                                     </button>
                                     <div className="absolute bottom-2 left-2 bg-foreground/60 text-background text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full">
                                         Image {index + 1}

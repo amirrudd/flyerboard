@@ -5,16 +5,16 @@ import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
 import {
-    Search,
-    UserCheck,
-    UserX,
-    Trash2,
+    MagnifyingGlass,
+    UserCircleCheck,
+    UserMinus,
+    Trash,
     Shield,
     ShieldCheck,
     Eye,
-    ChevronDown,
-    ChevronUp,
-} from "lucide-react";
+    CaretDown,
+    CaretUp,
+} from '@phosphor-icons/react';
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { StarRating } from "../../components/ui/StarRating";
@@ -80,11 +80,11 @@ export function UsersTab() {
                 <p className="text-[15px] text-muted-foreground">Manage user accounts, verification, and access</p>
             </header>
 
-            {/* Search and Filters */}
+            {/* MagnifyingGlass and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
-                    <label htmlFor="user-search" className="sr-only">Search users</label>
+                    <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" aria-hidden="true" />
+                    <label htmlFor="user-search" className="sr-only">MagnifyingGlass users</label>
                     <input
                         id="user-search"
                         type="text"
@@ -94,7 +94,7 @@ export function UsersTab() {
                         className="w-full h-11 pl-10 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                     />
                 </div>
-                <label htmlFor="user-filter" className="sr-only">Filter users</label>
+                <label htmlFor="user-filter" className="sr-only">Funnel users</label>
                 <select
                     id="user-filter"
                     value={filterStatus}
@@ -226,9 +226,9 @@ export function UsersTab() {
                                                 <Eye className="w-4 h-4" aria-hidden="true" />
                                                 Details
                                                 {expandedUserId === user._id ? (
-                                                    <ChevronUp className="w-4 h-4" aria-hidden="true" />
+                                                    <CaretUp className="w-4 h-4" aria-hidden="true" />
                                                 ) : (
-                                                    <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                                                    <CaretDown className="w-4 h-4" aria-hidden="true" />
                                                 )}
                                             </button>
 
@@ -244,12 +244,12 @@ export function UsersTab() {
                                                     >
                                                         {user.isActive === false ? (
                                                             <>
-                                                                <UserCheck className="w-4 h-4" aria-hidden="true" />
+                                                                <UserCircleCheck className="w-4 h-4" aria-hidden="true" />
                                                                 Activate
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <UserX className="w-4 h-4" aria-hidden="true" />
+                                                                <UserMinus className="w-4 h-4" aria-hidden="true" />
                                                                 Deactivate
                                                             </>
                                                         )}
@@ -272,7 +272,7 @@ export function UsersTab() {
                                                         onClick={() => setShowDeleteConfirm(user._id)}
                                                         className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-destructive ring-1 ring-destructive/40 hover:ring-destructive hover:bg-destructive/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                                     >
-                                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                        <Trash className="w-4 h-4" aria-hidden="true" />
                                                         Delete
                                                     </button>
                                                 </>

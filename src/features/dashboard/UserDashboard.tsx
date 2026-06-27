@@ -19,25 +19,25 @@ import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
-  LayoutDashboard,
-  MessageSquare,
+  SquaresFour,
+  ChatText,
   Heart,
   Archive,
   User,
   Plus,
-  LogOut,
-  ChevronLeft,
-  Trash2,
-  Edit,
+  SignOut,
+  CaretLeft,
+  Trash,
+  PencilSimple,
   Eye,
   CheckCircle,
   XCircle,
   MapPin,
-  Search,
-  Filter,
+  MagnifyingGlass,
+  Funnel,
   Image as ImageIcon,
-  Mail
-} from "lucide-react";
+  Envelope
+} from '@phosphor-icons/react';
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -594,7 +594,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               aria-label="Back"
               className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <CaretLeft className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">back</span>
             </button>
           }
@@ -673,7 +673,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           aria-label="Edit profile"
                           className="ml-auto w-8 h-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.95] transition-all flex items-center justify-center"
                         >
-                          <Edit className="w-4 h-4" />
+                          <PencilSimple className="w-4 h-4" />
                         </button>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{user.email}</p>
@@ -710,11 +710,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 <span className="block px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sections</span>
                 <ul className="space-y-1">
                   {[
-                    { id: "ads", label: "My Flyers", icon: LayoutDashboard },
+                    { id: "ads", label: "My Flyers", icon: SquaresFour },
                     {
                       id: "chats",
                       label: "Messages",
-                      icon: MessageSquare,
+                      icon: ChatText,
                       badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                     },
                     { id: "saved", label: "Saved Flyers", icon: Heart },
@@ -765,7 +765,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 <section className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-5 mb-6" aria-label="Email setup">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <Mail className="w-5 h-5" aria-hidden="true" />
+                      <Envelope className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Stay in the loop</span>
@@ -817,7 +817,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : userAds.length === 0 ? (
                       // Empty state
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><LayoutDashboard className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><SquaresFour className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No Flyers Yet</h3>
                         <p className="text-[15px] text-muted-foreground mb-5 max-w-prose mx-auto">Start by pinning your first flyer</p>
                         <button
@@ -889,7 +889,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   aria-label="Messages"
                                   className="relative inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
-                                  <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                                  <ChatText className="w-4 h-4" aria-hidden="true" />
                                   <span className="hidden md:inline">Messages</span>
                                   {unreadCounts && unreadCounts[ad._id] > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold tabular-nums shadow-sm">
@@ -918,8 +918,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   aria-label="Edit"
                                   className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 >
-                                  <Edit className="w-4 h-4" aria-hidden="true" />
-                                  <span className="hidden md:inline">Edit</span>
+                                  <PencilSimple className="w-4 h-4" aria-hidden="true" />
+                                  <span className="hidden md:inline">PencilSimple</span>
                                 </button>
                               </div>
                             </div>
@@ -949,7 +949,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : buyerChats.length === 0 ? (
                       // Empty state
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><MessageSquare className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No messages yet</h3>
                         <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Start a conversation by messaging sellers on flyers you're interested in</p>
                       </div>
@@ -1097,7 +1097,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     aria-label="Send message"
                                     className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                   >
-                                    Send
+                                    PaperPlane
                                   </button>
                                 </div>
                                 {!chat.ad?.isActive && (
@@ -1132,7 +1132,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : savedAds.length === 0 ? (
                       // Empty state
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No saved ads</h3>
                         <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Save ads you're interested in to view them here</p>
                       </div>
@@ -1343,7 +1343,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <div className="space-y-3">
                     {(archivedChats || []).length === 0 ? (
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No archived messages</h3>
                         <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Archived conversations will appear here</p>
                       </div>

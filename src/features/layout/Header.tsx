@@ -1,7 +1,7 @@
 import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
 import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
-import { Menu, MapPin, ChevronDown, Loader2, Navigation, Search } from "lucide-react";
+import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass } from "@phosphor-icons/react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
@@ -171,11 +171,11 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
         disabled={isDetectingLocation}
         title={compact ? (selectedLocation || "All Locations") : undefined}
       >
-        <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4 text-primary"} strokeWidth={2} />
+        <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4 text-primary"} />
         {!compact && (
           <>
             <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} strokeWidth={2.25} />
+            <CaretDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} weight="bold" />
           </>
         )}
       </button>
@@ -196,7 +196,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           <div className="max-h-60 overflow-y-auto py-1">
             {isSearching ? (
               <div className="px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <CircleNotch className="w-4 h-4 animate-spin" />
                 Searching...
               </div>
             ) : suggestions.length > 0 ? (
@@ -236,9 +236,9 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
               className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
             >
               {isDetectingLocation ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <CircleNotch className="w-4 h-4 animate-spin" />
               ) : (
-                <Navigation className="w-4 h-4" />
+                <NavigationArrow className="w-4 h-4" />
               )}
               Detect my location
             </button>
@@ -339,7 +339,7 @@ const MobileHeader = memo(function MobileHeader({
             className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors"
             title={sidebarCollapsed ? "Open menu" : "Close menu"}
           >
-            <Menu className="w-6 h-6 text-foreground/70" />
+            <List className="w-6 h-6 text-foreground/70" />
           </button>
           <button
             type="button"
@@ -379,7 +379,7 @@ const MobileHeader = memo(function MobileHeader({
                 className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors flex-shrink-0"
                 title="Search"
               >
-                <Search className="w-5 h-5 text-foreground/70" />
+                <MagnifyingGlass className="w-5 h-5 text-foreground/70" />
               </button>
             </>
           )}
@@ -398,7 +398,7 @@ const MobileHeader = memo(function MobileHeader({
               onChange={handleSearchChange}
               className="w-full h-11 pl-11 pr-4 text-sm bg-muted/60 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" strokeWidth={2.25} />
+            <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" weight="bold" />
           </form>
         </div>
       )}
@@ -480,7 +480,7 @@ export const Header = memo(function Header({
                   onChange={handleSearchChange}
                   className="w-full h-10 pl-10 pr-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                 />
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" strokeWidth={2.25} />
+                <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" weight="bold" />
               </form>
             )}
           </div>

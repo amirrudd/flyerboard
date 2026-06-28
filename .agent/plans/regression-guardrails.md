@@ -56,11 +56,24 @@ not just add ESLint.** This was masking 40 real errors (now fixed — see below)
   `getDescopeUserId`/`requireAdmin`. Print file:line, never auto-edit.
 - Optional PostToolUse hook (match `Edit|Write`, only `convex/.*\.ts`), advisory only (always exit 0).
 
-## Phase 3 — Close CI / lint gaps
-- Add `"lint:eslint": "eslint ."`; prepend `eslint .` to the `lint` script.
-- Harden `build.yml`: add `npx eslint .` and `npm run build`. Keep `convex dev --once` OUT of CI
-  unless `CONVEX_DEPLOY_KEY` secret exists.
-- Make `build.yml` required to merge (branch protection on `main`) — only after it's green.
+## Phase 3 — Close CI / lint gaps  ✅ DONE (2026-06-28)
+- `lint` script now `eslint . && tsc -p convex && tsc -b && convex dev --once && vite build`
+  (was no-op `tsc -p .`); added `lint:eslint`.
+- `build.yml` now runs `eslint .` + `tsc -p convex` + `tsc -b` + tests + `npm run build`.
+  `convex dev --once` kept OUT of CI (needs CONVEX_DEPLOY_KEY).
+- Branch protection on `main` (amirrudd/flyerboard): requires the `build` status check,
+  blocks force-push/deletions (`enforce_admins:false`, no required reviews — solo founder).
+- **ESLint cleanup: fixed all 141 errors** (62 misused-promises, 42 floating-promises,
+  22 type-assertion, misc) across 50 files via 7 parallel agents; eslint config switched to
+  `projectService` + ignores (coverage, configs, e2e, .agent, .claude). 73 warn-level warnings
+  remain (unused-vars, exhaustive-deps) — non-blocking by design.
+- Verified: eslint 0 errors · tsc -p convex 0 · tsc -b 0 · 312/312 tests pass.
+- Canonical fix for testing-library element casts: generic `getByX<HTMLInputElement>(...)`,
+  NOT deleting `as HTMLInputElement` (deletion breaks `.value`/`.maxLength`).
+
+## Phases 2 & 4 — still TODO
+- Phase 2: Convex invariant auditor (soft-delete + auth-on-mutation grep tripwire).
+- Phase 4: critical-path smoke tests (navigation, soft-delete, auth-gate).
 
 ## Phase 4 — Critical-path smoke tests (auth, navigation, DB)
 - Navigation smoke (Playwright, COPY `e2e/layout.spec.ts`): visit each top-level route in

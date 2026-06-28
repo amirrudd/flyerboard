@@ -354,7 +354,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             <div className="flex items-center gap-2">
               <button
                 onClick={handleShare}
-                className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
               >
                 <ShareNetwork className="w-5 h-5" />
@@ -364,7 +364,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <motion.button
                     onClick={handleSave}
                     whileTap={{ scale: 0.88 }}
-                    className={`p-2 rounded-lg transition-colors ${displaySaved
+                    className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
@@ -376,7 +376,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </motion.button>
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
+                    className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
                     title="Report flyer"
                   >
                     <Flag className="w-5 h-5" />

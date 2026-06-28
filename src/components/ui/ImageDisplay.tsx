@@ -17,9 +17,15 @@ interface ImageDisplayProps {
   onError?: () => void;
   onClick?: () => void;
   priority?: boolean; // For above-the-fold images (first 6)
+  // When true, off-ratio images are shown in full (object-contain) on top of a
+  // blurred, scaled copy of themselves so the box is always filled — no empty
+  // letterbox bars and no cropping. Opt-in; used by the browse grid.
+  // NOTE: this renders an `absolute inset-0` layer, so the PARENT must be
+  // positioned (e.g. `relative`). AdsGrid's `aspect-[4/3] relative` box provides it.
+  backdrop?: boolean;
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "", onError, onClick, priority = false }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError, onClick, priority = false, backdrop = false }: ImageDisplayProps) {
   const [hasError, setHasError] = useState(false);
 
   // Use imageRef if provided, otherwise fall back to src
@@ -62,14 +68,16 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
     );
   }
 
-  // Show actual image - no wrapper, matching skeleton structure
-  return (
+  // The resolved image element, shared by the plain and backdrop render paths.
+  // In backdrop mode the wrapper owns positioning and the parent div owns the
+  // click target, so onClick lives on the wrapper there instead of the image.
+  const image = (
     <LazyLoadImage
       src={displaySrc}
       alt={alt}
       className={className}
-      wrapperClassName={className}
-      onClick={onClick}
+      wrapperClassName={backdrop ? "absolute inset-0 z-[1]" : className}
+      onClick={backdrop ? undefined : onClick}
       effect="opacity"
       threshold={300}
       visibleByDefault={priority}
@@ -79,4 +87,25 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
       }
     />
   );
+
+  // Blurred backdrop fill: the contained image over a blurred, scaled copy of
+  // itself. Same URL, so the browser serves the backdrop from cache. Fills any
+  // aspect ratio without cropping the subject. Requires a positioned parent.
+  if (backdrop) {
+    return (
+      <div className="absolute inset-0 overflow-hidden" onClick={onClick}>
+        <img
+          src={displaySrc}
+          alt=""
+          aria-hidden="true"
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80"
+        />
+        {image}
+      </div>
+    );
+  }
+
+  return image;
 }

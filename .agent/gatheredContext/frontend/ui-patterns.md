@@ -1,6 +1,14 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-05-09
+**Last Updated**: 2026-06-28
+
+## Thumbnail fill: blurred backdrop (2026-06-28)
+The shared `ImageDisplay` (`src/components/ui/ImageDisplay.tsx`) has an opt-in `backdrop` prop. When true it renders the image `object-contain` (never cropped) on top of a blurred, `scale-110 blur-2xl opacity-80 object-cover` copy of itself inside an `absolute inset-0` container. This fills any aspect-ratio box with no empty letterbox bars and no cropping — used by the browse grid (`AdsGrid.tsx`, the `aspect-[4/3]` box).
+- **Why over plain `object-cover`**: marketplace photos vary wildly in ratio; cover-crop would chop tall flyers / wide panoramas in the thumbnail.
+- **Why over plain `object-contain` (previous default)**: contain left grey `bg-muted/60` bars that made the grid look uneven.
+- **Scope**: opt-in only — detail page and dashboard keep plain `object-contain` (full fidelity). Do not enable globally.
+- **Parent must be positioned** (`relative`): the backdrop renders an `absolute inset-0` layer. `AdsGrid`'s `aspect-[4/3] relative` box satisfies this; any new caller must too.
+- The blurred layer reuses the already-resolved `displaySrc` (same URL, browser-cached, ~free). Loading/error states unchanged.
 
 ## Known a11y debt (2026-05-09 audit, F8 — deferred)
 - `RatingModal` (`src/components/RatingModal.tsx`) and `BottomSheet` (`src/components/ui/BottomSheet.tsx`) are portal-rendered overlays without `role="dialog"`. Add `role="dialog"`, `aria-modal="true"`, and `aria-labelledby`/`aria-describedby` references when next touching them.

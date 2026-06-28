@@ -73,11 +73,11 @@ describe('Phosphor migration guards', () => {
       const content = readFileSync(file, 'utf8');
       const locals = phosphorLocalNames(content);
       if (locals.size === 0) continue;
+      // Precompile one pattern per imported icon (not per line) — these only depend on the name.
+      const fillRes = [...locals].map((name) => new RegExp(`<${name}\\b[^>]*\\bfill=`));
       content.split('\n').forEach((line, i) => {
-        for (const name of locals) {
-          if (new RegExp(`<${name}\\b[^>]*\\bfill=`).test(line)) {
-            offenders.push(`${rel(file)}:${i + 1}  ${line.trim()}`);
-          }
+        if (fillRes.some((re) => re.test(line))) {
+          offenders.push(`${rel(file)}:${i + 1}  ${line.trim()}`);
         }
       });
     }
@@ -97,6 +97,13 @@ describe('Phosphor migration guards', () => {
     'DeviceMobile', 'SquaresFour', 'GridFour', 'CircleNotch', 'CaretLeft', 'CaretRight',
     'CaretUp', 'CaretDown', 'SignIn', 'SignOut', 'Funnel',
   ];
+  // Precompile each token's three position patterns once, not per line × per file.
+  const FORBIDDEN_PATTERNS = FORBIDDEN_IN_STRINGS.map((token) => ({
+    attr: new RegExp(`(aria-label|placeholder|title)\\s*=\\s*\\{?\\s*[\`"'][^\`"'}]*\\b${token}\\b`),
+    jsx: new RegExp(`>\\s*${token}\\b`),
+    standalone: new RegExp(`^${token}\\b`),
+  }));
+  const PLAIN_TEXT = /^[A-Za-z][A-Za-z ]*$/;
 
   it('never leaks a Phosphor icon name into visible text, aria-label, placeholder, or title', () => {
     const offenders: string[] = [];
@@ -104,14 +111,9 @@ describe('Phosphor migration guards', () => {
       const lines = withoutImports(readFileSync(file, 'utf8')).split('\n');
       lines.forEach((line, i) => {
         const trimmed = line.trim();
-        for (const token of FORBIDDEN_IN_STRINGS) {
-          const inAttr = new RegExp(
-            `(aria-label|placeholder|title)\\s*=\\s*\\{?\\s*[\`"'][^\`"'}]*\\b${token}\\b`,
-          ).test(line);
-          const inJsxText = new RegExp(`>\\s*${token}\\b`).test(line);
-          const standaloneText =
-            /^[A-Za-z][A-Za-z ]*$/.test(trimmed) && new RegExp(`^${token}\\b`).test(trimmed);
-          if (inAttr || inJsxText || standaloneText) {
+        const isPlainText = PLAIN_TEXT.test(trimmed);
+        for (const { attr, jsx, standalone } of FORBIDDEN_PATTERNS) {
+          if (attr.test(line) || jsx.test(line) || (isPlainText && standalone.test(trimmed))) {
             offenders.push(`${rel(file)}:${i + 1}  ${trimmed.slice(0, 90)}`);
           }
         }

@@ -121,10 +121,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
       if (result.saved) {
-        heartControls.start({
-          scale: [1, 1.35, 0.9, 1],
-          transition: { duration: 0.3, ease: "easeOut" },
-        });
+        if (!reduced) {
+          heartControls.start({
+            scale: [1, 1.35, 0.9, 1],
+            transition: { duration: 0.3, ease: "easeOut" },
+          });
+        }
         setShowLikeNotificationModal(true);
       }
       setOptimisticSaved(null);
@@ -138,6 +140,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     const shareUrl = `${window.location.origin}/ad/${adId}`;
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Link to flyer copied to clipboard");
+    if (!reduced) {
+      shareControls.start({
+        scale: [1, 1.18, 0.96, 1],
+        transition: { duration: 0.32, ease: "easeOut" },
+      });
+    }
   };
 
   const handleStartChat = async () => {
@@ -354,15 +362,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-2">
               <motion.button
-                onClick={async () => {
-                  await handleShare();
-                  if (!reduced) {
-                    shareControls.start({
-                      scale: [1, 1.18, 0.96, 1],
-                      transition: { duration: 0.32, ease: "easeOut" },
-                    });
-                  }
-                }}
+                onClick={handleShare}
                 whileTap={{ scale: 0.9 }}
                 className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
@@ -598,7 +598,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   {user && displayAd.userId !== user._id && (
                     <button
                       onClick={() => setShowReportProfileModal(true)}
-                      className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="inline-flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                       title="Report seller"
                     >
                       <Flag className="w-4 h-4" />

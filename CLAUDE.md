@@ -35,7 +35,7 @@ FlyerBoard is a classified marketplace web app (ads = "flyers"). The repo also c
 
 - `npm run dev` — Runs frontend (`vite --open`) and backend (`convex dev`) in parallel via `npm-run-all`. Always use this for development; `convex dev` regenerates `convex/_generated/`.
 - `npm run build` — Vite production build only.
-- `npm run lint` — Full validation: `tsc -p convex` → `tsc -p .` → `convex dev --once` (regenerates types) → `vite build`. Run this before claiming a task complete; it's the closest thing to CI.
+- `npm run lint` — Full validation: `eslint .` → `tsc -p convex` → `tsc -b` → `convex dev --once` (regenerates types) → `vite build`. Run this before claiming a task complete; it's the closest thing to CI. Note: `tsc -p .` is a no-op (root tsconfig is references-only); the frontend is type-checked via `tsc -b`.
 - `npm test` — Vitest in watch mode. `npm run coverage` for one-shot with coverage. Run a single file: `npx vitest run path/to/file.test.ts`. A single test: `npx vitest run -t "test name"`.
 - `npm run test:visual` — Playwright (E2E + visual snapshots). `test:visual:update` to regenerate snapshots. Auto-starts `dev:frontend` on port 5173.
 

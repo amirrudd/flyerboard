@@ -374,8 +374,9 @@ or 6 based on whether you want to feel premium (5) or *be* premium (6).
 ## Tooling notes for the next session
 
 - **Dev server**: `npm run dev` from repo root (`/Users/amir.rudd/flyerBoard/FlyerBoard`).
-- **Verify a change**: `npx tsc -p . --noEmit && npx vitest run`. The
-  test suite has 312 tests across 36 files and runs in ~4s.
+- **Verify a change**: `npx tsc -b && npx vitest run`. (`tsc -p .` is a no-op —
+  root tsconfig is references-only; use `tsc -b` for the frontend.) The
+  test suite runs in ~4s.
 - **DOM audit**: `node scripts/dom-audit.mjs` — Playwright probe that
   walks 9 routes and reports landmarks / headings / nested interactives
   / accessible names. Used after every visual change.

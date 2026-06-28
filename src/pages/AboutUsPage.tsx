@@ -48,8 +48,8 @@ export function AboutUsPage() {
                             <div className="p-1.5 bg-muted/40 ring-1 ring-border/60 rounded-[1.75rem]">
                                 <div className="rounded-[calc(1.75rem-0.375rem)] overflow-hidden aspect-[4/3] bg-muted/60 relative">
                                     <img
-                                        src="https://picsum.photos/seed/flyerboard/800/600"
-                                        alt="FlyerBoard community"
+                                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Flinders_St_Station_Melbourne._%2820484830004%29.jpg/960px-Flinders_St_Station_Melbourne._%2820484830004%29.jpg"
+                                        alt="Flinders Street Station, Melbourne"
                                         className="w-full h-full object-cover"
                                         loading="eager"
                                     />
@@ -84,7 +84,7 @@ export function AboutUsPage() {
                     <div className="hairline mb-10" />
 
                     {/* Body */}
-                    <motion.article {...whileInView(0.05)} className="content-width-reading mx-auto pb-4">
+                    <motion.article {...whileInView(0.05)} className="max-w-[1120px] mx-auto pb-4">
                         <MarkdownContent content={aboutContent} />
                     </motion.article>
                 </div>

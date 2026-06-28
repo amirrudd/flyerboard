@@ -1,15 +1,15 @@
 import { useSearchParams } from "react-router-dom";
 import { useCallback } from "react";
 
-export type SortOption = "newest" | "price_asc" | "price_desc";
-
+// Note: there is intentionally no "sort" option. The feed is always newest-first
+// (the product's "pin to top" model depends on it), so the only filter we offer
+// is a price range — it narrows results without ever reordering them.
 export function useAdFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const sort = (searchParams.get("sort") || "newest") as SortOption;
   const minPrice = Number(searchParams.get("minPrice")) || undefined;
   const maxPrice = Number(searchParams.get("maxPrice")) || undefined;
-  const hasActiveFilters = sort !== "newest" || minPrice !== undefined || maxPrice !== undefined;
+  const hasActiveFilters = minPrice !== undefined || maxPrice !== undefined;
 
   const setParam = useCallback(
     (key: string, value: string) => {
@@ -23,11 +23,10 @@ export function useAdFilters() {
 
   const clearFilters = useCallback(() => {
     const next = new URLSearchParams(searchParams);
-    next.delete("sort");
     next.delete("minPrice");
     next.delete("maxPrice");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  return { sort, minPrice, maxPrice, hasActiveFilters, setParam, clearFilters };
+  return { minPrice, maxPrice, hasActiveFilters, setParam, clearFilters };
 }

@@ -22,7 +22,8 @@ export const clearAndCreateSampleData = mutation({
     }
 
     // Try to get authenticated user, but don't require it for sample data
-    let currentUserId = await getAuthUserId(ctx);
+    const _currentUserId = await getAuthUserId(ctx);
+    void _currentUserId;
 
     // Create multiple sample users for realistic test data
     const sampleUsers = [

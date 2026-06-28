@@ -213,7 +213,7 @@ describe('AdMessages', () => {
             chatButton.click();
 
             // Wait for messages to render
-            waitFor(() => {
+            void waitFor(() => {
                 const messageElements = container.querySelectorAll('.text-sm.whitespace-pre-wrap');
                 expect(messageElements[0]).toHaveTextContent('First message');
                 expect(messageElements[1]).toHaveTextContent('Second message');
@@ -234,7 +234,7 @@ describe('AdMessages', () => {
             const chatButton = screen.getByText('Test Buyer');
             chatButton.click();
 
-            waitFor(() => {
+            void waitFor(() => {
                 // Check outer container has overflow-y-auto for scrolling
                 const scrollContainer = container.querySelector('.overflow-y-auto');
                 expect(scrollContainer).toBeInTheDocument();
@@ -261,7 +261,7 @@ describe('AdMessages', () => {
             const chatButton = screen.getByText('Test Buyer');
             chatButton.click();
 
-            waitFor(() => {
+            void waitFor(() => {
                 // The ref div should be the last child of the message wrapper
                 const messageWrapper = container.querySelector('.min-h-full.justify-end');
                 const lastChild = messageWrapper?.lastElementChild;
@@ -286,7 +286,7 @@ describe('AdMessages', () => {
             const chatButton = screen.getByText('Test Buyer');
             chatButton.click();
 
-            waitFor(() => {
+            void waitFor(() => {
                 const scrollContainer = container.querySelector('.overflow-y-auto');
                 const style = scrollContainer?.getAttribute('style');
 
@@ -322,7 +322,7 @@ describe('AdMessages', () => {
             const chatButton = screen.getByText('Test Buyer');
             chatButton.click();
 
-            waitFor(() => {
+            void waitFor(() => {
                 const messageContainers = container.querySelectorAll('.flex.justify-end, .flex.justify-start');
 
                 // First message (from buyer) should be left-aligned
@@ -347,7 +347,7 @@ describe('AdMessages', () => {
             const chatButton = screen.getByText('Test Buyer');
             chatButton.click();
 
-            waitFor(() => {
+            void waitFor(() => {
                 const messageBubbles = container.querySelectorAll('.rounded-lg');
 
                 // Buyer message should have white background with border

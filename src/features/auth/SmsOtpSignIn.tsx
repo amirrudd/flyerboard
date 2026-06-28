@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { DeviceMobile, ArrowRight, CircleNotch, ArrowLeft, User } from '@phosphor-icons/react';
 import { useDescope } from "@descope/react-sdk";
 import { Link } from "react-router-dom";
-import { useMutation, useConvex } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { logDebug, logError } from "../../lib/logger";
 import {
@@ -32,13 +32,13 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
     const nameInputRef = useRef<HTMLInputElement | null>(null);
 
     const sdk = useDescope();
-    const convex = useConvex();
     const syncDescopeUser = useMutation(api.descopeAuth.syncDescopeUser);
 
     // Initialize timer state from localStorage
     useEffect(() => {
         if (phoneNumber) {
             const remaining = getTimerState(phoneNumber);
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing remaining time from localStorage when phoneNumber changes
             setRemainingTime(remaining);
         }
     }, [phoneNumber]);
@@ -308,6 +308,9 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
     const stepSubClass =
         "text-xs sm:text-sm text-muted-foreground leading-relaxed";
 
+    // Step 3 back button is intentionally disabled - user must complete name collection
+    const showStep3BackButton = false;
+
     return (
         <section className="w-full relative">
             {/* Back button - positioned to align with close button in parent */}
@@ -322,7 +325,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 </button>
             )}
             {/* Step 3 has no back button - user must complete name collection */}
-            {step === 3 && false && (
+            {step === 3 && showStep3BackButton && (
                 <button
                     type="button"
                     onClick={handleBackToOtp}
@@ -334,7 +337,16 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
             )}
 
             <form
-                onSubmit={step === 1 ? (e) => { e.preventDefault(); handleSendOtp(); } : step === 2 ? handleVerifyOtp : handleCompleteSignup}
+                onSubmit={(e) => {
+                    if (step === 1) {
+                        e.preventDefault();
+                        void handleSendOtp();
+                    } else if (step === 2) {
+                        void handleVerifyOtp(e);
+                    } else {
+                        void handleCompleteSignup(e);
+                    }
+                }}
                 className="flex flex-col gap-3"
             >
                 {/* Sliding content container - needs overflow hidden for the slide effect */}
@@ -448,7 +460,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                             <div className="text-center">
                                 <button
                                     type="button"
-                                    onClick={handleResendCode}
+                                    onClick={() => { void handleResendCode(); }}
                                     disabled={remainingTime > 0 || isSendingOtp}
                                     className="text-sm text-primary font-medium hover:underline underline-offset-2 disabled:text-muted-foreground disabled:no-underline disabled:cursor-not-allowed transition-colors tabular-nums"
                                 >
@@ -500,7 +512,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         value={userName}
                                         onChange={(e) => {
                                             // Only allow letters (including accented), spaces, hyphens, apostrophes, and periods
-                                            const value = e.target.value.replace(/[^a-zA-ZÀ-ſ\s'-\.]/g, '');
+                                            const value = e.target.value.replace(/[^a-zA-ZÀ-ſ\s'-.]/g, '');
                                             setUserName(value);
                                         }}
                                         required={step === 3}

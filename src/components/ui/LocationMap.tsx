@@ -105,7 +105,7 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
         };
 
         if (location) {
-            geocodeLocation();
+            void geocodeLocation();
         }
     }, [location]);
 

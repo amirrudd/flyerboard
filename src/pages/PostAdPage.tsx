@@ -13,7 +13,7 @@ export function PostAdPage() {
 
     useEffect(() => {
         if (!isSessionLoading && !isAuthenticated) {
-            navigate('/', { replace: true });
+            void navigate('/', { replace: true });
         }
     }, [isAuthenticated, isSessionLoading, navigate]);
 
@@ -25,10 +25,10 @@ export function PostAdPage() {
         // If posting from dashboard, navigate back to dashboard
         // Otherwise navigate to home to see the newly posted flyer
         if (from === '/dashboard') {
-            navigate('/dashboard');
+            void navigate('/dashboard');
         } else {
             // Pass forceRefresh flag to trigger immediate refresh on home page
-            navigate('/', { state: { forceRefresh: true } });
+            void navigate('/', { state: { forceRefresh: true } });
         }
     };
 

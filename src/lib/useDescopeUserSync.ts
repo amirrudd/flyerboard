@@ -42,6 +42,7 @@ export function useDescopeUserSync() {
                 hasPhone: !!user.phone,
             });
 
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- marking sync-in-progress before kicking off the external Convex sync mutation triggered by an auth-state change
             setSyncState(prev => ({ ...prev, isSyncing: true }));
 
             // Await the sync to ensure user exists in database before marking as synced

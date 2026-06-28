@@ -236,7 +236,7 @@ export function UsersTab() {
                                                 <>
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleToggleStatus(user._id)}
+                                                        onClick={() => { void handleToggleStatus(user._id); }}
                                                         className={`h-8 px-3 inline-flex items-center gap-1 ring-1 rounded-full text-sm font-medium transition-all active:scale-[0.98] ${user.isActive === false
                                                             ? "bg-transparent text-green-700 dark:text-green-400 ring-green-500/40 hover:ring-green-500 hover:bg-green-500/[0.06]"
                                                             : "bg-transparent text-destructive ring-destructive/40 hover:ring-destructive hover:bg-destructive/[0.06]"
@@ -257,7 +257,7 @@ export function UsersTab() {
 
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleToggleVerification(user._id)}
+                                                        onClick={() => { void handleToggleVerification(user._id); }}
                                                         className={`h-8 px-3 inline-flex items-center gap-1 ring-1 rounded-full text-sm font-medium transition-all active:scale-[0.98] ${user.isVerified
                                                             ? "bg-muted/40 text-foreground ring-border hover:bg-muted/70 hover:ring-foreground/15"
                                                             : "bg-transparent text-purple-700 dark:text-purple-400 ring-purple-500/40 hover:ring-purple-500 hover:bg-purple-500/[0.06]"
@@ -381,7 +381,7 @@ export function UsersTab() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleDeleteUser(showDeleteConfirm)}
+                                onClick={() => { void handleDeleteUser(showDeleteConfirm); }}
                                 className="flex-1 h-11 px-4 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-destructive/25 transition-all"
                             >
                                 Delete

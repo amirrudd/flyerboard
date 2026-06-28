@@ -26,7 +26,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
 
     const handleAuthGuard = (path: string) => {
         if (user) {
-            navigate(path);
+            void navigate(path);
         } else {
             setShowAuthModal(true);
         }

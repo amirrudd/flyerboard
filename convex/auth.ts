@@ -10,11 +10,11 @@ export const { auth, signIn, signOut, store } = convexAuth({
       if (args.existingUserId) {
         return args.existingUserId;
       }
-      const email = args.profile.email as string | undefined;
+      const email = args.profile.email;
       if (email) {
         const existingUser = await ctx.db
           .query("users")
-          // @ts-ignore
+          // @ts-expect-error -- "email" index is defined in the auth tables but not surfaced in the generated types here
           .withIndex("email", (q) => q.eq("email", email))
           .first();
         if (existingUser) {

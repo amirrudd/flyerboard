@@ -36,11 +36,11 @@ const pillInputClass =
 const textareaClass =
   "w-full px-4 py-3 rounded-2xl bg-muted/50 ring-1 ring-transparent text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-ring focus:bg-card transition-all resize-y";
 
-export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
+export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps) {
   const [formData, setFormData] = useState({
     title: editingAd?.title || "",
     description: editingAd?.description || "",
-    listingType: (editingAd?.listingType || "sale") as "sale" | "exchange" | "both",
+    listingType: editingAd?.listingType || "sale",
     price: editingAd?.price?.toString() || "",
     exchangeDescription: editingAd?.exchangeDescription || "",
     location: editingAd?.location || "",
@@ -80,22 +80,24 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
 
   // Handle location search
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (locationQuery.length >= 2) {
-        setIsSearchingLocation(true);
-        try {
-          const results = await searchLocations(locationQuery);
-          setLocationSuggestions(results);
-          setShowSuggestions(true);
-        } catch (error) {
-          console.error("Failed to search locations", error);
-        } finally {
-          setIsSearchingLocation(false);
+    const delayDebounceFn = setTimeout(() => {
+      void (async () => {
+        if (locationQuery.length >= 2) {
+          setIsSearchingLocation(true);
+          try {
+            const results = await searchLocations(locationQuery);
+            setLocationSuggestions(results);
+            setShowSuggestions(true);
+          } catch (error) {
+            console.error("Failed to search locations", error);
+          } finally {
+            setIsSearchingLocation(false);
+          }
+        } else {
+          setLocationSuggestions([]);
+          setShowSuggestions(false);
         }
-      } else {
-        setLocationSuggestions([]);
-        setShowSuggestions(false);
-      }
+      })();
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
@@ -216,7 +218,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
           clearInterval(checkInterval);
           setIsWaitingForCompression(false);
           // Proceed with upload
-          performUpload();
+          void performUpload();
         }
       }, 100);
 
@@ -426,7 +428,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
       />
 
       <main className="flex-1 w-full max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
           <article className="bg-card ring-1 ring-border/70 rounded-2xl p-6 sm:p-8 shadow-sm">
             {/* Section: Basics */}
             <section aria-labelledby="section-basics">
@@ -792,7 +794,7 @@ export function PostAd({ onBack, editingAd, origin = '/' }: PostAdProps) {
               </button>
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => { void handleDelete(); }}
                 className="flex-1 h-11 px-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] font-semibold shadow-sm shadow-destructive/25 transition-all disabled:opacity-50"
                 disabled={isSubmitting}
               >

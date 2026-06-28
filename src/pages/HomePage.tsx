@@ -110,7 +110,7 @@ export function HomePage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshAds(false); // Not forced, will be throttled
+        void refreshAds(false); // Not forced, will be throttled
       }
     };
 
@@ -122,9 +122,9 @@ export function HomePage() {
   useEffect(() => {
     const state = location.state as { forceRefresh?: boolean } | null;
     if (state?.forceRefresh) {
-      refreshAds(true); // Force refresh to show the new/updated flyer
+      void refreshAds(true); // Force refresh to show the new/updated flyer
       // Clear the state to prevent re-triggering on subsequent renders
-      navigate('/', { replace: true, state: {} });
+      void navigate('/', { replace: true, state: {} });
     }
   }, [location.state, refreshAds, navigate]);
 
@@ -196,7 +196,7 @@ export function HomePage() {
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
-              onAdClick={(ad) => navigate(`/ad/${ad._id}`, { state: { initialAd: ad } })}
+              onAdClick={(ad) => { void navigate(`/ad/${ad._id}`, { state: { initialAd: ad } }); }}
               isLoading={status === "LoadingFirstPage"}
               isLoadingMore={status === "LoadingMore"}
               newAdIds={newAdIds}

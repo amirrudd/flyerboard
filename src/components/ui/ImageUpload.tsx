@@ -25,7 +25,7 @@ interface ImageUploadProps {
 export function ImageUpload({
   images,
   onImagesChange,
-  onFilesSelected,
+  onFilesSelected: _onFilesSelected,
   onCompressionStateChange,
   maxImages = 10
 }: ImageUploadProps) {
@@ -36,7 +36,7 @@ export function ImageUpload({
 
   // Detect network speed on mount
   useEffect(() => {
-    getOptimalCompressionSettings().then(setCompressionSettings);
+    void getOptimalCompressionSettings().then(setCompressionSettings);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -57,14 +57,14 @@ export function ImageUpload({
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length > 0) {
-      uploadFiles(imageFiles);
+      void uploadFiles(imageFiles);
     }
   }, [images.length]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      uploadFiles(files);
+      void uploadFiles(files);
     }
     // Reset input value to allow selecting the same file again
     if (fileInputRef.current) {
@@ -128,7 +128,7 @@ export function ImageUpload({
         newStates.set(id, imageState);
 
         // Start compression in background (non-blocking)
-        compressImageInBackground(id, file, newStates);
+        void compressImageInBackground(id, file, newStates);
       } catch (error) {
         console.error('Failed to process file:', file.name, error);
         toast.error(`Failed to process ${file.name}`);
@@ -147,7 +147,7 @@ export function ImageUpload({
   const compressImageInBackground = async (
     id: string,
     file: File,
-    states: Map<string, ImageState>
+    _states: Map<string, ImageState>
   ) => {
     try {
       // Use adaptive compression settings, fallback to balanced if not ready

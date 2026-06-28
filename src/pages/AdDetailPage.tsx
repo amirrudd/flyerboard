@@ -25,7 +25,7 @@ export function AdDetailPage() {
             <AdDetail
                 adId={adId}
                 initialAd={initialAd}
-                onBack={() => navigate(-1)}
+                onBack={() => { void navigate(-1); }}
                 onShowAuth={() => setShowAuthModal(true)}
             />
 

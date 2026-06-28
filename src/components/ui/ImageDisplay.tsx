@@ -42,6 +42,7 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
 
   // Reset error state when displaySrc changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasError(false);
   }, [displaySrc]);
 

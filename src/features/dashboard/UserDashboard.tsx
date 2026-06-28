@@ -230,13 +230,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Mark chat as read when expanded
   useEffect(() => {
     if (expandedChatId) {
-      markAsRead({ chatId: expandedChatId });
+      void markAsRead({ chatId: expandedChatId });
     }
   }, [expandedChatId, markAsRead]);
 
   // Initialize profile form data when user data is loaded
   useEffect(() => {
     if (user && user._id !== "temp-id") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing editable profile form from server-loaded user
       setProfileData({
         name: user.name || "",
         email: user.email || ""
@@ -248,6 +249,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   useEffect(() => {
     const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
     if (tabParam && tabParam !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
       // Clear any open message views when navigating via URL (e.g., bottom nav)
       setShowMessagesForAd(null);
@@ -267,6 +269,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Redirect invalid tabs on mobile (archived needs sidebar nav for batch actions)
   useEffect(() => {
     if (isMobile && activeTab === 'archived') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirecting away from a tab not valid on mobile
       setActiveTab('ads');
       setSearchParams({ tab: 'ads' }, { replace: true });
     }
@@ -312,6 +315,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Debounced email validation
   useEffect(() => {
     if (!profileData.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing validation error when the email field is emptied
       setEmailError("");
       return;
     }
@@ -439,10 +443,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   };
 
   const handleViewFlyer = (adId: Id<"ads">) => {
-    navigate(`/ad/${adId}`);
+    void navigate(`/ad/${adId}`);
     // Mark as read when viewing flyer
     if (expandedChatId) {
-      markAsRead({ chatId: expandedChatId });
+      void markAsRead({ chatId: expandedChatId });
     }
   };
 
@@ -626,7 +630,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ref={profileImageInputRef}
                     type="file"
                     accept="image/*,.heic,.heif"
-                    onChange={handleProfileImageUpload}
+                    onChange={(e) => { void handleProfileImageUpload(e); }}
                     className="hidden"
                     aria-label="Upload profile picture"
                   />
@@ -678,13 +682,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   <div className="grid grid-cols-2 gap-4 mb-5">
                     <div className="text-center">
                       <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">
-                        <CountUp value={userStats!.totalAds} reduced={reduced} />
+                        <CountUp value={userStats.totalAds} reduced={reduced} />
                       </div>
                       <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Ads</div>
                     </div>
                     <div className="text-center">
                       <div className="font-display text-3xl font-semibold tracking-[-0.02em] text-primary tabular-nums leading-none">
-                        <CountUp value={userStats!.totalViews} reduced={reduced} />
+                        <CountUp value={userStats.totalViews} reduced={reduced} />
                       </div>
                       <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Total Views</div>
                     </div>
@@ -692,8 +696,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   <div className="pt-4 border-t border-border/70">
                     <StarRating
-                      rating={userStats!.averageRating || 0}
-                      count={userStats!.ratingCount || 0}
+                      rating={userStats.averageRating || 0}
+                      count={userStats.ratingCount || 0}
                       size="sm"
                       showCount={true}
                     />
@@ -896,7 +900,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleToggleStatus(ad._id);
+                                    void handleToggleStatus(ad._id);
                                   }}
                                   aria-label={ad.isActive ? 'Deactivate' : 'Activate'}
                                   className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
@@ -1010,7 +1014,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleArchiveChat(chat._id);
+                                          void handleArchiveChat(chat._id);
                                         }}
                                         className="inline-flex items-center h-8 px-3 rounded-full bg-muted/40 ring-1 ring-border text-muted-foreground text-sm font-medium hover:bg-muted/70 hover:text-foreground hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                       >
@@ -1074,7 +1078,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               </div>
 
                               {/* Message Input */}
-                              <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border/70">
+                              <form onSubmit={(e) => { void handleSendMessage(e); }} className="p-4 bg-card border-t border-border/70">
                                 <label htmlFor={`chat-input-${chat._id}`} className="sr-only">Type your message</label>
                                 <div className="flex gap-2">
                                   <input
@@ -1175,7 +1179,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Profile Settings</h2>
                   </header>
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-5 mb-8">
+                  <form onSubmit={(e) => { void handleUpdateProfile(e); }} className="space-y-5 mb-8">
                     <div>
                       <label htmlFor="profile-name-input" className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">Name</label>
                       <input
@@ -1252,7 +1256,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         {!user.isVerified && (
                           <button
                             type="button"
-                            onClick={handleVerifyIdentity}
+                            onClick={() => { void handleVerifyIdentity(); }}
                             className="inline-flex items-center justify-center h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all flex-shrink-0"
                           >
                             Verify Identity
@@ -1279,7 +1283,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             <input
                               type="checkbox"
                               checked={user.emailNotificationsEnabled || false}
-                              onChange={(e) => handleToggleEmailNotifications(e.target.checked)}
+                              onChange={(e) => { void handleToggleEmailNotifications(e.target.checked); }}
                               className="sr-only peer"
                             />
                             <div className="w-11 h-6 rounded-full peer bg-muted ring-1 ring-border peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 peer-focus:ring-offset-background peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:ring-1 after:ring-border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:ring-primary">
@@ -1325,7 +1329,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         {selectedArchivedChats.size > 0 && (
                           <button
                             type="button"
-                            onClick={handleDeleteArchivedChats}
+                            onClick={() => { void handleDeleteArchivedChats(); }}
                             className="inline-flex items-center h-9 px-3.5 rounded-full bg-destructive/10 ring-1 ring-destructive/30 text-destructive text-sm font-semibold hover:bg-destructive/20 active:scale-[0.98] transition-all"
                           >
                             Delete Selected ({selectedArchivedChats.size})
@@ -1380,7 +1384,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteAd(showDeleteConfirm)}
+                onClick={() => { void handleDeleteAd(showDeleteConfirm); }}
                 className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
               >
                 Delete
@@ -1420,7 +1424,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 </button>
                 <button
                   type="button"
-                  onClick={handleDeleteAccount}
+                  onClick={() => { void handleDeleteAccount(); }}
                   className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                 >
                   Delete Account

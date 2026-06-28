@@ -22,7 +22,7 @@ export function AboutUsPage() {
                 leftNode={
                     <button
                         type="button"
-                        onClick={() => navigate('/')}
+                        onClick={() => { void navigate('/'); }}
                         aria-label="Go back to home"
                         className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >

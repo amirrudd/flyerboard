@@ -25,7 +25,7 @@ export function SignOutButton({ onSignOut, iconOnly = false }: SignOutButtonProp
     return (
       <button
         className="p-2 rounded-lg hover:bg-muted transition-colors"
-        onClick={handleSignOut}
+        onClick={() => { void handleSignOut(); }}
         title="Sign out"
       >
         <SignOut className="w-5 h-5 text-muted-foreground" />
@@ -36,7 +36,7 @@ export function SignOutButton({ onSignOut, iconOnly = false }: SignOutButtonProp
   return (
     <button
       className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-      onClick={handleSignOut}
+      onClick={() => { void handleSignOut(); }}
     >
       <SignOut className="w-4 h-4" />
       Sign out

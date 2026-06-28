@@ -182,7 +182,7 @@ export function ReportsTab() {
                                         {report.status !== "reviewed" && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleUpdateStatus(report._id, "reviewed")}
+                                                onClick={() => { void handleUpdateStatus(report._id, "reviewed"); }}
                                                 className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/40 hover:ring-blue-500 hover:bg-blue-500/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
                                                 <CheckCircle className="w-4 h-4" aria-hidden="true" />
@@ -192,7 +192,7 @@ export function ReportsTab() {
                                         {report.status !== "resolved" && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleUpdateStatus(report._id, "resolved")}
+                                                onClick={() => { void handleUpdateStatus(report._id, "resolved"); }}
                                                 className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-green-700 dark:text-green-400 ring-1 ring-green-500/40 hover:ring-green-500 hover:bg-green-500/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
                                                 <CheckCircle className="w-4 h-4" aria-hidden="true" />
@@ -202,7 +202,7 @@ export function ReportsTab() {
                                         {report.status !== "pending" && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleUpdateStatus(report._id, "pending")}
+                                                onClick={() => { void handleUpdateStatus(report._id, "pending"); }}
                                                 className="h-8 px-3 inline-flex items-center gap-1 bg-transparent text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/40 hover:ring-yellow-500 hover:bg-yellow-500/[0.06] active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                                             >
                                                 <Clock className="w-4 h-4" aria-hidden="true" />

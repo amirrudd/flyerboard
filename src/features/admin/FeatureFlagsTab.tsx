@@ -41,7 +41,7 @@ export function FeatureFlagsTab() {
         try {
             await updateFlag({ key, enabled: !currentEnabled });
             toast.success(`Feature flag "${key}" ${!currentEnabled ? "enabled" : "disabled"}`);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update feature flag");
         } finally {
             setPendingToggle(null);
@@ -77,7 +77,7 @@ export function FeatureFlagsTab() {
         try {
             await deleteFlag({ key });
             toast.success(`Feature flag "${key}" deleted`);
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete feature flag");
         }
     };
@@ -110,7 +110,7 @@ export function FeatureFlagsTab() {
                     {featureFlags.length === 0 && (
                         <button
                             type="button"
-                            onClick={seedDefaultFlags}
+                            onClick={() => { void seedDefaultFlags(); }}
                             className="inline-flex items-center gap-2 h-11 px-4 bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/20 active:scale-[0.98] rounded-full text-sm font-medium transition-all"
                         >
                             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -173,7 +173,7 @@ export function FeatureFlagsTab() {
                             </button>
                             <button
                                 type="button"
-                                onClick={handleCreate}
+                                onClick={() => { void handleCreate(); }}
                                 className="h-11 px-4 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] rounded-full text-sm font-semibold shadow-sm shadow-primary/25 transition-all"
                             >
                                 Create Flag
@@ -216,7 +216,7 @@ export function FeatureFlagsTab() {
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleToggle(flag.key, flag.enabled)}
+                                    onClick={() => { void handleToggle(flag.key, flag.enabled); }}
                                     disabled={pendingToggle === flag.key}
                                     aria-label={flag.enabled ? `Disable ${flag.key}` : `Enable ${flag.key}`}
                                     className={`w-10 h-10 rounded-full inline-flex items-center justify-center transition-all active:scale-[0.98] ${flag.enabled
@@ -235,7 +235,7 @@ export function FeatureFlagsTab() {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => handleDelete(flag.key)}
+                                    onClick={() => { void handleDelete(flag.key); }}
                                     aria-label={`Delete ${flag.key}`}
                                     className="w-10 h-10 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-[0.98]"
                                     title="Delete flag"

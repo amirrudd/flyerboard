@@ -21,11 +21,11 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
-          const formData = new FormData(e.target as HTMLFormElement);
+          const formData = new FormData(e.currentTarget);
           formData.set("flow", flow);
           void signIn("password", formData).catch((error) => {
             console.error("Sign in/up error:", error);
-            let toastTitle = "";
+            let toastTitle: string;
             if (error.message.includes("A user with this email already exists")) {
               toastTitle = "A user with this email already exists. Please sign in.";
             } else if (error.message.includes("Invalid password")) {

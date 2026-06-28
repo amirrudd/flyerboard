@@ -45,7 +45,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
 
   useEffect(() => {
     if (selectedChatId) {
-      markAsRead({ chatId: selectedChatId });
+      void markAsRead({ chatId: selectedChatId });
     }
   }, [selectedChatId, markAsRead]);
 
@@ -229,7 +229,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                   </div>
 
                   {/* Message Input */}
-                  <form onSubmit={handleSendMessage} className="shrink-0 p-4 border-t border-border/70 bg-card">
+                  <form onSubmit={(e) => { void handleSendMessage(e); }} className="shrink-0 p-4 border-t border-border/70 bg-card">
                     <label htmlFor="conversation-message-input" className="sr-only">Type your message</label>
                     <div className="flex gap-2 items-end">
                       <textarea
@@ -240,7 +240,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
                           // On desktop (Cmd/Ctrl+Enter), submit the form
                           if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                             e.preventDefault();
-                            handleSendMessage(e as any);
+                            void handleSendMessage(e);
                           }
                         }}
                         placeholder="Type your message..."

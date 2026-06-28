@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
 
     useEffect(() => {
         if (!isSessionLoading && !isAuthenticated) {
-            navigate('/', { replace: true });
+            void navigate('/', { replace: true });
         }
     }, [isAuthenticated, isSessionLoading, navigate]);
 
@@ -18,5 +18,5 @@ export default function AdminDashboardPage() {
         return <PageLoader />;
     }
 
-    return <AdminDashboard onBack={() => navigate("/")} />;
+    return <AdminDashboard onBack={() => { void navigate("/"); }} />;
 }

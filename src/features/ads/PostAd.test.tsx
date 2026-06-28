@@ -72,7 +72,6 @@ describe('PostAd', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        const mockDeleteAd = vi.fn();
         vi.mocked(useMutation).mockImplementation(() => {
             return mockCreateAd as any;
         });
@@ -221,9 +220,9 @@ describe('PostAd', () => {
     it('should enforce character limits on form fields', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const titleInput = screen.getByPlaceholderText('Enter a descriptive title') as HTMLInputElement;
-        const descriptionTextarea = screen.getByPlaceholderText('Describe your item...') as HTMLTextAreaElement;
-        const locationInput = screen.getByPlaceholderText('Enter suburb or postcode') as HTMLInputElement;
+        const titleInput = screen.getByPlaceholderText<HTMLInputElement>('Enter a descriptive title');
+        const descriptionTextarea = screen.getByPlaceholderText<HTMLTextAreaElement>('Describe your item...');
+        const locationInput = screen.getByPlaceholderText<HTMLInputElement>('Enter suburb or postcode');
 
         // Check maxLength attributes
         expect(titleInput.maxLength).toBe(100);
@@ -262,7 +261,7 @@ describe('PostAd', () => {
             images: ['old-image-1.jpg', 'old-image-2.jpg', 'old-image-3.jpg'], // 3 existing images
         });
 
-        const { rerender } = render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
         // The component initializes with editingAd.images
         // Now simulate ImageUpload calling onImagesChange with only 1 image (user removed 2)
@@ -287,7 +286,7 @@ describe('PostAd', () => {
     it('should only accept whole numbers in price field', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Valid whole numbers should be accepted
         fireEvent.change(priceInput, { target: { value: '100' } });
@@ -303,7 +302,7 @@ describe('PostAd', () => {
     it('should reject decimal values in price field', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Set initial valid value
         fireEvent.change(priceInput, { target: { value: '100' } });
@@ -320,7 +319,7 @@ describe('PostAd', () => {
     it('should reject leading zeros in price field', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Try to enter leading zeros - should be rejected
         fireEvent.change(priceInput, { target: { value: '00' } });
@@ -336,7 +335,7 @@ describe('PostAd', () => {
     it('should reject non-numeric characters in price field', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Set initial valid value
         fireEvent.change(priceInput, { target: { value: '100' } });
@@ -353,7 +352,7 @@ describe('PostAd', () => {
     it('should reject values exceeding maximum price', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Try to enter value over max (999999999)
         fireEvent.change(priceInput, { target: { value: '9999999999' } });
@@ -367,7 +366,7 @@ describe('PostAd', () => {
     it('should allow clearing the price field', () => {
         render(<PostAd onBack={mockOnBack} />);
 
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
         // Set a value
         fireEvent.change(priceInput, { target: { value: '100' } });
@@ -427,7 +426,7 @@ describe('PostAd', () => {
         render(<PostAd onBack={mockOnBack} />);
 
         // Enter a price first
-        const priceInput = screen.getByPlaceholderText('0') as HTMLInputElement;
+        const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
         fireEvent.change(priceInput, { target: { value: '100' } });
         expect(priceInput.value).toBe('100');
 

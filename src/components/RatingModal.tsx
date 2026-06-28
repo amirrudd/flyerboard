@@ -63,19 +63,6 @@ export function RatingModal({
         }
     };
 
-    const handleStarClick = (value: number) => {
-        // Allow half-star ratings by clicking on left/right half of star
-        setRating(value);
-    };
-
-    const handleStarHover = (value: number) => {
-        setHoverRating(value);
-    };
-
-    const handleMouseLeave = () => {
-        setHoverRating(0);
-    };
-
     if (!isOpen) return null;
 
     const displayRating = hoverRating || rating;
@@ -176,7 +163,7 @@ export function RatingModal({
                     </button>
                     <button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={(e) => { void handleSubmit(e); }}
                         disabled={isSubmitting || rating === 0}
                         className="flex-1 h-11 px-4 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >

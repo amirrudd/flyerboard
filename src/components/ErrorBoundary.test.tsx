@@ -158,6 +158,8 @@ describe('ErrorBoundary', () => {
 
     it('handles different error types', () => {
         function ThrowStringError(): never {
+            // Intentionally throw a non-Error value to test error boundary handling
+            // eslint-disable-next-line @typescript-eslint/only-throw-error
             throw 'String error';
         }
 

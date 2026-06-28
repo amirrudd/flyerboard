@@ -18,6 +18,7 @@ export function NotificationPrompt() {
         // Check if user has dismissed the prompt before
         const dismissed = localStorage.getItem('notification-prompt-dismissed');
         if (dismissed) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsDismissed(true);
             return;
         }
@@ -80,7 +81,7 @@ export function NotificationPrompt() {
                         <div className="flex gap-2">
                             <button
                                 type="button"
-                                onClick={handleEnable}
+                                onClick={() => { void handleEnable(); }}
                                 disabled={isLoading}
                                 className="h-10 px-4 bg-primary text-primary-foreground text-sm font-semibold rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                 aria-label="Enable push notifications"

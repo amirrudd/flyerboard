@@ -25,8 +25,13 @@ jobs:
       - name: TypeScript type check (Convex)
         run: npx tsc -p convex -noEmit
 
+      # `tsc -p .` is a no-op (root tsconfig is references-only); `tsc -b`
+      # follows the project references and actually type-checks src/.
       - name: TypeScript type check (Frontend)
-        run: npx tsc -p . -noEmit
+        run: npx tsc -b
 
       - name: Run tests
         run: npm run test -- --run
+
+      - name: Production build
+        run: npm run build

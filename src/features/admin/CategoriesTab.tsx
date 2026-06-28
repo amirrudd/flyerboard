@@ -6,14 +6,13 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import {
     Plus,
-    Pencil,
-    Trash2,
-    AlertTriangle,
-    ChevronDown,
+    PencilSimple,
+    Trash,
+    Warning,
+    CaretDown,
     X,
     Check,
-    LayoutGrid,
-} from "lucide-react";
+} from '@phosphor-icons/react';
 import { getCategoryIcon, iconMap, hasIcon, getIconCdnUrl } from "../../lib/categoryIcons";
 import { LucideIconPicker } from "../../components/ui/LucideIconPicker";
 
@@ -239,11 +238,11 @@ export function CategoriesTab() {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenEditForm(category)}
-                                                aria-label={`Edit ${category.name}`}
+                                                aria-label={`Edit `}
                                                 className="h-8 w-8 inline-flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-all active:scale-[0.98]"
                                                 title="Edit category"
                                             >
-                                                <Pencil className="w-4 h-4" aria-hidden="true" />
+                                                <PencilSimple className="w-4 h-4" aria-hidden="true" />
                                             </button>
                                             <button
                                                 type="button"
@@ -252,7 +251,7 @@ export function CategoriesTab() {
                                                 className="h-8 w-8 inline-flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all active:scale-[0.98]"
                                                 title="Delete category"
                                             >
-                                                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                <Trash className="w-4 h-4" aria-hidden="true" />
                                             </button>
                                         </div>
                                     </td>
@@ -370,7 +369,7 @@ export function CategoriesTab() {
                                                     </>
                                                 )}
                                             </span>
-                                            <ChevronDown
+                                            <CaretDown
                                                 aria-hidden="true"
                                                 className={`w-5 h-5 text-muted-foreground transition-transform ${showIconPicker ? "rotate-180" : ""}`}
                                             />
@@ -464,7 +463,7 @@ export function CategoriesTab() {
                         <div className="bg-card ring-1 ring-border/70 rounded-2xl shadow-xl p-6 max-w-md w-full">
                             <div className="flex items-start gap-4 mb-4">
                                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center ring-1 ring-destructive/20">
-                                    <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
+                                    <Warning className="w-6 h-6 text-destructive" aria-hidden="true" />
                                 </div>
                                 <div className="flex-1">
                                     <h2 id="delete-category-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">

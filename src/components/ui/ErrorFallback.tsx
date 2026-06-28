@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Home, RefreshCw, LogOut } from 'lucide-react';
+import { Warning, House, ArrowsClockwise, SignOut } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { isAuthError } from '../../lib/useAuthRecovery';
 import { useDescope } from '@descope/react-sdk';
@@ -57,7 +57,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                 {/* Error Icon */}
                 <div className="flex justify-center mb-6">
                     <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-                        <AlertTriangle className="w-8 h-8 text-destructive" aria-hidden="true" />
+                        <Warning className="w-8 h-8 text-destructive" aria-hidden="true" />
                     </div>
                 </div>
 
@@ -83,7 +83,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                             className="flex-1 flex items-center justify-center gap-2 h-11 px-5 py-3 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-destructive/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                             aria-label="Sign out and try again"
                         >
-                            <LogOut className="w-5 h-5" aria-hidden="true" />
+                            <SignOut className="w-5 h-5" aria-hidden="true" />
                             {isLoggingOut ? 'Signing out...' : 'Sign Out & Try Again'}
                         </button>
                     ) : (
@@ -94,7 +94,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                             className="flex-1 flex items-center justify-center gap-2 h-11 px-5 py-3 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                             aria-label="Try again"
                         >
-                            <RefreshCw className="w-5 h-5" aria-hidden="true" />
+                            <ArrowsClockwise className="w-5 h-5" aria-hidden="true" />
                             Try Again
                         </button>
                     )}
@@ -104,7 +104,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                         className="flex-1 flex items-center justify-center gap-2 h-11 px-5 py-3 bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] rounded-full font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         aria-label="Go to home page"
                     >
-                        <Home className="w-5 h-5" aria-hidden="true" />
+                        <House className="w-5 h-5" aria-hidden="true" />
                         Go Home
                     </button>
                 </div>

@@ -4,7 +4,7 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { X, Loader2, Star } from 'lucide-react';
+import { X, CircleNotch, Star } from '@phosphor-icons/react';
 
 interface RatingModalProps {
     isOpen: boolean;
@@ -129,8 +129,7 @@ export function RatingModal({
                                         ? 'text-yellow-400'
                                         : 'text-muted-foreground/40'
                                         }`}
-                                    fill={star <= displayRating ? "currentColor" : "none"}
-                                    strokeWidth={1.5}
+                                    weight={star <= displayRating ? "fill" : "light"}
                                 />
                             </button>
                         ))}
@@ -183,7 +182,7 @@ export function RatingModal({
                     >
                         {isSubmitting ? (
                             <span className="flex items-center justify-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <CircleNotch className="w-4 h-4 animate-spin" />
                                 Submitting...
                             </span>
                         ) : (

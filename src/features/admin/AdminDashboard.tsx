@@ -4,15 +4,15 @@ import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Header } from "../layout/Header";
 import {
-    ChevronLeft,
+    CaretLeft,
     Users,
     FileText,
-    AlertTriangle,
-    MessageSquare,
+    Warning,
+    ChatText,
     Shield,
-    LayoutGrid,
+    GridFour,
     Flag,
-} from "lucide-react";
+} from '@phosphor-icons/react';
 import { UsersTab } from "./UsersTab";
 import { FlyersTab } from "./FlyersTab";
 import { ReportsTab } from "./ReportsTab";
@@ -44,7 +44,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             <section className="min-h-screen bg-background flex items-center justify-center py-12 pb-bottom-nav md:pb-12">
                 <article className="content-width-reading mx-auto text-center container-padding">
                     <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-destructive/[0.08] ring-1 ring-destructive/30 mb-8">
-                        <Shield className="w-9 h-9 text-destructive" strokeWidth={1.5} aria-hidden="true" />
+                        <Shield className="w-9 h-9 text-destructive" weight="light" aria-hidden="true" />
                     </div>
                     <p className="kicker text-destructive mb-3">Restricted</p>
                     <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground mb-4">
@@ -77,9 +77,9 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     const tabs = [
         { id: "users", label: "Users", icon: Users },
         { id: "flyers", label: "Flyers", icon: FileText },
-        { id: "reports", label: "Reports", icon: AlertTriangle },
-        { id: "chats", label: "Chats", icon: MessageSquare },
-        { id: "categories", label: "Categories", icon: LayoutGrid },
+        { id: "reports", label: "Reports", icon: Warning },
+        { id: "chats", label: "Chats", icon: ChatText },
+        { id: "categories", label: "Categories", icon: GridFour },
         { id: "flags", label: "Feature Flags", icon: Flag },
     ] as const;
 
@@ -93,7 +93,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                         aria-label="Back"
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                        <CaretLeft className="w-5 h-5" aria-hidden="true" />
                         <span className="hidden md:inline">Back</span>
                     </button>
                 }

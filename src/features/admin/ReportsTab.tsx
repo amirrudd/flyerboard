@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
-import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Warning, CheckCircle, Clock } from '@phosphor-icons/react';
 
 export function ReportsTab() {
     const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "reviewed" | "resolved">(
@@ -118,7 +118,7 @@ export function ReportsTab() {
                     </div>
                 ) : reports.length === 0 ? (
                     <div className="text-center py-12">
-                        <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" aria-hidden="true" />
+                        <Warning className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" aria-hidden="true" />
                         <p className="text-muted-foreground">No reports found</p>
                     </div>
                 ) : (

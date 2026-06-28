@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { memo, useCallback } from "react";
-import { LayoutGrid, X } from "lucide-react";
+import { GridFour, X } from '@phosphor-icons/react';
 import { getCategoryIcon } from "../../../lib/categoryIcons";
 
 interface Category {
@@ -55,7 +55,7 @@ export const SidebarContent = memo(function SidebarContent({
                         title="Close menu"
                         aria-label="Close menu"
                     >
-                        <X className="w-5 h-5" strokeWidth={2} />
+                        <X className="w-5 h-5" />
                     </button>
                 )}
             </div>
@@ -73,7 +73,7 @@ export const SidebarContent = memo(function SidebarContent({
                     {!selectedCategory && (
                         <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" aria-hidden />
                     )}
-                    <LayoutGrid className={`w-[18px] h-[18px] flex-shrink-0 ${!selectedCategory ? "text-primary" : "text-muted-foreground"}`} strokeWidth={2} />
+                    <GridFour className={`w-[18px] h-[18px] flex-shrink-0 ${!selectedCategory ? "text-primary" : "text-muted-foreground"}`} />
                     <span className="truncate">All Categories</span>
                 </button>
 
@@ -101,7 +101,7 @@ export const SidebarContent = memo(function SidebarContent({
                                 {isSelected && (
                                     <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" aria-hidden />
                                 )}
-                                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} strokeWidth={2} />
+                                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                                 <span className="truncate">{category.name}</span>
                             </button>
                         );

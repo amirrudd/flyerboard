@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "../features/layout/Header";
-import { ChevronLeft, Compass, ArrowRight } from "lucide-react";
+import { CaretLeft, Compass, ArrowRight } from '@phosphor-icons/react';
 
 export function NotFoundPage() {
     const navigate = useNavigate();
@@ -21,7 +21,7 @@ export function NotFoundPage() {
                         aria-label="Go back to home"
                         className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
-                        <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                        <CaretLeft className="w-5 h-5" aria-hidden="true" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
                 }
@@ -36,7 +36,7 @@ export function NotFoundPage() {
                 <div className="content-max-width mx-auto container-padding w-full">
                     <article className="content-width-reading mx-auto text-center">
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/60 ring-1 ring-border/60 mb-8">
-                            <Compass className="w-9 h-9 text-muted-foreground/70" strokeWidth={1.5} aria-hidden="true" />
+                            <Compass className="w-9 h-9 text-muted-foreground/70" weight="light" aria-hidden="true" />
                         </div>
 
                         <p className="kicker mb-3">Error 404</p>
@@ -61,7 +61,7 @@ export function NotFoundPage() {
                                 className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                             >
                                 Back to all flyers
-                                <ArrowRight className="w-4 h-4" strokeWidth={2.25} aria-hidden="true" />
+                                <ArrowRight className="w-4 h-4" weight="bold" aria-hidden="true" />
                             </button>
                             <Link
                                 to="/support"

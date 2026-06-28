@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { SmsOtpSignIn } from "../features/auth/SmsOtpSignIn";
 import { useNavigate, useLocation } from "react-router-dom";
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 export function AdDetailPage() {
     const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 
 interface StarRatingProps {
     rating: number; // 0-5, supports 0.5 increments
@@ -42,8 +42,7 @@ export function StarRating({
                 {/* Empty star (background) */}
                 <Star
                     className={`${sizeClasses[size]} text-muted-foreground/30`}
-                    fill="currentColor"
-                    strokeWidth={0}
+                    weight="fill"
                 />
 
                 {/* Filled star (overlay) */}
@@ -54,8 +53,7 @@ export function StarRating({
                     >
                         <Star
                             className={`${sizeClasses[size]} text-yellow-400`}
-                            fill="currentColor"
-                            strokeWidth={0}
+                            weight="fill"
                         />
                     </div>
                 )}

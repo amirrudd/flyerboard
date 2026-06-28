@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { ImageDisplay } from "./ImageDisplay";
 import imageCompression from 'browser-image-compression';
-import { Trash2 } from "lucide-react";
+import { Trash } from '@phosphor-icons/react';
 import { getOptimalCompressionSettings, type CompressionSettings } from "../../lib/networkSpeed";
 
 interface ImageState {
@@ -285,7 +285,7 @@ export function ImageUpload({
                 className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-7 h-7 flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
                 title="Remove image"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash className="w-4 h-4" />
               </button>
             </div>
           ))}

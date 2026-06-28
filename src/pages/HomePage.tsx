@@ -47,20 +47,19 @@ export function HomePage() {
   // Use Descope session for authentication state
   const { isAuthenticated } = useSession();
 
-  // Client-side sort/filter — operates on the currently-loaded page only.
-  // For large datasets (multiple paginated pages) the sort order is approximate;
-  // pushing sort/filter down to the Convex query would require backend index changes.
-  const { sort, minPrice, maxPrice } = useAdFilters();
+  // Price-range filter only. We deliberately never re-sort: the feed is always
+  // newest-first because the product's core value is "pin your flyer to the top"
+  // — exposing a sort control (esp. by price) would let users bypass that and
+  // undercut the model. Filtering by min/max never changes the order.
+  const { minPrice, maxPrice } = useAdFilters();
 
   const filteredAds = useMemo(() => {
     if (!ads) return ads;
-    let result = [...ads];
+    let result = ads;
     if (minPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price >= minPrice);
     if (maxPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price <= maxPrice);
-    if (sort === "price_asc") result.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-    if (sort === "price_desc") result.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
     return result;
-  }, [ads, sort, minPrice, maxPrice]);
+  }, [ads, minPrice, maxPrice]);
   // For now, just use a simple user object when authenticated
   // TODO: Fetch actual user data from Convex once Descope integration is complete
   const user = isAuthenticated ? { name: "User" } : null;

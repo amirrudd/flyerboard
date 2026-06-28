@@ -16,7 +16,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, ChevronLeft, Share2, Heart, X, Frown, Image as ImageIcon, MapPin, ChevronRight, Send, Pencil, Repeat, MessageCircle } from "lucide-react";
+import { Flag, CaretLeft, ShareNetwork, Heart, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
@@ -38,8 +38,9 @@ interface AdDetailProps {
 
 export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
-  const { whileInView } = useMotionPrefs();
+  const { whileInView, reduced } = useMotionPrefs();
   const heartControls = useAnimation();
+  const shareControls = useAnimation();
   const [showChat, setShowChat] = useState(false);
   const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
   const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
@@ -120,10 +121,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       const result = await saveAd({ adId });
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
       if (result.saved) {
-        heartControls.start({
-          scale: [1, 1.35, 0.9, 1],
-          transition: { duration: 0.3, ease: "easeOut" },
-        });
+        if (!reduced) {
+          heartControls.start({
+            scale: [1, 1.35, 0.9, 1],
+            transition: { duration: 0.3, ease: "easeOut" },
+          });
+        }
         setShowLikeNotificationModal(true);
       }
       setOptimisticSaved(null);
@@ -137,6 +140,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     const shareUrl = `${window.location.origin}/ad/${adId}`;
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Link to flyer copied to clipboard");
+    if (!reduced) {
+      shareControls.start({
+        scale: [1, 1.18, 0.96, 1],
+        transition: { duration: 0.32, ease: "easeOut" },
+      });
+    }
   };
 
   const handleStartChat = async () => {
@@ -193,7 +202,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back to flyers</span>
               </button>
             </div>
@@ -205,7 +214,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         />
         <div className="content-max-width mx-auto container-padding py-12 text-center">
           <div className="bg-card ring-1 ring-border/70 rounded-2xl p-12 shadow-card max-w-lg mx-auto">
-            <Frown className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" strokeWidth={1.5} />
+            <SmileySad className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" weight="light" />
             <h2 className="font-display text-3xl font-semibold text-foreground mb-2 tracking-tight">Ad Not Found</h2>
             <p className="text-muted-foreground mb-6">This ad may have been deleted or removed.</p>
             <button
@@ -241,7 +250,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 onClick={onBack}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Back to flyers</span>
               </button>
               <span className="font-display text-xl font-semibold text-foreground tracking-tight">Loading...</span>
@@ -352,35 +361,39 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         rightNode={
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-2">
-              <button
+              <motion.button
                 onClick={handleShare}
-                className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                whileTap={{ scale: 0.9 }}
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
               >
-                <Share2 className="w-5 h-5" />
-              </button>
+                <motion.span animate={shareControls} style={{ display: 'inline-flex' }}>
+                  <ShareNetwork className="w-5 h-5" />
+                </motion.span>
+              </motion.button>
               {user && displayAd.userId !== user._id && (
                 <>
                   <motion.button
                     onClick={handleSave}
                     whileTap={{ scale: 0.88 }}
-                    className={`p-2 rounded-lg transition-colors ${displaySaved
+                    className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     title={displaySaved ? "Remove from saved" : "Save ad"}
                   >
                     <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
-                      <Heart className="w-5 h-5" fill={displaySaved ? "currentColor" : "none"} />
+                      <Heart className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
                     </motion.span>
                   </motion.button>
-                  <button
+                  <motion.button
                     onClick={() => setShowReportModal(true)}
-                    className="p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
+                    whileTap={{ scale: 0.9 }}
+                    className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
                     title="Report flyer"
                   >
                     <Flag className="w-5 h-5" />
-                  </button>
+                  </motion.button>
                 </>
               )}
             </div>
@@ -456,14 +469,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       aria-label="Previous image"
                       className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronLeft className="w-4 h-4" strokeWidth={2.25} />
+                      <CaretLeft className="w-4 h-4" weight="bold" />
                     </button>
                     <button
                       onClick={nextImage}
                       aria-label="Next image"
                       className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/85 backdrop-blur-md text-foreground p-2.5 rounded-full ring-1 ring-border/60 hover:bg-background active:scale-95 transition-all shadow-card"
                     >
-                      <ChevronRight className="w-4 h-4" strokeWidth={2.25} />
+                      <CaretRight className="w-4 h-4" weight="bold" />
                     </button>
                   </>
                 )}
@@ -479,7 +492,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               {/* Thumbnail strip for multiple images */}
               {images.length > 1 && (
                 <div className="px-4 py-3 bg-muted/40 border-t border-border/60">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide p-1 -m-1">
                     {images.map((image: string, index: number) => (
                       <button
                         key={index}
@@ -515,7 +528,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   )}
                   {displayAd.listingType === "exchange" && (
                     <p className="font-display text-3xl font-semibold text-primary-bright flex items-center gap-2 leading-none">
-                      <Repeat className="w-6 h-6" strokeWidth={2.25} />
+                      <Repeat className="w-6 h-6" weight="bold" />
                       Open to Trade
                     </p>
                   )}
@@ -541,7 +554,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <div className="mb-6 p-5 bg-primary/[0.06] rounded-2xl ring-1 ring-primary/20 relative overflow-hidden">
                   <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-primary rounded-r-full" aria-hidden />
                   <h3 className="kicker text-primary mb-2 flex items-center gap-1.5">
-                    <Repeat className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    <Repeat className="w-3.5 h-3.5" weight="bold" />
                     Looking for
                   </h3>
                   <p className="text-foreground/90 leading-relaxed">{displayAd.exchangeDescription}</p>
@@ -555,7 +568,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-border/60 pt-4">
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-primary" strokeWidth={2} />
+                  <MapPin className="w-4 h-4 text-primary" />
                   <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
@@ -585,7 +598,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   {user && displayAd.userId !== user._id && (
                     <button
                       onClick={() => setShowReportProfileModal(true)}
-                      className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="inline-flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                       title="Report seller"
                     >
                       <Flag className="w-4 h-4" />
@@ -667,7 +680,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         aria-label="Send message"
                         className="bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25"
                       >
-                        <Send className="w-4 h-4" strokeWidth={2.25} />
+                        <PaperPlane className="w-4 h-4" weight="bold" />
                       </button>
                     </div>
                   </div>
@@ -684,7 +697,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
                       className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
-                      <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                      <PencilSimple className="w-4 h-4" weight="bold" />
                       Edit Flyer
                     </button>
                   ) : (
@@ -698,14 +711,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
-                          <Heart className="w-4 h-4" fill={displaySaved ? "currentColor" : "none"} />
+                          <Heart className="w-4 h-4" weight={displaySaved ? "fill" : "regular"} />
                           {displaySaved ? 'Remove from Saved' : 'Save Ad'}
                         </button>
                         <button
                           onClick={() => setShowReportModal(true)}
                           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                         >
-                          <Flag className="w-4 h-4" strokeWidth={2} />
+                          <Flag className="w-4 h-4" />
                           Report Flyer
                         </button>
                       </>
@@ -715,7 +728,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     onClick={handleShare}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                   >
-                    <Share2 className="w-4 h-4" strokeWidth={2} />
+                    <ShareNetwork className="w-4 h-4" />
                     Share Flyer
                   </button>
                 </div>
@@ -757,7 +770,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}
             title="Message Seller"
           >
-            <MessageCircle className="w-6 h-6" />
+            <ChatCircle className="w-6 h-6" />
           </button>
         </div>,
         document.body
@@ -789,7 +802,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               }}
               className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 flex items-center justify-center gap-2"
             >
-              <MessageCircle className="w-5 h-5" />
+              <ChatCircle className="w-5 h-5" />
               Message Seller
             </button>
             <button
@@ -852,7 +865,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               aria-label="Send message"
               className="bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25 flex-shrink-0"
             >
-              <Send className="w-4 h-4" strokeWidth={2.25} />
+              <PaperPlane className="w-4 h-4" weight="bold" />
             </button>
           </div>
         </div>

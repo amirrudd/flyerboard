@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Smartphone, ArrowRight, Loader2, ArrowLeft, User } from "lucide-react";
+import { DeviceMobile, ArrowRight, CircleNotch, ArrowLeft, User } from '@phosphor-icons/react';
 import { useDescope } from "@descope/react-sdk";
 import { Link } from "react-router-dom";
 import { useMutation, useConvex } from "convex/react";
@@ -361,7 +361,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                     Your Mobile Number (Australia only)
                                 </label>
                                 <div className="relative group">
-                                    <Smartphone
+                                    <DeviceMobile
                                         className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10"
                                         aria-hidden="true"
                                     />
@@ -521,7 +521,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     disabled={!canSubmit || isSendingOtp || isVerifying || isCompletingSignup}
                 >
                     {(isSendingOtp || isVerifying || isCompletingSignup) ? (
-                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                        <CircleNotch className="w-5 h-5 animate-spin" aria-hidden="true" />
                     ) : (
                         <>
                             <span className="transition-all duration-300">

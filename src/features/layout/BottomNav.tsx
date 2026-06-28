@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, User, MessageSquare, Heart, LayoutDashboard } from "lucide-react";
+import { House, Plus, User, ChatText, Heart, SquaresFour } from "@phosphor-icons/react";
 import { useSession } from "@descope/react-sdk";
 import { memo } from "react";
 
@@ -55,7 +55,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             <div className="grid grid-cols-5 items-end px-4 pt-2 pb-4">
                 <Link to="/" className={navItemClass(isActive("/"))}>
                     {isActive("/") && <ActiveDot />}
-                    <Home size={22} strokeWidth={isActive("/") ? 2.25 : 2} />
+                    <House size={22} weight={isActive("/") ? "bold" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Home</span>
                 </Link>
 
@@ -64,7 +64,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     className={navItemClass(isActive("/dashboard?tab=saved"))}
                 >
                     {isActive("/dashboard?tab=saved") && <ActiveDot />}
-                    <Heart size={22} strokeWidth={isActive("/dashboard?tab=saved") ? 2.25 : 2} />
+                    <Heart size={22} weight={isActive("/dashboard?tab=saved") ? "fill" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Saved</span>
                 </button>
 
@@ -74,7 +74,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     aria-label="Pin Your Flyer"
                 >
                     <div className="bg-primary text-primary-foreground p-3 rounded-full shadow-[0_8px_24px_-4px_hsl(var(--primary)/0.45)] hover:shadow-[0_10px_28px_-4px_hsl(var(--primary)/0.55)] transition-all duration-200 group-active:scale-90 ring-4 ring-background">
-                        <Plus size={26} strokeWidth={2.5} />
+                        <Plus size={26} weight="bold" />
                     </div>
                     <span className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">PIN</span>
                 </button>
@@ -84,7 +84,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     className={navItemClass(isActive("/dashboard?tab=chats"))}
                 >
                     {isActive("/dashboard?tab=chats") && <ActiveDot />}
-                    <MessageSquare size={22} strokeWidth={isActive("/dashboard?tab=chats") ? 2.25 : 2} />
+                    <ChatText size={22} weight={isActive("/dashboard?tab=chats") ? "bold" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Messages</span>
                 </button>
 
@@ -94,9 +94,9 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                 >
                     {isActive("/dashboard?tab=ads") && <ActiveDot />}
                     {user ? (
-                        <LayoutDashboard size={22} strokeWidth={isActive("/dashboard?tab=ads") ? 2.25 : 2} />
+                        <SquaresFour size={22} weight={isActive("/dashboard?tab=ads") ? "bold" : "regular"} />
                     ) : (
-                        <User size={22} strokeWidth={2} />
+                        <User size={22} />
                     )}
                     <span className="text-[11px] font-medium tracking-wide">{user ? "Dashboard" : "Sign In"}</span>
                 </button>

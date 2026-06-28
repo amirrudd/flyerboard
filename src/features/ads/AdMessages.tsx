@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ReportModal } from "../../components/ReportModal";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
-import { Flag, ChevronLeft } from "lucide-react";
+import { CaretLeft } from '@phosphor-icons/react';
 
 interface AdMessagesProps {
   adId: Id<"ads">;
@@ -110,7 +110,7 @@ export function AdMessages({ adId, onBack }: AdMessagesProps) {
               aria-label="Back"
               className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <CaretLeft className="w-5 h-5" />
               <span className="hidden sm:inline text-sm font-medium">Back to flyers</span>
             </button>
             <h1 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-foreground truncate mx-2">Messages for "{ad.title}"</h1>

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { Header } from "../features/layout/Header";
-import { ChevronLeft } from 'lucide-react';
+import { CaretLeft } from '@phosphor-icons/react';
 import termsContent from "../content/terms-and-conditions.md?raw";
 import privacyContent from "../content/privacy-policy.md?raw";
 
@@ -34,7 +34,7 @@ export function TermsPage() {
                         aria-label="Go back to home"
                         className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <CaretLeft className="w-5 h-5" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
                 }

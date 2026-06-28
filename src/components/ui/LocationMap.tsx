@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
-import { AlertTriangle, MapPin } from 'lucide-react';
+import { Warning, MapPin } from '@phosphor-icons/react';
 
 interface LocationMapProps {
     location: string;
@@ -113,7 +113,7 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
         return (
             <div className={`h-64 bg-muted rounded-lg flex items-center justify-center ${className}`}>
                 <div className="text-center text-muted-foreground">
-                    <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
+                    <Warning className="w-12 h-12 mx-auto mb-2" />
                     <p className="text-sm">Map configuration missing</p>
                 </div>
             </div>

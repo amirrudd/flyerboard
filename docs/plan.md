@@ -291,9 +291,15 @@ See Phase 1.2.
 
 ### 5.4 Filters bar above the home grid
 
-Sort by (newest, price asc / desc, distance), price range slider,
-location radius (10km / 25km / 50km / any). The state lives in URL
-search params so deep-links work.
+Price range (min / max) and, later, location radius (10km / 25km / 50km
+/ any). The state lives in URL search params so deep-links work.
+
+**No sort control — by design.** The feed is *always* newest-first
+because the core product loop is "pin your flyer to the top." A sort
+option (especially by price) lets users bypass that ordering and
+undercuts the monetization. Filters narrow the result set; they must
+never reorder it. (An earlier pass shipped a Newest / Price↑ / Price↓
+dropdown — it was removed for this reason.)
 
 **Files**
 - New: `src/features/ads/AdsFilterBar.tsx`.

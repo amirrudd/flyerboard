@@ -2,7 +2,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Envelope, Lock, ArrowRight, CircleNotch } from '@phosphor-icons/react';
 import { Link } from "react-router-dom";
 
 interface SignInFormProps {
@@ -50,7 +50,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
             <label htmlFor="auth-email" className="sr-only">
               Email address
             </label>
-            <Mail
+            <Envelope
               className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors"
               aria-hidden="true"
             />
@@ -90,7 +90,7 @@ export function SignInForm({ flow, setFlow }: SignInFormProps) {
           disabled={submitting}
         >
           {submitting ? (
-            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+            <CircleNotch className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
             <>
               {flow === "signIn" ? "Sign in" : "Create account"}

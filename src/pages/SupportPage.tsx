@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, MessageSquare, User, FileText, ChevronLeft } from "lucide-react";
+import { Envelope, ChatText, User, FileText, CaretLeft } from '@phosphor-icons/react';
 import { toast } from "sonner";
 import { Header } from "../features/layout/Header";
 import { logDebug } from "../lib/logger";
@@ -42,7 +42,7 @@ export default function SupportPage() {
                         aria-label="Go back to home"
                         className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <CaretLeft className="w-5 h-5" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
                 }
@@ -70,7 +70,7 @@ export default function SupportPage() {
                         >
                             <div className="flex flex-col items-center gap-4">
                                 <div className="p-4 bg-muted/50 ring-1 ring-border/70 rounded-full">
-                                    <Mail className="w-6 h-6 text-primary" aria-hidden="true" />
+                                    <Envelope className="w-6 h-6 text-primary" aria-hidden="true" />
                                 </div>
                                 <h2
                                     id="contact-email-heading"
@@ -85,7 +85,7 @@ export default function SupportPage() {
                                     href="mailto:support@flyerboard.com.au"
                                     className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                 >
-                                    <Mail className="w-4 h-4" aria-hidden="true" />
+                                    <Envelope className="w-4 h-4" aria-hidden="true" />
                                     support@flyerboard.com.au
                                 </a>
                             </div>
@@ -101,7 +101,7 @@ export default function SupportPage() {
                                     id="enquiry-heading"
                                     className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2"
                                 >
-                                    <MessageSquare className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                                    <ChatText className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                                     Submit an Enquiry
                                 </h2>
                             </header>
@@ -127,7 +127,7 @@ export default function SupportPage() {
 
                                     <div className="space-y-2">
                                         <label htmlFor="email" className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                                            <Mail className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                                            <Envelope className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                                             Email <span className="text-destructive" aria-hidden="true">*</span>
                                         </label>
                                         <input

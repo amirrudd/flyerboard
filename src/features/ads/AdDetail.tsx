@@ -38,8 +38,9 @@ interface AdDetailProps {
 
 export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps) {
   const navigate = useNavigate();
-  const { whileInView } = useMotionPrefs();
+  const { whileInView, reduced } = useMotionPrefs();
   const heartControls = useAnimation();
+  const shareControls = useAnimation();
   const [showChat, setShowChat] = useState(false);
   const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
   const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
@@ -352,13 +353,24 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         rightNode={
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleShare}
+              <motion.button
+                onClick={async () => {
+                  await handleShare();
+                  if (!reduced) {
+                    shareControls.start({
+                      scale: [1, 1.18, 0.96, 1],
+                      transition: { duration: 0.32, ease: "easeOut" },
+                    });
+                  }
+                }}
+                whileTap={{ scale: 0.9 }}
                 className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
               >
-                <ShareNetwork className="w-5 h-5" />
-              </button>
+                <motion.span animate={shareControls} style={{ display: 'inline-flex' }}>
+                  <ShareNetwork className="w-5 h-5" />
+                </motion.span>
+              </motion.button>
               {user && displayAd.userId !== user._id && (
                 <>
                   <motion.button
@@ -374,13 +386,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                       <Heart className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
                     </motion.span>
                   </motion.button>
-                  <button
+                  <motion.button
                     onClick={() => setShowReportModal(true)}
+                    whileTap={{ scale: 0.9 }}
                     className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
                     title="Report flyer"
                   >
                     <Flag className="w-5 h-5" />
-                  </button>
+                  </motion.button>
                 </>
               )}
             </div>

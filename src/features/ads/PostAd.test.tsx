@@ -3,6 +3,24 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PostAd } from './PostAd';
 import { useMutation, useQuery } from 'convex/react';
 import { searchLocations } from '../../lib/locationService';
+import type { Doc, Id } from '../../../convex/_generated/dataModel';
+
+// Typed factory so editing-ad fixtures satisfy the full Doc<"ads"> shape
+// (including system + required fields like _creationTime, userId, isActive, views).
+const makeAd = (overrides: Partial<Doc<'ads'>> = {}): Doc<'ads'> => ({
+    _id: 'ad1' as Id<'ads'>,
+    _creationTime: 0,
+    title: 'Existing Ad',
+    description: 'Desc',
+    price: 50,
+    location: 'Melbourne',
+    categoryId: 'cat1' as Id<'categories'>,
+    images: ['old.jpg'],
+    userId: 'user1' as Id<'users'>,
+    isActive: true,
+    views: 0,
+    ...overrides,
+});
 
 // Mock convex hooks
 vi.mock('convex/react', () => ({
@@ -129,15 +147,7 @@ describe('PostAd', () => {
     });
 
     it('should pre-fill form when editing', () => {
-        const editingAd = {
-            _id: 'ad1',
-            title: 'Existing Ad',
-            description: 'Desc',
-            price: 50,
-            location: 'Melbourne',
-            categoryId: 'cat1',
-            images: ['old.jpg'],
-        };
+        const editingAd = makeAd();
 
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
@@ -146,15 +156,7 @@ describe('PostAd', () => {
     });
 
     it('should show delete button when editing', () => {
-        const editingAd = {
-            _id: 'ad1',
-            title: 'Existing Ad',
-            description: 'Desc',
-            price: 50,
-            location: 'Melbourne',
-            categoryId: 'cat1',
-            images: ['old.jpg'],
-        };
+        const editingAd = makeAd();
 
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
@@ -164,15 +166,7 @@ describe('PostAd', () => {
     });
 
     it('should show confirmation dialog when delete is clicked', async () => {
-        const editingAd = {
-            _id: 'ad1',
-            title: 'Existing Ad',
-            description: 'Desc',
-            price: 50,
-            location: 'Melbourne',
-            categoryId: 'cat1',
-            images: ['old.jpg'],
-        };
+        const editingAd = makeAd();
 
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
@@ -186,15 +180,7 @@ describe('PostAd', () => {
     });
 
     it('should show and hide delete confirmation dialog', async () => {
-        const editingAd = {
-            _id: 'ad1',
-            title: 'Existing Ad',
-            description: 'Desc',
-            price: 50,
-            location: 'Melbourne',
-            categoryId: 'cat1',
-            images: ['old.jpg'],
-        };
+        const editingAd = makeAd();
 
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
@@ -268,15 +254,13 @@ describe('PostAd', () => {
         // Setup mocks - make updateAd return our mock
         vi.mocked(useMutation).mockImplementation(() => mockUpdateAd as any);
 
-        const editingAd = {
-            _id: 'ad1',
+        const editingAd = makeAd({
             title: 'Test Ad',
             description: 'Test desc',
             price: 100,
             location: 'Sydney',
-            categoryId: 'cat1',
             images: ['old-image-1.jpg', 'old-image-2.jpg', 'old-image-3.jpg'], // 3 existing images
-        };
+        });
 
         const { rerender } = render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 
@@ -456,16 +440,14 @@ describe('PostAd', () => {
     });
 
     it('should pre-fill listing type when editing an exchange flyer', () => {
-        const editingAd = {
-            _id: 'ad1',
+        const editingAd = makeAd({
             title: 'Trade Item',
             description: 'Looking to trade',
-            listingType: 'exchange' as const,
+            listingType: 'exchange',
             exchangeDescription: 'Want gaming items',
             location: 'Sydney',
-            categoryId: 'cat1',
             images: ['img.jpg'],
-        };
+        });
 
         render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
 

@@ -1,6 +1,10 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+// Only ever h1–h6. A narrow literal union (vs `keyof JSX.IntrinsicElements`)
+// keeps `children` valid — the full union includes void elements like <br>.
+type HeadingElement = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+
 interface MarkdownContentProps {
     content: string;
     /**
@@ -12,9 +16,9 @@ interface MarkdownContentProps {
 
 export function MarkdownContent({ content, headingShift = 0 }: MarkdownContentProps) {
     const shift = headingShift;
-    const HeadingTag = (level: 1 | 2 | 3): keyof JSX.IntrinsicElements => {
+    const HeadingTag = (level: 1 | 2 | 3): HeadingElement => {
         const target = Math.min(6, level + shift);
-        return `h${target}` as keyof JSX.IntrinsicElements;
+        return `h${target}` as HeadingElement;
     };
 
     return (

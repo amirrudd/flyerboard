@@ -48,7 +48,7 @@ Vitest uses `jsdom` and `src/test/setup.ts`; Playwright tests live in `e2e/` and
 - **Providers** (outermost → innermost): `ErrorBoundary` → `UserSyncProvider` → `MarketplaceProvider` → `BrowserRouter`. `App` short-circuits to `PageLoader` while `useSession().isSessionLoading`.
 - **Path alias**: `@/` → `src/` (configured in `vite.config.ts` and `vitest.config.ts`).
 - **Layout**: `src/features/layout/Layout.tsx` is the shell rendered by `<Route element={<Layout />}>`.
-- **Feature folders** (`src/features/`): `ads`, `auth`, `dashboard`, `admin`, `layout`. Page-level shells live in `src/pages/`.
+- **Feature folders** (`src/features/`): `ads`, `auth`, `dashboard`, `admin`, `layout`. Page-level shells live in `src/pages/`. Shared hooks live in `src/hooks/` (e.g. `useMotionPrefs`, `useAdFilters`, `useMediaQuery`).
 - **Tailwind v4** with PostCSS. Design tokens in `tailwind.config.js`.
 
 ### Backend (`convex/`)
@@ -70,6 +70,7 @@ Vitest uses `jsdom` and `src/test/setup.ts`; Playwright tests live in `e2e/` and
 - **UI auth state**: use Descope's `useSession()`, not a Convex query — Convex queries cause flicker on first paint.
 - **Image uploads in edit mode**: keep new files separate from existing R2 keys; filter deleted images out of `existingImages` before submit; only pass storage keys to mutations (never base64/data URLs).
 - **Rate limits**: mutations apply per-user limits via `convex/lib/rateLimit.ts` (`checkRateLimit(ctx, userId, "createAd")` etc. — see that file for configured operations and windows).
+- **Animations**: use `framer-motion` via `useMotionPrefs()` (`src/hooks/useMotionPrefs.ts`) — spread its `fadeUp` / `whileInView` / `staggerCard` helpers onto `motion.*` elements (e.g. `<motion.div {...whileInView(0.05)} />`). They bake in `prefers-reduced-motion`, so don't add manual reduced-motion checks or a second animation library. Canonical use: `src/features/ads/AdsGrid.tsx`.
 
 ## Common operational tasks
 
@@ -108,7 +109,7 @@ For human-facing architecture context (the *why*), cross-reference `docs/archite
 - `convex-utility/` — mutation/query templates enforcing auth + soft-delete + ownership patterns.
 - `r2-storage-manager/` — CORS-safe presigned URL patterns; `scripts/check-env.sh` to verify R2 env vars; `scripts/list-bucket.mjs`.
 - `responsive-ui-auditor/` — `scripts/audit-responsive.sh <file>` flags `100vh`, fixed widths, missing `md:` prefixes.
-- `visual-consistency-auditor/` — `scripts/audit-design-system.sh <file>` flags hardcoded hex/pixel values. Design tokens: primary `#ef4444`, neutrals `#242428` / `#71717a` / `#dbdbe4`, font `Plus Jakarta Sans`, lucide icons at 16/20/24px.
+- `visual-consistency-auditor/` — `scripts/audit-design-system.sh <file>` flags hardcoded hex/pixel values. Design tokens: brand primary `#dc3626` (the `bg-primary` DEFAULT / `--primary`; `#ef4444` survives only as the lighter `primary-500` shade), neutrals `#242428` / `#71717a` / `#dbdbe4`, fonts `Plus Jakarta Sans` (body) + `Fraunces` (headings, via `font-display`), lucide icons at 16/20/24px. NOTE: the skill's own `SKILL.md` still lists `#ef4444` — treat this line as the source of truth.
 - `test-stress-tester/` — `scripts/run-repeatedly.sh <test-file> <iterations>` for hunting flakes.
 - `pwa-mobile-optimization-manager/`, `mobile-ux-optimizer/`, `kmp-ui-bridge/` (web↔Compose translation table).
 

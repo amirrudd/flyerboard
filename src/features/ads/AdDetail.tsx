@@ -141,7 +141,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Link to flyer copied to clipboard");
     if (!reduced) {
-      shareControls.start({
+      void shareControls.start({
         scale: [1, 1.18, 0.96, 1],
         transition: { duration: 0.32, ease: "easeOut" },
       });

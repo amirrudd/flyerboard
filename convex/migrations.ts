@@ -9,7 +9,7 @@ const DEFAULT_BATCH_SIZE = 10;
 const needsMigration = (value: string | null | undefined) =>
   Boolean(value && !value.startsWith("http") && !value.startsWith("data:") && !isR2Reference(value));
 
-const makeAdKey = (ad: Pick<Doc<"ads">, "_id" | "userId">, index: number) =>
+const makeAdKey = (ad: Pick<Doc<"ads">, "_id" | "userId">, _index: number) =>
   `flyers/${ad._id}/${crypto.randomUUID()}`;
 
 const makeProfileKey = (userId: Id<"users">) => `profiles/${userId}/${crypto.randomUUID()}`;
@@ -107,7 +107,7 @@ export const migrateLegacyImagesToR2 = internalAction({
           continue;
         }
 
-        const payload = await toUint8Array(file as StoredFile);
+        const payload = await toUint8Array(file);
         const key = await r2.store(ctx, payload, {
           key: makeAdKey(ad, index),
         });
@@ -141,7 +141,7 @@ export const migrateLegacyImagesToR2 = internalAction({
         continue;
       }
 
-      const payload = await toUint8Array(file as StoredFile);
+      const payload = await toUint8Array(file);
       const key = await r2.store(ctx, payload, {
         key: makeProfileKey(user._id),
       });

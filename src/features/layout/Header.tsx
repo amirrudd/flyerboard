@@ -2,7 +2,6 @@ import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
 import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
 import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass } from "@phosphor-icons/react";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -48,7 +47,8 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
+        void (async () => {
         const { latitude, longitude } = position.coords;
 
         try {
@@ -107,6 +107,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           setIsDetectingLocation(false);
           setIsOpen(false);
         }
+        })();
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -231,7 +232,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 
           <div className="border-t border-border p-1">
             <button
-              onClick={detectLocation}
+              onClick={() => { void detectLocation(); }}
               disabled={isDetectingLocation}
               className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
             >
@@ -435,7 +436,7 @@ export const Header = memo(function Header({
 
     // Navigate to home if not already there and search is not empty
     if (e.target.value.trim() !== "" && window.location.pathname !== "/") {
-      navigate('/');
+      void navigate('/');
     }
   }, [debouncedSetSearchQuery, navigate]);
 
@@ -451,7 +452,7 @@ export const Header = memo(function Header({
                 <button
                   type="button"
                   className="cursor-pointer flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
-                  onClick={() => navigate('/')}
+                  onClick={() => { void navigate('/'); }}
                   aria-label="FlyerBoard home"
                 >
                   <img src="/icons/icon-48x48.png" alt="" aria-hidden="true" className="w-7 h-7 transition-transform duration-300 group-hover:rotate-[-4deg]" />
@@ -498,12 +499,12 @@ export const Header = memo(function Header({
                   isAuthenticated={isAuthenticated}
                   onPostClick={() => {
                     if (user) {
-                      navigate('/post', { state: { from: window.location.pathname } });
+                      void navigate('/post', { state: { from: window.location.pathname } });
                     } else {
                       setShowAuthModal(true);
                     }
                   }}
-                  onDashboardClick={() => navigate('/dashboard')}
+                  onDashboardClick={() => { void navigate('/dashboard'); }}
                   onSignInClick={() => setShowAuthModal(true)}
                 />
               </>
@@ -535,7 +536,7 @@ export const Header = memo(function Header({
               setSelectedLocation={setSelectedLocation}
               user={user}
               setShowAuthModal={setShowAuthModal}
-              navigate={navigate}
+              navigate={(path) => { void navigate(path); }}
             />
           )}
         </div>

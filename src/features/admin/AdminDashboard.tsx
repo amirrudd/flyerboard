@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { toast } from "sonner";
 import { Header } from "../layout/Header";
 import {
     CaretLeft,
@@ -124,7 +123,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                                 <button
                                     key={tab.id}
                                     type="button"
-                                    onClick={() => setActiveTab(tab.id as any)}
+                                    onClick={() => setActiveTab(tab.id)}
                                     aria-current={isActive ? "page" : undefined}
                                     className={`relative flex items-center gap-2 px-4 pt-2.5 pb-3 font-medium whitespace-nowrap transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-xl ${
                                         isActive

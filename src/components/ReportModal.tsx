@@ -132,7 +132,7 @@ export function ReportModal({
                 </header>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-5">
                     {/* Reason Selection */}
                     <div>
                         <label htmlFor="reason" className="kicker block mb-2">

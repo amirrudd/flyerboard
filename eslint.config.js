@@ -8,11 +8,17 @@ export default tseslint.config(
   {
     ignores: [
       "dist",
+      "coverage",
       "eslint.config.js",
       "convex/_generated",
       "postcss.config.js",
       "tailwind.config.js",
       "vite.config.ts",
+      "vitest.config.ts",
+      "playwright.config.ts",
+      "e2e/**",
+      ".agent/**",
+      ".claude/**",
     ],
   },
   {
@@ -28,11 +34,11 @@ export default tseslint.config(
         ...globals.node,
       },
       parserOptions: {
-        project: [
-          "./tsconfig.node.json",
-          "./tsconfig.app.json",
-          "./convex/tsconfig.json",
-        ],
+        // projectService auto-resolves the nearest tsconfig per file (incl.
+        // config/test files like vitest.config.ts), avoiding "file not found
+        // in project" parsing errors from a static project list.
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {

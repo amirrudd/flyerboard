@@ -251,7 +251,7 @@ export function FlyersTab() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleDeleteFlyer(showDeleteConfirm)}
+                                onClick={() => { void handleDeleteFlyer(showDeleteConfirm); }}
                                 className="flex-1 h-11 px-4 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-destructive/25 transition-all"
                             >
                                 Delete
@@ -296,7 +296,7 @@ export function FlyersTab() {
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => handleDeleteImage(showImageModal.adId, imageRef)}
+                                        onClick={() => { void handleDeleteImage(showImageModal.adId, imageRef); }}
                                         className="absolute top-2 right-2 p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 active:scale-[0.98] transition-all opacity-0 group-hover:opacity-100 shadow-sm shadow-destructive/25"
                                         aria-label={`Delete image ${index + 1}`}
                                         title="Delete this image"

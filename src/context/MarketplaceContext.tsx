@@ -54,8 +54,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // Track new ads for highlighting
     const [newAdIds, setNewAdIds] = useState<Set<string>>(new Set());
-    // Initialize to 5 minutes ago to catch recent ads when page loads
-    const lastRefreshTimestamp = useRef<number>(Date.now() - 5 * 60 * 1000);
+    // Initialize to 5 minutes ago to catch recent ads when page loads.
+    // The lazy `useState` initializer runs once at mount (keeping render pure),
+    // and seeds the mutable ref used for tracking the last refresh time.
+    const [initialRefreshTimestamp] = useState(() => Date.now() - 5 * 60 * 1000);
+    const lastRefreshTimestamp = useRef<number>(initialRefreshTimestamp);
 
     // Generate cache key from current filters
     const cacheKey = useMemo(() => {
@@ -68,7 +71,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // Stable pagination: freeze the timestamp when the component mounts
     // We do NOT reset this when filters change, to allow caching of previous results.
     // The user can manually refresh the page to get the absolute latest ads.
-    const [initialLoadTimestamp] = useState(Date.now());
+    const [initialLoadTimestamp] = useState(() => Date.now());
 
     const { results: ads, status, loadMore } = usePaginatedQuery(
         api.ads.getAds,
@@ -147,6 +150,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (ads && ads.length > 0) {
             adsCache.current.set(cacheKey, ads);
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- populating the client-side cache from the paginated Convex query results
             setCachedAds(ads);
         }
     }, [ads, cacheKey]);
@@ -169,6 +173,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // Handle responsive sidebar behavior - sync with device changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing sidebar state to the device viewport (external responsive state) when it changes
         setSidebarCollapsed(isMobile);
     }, [isMobile]);
 

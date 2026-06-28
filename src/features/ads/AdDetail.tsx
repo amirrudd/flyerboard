@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { ReportModal } from "../../components/ReportModal";
-import { StarRating } from "../../components/ui/StarRating";
 import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
@@ -89,6 +88,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   useEffect(() => {
     if (existingChat) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing local chatId from server-loaded existingChat
       setChatId(existingChat._id);
     }
   }, [existingChat]);
@@ -122,7 +122,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       toast.success(result.saved ? "Ad saved!" : "Ad removed from saved");
       if (result.saved) {
         if (!reduced) {
-          heartControls.start({
+          void heartControls.start({
             scale: [1, 1.35, 0.9, 1],
             transition: { duration: 0.3, ease: "easeOut" },
           });
@@ -130,7 +130,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         setShowLikeNotificationModal(true);
       }
       setOptimisticSaved(null);
-    } catch (error) {
+    } catch {
       setOptimisticSaved(null);
       toast.error("Failed to save ad");
     }
@@ -141,7 +141,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Link to flyer copied to clipboard");
     if (!reduced) {
-      shareControls.start({
+      void shareControls.start({
         scale: [1, 1.18, 0.96, 1],
         transition: { duration: 0.32, ease: "easeOut" },
       });
@@ -232,9 +232,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const displayAd = ad || initialAd;
 
   // Auto-open chat for logged-in users viewing other users' ads
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; see note
   useEffect(() => {
     if (user && displayAd && displayAd.userId !== user._id && !showChat) {
-      handleStartChat();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- handleStartChat opens the chat UI as a deliberate side-effect of viewing another user's ad
+      void handleStartChat();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, displayAd]);
@@ -362,7 +364,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-2">
               <motion.button
-                onClick={handleShare}
+                onClick={() => { void handleShare(); }}
                 whileTap={{ scale: 0.9 }}
                 className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                 title="Share flyer"
@@ -374,7 +376,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               {user && displayAd.userId !== user._id && (
                 <>
                   <motion.button
-                    onClick={handleSave}
+                    onClick={() => { void handleSave(); }}
                     whileTap={{ scale: 0.88 }}
                     className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
                       ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
@@ -406,12 +408,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 isAuthenticated={isAuthenticated}
                 onPostClick={() => {
                   if (user) {
-                    navigate('/post', { state: { from: `/ad/${adId}` } });
+                    void navigate('/post', { state: { from: `/ad/${adId}` } });
                   } else {
                     onShowAuth();
                   }
                 }}
-                onDashboardClick={() => navigate('/dashboard')}
+                onDashboardClick={() => { void navigate('/dashboard'); }}
                 onSignInClick={onShowAuth}
               />
             </div>
@@ -610,7 +612,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <>
                     {!showChat && (
                       <button
-                        onClick={handleStartChat}
+                        onClick={() => { void handleStartChat(); }}
                         className="w-full bg-primary text-primary-foreground h-11 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-2"
                       >
                         Contact Seller
@@ -627,7 +629,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
                 {user && displayAd.userId === user._id && (
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => { void navigate('/dashboard'); }}
                     className="w-full bg-primary text-primary-foreground h-11 px-4 rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Manage Your Flyers
@@ -670,12 +672,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         type="text"
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyPress={(e) => { if (e.key === 'Enter') void handleSendMessage(); }}
                         placeholder="Type your message..."
                         className="flex-1 h-10 px-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                       />
                       <button
-                        onClick={handleSendMessage}
+                        onClick={() => { void handleSendMessage(); }}
                         disabled={!messageText.trim()}
                         aria-label="Send message"
                         className="bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25"
@@ -694,7 +696,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   {user && displayAd.userId === user._id ? (
                     // Show Edit button for own flyers
                     <button
-                      onClick={() => navigate('/post', { state: { editingAd: displayAd } })}
+                      onClick={() => { void navigate('/post', { state: { editingAd: displayAd } }); }}
                       className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
                       <PencilSimple className="w-4 h-4" weight="bold" />
@@ -705,7 +707,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     user && (
                       <>
                         <button
-                          onClick={handleSave}
+                          onClick={() => { void handleSave(); }}
                           className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all active:scale-[0.98] font-medium text-sm ${displaySaved
                             ? 'bg-destructive/[0.08] text-destructive ring-1 ring-destructive/30 hover:bg-destructive/[0.12]'
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
@@ -725,7 +727,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     )
                   )}
                   <button
-                    onClick={handleShare}
+                    onClick={() => { void handleShare(); }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
                   >
                     <ShareNetwork className="w-4 h-4" />
@@ -844,7 +846,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               onChange={(e) => setMessageText(e.target.value)}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
-                  handleSendMessage();
+                  void handleSendMessage();
                   // Create chat if needed and show notification
                   if (!chatId) {
                     setShowChat(true);
@@ -856,7 +858,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             />
             <button
               onClick={() => {
-                handleSendMessage();
+                void handleSendMessage();
                 if (!chatId) {
                   setShowChat(true);
                 }

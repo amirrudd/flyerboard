@@ -25,6 +25,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   useEffect(() => {
     if (open) {
+      // Reset search state each time the palette opens (sync to `open` prop).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
       setDebouncedQuery("");
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -60,7 +62,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const handleSelectListing = useCallback(
     (id: string) => {
-      navigate(`/ad/${id}`);
+      void navigate(`/ad/${id}`);
       onClose();
     },
     [navigate, onClose]
@@ -68,7 +70,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const handleSelectCategory = useCallback(
     (slug: string) => {
-      navigate(`/?category=${slug}`);
+      void navigate(`/?category=${slug}`);
       onClose();
     },
     [navigate, onClose]

@@ -292,7 +292,7 @@ export function CategoriesTab() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
                                 {/* Name */}
                                 <div>
                                     <label htmlFor="category-name" className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">
@@ -489,7 +489,7 @@ export function CategoriesTab() {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={handleDelete}
+                                    onClick={() => { void handleDelete(); }}
                                     className="flex-1 h-11 px-4 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] rounded-full font-semibold shadow-sm shadow-destructive/25 transition-all disabled:opacity-50"
                                     disabled={isSubmitting}
                                 >

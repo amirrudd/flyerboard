@@ -34,6 +34,8 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
     // Fetch tags.json from CDN
     useEffect(() => {
         if (tagsCache) {
+            // Hydrate synchronously from module-level cache on subsequent mounts.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTags(tagsCache);
             setIsLoading(false);
             return;

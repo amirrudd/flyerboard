@@ -225,6 +225,11 @@ Inventory of all features in the application.
 #### `meta/tech-stack.md`
 Technology choices and rationale.
 
+#### `meta/quality-gates.md`
+Type-check / lint / CI / Stop-hook gates. **Read before touching `package.json` scripts,
+`eslint.config.js`, `tsconfig*`, `.github/workflows/`, or `.claude/` hooks.** Key gotcha:
+`tsc -p .` is a no-op — use `tsc -b` for the frontend.
+
 ---
 
 ## Common Patterns Reference

@@ -53,8 +53,8 @@ export function trackView(adId: string) {
 function scheduleFlush() {
     if (flushTimeoutId !== null) return;
 
-    flushTimeoutId = setTimeout(async () => {
-        await flush();
+    flushTimeoutId = setTimeout(() => {
+        void flush();
     }, 30000); // 30 seconds
 }
 
@@ -96,7 +96,7 @@ export async function forceFlush(): Promise<void> {
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
-            flush();
+            void flush();
         }
     });
 }

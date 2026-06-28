@@ -8,7 +8,9 @@ describe('utils', () => {
         });
 
         it('should handle conditional class names', () => {
-            expect(cn('c1', true && 'c2', false && 'c3')).toBe('c1 c2');
+            const isActive: boolean = true;
+            const isDisabled: boolean = false;
+            expect(cn('c1', isActive && 'c2', isDisabled && 'c3')).toBe('c1 c2');
         });
 
         it('should handle arrays of class names', () => {

@@ -1,10 +1,9 @@
-import { useDescope, useSession } from "@descope/react-sdk";
+import { useSession } from "@descope/react-sdk";
 import { useCallback, useEffect } from "react";
 import { logDebug } from "./logger";
 
 export function useDescopeAuth() {
     const { isAuthenticated, isSessionLoading, sessionToken } = useSession();
-    const { } = useDescope();
 
     // Debug logging (development only)
     useEffect(() => {

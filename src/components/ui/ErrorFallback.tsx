@@ -28,7 +28,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
 
     const handleGoHome = () => {
         resetError();
-        navigate('/');
+        void navigate('/');
     };
 
     const handleTryAgain = () => {
@@ -48,7 +48,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
             console.error('Logout failed during error recovery:', e);
         }
         resetError();
-        navigate('/');
+        void navigate('/');
     };
 
     return (
@@ -78,7 +78,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
                         // For auth errors, show Sign Out button as primary action
                         <button
                             type="button"
-                            onClick={handleSignOutAndRetry}
+                            onClick={() => { void handleSignOutAndRetry(); }}
                             disabled={isLoggingOut}
                             className="flex-1 flex items-center justify-center gap-2 h-11 px-5 py-3 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-destructive/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                             aria-label="Sign out and try again"

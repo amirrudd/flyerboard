@@ -10,7 +10,7 @@ export function DashboardPage() {
 
     useEffect(() => {
         if (!isSessionLoading && !isAuthenticated) {
-            navigate('/', { replace: true });
+            void navigate('/', { replace: true });
         }
     }, [isAuthenticated, isSessionLoading, navigate]);
 
@@ -20,9 +20,9 @@ export function DashboardPage() {
 
     return (
         <UserDashboard
-            onBack={() => navigate('/')}
-            onPostAd={() => navigate('/post', { state: { from: '/dashboard' } })}
-            onEditAd={(ad) => navigate('/post', { state: { editingAd: ad, from: '/dashboard' } })}
+            onBack={() => { void navigate('/'); }}
+            onPostAd={() => { void navigate('/post', { state: { from: '/dashboard' } }); }}
+            onEditAd={(ad) => { void navigate('/post', { state: { editingAd: ad, from: '/dashboard' } }); }}
         />
     );
 }

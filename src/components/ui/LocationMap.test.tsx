@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { LocationMap } from './LocationMap';
 
 // Mock google.maps API
-global.google = {
+(global as any).google = {
     maps: {
         Circle: vi.fn().mockImplementation(function () {
             return {
@@ -70,7 +70,7 @@ describe('LocationMap', () => {
         expect(screen.getByTestId('google-map')).toBeInTheDocument();
         // Verify Circle was created
         await waitFor(() => {
-            expect(global.google.maps.Circle).toHaveBeenCalled();
+            expect((global as any).google.maps.Circle).toHaveBeenCalled();
         });
     });
 

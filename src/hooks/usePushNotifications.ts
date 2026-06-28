@@ -27,12 +27,16 @@ export function usePushNotifications() {
         }
     }, [savePushSubscription, removePushSubscription]);
 
-    // Check initial permission and subscription status
+    // Check initial permission and subscription status.
+    // This effect synchronizes React state from external browser APIs
+    // (Notification permission + push subscription) on mount, which is a
+    // legitimate "subscribe to an external system" use of an effect.
     useEffect(() => {
         if (notificationService.isSupported()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the browser Notification permission (external system) on mount
             setPermission(notificationService.getPermissionStatus());
 
-            notificationService.isSubscribed().then((subscribed) => {
+            void notificationService.isSubscribed().then((subscribed) => {
                 setIsSubscribed(subscribed);
             });
         }

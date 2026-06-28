@@ -20,7 +20,7 @@ vi.mock('../../lib/locationService', () => ({
 
 // Mock performance utils (debounce)
 vi.mock('../../lib/performanceUtils', () => ({
-    debounce: (fn: Function) => fn,
+    debounce: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
 // Mock Descope useSession hook

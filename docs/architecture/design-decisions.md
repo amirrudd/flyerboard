@@ -1,5 +1,22 @@
 # Design Decisions
 
+## Feed Ordering — Always Newest-First, No Sort (Jun 2026)
+
+**Decision**: The listings feed is permanently ordered newest-first. The
+filter bar (`AdsFilterBar`) offers a **price range (min/max) only** — there
+is intentionally **no sort control**.
+
+**Why**: The core product loop and monetization is "pin your flyer to the
+top." If users could re-sort the feed (especially by price), they'd bypass
+the pinned/newest ordering and the value of pinning collapses. Filters are
+allowed because they *narrow* the result set without reordering it; sorting
+is not.
+
+**Implementation rule**: `useAdFilters` exposes only `minPrice` / `maxPrice`.
+`HomePage` applies them as `.filter(...)` and must never call `.sort(...)` on
+the feed. An earlier pass shipped a Newest / Price↑ / Price↓ dropdown; it was
+removed.
+
 ## Cost Optimization (Jan 2026)
 
 ### Combined Queries

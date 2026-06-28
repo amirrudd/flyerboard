@@ -1,33 +1,18 @@
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useAdFilters } from "../../hooks/useAdFilters";
 
 export function AdsFilterBar() {
-  const { sort, minPrice, maxPrice, hasActiveFilters, setParam, clearFilters } = useAdFilters();
+  const { minPrice, maxPrice, hasActiveFilters, setParam, clearFilters } = useAdFilters();
 
   return (
     <div className="flex items-center gap-2.5 mb-5 flex-wrap">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={2} />
-        <span className="kicker">Filter</span>
+        <span className="kicker">Price</span>
       </div>
       <div className="w-px h-4 bg-border/70" />
 
-      {/* Sort */}
-      <div className="relative">
-        <select
-          aria-label="Sort listings"
-          value={sort}
-          onChange={e => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
-          className="h-8 pl-3 pr-7 rounded-full bg-card ring-1 ring-border/70 text-xs font-semibold text-foreground appearance-none cursor-pointer hover:ring-foreground/20 transition-all focus:outline-none focus:ring-primary/50"
-        >
-          <option value="newest">Newest</option>
-          <option value="price_asc">Price: Low → High</option>
-          <option value="price_desc">Price: High → Low</option>
-        </select>
-        <ChevronDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
-      </div>
-
-      {/* Price range */}
+      {/* Price range — the feed stays newest-first; we never expose a sort control */}
       <div className="flex items-center gap-1.5">
         <input
           type="number"

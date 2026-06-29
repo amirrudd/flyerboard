@@ -1,4 +1,5 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { triggerHomeScrollToTop, HOME_SCROLL_KEY } from "../../lib/homeScrollBridge";
 import { House, Plus, User, ChatText, Heart, SquaresFour } from "@phosphor-icons/react";
 import { useSession } from "@descope/react-sdk";
 import { memo } from "react";
@@ -32,6 +33,15 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
         }
     };
 
+    const handleHomeClick = () => {
+        if (isActive("/")) {
+            triggerHomeScrollToTop();
+            sessionStorage.removeItem(HOME_SCROLL_KEY);
+        } else {
+            void navigate("/");
+        }
+    };
+
     const navItemClass = (active: boolean) =>
         `relative flex flex-col items-center gap-1 p-2 rounded-xl transition-colors duration-200 active:scale-95 ${
             active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -53,11 +63,11 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             }}
         >
             <div className="grid grid-cols-5 items-end px-4 pt-2 pb-4">
-                <Link to="/" className={navItemClass(isActive("/"))}>
+                <button onClick={handleHomeClick} className={navItemClass(isActive("/"))}>
                     {isActive("/") && <ActiveDot />}
                     <House size={22} weight={isActive("/") ? "bold" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Home</span>
-                </Link>
+                </button>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=saved")}

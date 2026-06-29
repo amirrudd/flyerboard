@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUp } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
@@ -11,7 +12,7 @@ export function ScrollToTopButton({ visible, onClick }: ScrollToTopButtonProps) 
   const { reduced } = useMotionPrefs();
   const hiddenState = { opacity: 0, scale: reduced ? 1 : 0.55, y: reduced ? 0 : 8 };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {visible && (
         <motion.button
@@ -30,6 +31,7 @@ export function ScrollToTopButton({ visible, onClick }: ScrollToTopButtonProps) 
           </span>
         </motion.button>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

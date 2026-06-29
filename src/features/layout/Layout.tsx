@@ -26,7 +26,7 @@ export function Layout() {
 
     return (
         <div className="flex flex-col h-dynamic-screen overflow-hidden pt-safe bg-background">
-            <main className="flex-1 overflow-y-auto mobile-scroll-container">
+            <main className="flex-1 overflow-y-auto md:overflow-hidden mobile-scroll-container scrollbar-hide">
                 <Outlet context={{ setShowAuthModal }} />
             </main>
 

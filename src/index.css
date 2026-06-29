@@ -408,6 +408,8 @@
     /* Optimize scroll performance */
     overflow-y: auto;
     overflow-x: hidden;
+    /* Reserve scrollbar gutter permanently so it never causes horizontal layout shift */
+    scrollbar-gutter: stable;
     /* Allow vertical scrolling only */
     touch-action: pan-y;
     /* Prevent scroll chaining to parent containers */

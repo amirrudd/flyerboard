@@ -10,6 +10,7 @@ import { useSession } from "@descope/react-sdk";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AdsFilterBar } from "../features/ads/AdsFilterBar";
 import { useAdFilters } from "../hooks/useAdFilters";
+import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
@@ -138,6 +139,30 @@ export function HomePage() {
     }
   }, [newAdIds, clearNewAdIds]);
 
+  // Scroll-to-top — one listener per scroll container; only the active one fires per breakpoint
+  const adsFeedRef = useRef<HTMLDivElement>(null);
+  const mainElRef = useRef<Element | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const feedEl = adsFeedRef.current;
+    const mainEl = document.querySelector("main");
+    mainElRef.current = mainEl;
+    const onScroll = (e: Event) =>
+      setShowScrollTop((e.currentTarget as Element).scrollTop > 600);
+    feedEl?.addEventListener("scroll", onScroll, { passive: true });
+    mainEl?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      feedEl?.removeEventListener("scroll", onScroll);
+      mainEl?.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  const handleScrollToTop = useCallback(() => {
+    adsFeedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    mainElRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
   // Infinite scroll with IntersectionObserver
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -163,7 +188,7 @@ export function HomePage() {
   }, [status, loadMore]);
 
   return (
-    <div className="flex flex-col bg-background min-h-screen">
+    <div className="flex flex-col bg-background md:h-full">
       <Header
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -175,9 +200,9 @@ export function HomePage() {
         setSelectedLocation={setSelectedLocation}
       />
 
-      <div className="content-max-width mx-auto container-padding py-6 w-full">
-        <div className="flex gap-8 items-start">
-          <div className="hidden md:block sticky top-21 self-start flex-shrink-0 min-h-[400px]">
+      <div className="content-max-width mx-auto container-padding py-6 w-full md:flex-1 md:min-h-0 md:py-0 md:pt-6">
+        <div className="flex gap-8 items-start md:h-full">
+          <div className="hidden md:block self-start flex-shrink-0">
             <Sidebar
               sidebarCollapsed={sidebarCollapsed}
               categories={categories || []}
@@ -189,7 +214,10 @@ export function HomePage() {
           </div>
 
           {/* Main Content - Feed */}
-          <div className="flex-1 min-w-0 pb-bottom-nav md:pb-0 min-h-[600px]">
+          <div
+            ref={adsFeedRef}
+            className="flex-1 min-w-0 pb-bottom-nav md:pb-0 md:h-full md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] scrollbar-hide"
+          >
             <AdsFilterBar />
             <AdsGrid
               ads={filteredAds}
@@ -230,6 +258,8 @@ export function HomePage() {
           </div>
         </div>
       </div>
+
+      <ScrollToTopButton visible={showScrollTop} onClick={handleScrollToTop} />
     </div>
   );
 }

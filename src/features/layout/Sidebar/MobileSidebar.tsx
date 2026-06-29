@@ -58,12 +58,10 @@ export function MobileSidebar({
 
             {/* Sidebar */}
             <div
-                className="fixed left-0 h-dynamic-screen w-64 bg-card shadow-2xl z-[70] overflow-y-auto scrollbar-hide pb-bottom-nav"
+                className="fixed left-0 w-64 bg-background shadow-2xl z-[70] overflow-hidden"
                 style={{
                     top: 'env(safe-area-inset-top, 0px)',
-                    overscrollBehavior: 'contain',
-                    touchAction: 'pan-y',
-                    WebkitOverflowScrolling: 'touch',
+                    height: 'calc(100dvh - env(safe-area-inset-top, 0px))',
                 }}
                 onClick={(e) => e.stopPropagation()}
                 onTouchMove={(e) => e.stopPropagation()}

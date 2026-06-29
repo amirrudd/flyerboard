@@ -41,12 +41,12 @@ export const SidebarContent = memo(function SidebarContent({
         setSelectedCategory(categoryId);
     }, [setSelectedCategory]);
 
-    const itemBase = "relative w-full text-left pl-4 pr-3 py-2 rounded-lg transition-all duration-200 text-sm flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background";
+    const itemBase = "relative w-full text-left pl-4 pr-3 py-2.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background";
 
     return (
-        <div className="h-full w-full flex flex-col bg-background">
+        <div className="h-full md:h-auto w-full flex flex-col bg-background">
             {/* Header - Fixed */}
-            <div className="h-10 px-4 border-b border-border/70 flex items-center justify-between flex-shrink-0">
+            <div className="h-14 md:h-8 px-4 border-b border-border/70 flex items-center justify-between flex-shrink-0">
                 <h2 className="kicker">Categories</h2>
                 {showCloseButton && (
                     <button
@@ -61,7 +61,7 @@ export const SidebarContent = memo(function SidebarContent({
             </div>
 
             {/* Categories - Scrollable */}
-            <nav className="flex-1 overflow-y-auto space-y-0.5 p-3" aria-label="Categories">
+            <nav className="overflow-y-auto md:max-h-[calc(100vh-13rem)] space-y-0.5 p-3" aria-label="Categories" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', touchAction: 'pan-y' }}>
                 <button
                     type="button"
                     onClick={handleSelectAllCategories}
@@ -113,7 +113,7 @@ export const SidebarContent = memo(function SidebarContent({
             <div className="flex-shrink-0 border-t border-border/70 pt-4 pb-3 px-4">
                 <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                     {[
-                        { label: "About", href: "/about" },
+                        { label: "About Us", href: "/about" },
                         { label: "Support", href: "/support" },
                         { label: "Terms", href: "/terms" },
                         { label: "Privacy", href: "/terms#privacy" },

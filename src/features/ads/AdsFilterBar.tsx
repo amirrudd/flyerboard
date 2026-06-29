@@ -5,7 +5,7 @@ export function AdsFilterBar() {
   const { minPrice, maxPrice, hasActiveFilters, setParam, clearFilters } = useAdFilters();
 
   return (
-    <div className="flex items-center gap-2.5 mb-5 flex-wrap">
+    <div className="flex items-center gap-2.5 pt-1 mb-5 flex-wrap">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Sliders className="w-3.5 h-3.5" />
         <span className="kicker">Price</span>

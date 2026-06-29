@@ -29,7 +29,7 @@ export function DesktopSidebar({
     isLoading,
 }: DesktopSidebarProps) {
     return (
-        <div className="hidden md:block w-64 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin overscroll-contain">
+        <div className="hidden md:block w-64">
             <SidebarContent
                 categories={categories}
                 selectedCategory={selectedCategory}

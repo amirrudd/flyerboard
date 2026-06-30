@@ -149,7 +149,7 @@ export function LocationMap({ location, className = '' }: LocationMapProps) {
                 <Map
                     defaultCenter={coordinates}
                     defaultZoom={13}
-                    gestureHandling="greedy"
+                    gestureHandling="none"
                     disableDefaultUI={true}
                     zoomControl={true}
                     mapId="flyerboard-location-map"

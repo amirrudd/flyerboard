@@ -33,5 +33,5 @@ export type FlowStep =
   | "upload"
   | "review"
   | "bundles"
-  | "paywall"
+  | "publish"
   | "share";

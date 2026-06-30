@@ -135,8 +135,9 @@ export const sendMessage = mutation({
       lastMessageAt: timestamp,
     });
 
-    // Send push notification to recipient (if enabled)
-    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true') {
+    // Send push notification to recipient (if enabled). Item-chat only — sale-thread
+    // notifications aren't wired yet (no single ad to reference).
+    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true' && chat.adId) {
       const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
       // Schedule push notification
@@ -152,8 +153,8 @@ export const sendMessage = mutation({
       );
     }
 
-    // Queue email notification for batching (if feature is enabled)
-    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
+    // Queue email notification for batching (if feature is enabled). Item-chat only.
+    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true' && chat.adId) {
       const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
       // Queue notification instead of sending immediately
@@ -330,7 +331,7 @@ export const getArchivedChats = query({
 
     const chatsWithDetails = await Promise.all(
       archivedChats.map(async (chat) => {
-        const ad = await ctx.db.get(chat.adId);
+        const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
         const seller = await ctx.db.get(chat.sellerId);
         const latestMessage = await ctx.db
           .query("messages")

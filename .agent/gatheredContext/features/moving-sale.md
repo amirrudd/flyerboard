@@ -1,6 +1,92 @@
 # Moving Sale Mode
 
-**Last Updated**: 2026-06-30
+**Last Updated**: 2026-06-30 (v3.1)
+
+## ⚠️ v3.1 update (2026-06-30) — feed items un-differentiated; richer ad-detail banner
+
+- **Feed sale items now look EXACTLY like single listings** — no badge, no strip, no
+  "In a moving sale" footer. (The "In a moving sale ›" footer from earlier today was
+  removed: the `›` chevron read as the primary CTA → nested-tap-target confusion.) The
+  only feed differentiator is the whole-Sale 2×2 card. `AdsGrid` lost its `saleSummaries`
+  prop + the per-item footer branch; `HomePage` dropped the `getSaleSummaries` wiring (kept
+  the max-3-per-Sale `displayAds` de-dup + the `saleCards`).
+- **`getSaleSummaries` was replaced by `getSaleBannerForAd(adId)`** — returns null unless the
+  ad is in a published Sale; provides the seller's **title-cased** first name, suburb, item
+  count, pickup start, min price, the current item image, up to 3 other item images, and a
+  `moreCount`. (`getSaleBannerForAd` is the only consumer now; feed badges are gone.)
+- **Batch-review Edit sheet works on desktop now**: the shared `BottomSheet` is `lg:hidden`
+  by default (mobile-only); it gained an opt-in `showOnDesktop` prop (centres + width-caps the
+  panel via `mx-auto max-w-md`, keeping the slide-up animation). `ReviewStep` passes it so
+  desktop sellers can edit title/condition/category, not just the inline price stepper.
+- **Ad-detail banner redesigned** (`AdDetail.tsx`): house-circle + "Part of {Name}'s Moving
+  Sale" + sub-line "suburb · N items · pickup · from $X", plus a thumbnail strip (current
+  item dimmed with a primary ring + up to 3 others + "+N"). Whole banner taps to the Sale.
+  Sold-item copy: "This item has sold · N items still available". Discovery happens HERE now,
+  not in the feed.
+
+---
+
+
+## ⚠️ v3 update (2026-06-30) — feed model finalised
+
+The "Sale event card pinned above the feed" from v2 is **removed**. A Sale now renders as
+**one card inside the regular date-sorted `AdsGrid`**, same shell as an ad card, slotted at
+its own `createdAt` position (sort rule unchanged — sale cards just interleave by date).
+- `AdsGrid` takes an optional `saleCards?: SaleFeedCard[]` prop (+ `onSaleClick`), merges
+  ads (`_creationTime`) and sale cards (`createdAt`) into one date-sorted list, and renders a
+  sale branch reusing the exact `motion.article` shell. Default-empty prop = zero regression.
+- New `src/features/movingSale/SaleThumbnail.tsx` = the 2×2 image-grid **degradation ladder**
+  (4+ → 3 covers + "+N" overlay · 3 → 2×2 with house-placeholder cell · 2 → strips · 1 →
+  single · 0 → house+suburb). Red "Moving Sale" badge, "from $X" price, "N items" footer.
+- `getActiveSales` returns `{ slug,title,suburb,createdAt,itemCount,photoCount,minPrice,covers }`
+  (newest-first; pinned-first dropped). `HomePage` passes it as `saleCards` (gated to the
+  uncategorised feed). The old `SaleEventCard.tsx` + its test are deleted.
+- Built per the **design skill** (redesign-preserve): match existing tokens/shell, no em-dashes.
+- **Bundle Listing** (the other v3 section) is deferred — a separate feature for a later session.
+- Tests run convex files via `convex-test`; they use Vite's `import.meta.glob`, so each convex
+  test file needs `/// <reference types="vite/client" />` for `tsc -p convex` (do NOT exclude
+  test files from `convex/tsconfig.json` — that breaks ESLint's typed parser).
+
+---
+
+
+## ⚠️ v2 update (2026-06-30) — READ FIRST, supersedes parts below
+
+The design doc was revised (`ResearchLab/ideas/moving-sale-mode-design.md`, v2). Key changes
+now reflected in the code:
+
+- **The mode is FREE — no paywall.** The $9 publish gate is gone. `publishSaleEvent`
+  publishes for free (mints slug, status `active`, activates items). `getSaleBySlug` gates on
+  `status !== "draft"`, NOT `isPaid`. The item cap is removed (`addSaleItems` only enforces a
+  100-item abuse ceiling). `PaywallStep` was replaced by `PublishStep` (free, un-blurred preview).
+- **Monetisation = à-la-carte add-ons**, offered on the share screen, never as a blocker:
+  `purchaseAddon(saleEventId, "flyer"|"pin"|"ai")` (STUB — flips `unlockedAddons` / `pinnedUntil`;
+  real flow opens Stripe per add-on). `ShareStep` gates QR+PDF behind the `flyer` add-on; the
+  7-day `pin` and `ai` are stub/coming-soon. `saleEvents` gained `unlockedAddons[]`, `pinnedUntil`;
+  `isPaid`/`itemCap` are now optional legacy fields (kept for back-compat, not enforced).
+- **Sale-level messaging is real now** (replaces the old "Message → route to /ad/:id" shortcut):
+  `convex/saleChats.ts` → `sendSaleMessage` / `getSaleThread`. One thread per buyer per Sale
+  (`chats.saleEventId` + index `by_sale_event_buyer`; `chats.adId` is now **optional**), items as
+  chips (`messages.referencedAdIds`). Frontend: `SaleMessageModal` on the public page (reuses the
+  app `AuthModal` for the Descope gate). **Gotcha:** making `chats.adId` optional broke 6 call
+  sites that assumed it (adDetail/admin/messages) — all now guard `if (chat.adId)`; item-chat push/
+  email notifications only fire when `adId` is set (sale-thread notifications not wired yet).
+  `getSellerChats`/`getBuyerChats` now also return `sale`; the dashboard chats tab shows a 🏠 title
+  and keeps the reply box enabled for sale threads.
+- **Feed integration:** sale items get a badge + tappable strip in `AdsGrid` (driven by an optional
+  `saleSummaries` prop + `onSaleClick` — default empty = no regression elsewhere); `HomePage` builds
+  the summary map (`getSaleSummaries`), de-dups to **max 3 items per Sale**, and renders distinct
+  `SaleEventCard`s (`getActiveSales`, pinned-first) above the grid. `AdDetail` shows a sale-context
+  banner when `ad.saleEventId` is set.
+- **Entry point #1 shipped:** PostAd top-of-form **mode selector** ("Single item" default vs
+  "Moving Sale · Free" → `/sell/moving-sale`), new posts only, zero regression. Header split-button
+  and FAB long-press (#2/#3) are still deferred.
+
+Everything below predates v2 — treat the v2 notes above as authoritative where they conflict
+(esp. anything about the $9 paywall, `isPaid` gating, item caps, or routing messages to `/ad/:id`).
+
+---
+
 
 Multi-item "run a moving sale" flow: a seller bulk-uploads photos, reviews
 AI-drafted listings card-by-card, optionally bundles them, previews a public sale

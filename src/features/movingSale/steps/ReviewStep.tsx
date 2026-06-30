@@ -245,6 +245,7 @@ export function ReviewStep({ items, categories, onComplete }: ReviewStepProps) {
         isOpen={editing !== null}
         onClose={() => setEditing(null)}
         title="Edit item"
+        showOnDesktop
       >
         {editing && editingItem && (
           <EditItemForm

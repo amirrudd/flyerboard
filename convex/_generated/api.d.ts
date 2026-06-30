@@ -37,6 +37,7 @@ import type * as r2 from "../r2.js";
 import type * as ratings from "../ratings.js";
 import type * as reports from "../reports.js";
 import type * as router from "../router.js";
+import type * as saleChats from "../saleChats.js";
 import type * as saleEvents from "../saleEvents.js";
 import type * as sampleData from "../sampleData.js";
 import type * as seed from "../seed.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   ratings: typeof ratings;
   reports: typeof reports;
   router: typeof router;
+  saleChats: typeof saleChats;
   saleEvents: typeof saleEvents;
   sampleData: typeof sampleData;
   seed: typeof seed;

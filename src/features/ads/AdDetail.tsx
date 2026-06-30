@@ -15,7 +15,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, CaretLeft, ShareNetwork, Heart, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle } from '@phosphor-icons/react';
+import { Flag, CaretLeft, ShareNetwork, Heart, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
@@ -24,7 +24,8 @@ import { ChatMessages } from "../../components/ui/ChatMessages";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
 import { ImageLightbox } from "../../components/ui/ImageLightbox";
-import { formatPriceWithCurrency } from "../../lib/priceFormatter";
+import { formatPriceWithCurrency, formatPrice } from "../../lib/priceFormatter";
+import { formatPickupShort } from "../movingSale/saleHelpers";
 import { trackView, setFlushCallback } from "../../lib/viewTracker";
 
 
@@ -230,6 +231,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   }
 
   const displayAd = ad || initialAd;
+
+  // v3.1: if this ad belongs to a Sale, show the rich context banner here (feed
+  // items are no longer differentiated — this is the sole discovery surface).
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; matches the useEffect below
+  const saleBanner = useQuery(
+    api.saleEvents.getSaleBannerForAd,
+    displayAd?.saleEventId ? { adId: displayAd._id } : "skip"
+  );
 
   // Auto-open chat for logged-in users viewing other users' ads
   // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; see note
@@ -550,6 +559,60 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <p className="text-muted-foreground text-xs mt-1">Posted {timeAgo}</p>
                 </div>
               </div>
+
+              {/* Sale context banner (v3.1) — the one place a sale item reveals
+                  it belongs to a Moving Sale. Text row + thumbnail strip; the whole
+                  banner taps through to the Sale page. */}
+              {saleBanner?.slug && (
+                <button
+                  type="button"
+                  onClick={() => { void navigate(`/sale/${saleBanner.slug}`); }}
+                  className="mb-6 w-full rounded-2xl border border-primary/20 bg-primary/[0.06] p-4 text-left transition active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <House size={20} weight="fill" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-foreground">
+                        {saleBanner.currentItemSold
+                          ? "This item has sold"
+                          : `Part of ${saleBanner.sellerFirstName}'s Moving Sale`}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {saleBanner.currentItemSold
+                          ? `${saleBanner.availableCount} items still available`
+                          : [
+                              saleBanner.suburb,
+                              `${saleBanner.itemCount} items`,
+                              formatPickupShort(saleBanner.pickupWindowStart),
+                              saleBanner.minPrice > 0 ? `from ${formatPrice(saleBanner.minPrice)}` : null,
+                            ].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <CaretRight size={18} className="shrink-0 text-muted-foreground" />
+                  </div>
+
+                  {/* Thumbnail strip: current item (dimmed) + up to 3 others + "+N". */}
+                  <div className="mt-3 flex gap-1">
+                    {saleBanner.currentImage && (
+                      <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md ring-2 ring-primary">
+                        <ImageDisplay imageRef={saleBanner.currentImage} alt="" className="h-full w-full object-cover opacity-50" />
+                      </div>
+                    )}
+                    {saleBanner.otherImages.map((img, i) => (
+                      <div key={i} className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md bg-muted">
+                        <ImageDisplay imageRef={img} alt="" className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                    {saleBanner.moreCount > 0 && (
+                      <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-md bg-neutral-900/70 text-xs font-semibold text-white">
+                        +{saleBanner.moreCount}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              )}
 
               {/* Exchange Description - shown for exchange and both types */}
               {(displayAd.listingType === "exchange" || displayAd.listingType === "both") && displayAd.exchangeDescription && (

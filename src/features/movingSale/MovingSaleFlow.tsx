@@ -12,11 +12,11 @@ import { SetupStep, type SetupValues } from "./steps/SetupStep";
 import { UploadStep } from "./steps/UploadStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { BundlesStep } from "./steps/BundlesStep";
-import { PaywallStep } from "./steps/PaywallStep";
+import { PublishStep } from "./steps/PublishStep";
 import { ShareStep } from "./steps/ShareStep";
 import type { FlowStep, SaleEventCore, SaleItem } from "./types";
 
-const PROGRESS_STEPS: FlowStep[] = ["setup", "upload", "review", "bundles", "paywall"];
+const PROGRESS_STEPS: FlowStep[] = ["setup", "upload", "review", "bundles", "publish"];
 
 interface MovingSaleFlowProps {
   /** Resume an existing draft (from the dashboard). */
@@ -50,7 +50,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   // "adjust state when inputs change" pattern — no effect, no ref access in render.
   if (!resumeHandled && editor) {
     setResumeHandled(true);
-    if (editor.sale.isPaid && editor.sale.slug) {
+    if (editor.sale.status === "active" && editor.sale.slug) {
       setPublishedSlug(editor.sale.slug);
       setStep("share");
     } else {
@@ -67,7 +67,6 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   const firstName = (currentUser?.name ?? "").trim().split(" ")[0] || "My";
   const items = (editor?.items ?? []) as SaleItem[];
   const bundles = editor?.bundles ?? [];
-  const itemCap = editor?.itemCap ?? 10;
   const saleCore: SaleEventCore | null = editor
     ? {
         title: editor.sale.title,
@@ -108,7 +107,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
       case "bundles":
         setStep("review");
         break;
-      case "paywall":
+      case "publish":
         setStep("bundles");
         break;
       default:
@@ -179,7 +178,6 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
       {step === "upload" && saleEventId && (
         <UploadStep
           saleEventId={saleEventId}
-          itemCap={itemCap}
           existingCount={items.length}
           onDone={() => setStep("review")}
         />
@@ -198,13 +196,13 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
           saleEventId={saleEventId}
           items={items}
           categories={categories}
-          onComplete={() => setStep("paywall")}
+          onComplete={() => setStep("publish")}
           onBack={() => setStep("review")}
         />
       )}
 
-      {step === "paywall" && saleEventId && saleCore && (
-        <PaywallStep
+      {step === "publish" && saleEventId && saleCore && (
+        <PublishStep
           saleEventId={saleEventId}
           sale={saleCore}
           sellerName={currentUser?.name ?? null}
@@ -221,12 +219,14 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
         />
       )}
 
-      {step === "share" && saleCore && publishedSlug && (
+      {step === "share" && saleEventId && saleCore && publishedSlug && (
         <ShareStep
+          saleEventId={saleEventId}
           slug={publishedSlug}
           sale={{ ...saleCore, slug: publishedSlug }}
           items={items}
           itemCount={items.length}
+          unlockedAddons={editor?.sale.unlockedAddons ?? []}
         />
       )}
     </div>
@@ -235,9 +235,9 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
 
 function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => void }) {
   const points = [
-    { icon: <Sparkle size={20} weight="fill" />, text: "Snap your stuff — we draft every listing for you" },
-    { icon: <Tag size={20} weight="fill" />, text: "Smart bundle pricing to clear more, faster" },
-    { icon: <Lightning size={20} weight="fill" />, text: "One shareable page, QR code & printable flyer" },
+    { icon: <Sparkle size={20} weight="fill" />, text: "List everything on one page — unlimited items, free" },
+    { icon: <Tag size={20} weight="fill" />, text: "Bundle items together to clear more, faster" },
+    { icon: <Lightning size={20} weight="fill" />, text: "Share with a link — or add a QR + printable flyer" },
   ];
   return (
     <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 py-6">
@@ -289,7 +289,7 @@ function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => voi
         Start my moving sale
       </button>
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        Free to build · $9 to publish & share
+        Free to create &amp; publish · optional paid add-ons
       </p>
     </div>
   );

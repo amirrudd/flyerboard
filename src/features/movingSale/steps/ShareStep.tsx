@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -8,16 +9,25 @@ import {
   FacebookLogo,
   WhatsappLogo,
   ArrowSquareOut,
+  QrCode as QrIcon,
+  Sparkle,
+  PushPin,
+  Lock,
+  Check,
 } from "@phosphor-icons/react";
+import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { QrCode } from "../QrCode";
 import { formatAUD, formatPickupRange, formatPickupShort } from "../saleHelpers";
 import type { SaleEventCore, SaleItem } from "../types";
 
 interface ShareStepProps {
+  saleEventId: Id<"saleEvents">;
   slug: string;
   sale: SaleEventCore;
   items: SaleItem[];
   itemCount: number;
+  unlockedAddons: string[];
 }
 
 function escapeHtml(s: string): string {
@@ -36,9 +46,7 @@ function buildFlyerHtml(
   qrDataUrl: string,
   itemCount: number
 ): string {
-  const top = [...items]
-    .sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
-    .slice(0, 4);
+  const top = [...items].sort((a, b) => (b.price ?? 0) - (a.price ?? 0)).slice(0, 4);
   const rows = top
     .map(
       (i) =>
@@ -80,33 +88,30 @@ hr { border: none; border-top: 2px solid #242428; margin: 26px 0 10px; }
     </div>
     <div class="qr"><img src="${qrDataUrl}" alt="QR"/>Scan to see<br/>all items</div>
   </div>
-
-  <div class="section">
-    <div class="label">Pickup</div>
-    <div class="big">${escapeHtml(formatPickupRange(sale.pickupWindowStart, sale.pickupWindowEnd))}</div>
-  </div>
-
-  <div class="section">
-    <div class="label">Location</div>
-    <div class="big">${escapeHtml(sale.suburb)}</div>
-    <div class="more">Address on request</div>
-  </div>
-
-  <div class="section">
-    <div class="label">Items include</div>
-    <table>${rows}</table>
-    ${more ? `<div class="more">${more}</div>` : ""}
-  </div>
-
+  <div class="section"><div class="label">Pickup</div><div class="big">${escapeHtml(formatPickupRange(sale.pickupWindowStart, sale.pickupWindowEnd))}</div></div>
+  <div class="section"><div class="label">Location</div><div class="big">${escapeHtml(sale.suburb)}</div><div class="more">Address on request</div></div>
+  <div class="section"><div class="label">Items include</div><table>${rows}</table>${more ? `<div class="more">${more}</div>` : ""}</div>
   <hr/>
   <div class="foot">${escapeHtml(url)}<br/><span class="brand">Powered by FlyerBoard</span></div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
 </body></html>`;
 }
 
-export function ShareStep({ slug, sale, items, itemCount }: ShareStepProps) {
+export function ShareStep({
+  saleEventId,
+  slug,
+  sale,
+  items,
+  itemCount,
+  unlockedAddons,
+}: ShareStepProps) {
   const url = `${window.location.origin}/sale/${slug}`;
+  const purchaseAddon = useMutation(api.saleEvents.purchaseAddon);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [buying, setBuying] = useState<string | null>(null);
+
+  const flyerUnlocked = unlockedAddons.includes("flyer");
+  const pinned = unlockedAddons.includes("pin");
 
   const shareText = `🏠 ${sale.title} — ${sale.suburb}. ${itemCount} items, pickup ${formatPickupShort(
     sale.pickupWindowStart
@@ -126,10 +131,23 @@ export function ShareStep({ slug, sale, items, itemCount }: ShareStepProps) {
       try {
         await navigator.share({ title: sale.title, text: shareText, url });
       } catch {
-        /* user cancelled */
+        /* cancelled */
       }
     } else {
       void copyLink();
+    }
+  }
+
+  async function buy(addon: "flyer" | "pin") {
+    setBuying(addon);
+    try {
+      // STUB: real flow opens Stripe Checkout for this add-on.
+      await purchaseAddon({ saleEventId, addon });
+      toast.success(addon === "flyer" ? "QR + flyer unlocked" : "Sale pinned for 7 days");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't complete that.");
+    } finally {
+      setBuying(null);
     }
   }
 
@@ -169,60 +187,163 @@ export function ShareStep({ slug, sale, items, itemCount }: ShareStepProps) {
         </p>
       </div>
 
-      {/* QR + link */}
-      <div className="mt-6 flex flex-col items-center rounded-2xl border border-border bg-card p-5">
-        <QrCode value={url} size={160} onReady={setQrDataUrl} />
+      {/* Free share — always available */}
+      <div className="mt-6 rounded-2xl border border-border bg-card p-5">
         <button
           type="button"
           onClick={() => { void copyLink(); }}
-          className="mt-3 max-w-full truncate text-sm font-medium text-primary underline-offset-2 hover:underline"
+          className="mx-auto block max-w-full truncate text-sm font-medium text-primary underline-offset-2 hover:underline"
         >
           {url.replace(/^https?:\/\//, "")}
         </button>
-        <div className="mt-3 grid w-full grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <ActionButton icon={<Copy size={18} />} label="Copy link" onClick={() => { void copyLink(); }} />
           <ActionButton icon={<ShareNetwork size={18} />} label="Share" onClick={() => { void nativeShare(); }} />
-          <ActionButton icon={<ArrowSquareOut size={18} />} label="Save QR" onClick={saveQr} />
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <a
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground"
+          >
+            <FacebookLogo size={18} weight="fill" className="text-[#1877F2]" /> Facebook
+          </a>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground"
+          >
+            <WhatsappLogo size={18} weight="fill" className="text-[#25D366]" /> WhatsApp
+          </a>
         </div>
       </div>
 
-      {/* Channel share */}
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <a
-          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground"
-        >
-          <FacebookLogo size={18} weight="fill" className="text-[#1877F2]" /> Facebook
-        </a>
-        <a
-          href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground"
-        >
-          <WhatsappLogo size={18} weight="fill" className="text-[#25D366]" /> WhatsApp
-        </a>
+      {/* Optional upgrades — never a blocker */}
+      <h3 className="mb-2 mt-7 text-sm font-semibold text-foreground">
+        Reach more people faster
+      </h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Optional add-ons. Test mode — no charge yet.
+      </p>
+
+      {/* QR + printable flyer */}
+      {flyerUnlocked ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+            <Check size={16} weight="bold" /> QR + printable flyer
+          </div>
+          <div className="mt-3 flex items-center gap-4">
+            <QrCode value={url} size={96} onReady={setQrDataUrl} />
+            <div className="flex flex-1 flex-col gap-2">
+              <button
+                type="button"
+                onClick={printFlyer}
+                className="flex items-center justify-center gap-2 rounded-xl bg-neutral-800 px-3 py-2.5 text-sm font-semibold text-white active:scale-[0.99]"
+              >
+                <Printer size={16} weight="fill" /> Printable A4 flyer
+              </button>
+              <button
+                type="button"
+                onClick={saveQr}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground"
+              >
+                <ArrowSquareOut size={16} /> Save QR
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <UpgradeCard
+          icon={<QrIcon size={20} weight="fill" />}
+          title="QR code + printable flyer"
+          desc="A4 PDF with a QR code for letterboxes & noticeboards."
+          cta="Add"
+          busy={buying === "flyer"}
+          onClick={() => { void buy("flyer"); }}
+        />
+      )}
+
+      {/* 7-day search pin */}
+      <div className="mt-3">
+        {pinned ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm font-semibold text-emerald-700">
+            <Check size={16} weight="bold" /> Pinned to the top of search for 7 days
+          </div>
+        ) : (
+          <UpgradeCard
+            icon={<PushPin size={20} weight="fill" />}
+            title="7-day search pin"
+            desc="Featured at the top of relevant searches for 7 days."
+            cta="Add"
+            busy={buying === "pin"}
+            onClick={() => { void buy("pin"); }}
+          />
+        )}
       </div>
 
-      {/* Print flyer */}
-      <button
-        type="button"
-        onClick={printFlyer}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-800 px-4 py-3.5 font-semibold text-white active:scale-[0.99]"
-      >
-        <Printer size={18} weight="fill" /> Printable A4 flyer (PDF)
-      </button>
+      {/* AI bulk listing — fully stubbed for now */}
+      <div className="mt-3">
+        <UpgradeCard
+          icon={<Sparkle size={20} weight="fill" />}
+          title="AI bulk listing"
+          desc="Snap photos — AI drafts every listing & bundle for you."
+          cta="Coming soon"
+          disabled
+        />
+      </div>
 
       <a
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="mt-4 block text-center text-sm font-medium text-primary hover:underline"
+        className="mt-6 block text-center text-sm font-medium text-primary hover:underline"
       >
         View your live sale page →
       </a>
+    </div>
+  );
+}
+
+function UpgradeCard({
+  icon,
+  title,
+  desc,
+  cta,
+  onClick,
+  busy = false,
+  disabled = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  cta: string;
+  onClick?: () => void;
+  busy?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{desc}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled || busy}
+        className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold active:scale-95 ${
+          disabled
+            ? "cursor-default bg-muted text-muted-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {busy ? "…" : disabled ? <span className="inline-flex items-center gap-1"><Lock size={12} /> {cta}</span> : cta}
+      </button>
     </div>
   );
 }
@@ -240,7 +361,7 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-2 py-2.5 text-xs font-medium text-foreground active:scale-[0.98]"
+      className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-2 py-3 text-sm font-medium text-foreground active:scale-[0.98]"
     >
       {icon}
       {label}

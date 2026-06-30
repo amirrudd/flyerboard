@@ -1003,7 +1003,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   <div className="flex items-start justify-between gap-3 mb-2">
                                     <div className="min-w-0">
                                       <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 truncate">
-                                        {chat.ad?.title || "Deleted Flyer"}
+                                        {chat.ad?.title || (chat.sale ? `🏠 ${chat.sale.title}` : "Deleted Flyer")}
                                       </h3>
                                       {!chat.ad?.isActive && chat.ad && (
                                         <span className="inline-flex items-center px-2.5 py-0.5 bg-destructive/10 text-destructive text-xs font-medium rounded-full ring-1 ring-destructive/20 mb-1">
@@ -1113,18 +1113,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type your message..."
                                     className="flex-1 h-11 px-4 bg-muted/50 ring-1 ring-transparent rounded-full focus:ring-ring focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all"
-                                    disabled={!chat.ad?.isActive}
+                                    disabled={chat.ad ? !chat.ad.isActive : !chat.sale}
                                   />
                                   <button
                                     type="submit"
-                                    disabled={!newMessage.trim() || !chat.ad?.isActive}
+                                    disabled={!newMessage.trim() || (chat.ad ? !chat.ad.isActive : !chat.sale)}
                                     aria-label="Send message"
                                     className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                   >
                                     Send
                                   </button>
                                 </div>
-                                {!chat.ad?.isActive && (
+                                {chat.ad && !chat.ad.isActive && (
                                   <p className="text-xs text-destructive mt-2">
                                     Cannot send messages - flyer is inactive or deleted
                                   </p>

@@ -10,7 +10,8 @@ import { searchLocations, formatLocation, LocationData } from "../../lib/locatio
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { Header } from "../layout/Header";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
-import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake } from '@phosphor-icons/react';
+import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake, Package, CaretRight } from '@phosphor-icons/react';
+import { useNavigate } from "react-router-dom";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 
 interface ImageState {
@@ -37,6 +38,7 @@ const textareaClass =
   "w-full px-4 py-3 rounded-2xl bg-muted/50 ring-1 ring-transparent text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-ring focus:bg-card transition-all resize-y";
 
 export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: editingAd?.title || "",
     description: editingAd?.description || "",
@@ -429,6 +431,39 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
 
       <main className="flex-1 w-full max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
+          {/* Mode selector — entry point #1 into Moving Sale Mode. New posts only;
+              "Single item" is the default and keeps the form below unchanged. */}
+          {!editingAd && (
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className="rounded-2xl border-2 border-primary bg-primary/5 p-4"
+                aria-current="true"
+              >
+                <p className="text-sm font-semibold text-foreground">Single item</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  List one thing — the usual flyer.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { void navigate("/sell/moving-sale"); }}
+                className="group flex flex-col rounded-2xl border-2 border-border bg-card p-4 text-left transition hover:border-primary/40 active:scale-[0.99]"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Package size={16} weight="fill" className="text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Moving Sale</span>
+                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-emerald-700">
+                    Free
+                  </span>
+                </span>
+                <span className="mt-0.5 flex items-center gap-0.5 text-xs text-muted-foreground">
+                  List everything on one page
+                  <CaretRight size={12} className="transition group-hover:translate-x-0.5" />
+                </span>
+              </button>
+            </div>
+          )}
+
           <article className="bg-card ring-1 ring-border/70 rounded-2xl p-6 sm:p-8 shadow-sm">
             {/* Section: Basics */}
             <section aria-labelledby="section-basics">

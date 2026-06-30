@@ -143,8 +143,6 @@ export const seedMovingSale = internalMutation({
       pickupWindowStart: start,
       pickupWindowEnd: end,
       status: "active",
-      itemCap: 25,
-      isPaid: true,
       expiresAt: end + 2 * 24 * 60 * 60 * 1000,
       createdAt: Date.now(),
     });

@@ -275,7 +275,7 @@ export const getChatForModeration = query({
         const [buyer, seller, ad, messages] = await Promise.all([
             ctx.db.get(chat.buyerId),
             ctx.db.get(chat.sellerId),
-            ctx.db.get(chat.adId),
+            chat.adId ? ctx.db.get(chat.adId) : Promise.resolve(null),
             ctx.db
                 .query("messages")
                 .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))

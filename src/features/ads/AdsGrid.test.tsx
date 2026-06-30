@@ -284,3 +284,86 @@ describe('AdsGrid', () => {
         expect(screen.queryByText('• Trade')).not.toBeInTheDocument();
     });
 });
+
+// ============================================================================
+// MOVING SALE FEED (v3.1) — sale items look like normal listings; the whole-Sale
+// card is the only feed differentiator.
+// ============================================================================
+
+describe('AdsGrid - moving sale feed (v3.1)', () => {
+    const saleAd = {
+        _id: 'adSale' as Id<'ads'>,
+        title: 'Sale Sofa',
+        description: 'An ad that belongs to a sale',
+        listingType: 'sale' as const,
+        price: 120,
+        location: 'Bondi',
+        categoryId: 'cat1' as Id<'categories'>,
+        images: ['saleimg.jpg'],
+        userId: 'user1' as Id<'users'>,
+        isActive: true,
+        views: 4,
+        saleEventId: 'sale1' as Id<'saleEvents'>,
+    };
+
+    const saleCard = {
+        _id: 'sale1',
+        slug: 'janes-sale',
+        title: "Jane's Moving Sale",
+        suburb: 'Carlton, VIC',
+        createdAt: 1000,
+        itemCount: 9,
+        photoCount: 9,
+        minPrice: 15,
+        covers: ['c1.jpg', 'c2.jpg', 'c3.jpg'],
+    };
+
+    it('renders a sale item like a normal listing (no badge, no sale footer)', () => {
+        render(
+            <AdsGrid
+                ads={[saleAd]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+        // Normal view-count footer, no "In a moving sale" / "Moving Sale" badge.
+        expect(screen.getByText(/4 views/i)).toBeInTheDocument();
+        expect(screen.queryByText(/in a moving sale/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/moving sale/i)).not.toBeInTheDocument();
+    });
+
+    it('renders a whole-Sale card from saleCards (badge, price, item count)', () => {
+        render(
+            <AdsGrid
+                ads={[]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                saleCards={[saleCard]}
+            />
+        );
+        expect(screen.getByText("Jane's Moving Sale")).toBeInTheDocument();
+        expect(screen.getByText(/from \$15/i)).toBeInTheDocument();
+        expect(screen.getByText(/9 items/i)).toBeInTheDocument();
+    });
+
+    it('clicking the Sale card calls onSaleClick with the slug', () => {
+        const onSaleClick = vi.fn();
+        render(
+            <AdsGrid
+                ads={[]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                onSaleClick={onSaleClick}
+                saleCards={[saleCard]}
+            />
+        );
+        fireEvent.click(screen.getByText("Jane's Moving Sale"));
+        expect(onSaleClick).toHaveBeenCalledWith('janes-sale');
+    });
+});

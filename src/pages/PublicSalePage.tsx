@@ -1,17 +1,21 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
 import { Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { PageLoader } from "../components/PageLoader";
 import { PublicSaleView } from "../features/movingSale/PublicSaleView";
+import { SaleMessageModal } from "../features/movingSale/SaleMessageModal";
 import type { SaleItem } from "../features/movingSale/types";
 
 export function PublicSalePage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const data = useQuery(api.saleEvents.getSaleBySlug, slug ? { slug } : "skip");
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [preselectedAdId, setPreselectedAdId] = useState<Id<"ads"> | null>(null);
 
   const categoriesById = useMemo(() => {
     const map: Record<string, { name: string }> = {};
@@ -47,19 +51,16 @@ export function PublicSalePage() {
 
   const items = data.items as SaleItem[];
 
-  /** One sale-level conversation: route to an available item's detail page,
-   * which carries the existing chat + auth (OTP) flow. */
+  /** v2: one sale-level conversation per buyer — open the unified message thread. */
   function messageSeller() {
-    const target = items.find((i) => !i.isSold) ?? items[0];
-    if (target) {
-      void navigate(`/ad/${target._id}`);
-    } else {
-      toast.info("No items available to enquire about right now.");
-    }
+    setPreselectedAdId(null);
+    setMsgOpen(true);
   }
 
+  /** Tapping an item opens the same thread with that item pre-referenced as a chip. */
   function openItem(adId: string) {
-    void navigate(`/ad/${adId}`);
+    setPreselectedAdId(adId as Id<"ads">);
+    setMsgOpen(true);
   }
 
   async function shareSale() {
@@ -92,6 +93,14 @@ export function PublicSalePage() {
         onMessageSeller={messageSeller}
         onItemClick={openItem}
         onShare={() => { void shareSale(); }}
+      />
+      <SaleMessageModal
+        saleEventId={data.sale._id}
+        sellerName={data.seller?.name ?? null}
+        items={items}
+        isOpen={msgOpen}
+        preselectedAdId={preselectedAdId}
+        onClose={() => setMsgOpen(false)}
       />
     </div>
   );

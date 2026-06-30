@@ -22,6 +22,11 @@ interface LayoutContext {
 
 export function HomePage() {
   const navigate = useNavigate();
+  // Stable identity so AdsGrid's memo isn't broken every render.
+  const handleSaleClick = useCallback(
+    (slug: string) => { void navigate(`/sale/${slug}`); },
+    [navigate]
+  );
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShowAuthModal } = useOutletContext<LayoutContext>();
@@ -61,6 +66,26 @@ export function HomePage() {
     if (maxPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price <= maxPrice);
     return result;
   }, [ads, minPrice, maxPrice]);
+
+  // Moving Sale feed integration (v3.1): individual sale items render exactly like
+  // single listings (no badge/strip). We only (a) cap how many items from one Sale
+  // show in the feed, and (b) inject the whole-Sale card.
+  const displayAds = useMemo(() => {
+    if (!filteredAds) return filteredAds;
+    const perSale = new Map<string, number>();
+    return filteredAds.filter((a) => {
+      if (!a.saleEventId) return true;
+      const n = (perSale.get(a.saleEventId) ?? 0) + 1;
+      perSale.set(a.saleEventId, n);
+      return n <= 3; // de-dup: at most 3 items from one Sale in the feed
+    });
+  }, [filteredAds]);
+
+  // Only needed for the Sale event cards, which render on the uncategorised feed.
+  const activeSales = useQuery(
+    api.saleEvents.getActiveSales,
+    selectedCategory ? "skip" : {}
+  );
   // For now, just use a simple user object when authenticated
   // TODO: Fetch actual user data from Convex once Descope integration is complete
   const user = isAuthenticated ? { name: "User" } : null;
@@ -220,7 +245,7 @@ export function HomePage() {
           >
             <AdsFilterBar />
             <AdsGrid
-              ads={filteredAds}
+              ads={displayAds}
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
@@ -228,6 +253,8 @@ export function HomePage() {
               isLoading={status === "LoadingFirstPage"}
               isLoadingMore={status === "LoadingMore"}
               newAdIds={newAdIds}
+              saleCards={activeSales}
+              onSaleClick={handleSaleClick}
             />
 
 

@@ -48,7 +48,9 @@ const applicationTables = {
     }),
 
   chats: defineTable({
-    adId: v.id("ads"),
+    // Exactly one of adId / saleEventId is set (enforced in mutations, not the validator).
+    adId: v.optional(v.id("ads")),               // single-listing thread (null for Sale threads)
+    saleEventId: v.optional(v.id("saleEvents")), // Sale thread — one per buyer per Sale (v2)
     buyerId: v.id("users"),
     sellerId: v.id("users"),
     lastMessageAt: v.number(),
@@ -58,6 +60,7 @@ const applicationTables = {
     archivedBySeller: v.optional(v.boolean()),
   })
     .index("by_ad_and_buyer", ["adId", "buyerId"])
+    .index("by_sale_event_buyer", ["saleEventId", "buyerId"]) // 1 thread per buyer per Sale
     .index("by_buyer", ["buyerId"])
     .index("by_seller", ["sellerId"])
     .index("by_ad", ["adId"])
@@ -69,6 +72,7 @@ const applicationTables = {
     senderId: v.id("users"),
     content: v.string(),
     timestamp: v.number(),
+    referencedAdIds: v.optional(v.array(v.id("ads"))), // sale-item chips referenced in this message (v2)
   })
     .index("by_chat", ["chatId"])
     .index("by_timestamp", ["timestamp"]),
@@ -167,12 +171,16 @@ const applicationTables = {
     pickupWindowStart: v.number(),         // Timestamp
     pickupWindowEnd: v.number(),           // Timestamp
     status: v.union(
-      v.literal("draft"),                  // Being built / previewed privately, not yet published
-      v.literal("active"),                 // Paid + live
+      v.literal("draft"),                  // Being built, not yet published
+      v.literal("active"),                 // Published + live (free — no payment gate in v2)
       v.literal("ended")                   // Pickup window closed
     ),
-    itemCap: v.number(),                   // 10 for free, 25 for the $9 pack
-    isPaid: v.boolean(),                   // Gates the public page (set true on publish; STUB until Stripe)
+    // v2 tier model: the mode is FREE. Publishing and the public page cost nothing.
+    // Monetisation is à-la-carte add-ons tracked in `unlockedAddons`.
+    unlockedAddons: v.optional(v.array(v.string())), // e.g. ["flyer","pin","ai"] — purchased upgrades (stubbed)
+    pinnedUntil: v.optional(v.number()),   // 7-day search-pin add-on expiry
+    itemCap: v.optional(v.number()),       // legacy/back-compat — no longer enforced (free = unlimited)
+    isPaid: v.optional(v.boolean()),       // legacy/back-compat — no longer gates the page
     flyerPdfUrl: v.optional(v.string()),   // R2 key for cached printable flyer, null until first generated
     expiresAt: v.optional(v.number()),     // Auto-close target (after pickup window)
     createdAt: v.number(),

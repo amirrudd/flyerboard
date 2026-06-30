@@ -8,7 +8,6 @@ import { uploadImageToR2 } from "../../../lib/uploadToR2";
 
 interface UploadStepProps {
   saleEventId: Id<"saleEvents">;
-  itemCap: number;
   existingCount: number;
   onDone: () => void;
 }
@@ -20,7 +19,6 @@ interface Pending {
 
 export function UploadStep({
   saleEventId,
-  itemCap,
   existingCount,
   onDone,
 }: UploadStepProps) {
@@ -32,23 +30,13 @@ export function UploadStep({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
-  const remaining = itemCap - existingCount;
-
   function addFiles(files: FileList | null) {
     if (!files) return;
+    // v2: unlimited items (the only ceiling is server-side anti-abuse).
     const incoming = Array.from(files);
-    const room = remaining - pending.length;
-    if (room <= 0) {
-      toast.error(`This sale is limited to ${itemCap} items.`);
-      return;
-    }
-    const accepted = incoming.slice(0, room);
-    if (accepted.length < incoming.length) {
-      toast.info(`Added ${accepted.length} — you've hit the ${itemCap}-item limit.`);
-    }
     setPending((prev) => [
       ...prev,
-      ...accepted.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
+      ...incoming.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
     ]);
   }
 
@@ -99,8 +87,9 @@ export function UploadStep({
         them.
       </p>
       <p className="mt-2 text-xs font-medium text-muted-foreground">
-        {existingCount > 0 && `${existingCount} already added · `}
-        {Math.max(0, remaining - pending.length)} of {itemCap} slots left
+        {existingCount + pending.length > 0
+          ? `${existingCount + pending.length} ${existingCount + pending.length === 1 ? "item" : "items"} so far · add as many as you like`
+          : "Add as many items as you like — it's free"}
       </p>
 
       <input
@@ -150,7 +139,7 @@ export function UploadStep({
               )}
             </div>
           ))}
-          {!busy && remaining - pending.length > 0 && (
+          {!busy && (
             <button
               type="button"
               onClick={() => inputRef.current?.click()}

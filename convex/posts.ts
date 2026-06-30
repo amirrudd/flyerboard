@@ -273,7 +273,9 @@ export const getSellerChats = query({
     // Get additional info for each chat
     const chatsWithInfo = await Promise.all(
       chats.map(async (chat) => {
-        const ad = await ctx.db.get(chat.adId);
+        // Sale threads (v2) set saleEventId and leave adId undefined.
+        const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
+        const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
         const buyer = await ctx.db.get(chat.buyerId);
 
         // Get unread message count
@@ -291,6 +293,7 @@ export const getSellerChats = query({
         return {
           ...chat,
           ad,
+          sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
           buyer: buyer ? {
             ...buyer,
             averageRating: buyer.averageRating || 0,
@@ -322,7 +325,8 @@ export const getBuyerChats = query({
     // Get additional info for each chat
     const chatsWithInfo = await Promise.all(
       chats.map(async (chat) => {
-        const ad = await ctx.db.get(chat.adId);
+        const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
+        const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
         const seller = await ctx.db.get(chat.sellerId);
 
         // Get unread message count
@@ -340,6 +344,7 @@ export const getBuyerChats = query({
         return {
           ...chat,
           ad,
+          sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
           seller: seller ? {
             ...seller,
             averageRating: seller.averageRating || 0,

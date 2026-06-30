@@ -17,9 +17,8 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
  * is the paywall seam — see its doc comment.
  */
 
-/** Free tier can list up to 10 items; the $9 pack unlocks 25. */
-export const FREE_ITEM_CAP = 10;
-export const PAID_ITEM_CAP = 25;
+// v2: the mode is free with unlimited items. The only ceiling is an anti-abuse
+// limit enforced server-side in `addSaleItems` (ABUSE_CEILING).
 
 // ──────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -160,8 +159,6 @@ export const createSaleEvent = mutation({
       pickupWindowStart: args.pickupWindowStart,
       pickupWindowEnd: args.pickupWindowEnd,
       status: "draft",
-      itemCap: FREE_ITEM_CAP,
-      isPaid: false,
       createdAt: Date.now(),
     });
 
@@ -233,18 +230,16 @@ export const addSaleItems = mutation({
 
     if (args.items.length === 0) return [];
 
-    // Enforce the tier item cap.
+    // v2: the mode is free — no tier cap. Manual listing is unlimited; the only
+    // limit is a high abuse ceiling.
     const existing = await saleItems(ctx, args.saleEventId);
-    if (existing.length + args.items.length > sale.itemCap) {
-      throw createError(
-        `This sale is limited to ${sale.itemCap} items. ${sale.isPaid ? "" : "Upgrade to add more."}`,
-        {
-          operation: "addSaleItems",
-          cap: sale.itemCap,
-          existing: existing.length,
-          adding: args.items.length,
-        }
-      );
+    const ABUSE_CEILING = 100;
+    if (existing.length + args.items.length > ABUSE_CEILING) {
+      throw createError(`A single sale can hold up to ${ABUSE_CEILING} items.`, {
+        operation: "addSaleItems",
+        existing: existing.length,
+        adding: args.items.length,
+      });
     }
 
     const defaultCategoryId = await getDefaultCategoryId(ctx);
@@ -417,17 +412,12 @@ export const setBundles = mutation({
 });
 
 /**
- * Step 6: PUBLISH — the paywall seam.
+ * Step 6: PUBLISH — free in v2. No payment gate.
  *
- * ⚠️ STUB: In production this is driven by a Stripe `checkout.session.completed`
- * webhook after the $9 Moving Sale Pack is paid. Until Stripe is wired, this
- * mutation stands in for "payment succeeded": the owner calls it directly and the
- * sale goes live. When Stripe lands, move the body into an internalMutation called
- * only from the verified webhook and have the client open Checkout instead.
- *
- * On publish: mint the permanent slug, flip to the paid tier (cap 25), set the
- * status active, set an expiry past the pickup window, and activate all items so
- * they appear on the public page (and the main feed).
+ * Publishing is the core free product: mint the permanent slug, flip status to
+ * active, set an expiry past the pickup window, and activate all items so they go
+ * live on the public page (and the main feed). Monetisation happens afterwards via
+ * optional add-ons (see `purchaseAddon`), never as a gate on publishing.
  */
 export const publishSaleEvent = mutation({
   args: { saleEventId: v.id("saleEvents") },
@@ -449,9 +439,7 @@ export const publishSaleEvent = mutation({
     const EXPIRY_BUFFER_MS = 2 * 24 * 60 * 60 * 1000; // keep page up 2 days past pickup
     await ctx.db.patch(args.saleEventId, {
       slug,
-      isPaid: true,
       status: "active",
-      itemCap: PAID_ITEM_CAP,
       expiresAt: sale.pickupWindowEnd + EXPIRY_BUFFER_MS,
     });
 
@@ -462,8 +450,36 @@ export const publishSaleEvent = mutation({
       }
     }
 
-    logOperation("Sale event published (STUB paywall)", { saleEventId: args.saleEventId, slug });
+    logOperation("Sale event published (free)", { saleEventId: args.saleEventId, slug });
     return { slug };
+  },
+});
+
+/**
+ * Purchase an optional add-on for a published sale. STUB — real flow opens Stripe
+ * Checkout per add-on; here the owner "buys" instantly so the gated capability
+ * (flyer download / search pin / AI listing) unlocks for testing.
+ *
+ * Add-ons: "flyer" (QR + PDF), "pin" (7-day search pin), "ai" (AI bulk listing).
+ */
+export const purchaseAddon = mutation({
+  args: {
+    saleEventId: v.id("saleEvents"),
+    addon: v.union(v.literal("flyer"), v.literal("pin"), v.literal("ai")),
+  },
+  handler: async (ctx, args) => {
+    const { sale } = await requireOwnedSale(ctx, args.saleEventId, "purchaseAddon");
+    const unlocked = new Set(sale.unlockedAddons ?? []);
+    unlocked.add(args.addon);
+
+    const patch: Record<string, unknown> = { unlockedAddons: Array.from(unlocked) };
+    if (args.addon === "pin") {
+      patch.pinnedUntil = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7-day search pin
+    }
+    await ctx.db.patch(args.saleEventId, patch);
+
+    logOperation("Sale add-on purchased (stub)", { saleEventId: args.saleEventId, addon: args.addon });
+    return { unlockedAddons: Array.from(unlocked) };
   },
 });
 
@@ -521,12 +537,13 @@ export const getSaleEditor = query({
       .withIndex("by_sale_event", (q) => q.eq("saleEventId", args.saleEventId))
       .collect();
 
-    return { sale, items, bundles, itemCap: sale.itemCap };
+    return { sale, items, bundles };
   },
 });
 
 /**
- * PUBLIC buyer page. No auth. Returns null unless the sale exists and is paid/live.
+ * PUBLIC buyer page. No auth. Returns null unless the sale exists and is live.
+ * v2: free — the page is gated on publish status, NOT payment.
  * Sold items are included (greyed client-side); deleted items are excluded.
  */
 export const getSaleBySlug = query({
@@ -537,8 +554,8 @@ export const getSaleBySlug = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
-    // Gate the public page on payment.
-    if (!sale || !sale.isPaid) return null;
+    // Live once published (active or ended). Drafts stay private.
+    if (!sale || sale.status === "draft") return null;
 
     const items = await saleItems(ctx, sale._id);
     const bundles = await ctx.db
@@ -582,5 +599,92 @@ export const getSaleBySlug = query({
         bundleCount: bundles.length,
       },
     };
+  },
+});
+
+/**
+ * Sale-context banner for the ad-detail page (v3.1). Returns null unless the ad
+ * belongs to a published Sale. Feed sale items are NOT differentiated anymore —
+ * discovery happens here, where the buyer is already interested.
+ *
+ * Provides the seller's title-cased first name, the summary sub-line data
+ * (suburb · items · pickup · from $X), and the thumbnail strip: the current item
+ * (dimmed client-side) + up to 3 other items + a "+N" remainder.
+ */
+export const getSaleBannerForAd = query({
+  args: { adId: v.id("ads") },
+  handler: async (ctx, args) => {
+    const ad = await ctx.db.get(args.adId);
+    if (!ad || !ad.saleEventId) return null;
+    const sale = await ctx.db.get(ad.saleEventId);
+    if (!sale || sale.status === "draft" || !sale.slug) return null;
+
+    const items = await saleItems(ctx, sale._id);
+    const others = items.filter((i) => i._id !== ad._id);
+    const otherImages = others
+      .filter((i) => i.images.length > 0)
+      .slice(0, 3)
+      .map((i) => i.images[0]);
+    const prices = items.map((i) => i.price ?? 0).filter((p) => p > 0);
+
+    const seller = await ctx.db.get(sale.userId);
+    const rawFirst = (seller?.name ?? "Seller").trim().split(/\s+/)[0] || "Seller";
+    const sellerFirstName = rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1); // title-case
+
+    return {
+      slug: sale.slug,
+      sellerFirstName,
+      suburb: sale.suburb,
+      pickupWindowStart: sale.pickupWindowStart,
+      itemCount: items.length,
+      availableCount: items.filter((i) => !i.isSold).length,
+      minPrice: prices.length ? Math.min(...prices) : 0,
+      currentImage: ad.images[0] ?? null,
+      currentItemSold: Boolean(ad.isSold),
+      otherImages,
+      moreCount: Math.max(0, others.length - otherImages.length),
+    };
+  },
+});
+
+/**
+ * Active sales rendered as ONE card inside the main date-sorted feed (v3 — there
+ * is no separate "sale event" section). Each returns the data the in-grid Sale
+ * card needs: a few cover thumbnails for the 2×2 image grid, the photo count (so
+ * the card picks its degradation layout), total item count, and a min price.
+ */
+export const getActiveSales = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const sales = (
+      await ctx.db
+        .query("saleEvents")
+        .withIndex("by_status", (q) => q.eq("status", "active"))
+        .collect()
+    ).filter((s) => s.slug && (!s.expiresAt || s.expiresAt > now));
+
+    // Newest first — merged into the feed by createdAt; sort rule unchanged.
+    sales.sort((a, b) => b.createdAt - a.createdAt);
+
+    const limited = sales.slice(0, args.limit ?? 12);
+    return Promise.all(
+      limited.map(async (sale) => {
+        const items = await saleItems(ctx, sale._id);
+        const withPhotos = items.filter((i) => i.images.length > 0);
+        const prices = items.map((i) => i.price ?? 0).filter((p) => p > 0);
+        return {
+          _id: sale._id,
+          slug: sale.slug as string,
+          title: sale.title,
+          suburb: sale.suburb,
+          createdAt: sale.createdAt,
+          itemCount: items.length,
+          photoCount: withPhotos.length,
+          minPrice: prices.length ? Math.min(...prices) : 0,
+          covers: withPhotos.slice(0, 3).map((i) => i.images[0]),
+        };
+      })
+    );
   },
 });

@@ -7,9 +7,16 @@ interface BottomSheetProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    /**
+     * By default the sheet is mobile-only (`lg:hidden`) because desktop layouts
+     * usually have a side panel instead. Set this for surfaces that are a centered
+     * single column at every width (e.g. the Moving Sale flow) so the sheet stays
+     * reachable on desktop too — it's width-capped and centred to match the column.
+     */
+    showOnDesktop?: boolean;
 }
 
-export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, showOnDesktop = false }: BottomSheetProps) {
     const sheetRef = useRef<HTMLDivElement>(null);
 
     // Prevent body scroll when sheet is open
@@ -39,17 +46,18 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
 
     // Use Portal to render at document body level, ensuring proper z-index stacking
     return createPortal(
-        <div className="fixed inset-0 z-[100] lg:hidden">
+        <div className={`fixed inset-0 z-[100] ${showOnDesktop ? '' : 'lg:hidden'}`}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50 animate-fade-in"
                 onClick={onClose}
             />
 
-            {/* Sheet */}
+            {/* Sheet — full-width on mobile; centred + width-capped when shown on desktop
+                (mx-auto keeps the slide-up translateY animation intact, unlike translate-x). */}
             <div
                 ref={sheetRef}
-                className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl shadow-xl animate-slide-up max-h-[85vh] flex flex-col"
+                className={`absolute bottom-0 bg-card rounded-t-2xl shadow-xl animate-slide-up max-h-[85vh] flex flex-col ${showOnDesktop ? 'inset-x-0 mx-auto w-full max-w-md' : 'left-0 right-0'}`}
                 style={{ paddingBottom: 'calc(var(--safe-area-inset-bottom) + 16px)' }}
             >
                 {/* Handle bar */}

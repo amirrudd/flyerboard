@@ -11,6 +11,9 @@ export function BlogPostCard({ post }: { post: BlogPost }) {
     return (
         <Link
             to={`/blog/${post.slug}`}
+            // Tag in-app blog navigation so the post's back button knows to
+            // return to the blog list (vs. the home screen for external entry).
+            state={{ from: "blog" }}
             className="group flex items-stretch h-full bg-card ring-1 ring-border/70 rounded-2xl overflow-hidden shadow-card hover:ring-primary/40 hover:-translate-y-0.5 transition-all"
         >
             {post.heroImage && (

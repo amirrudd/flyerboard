@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaretLeft, ArrowLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
@@ -14,7 +14,16 @@ export function BlogPostPage() {
     const navigate = useNavigate();
     const { slug } = useParams<{ slug: string }>();
     const { fadeUp, whileInView } = useMotionPrefs();
+    const location = useLocation();
     const post = slug ? getPostBySlug(slug) : undefined;
+
+    // If the reader arrived from within the blog, "back" returns to the blog
+    // list; if they landed here directly (external link), it goes to the home
+    // screen. The blog cards tag their navigation with `state.from = "blog"`.
+    const cameFromBlog = (location.state as { from?: string } | null)?.from === "blog";
+    const backTo = cameFromBlog ? "/blog" : "/";
+    const backLabel = cameFromBlog ? "Blog" : "FlyerBoard";
+    const backAria = cameFromBlog ? "Back to blog" : "Go to FlyerBoard home";
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -28,12 +37,12 @@ export function BlogPostPage() {
                     leftNode={
                         <button
                             type="button"
-                            onClick={() => { void navigate("/"); }}
-                            aria-label="Go to FlyerBoard home"
+                            onClick={() => { void navigate(backTo); }}
+                            aria-label={backAria}
                             className="flex items-center gap-2 h-10 pl-2 pr-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
                         >
                             <CaretLeft className="w-5 h-5 flex-shrink-0" />
-                            <span className="font-display font-semibold">FlyerBoard</span>
+                            <span className="font-display font-semibold">{backLabel}</span>
                         </button>
                     }
                     centerNode={<span className="font-display text-lg font-semibold text-foreground">Blog</span>}
@@ -98,12 +107,12 @@ export function BlogPostPage() {
                 leftNode={
                     <button
                         type="button"
-                        onClick={() => { void navigate("/"); }}
-                        aria-label="Go to FlyerBoard home"
+                        onClick={() => { void navigate(backTo); }}
+                        aria-label={backAria}
                         className="flex items-center gap-2 h-10 pl-2 pr-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
                         <CaretLeft className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-display font-semibold">FlyerBoard</span>
+                        <span className="font-display font-semibold">{backLabel}</span>
                     </button>
                 }
                 centerNode={

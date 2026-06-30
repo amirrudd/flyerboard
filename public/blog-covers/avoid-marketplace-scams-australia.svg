@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Staying safe from scams">
+  <rect width="1200" height="675" fill="#F7F6F3"/>
+  <circle cx="940" cy="200" r="245" fill="#FDEBEC"/>
+  <g fill="none" stroke="#2F3437" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M600 148 L762 210 V362 C762 482 690 544 600 584 C510 544 438 482 438 362 V210 Z"/>
+    <path d="M543 362 L590 410 L678 312"/>
+  </g>
+  <text x="80" y="104" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2F3437">FlyerBoard</text>
+  <text x="80" y="598" font-family="'SF Mono', ui-monospace, monospace" font-size="22" letter-spacing="5" fill="#787774">SAFETY</text>
+  <line x1="80" y1="620" x2="210" y2="620" stroke="#E0DED8" stroke-width="2"/>
+</svg>

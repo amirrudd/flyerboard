@@ -101,6 +101,16 @@ export function BlogIndexPage() {
                                     to={`/blog/${post.slug}`}
                                     className="group flex flex-col h-full bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hover:ring-primary/40 hover:-translate-y-0.5 transition-all"
                                 >
+                                    {post.heroImage && (
+                                        <div className="mb-5 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted/40">
+                                            <img
+                                                src={post.heroImage}
+                                                alt={post.heroAlt ?? post.title}
+                                                className="w-full aspect-[16/9] object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2 mb-3">
                                         <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1">
                                             {post.category}

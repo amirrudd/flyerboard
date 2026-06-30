@@ -22,6 +22,10 @@ export interface BlogPost {
     keywords: string[];
     /** Minutes; taken from frontmatter or estimated at ~225 wpm. */
     readingTime: number;
+    /** Optional editorial cover image — a path under /public or an absolute URL. */
+    heroImage?: string;
+    /** Alt text for the cover image; falls back to the title at render time. */
+    heroAlt?: string;
     /** Markdown body with frontmatter stripped. */
     content: string;
 }
@@ -66,6 +70,8 @@ function buildPost(path: string, raw: string): BlogPost {
         category: asString(data.category) ?? "Guides",
         keywords,
         readingTime,
+        heroImage: asString(data.heroImage),
+        heroAlt: asString(data.heroAlt),
         content,
     };
 }

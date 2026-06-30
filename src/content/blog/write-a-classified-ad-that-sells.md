@@ -8,6 +8,8 @@ author: FlyerBoard Team
 category: Selling
 keywords: [classified ad tips, how to write a listing, selling online, ad photos, pricing secondhand]
 readingTime: 6
+heroImage: /blog-covers/write-a-classified-ad-that-sells.svg
+heroAlt: Editorial illustration of a price tag
 ---
 
 # How to Write a Classified Ad That Sells Fast: 9 Tips

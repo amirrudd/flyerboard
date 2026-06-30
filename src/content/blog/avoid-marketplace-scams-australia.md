@@ -8,6 +8,8 @@ author: FlyerBoard Team
 category: Safety
 keywords: [marketplace scams, online safety, buying secondhand, Australia, Scamwatch]
 readingTime: 6
+heroImage: /blog-covers/avoid-marketplace-scams-australia.svg
+heroAlt: Editorial illustration of a safety shield with a checkmark
 ---
 
 # How to Spot and Avoid Scams When Buying Secondhand in Australia

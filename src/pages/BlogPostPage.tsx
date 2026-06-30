@@ -65,6 +65,7 @@ export function BlogPostPage() {
         },
         keywords: keywordsContent,
         articleSection: post.category,
+        ...(post.heroImage ? { image: `${SITE_URL}${post.heroImage}` } : {}),
         mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
         url: canonical,
     };
@@ -111,6 +112,21 @@ export function BlogPostPage() {
             <section className="min-h-screen bg-background pb-bottom-nav md:pb-16">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="max-w-[760px] mx-auto pt-8 sm:pt-12">
+                        {/* Editorial cover image */}
+                        {post.heroImage && (
+                            <motion.figure
+                                {...fadeUp()}
+                                className="mb-8 overflow-hidden rounded-2xl ring-1 ring-border/70 bg-muted/40"
+                            >
+                                <img
+                                    src={post.heroImage}
+                                    alt={post.heroAlt ?? post.title}
+                                    className="w-full aspect-[16/9] object-cover"
+                                    loading="eager"
+                                />
+                            </motion.figure>
+                        )}
+
                         {/* Meta row */}
                         <motion.div {...fadeUp()} className="flex flex-wrap items-center gap-3 mb-6">
                             <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1">

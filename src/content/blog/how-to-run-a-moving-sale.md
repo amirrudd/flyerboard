@@ -8,6 +8,8 @@ author: FlyerBoard Team
 category: Selling
 keywords: [moving sale, garage sale, decluttering, selling secondhand, Moving Sale Mode]
 readingTime: 6
+heroImage: /blog-covers/how-to-run-a-moving-sale.svg
+heroAlt: Editorial illustration of stacked moving boxes
 ---
 
 # How to Run a Successful Moving Sale: A Step-by-Step Checklist

@@ -122,6 +122,8 @@ author: FlyerBoard Team
 category: Safety
 keywords: [marketplace scams, online safety, buying secondhand, Australia, Scamwatch]
 readingTime: 5
+heroImage: /blog-covers/spot-marketplace-scams-australia.svg
+heroAlt: Editorial illustration of a safety shield
 ---
 ```
 
@@ -136,10 +138,23 @@ readingTime: 5
 | `category`    | yes | One of: `Safety`, `Selling`, `Buying`, `Guides`, `Community`. |
 | `keywords`    | yes | 3–6 terms. Drives JSON-LD `keywords` + `/llms.txt`. |
 | `readingTime` | no  | Minutes (integer). If omitted, it's estimated at ~225 wpm. |
+| `heroImage`   | no  | Path (under `/public`, e.g. `/blog-covers/<slug>.svg`) or absolute URL of the cover image, shown at the top of the post and on the index card. Omit for a text-only card. Use a 16:9 asset. |
+| `heroAlt`     | no  | Alt text for `heroImage`. Falls back to the title. Describe the image plainly; **no emojis**. |
 
 > The body **must not** repeat the frontmatter title as a second H1 — start the
 > markdown body with the `#` H1 once (it can match `title`) followed by the
 > answer block.
+
+### Cover images
+
+`heroImage` is optional but recommended. House covers are **minimalist editorial
+SVGs** in `public/blog-covers/<slug>.svg`: a warm-bone canvas (`#F7F6F3`), one
+muted-pastel offset shape, and a single bold charcoal line-art motif — no
+gradients, no stock-photo clutter, no emojis. Match the file's `<slug>` to the
+post. You can also drop in a real 16:9 photo (desaturated, warm-toned) by
+pointing `heroImage` at any `/public` path or absolute URL. Note: SVG/relative
+hero images render on-page and in JSON-LD, but social `og:image` stays the raster
+site default — supply a raster cover if you need a custom social preview.
 
 ---
 

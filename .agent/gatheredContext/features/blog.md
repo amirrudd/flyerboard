@@ -57,8 +57,16 @@ to extract and cite. No backend, no Convex table.
 length **800–1,500 words** (aim ~1,200; the user wants posts short), an "answer
 block" right under the H1 for AI extraction, scannable `##` headings, ≥1 list, a
 FAQ, and the **required frontmatter schema** (`title`, `description`, `slug`,
-`date`, `updated?`, `author`, `category`, `keywords[]`, `readingTime?`). The
-`slug` must equal the filename. The parser, loader, and that schema are a
+`date`, `updated?`, `author`, `category`, `keywords[]`, `readingTime?`,
+`heroImage?`, `heroAlt?`). The `slug` must equal the filename.
+
+**Hero covers**: `heroImage` (optional) is a `/public` path or URL shown at the
+top of the post and as the index card thumbnail (both `aspect-[16/9]`), and is
+added to the post's `BlogPosting` JSON-LD `image`. House covers are minimalist
+editorial **SVGs** in `public/blog-covers/<slug>.svg` (warm-bone canvas, one
+muted-pastel offset shape, bold charcoal line-art — built per the `minimalist-ui`
+skill). `og:image` deliberately stays the raster site default because SVG
+previews poorly on social; supply a raster `heroImage` for a custom social card. The parser, loader, and that schema are a
 contract — change one, change all three.
 
 ## Tests

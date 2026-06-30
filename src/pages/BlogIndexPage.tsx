@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CaretLeft, ArrowRight } from "@phosphor-icons/react";
+import { CaretLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { Header } from "../features/layout/Header";
-import { getAllPosts, formatBlogDate } from "../lib/blog";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { BlogPostCard } from "../components/BlogPostCard";
+import { getAllPosts } from "../lib/blog";
 import { SITE_URL, postUrl } from "../lib/site";
 
 export function BlogIndexPage() {
@@ -71,7 +73,7 @@ export function BlogIndexPage() {
                 centerNode={
                     <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Blog</span>
                 }
-                rightNode={<div />}
+                rightNode={<ThemeToggle />}
             />
 
             <section className="min-h-screen bg-background pb-bottom-nav md:pb-12">
@@ -90,51 +92,14 @@ export function BlogIndexPage() {
 
                     <div className="hairline mb-8" />
 
-                    {/* Post list */}
+                    {/* Post list — horizontal cards, image left / preview right */}
                     <motion.ul
                         {...whileInView(0.05)}
-                        className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-6 list-none"
+                        className="grid grid-cols-1 gap-4 sm:gap-5 pb-6 list-none max-w-3xl"
                     >
                         {posts.map((post, i) => (
                             <motion.li key={post.slug} {...staggerCard(i)}>
-                                <Link
-                                    to={`/blog/${post.slug}`}
-                                    className="group flex flex-col h-full bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hover:ring-primary/40 hover:-translate-y-0.5 transition-all"
-                                >
-                                    {post.heroImage && (
-                                        <div className="mb-5 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted/40">
-                                            <img
-                                                src={post.heroImage}
-                                                alt={post.heroAlt ?? post.title}
-                                                className="w-full aspect-[16/9] object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                                                loading="lazy"
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1">
-                                            {post.category}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {post.readingTime} min read
-                                        </span>
-                                    </div>
-                                    <h2 className="font-display text-xl font-semibold tracking-tight text-foreground leading-snug">
-                                        {post.title}
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 flex-1">
-                                        {post.description}
-                                    </p>
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
-                                        <time dateTime={post.date} className="text-xs text-muted-foreground">
-                                            {formatBlogDate(post.date)}
-                                        </time>
-                                        <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-                                            Read
-                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                                        </span>
-                                    </div>
-                                </Link>
+                                <BlogPostCard post={post} />
                             </motion.li>
                         ))}
                     </motion.ul>

@@ -5,7 +5,9 @@ import { CaretLeft, ArrowLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { Header } from "../features/layout/Header";
 import { MarkdownContent } from "../components/MarkdownContent";
-import { getPostBySlug, formatBlogDate } from "../lib/blog";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { BlogPostCard } from "../components/BlogPostCard";
+import { getPostBySlug, getRelatedPosts, formatBlogDate } from "../lib/blog";
 import { SITE_URL, postUrl } from "../lib/site";
 
 export function BlogPostPage() {
@@ -50,6 +52,7 @@ export function BlogPostPage() {
 
     const canonical = postUrl(post.slug);
     const keywordsContent = post.keywords.join(", ");
+    const related = getRelatedPosts(post.slug);
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -106,7 +109,7 @@ export function BlogPostPage() {
                 centerNode={
                     <span className="font-display text-lg font-semibold tracking-tight text-foreground truncate">Blog</span>
                 }
-                rightNode={<div />}
+                rightNode={<ThemeToggle />}
             />
 
             <section className="min-h-screen bg-background pb-bottom-nav md:pb-16">
@@ -143,6 +146,22 @@ export function BlogPostPage() {
                         <motion.div {...whileInView(0.05)}>
                             <MarkdownContent content={post.content} />
                         </motion.div>
+
+                        {/* Keep reading — related posts to continue the session */}
+                        {related.length > 0 && (
+                            <section className="mt-14" aria-label="More posts">
+                                <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-5">
+                                    Keep reading
+                                </h2>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {related.map((p) => (
+                                        <motion.div key={p.slug} {...whileInView(0.05)}>
+                                            <BlogPostCard post={p} />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
                         {/* Footer */}
                         <div className="hairline my-10" />

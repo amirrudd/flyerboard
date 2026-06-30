@@ -88,6 +88,19 @@ export function getPostBySlug(slug: string): BlogPost | undefined {
     return posts.find((post) => post.slug === slug);
 }
 
+/**
+ * Posts to suggest after `slug` — same category first, then the rest, newest
+ * order preserved, current post excluded. Keeps readers moving to a next post.
+ */
+export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
+    const current = getPostBySlug(slug);
+    const others = posts.filter((post) => post.slug !== slug);
+    if (!current) return others.slice(0, limit);
+    const sameCategory = others.filter((post) => post.category === current.category);
+    const rest = others.filter((post) => post.category !== current.category);
+    return [...sameCategory, ...rest].slice(0, limit);
+}
+
 /** Formats an ISO post date; falls back to the raw string if unparseable. */
 export function formatBlogDate(date: string, pattern = "d MMM yyyy"): string {
     if (!date) return "";

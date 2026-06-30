@@ -17,6 +17,37 @@ is not.
 the feed. An earlier pass shipped a Newest / Price↑ / Price↓ dropdown; it was
 removed.
 
+## Blog — File-Based Content, SEO + GEO (Jun 2026)
+
+**Decision**: The blog is **markdown files in the repo** (`src/content/blog/*.md`
+with YAML frontmatter), bundled at build time via `import.meta.glob` — **not** a
+Convex table or CMS. Posts render through the existing `MarkdownContent`
+component. Pages are `/blog` and `/blog/:slug`.
+
+**Why**:
+- It reuses the established `src/content/*.md` + `?raw` pattern (About/Terms),
+  so there's zero new infrastructure, no backend reads, and posts ship in the
+  static bundle (fast, cacheable, no query cost).
+- Authoring is a pull request, which fits a founder-run, low-volume blog and
+  keeps content versioned alongside code.
+
+**Optimised for AI discoverability (GEO), not just SEO**:
+- Per-post `BlogPosting` JSON-LD + canonical/OG tags, rendered via **React 19's
+  native document metadata** (render `<title>`/`<meta>`/`<link>` in JSX; React
+  hoists them) — no react-helmet dependency.
+- A build-time Vite plugin emits `llms.txt` (an AI-crawler index of every post)
+  and `sitemap.xml` from the same markdown, so they can never drift.
+- Authoring rules (length 800–1,500 words, answer-block-first structure,
+  frontmatter schema) live in `docs/guides/blog-content-guideline.md`, derived
+  from 2025–26 SEO/GEO research.
+
+**Rejected**: gray-matter (drags Node Buffer into the browser bundle — replaced
+with a tiny pure parser, `src/lib/frontmatter.ts`); a Convex-backed CMS
+(unnecessary for low-volume, founder-authored content). **Known limitation**:
+client-rendered SPA means meta populates post-JS; acceptable because modern
+search/AI crawlers render JS. SSR/pre-render is the future upgrade path if
+needed. Implementation notes: `.agent/gatheredContext/features/blog.md`.
+
 ## Cost Optimization (Jan 2026)
 
 ### Combined Queries

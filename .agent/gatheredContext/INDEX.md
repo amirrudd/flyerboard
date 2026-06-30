@@ -13,6 +13,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 | Task | Primary Context | Related Context |
 |------|----------------|-----------------|
 | **Authentication/Login** | `features/authentication.md` | `infrastructure/database.md` |
+| **Blog / SEO / GEO content** | `features/blog.md` | `frontend/routing-navigation.md`, `../../docs/guides/blog-content-guideline.md` |
 | **Image Upload** | `features/image-upload.md` | `infrastructure/storage.md` |
 | **Notifications** | `features/notifications.md` | `infrastructure/database.md` |
 | **Admin Features** | `features/admin.md` | `infrastructure/database.md` |
@@ -33,6 +34,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 ├── features/                    # Feature implementations
 │   ├── admin.md                 # Admin dashboard, user/flyer management
 │   ├── authentication.md        # Descope integration, auth patterns
+│   ├── blog.md                  # File-based blog, SEO/GEO, llms.txt + sitemap
 │   ├── image-upload.md          # Adaptive compression, upload UX
 │   ├── notifications.md         # Email (Resend) + Push (Web Push)
 │   └── pwa.md                   # Progressive Web App features

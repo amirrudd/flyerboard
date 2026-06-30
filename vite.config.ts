@@ -1,13 +1,85 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import viteCompression from "vite-plugin-compression";
+import { parseFrontmatter } from "./src/lib/frontmatter";
+
+const SITE_URL = "https://flyerboard.com.au";
+
+// Emits /llms.txt and /sitemap.xml from the blog markdown at build time so the
+// blog stays discoverable by AI crawlers and search engines without a manual
+// step. Reads the same src/content/blog/*.md files the app bundles, so it can
+// never drift from what's published. See docs/guides/blog-content-guideline.md.
+function blogDiscoverabilityPlugin() {
+  return {
+    name: "flyerboard-blog-discoverability",
+    apply: "build" as const,
+    writeBundle(options: { dir?: string }) {
+      try {
+        const outDir = options.dir ?? path.resolve(__dirname, "dist");
+        const blogDir = path.resolve(__dirname, "src/content/blog");
+        const files = fs.existsSync(blogDir)
+          ? fs.readdirSync(blogDir).filter((f) => f.endsWith(".md"))
+          : [];
+
+        const posts = files
+          .map((file) => {
+            const { data } = parseFrontmatter(fs.readFileSync(path.join(blogDir, file), "utf-8"));
+            const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
+            const slug = str(data.slug) || file.replace(/\.md$/, "");
+            return {
+              slug,
+              title: str(data.title) || slug,
+              description: str(data.description),
+              date: str(data.date),
+              updated: str(data.updated) || str(data.date),
+            };
+          })
+          .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+        const llms = [
+          "# FlyerBoard",
+          "",
+          "> FlyerBoard is Australia's local classified marketplace — buy, sell, and trade safely in your community. Made in Melbourne, built around safety and reuse.",
+          "",
+          "## Blog",
+          "Practical guides on buying and selling locally:",
+          "",
+          ...posts.map((p) => `- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`),
+          "",
+        ].join("\n");
+        fs.writeFileSync(path.join(outDir, "llms.txt"), llms);
+
+        const staticPaths = ["/", "/blog", "/about", "/support", "/terms", "/community-guidelines"];
+        const urls = [
+          ...staticPaths.map((p) => ({ loc: `${SITE_URL}${p}`, lastmod: "" })),
+          ...posts.map((p) => ({ loc: `${SITE_URL}/blog/${p.slug}`, lastmod: p.updated })),
+        ];
+        const sitemap =
+          `<?xml version="1.0" encoding="UTF-8"?>\n` +
+          `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+          urls
+            .map(
+              (u) =>
+                `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}</url>`,
+            )
+            .join("\n") +
+          `\n</urlset>\n`;
+        fs.writeFileSync(path.join(outDir, "sitemap.xml"), sitemap);
+      } catch (err) {
+        console.warn("[flyerboard-blog-discoverability] skipped:", err);
+      }
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     viteCompression(),
+    blogDiscoverabilityPlugin(),
     // The code below enables dev tools like taking screenshots of your site
     // while it is being developed on chef.convex.dev.
     // Feel free to remove this code if you're no longer developing your app with Chef.

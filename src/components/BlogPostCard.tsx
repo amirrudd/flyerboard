@@ -14,7 +14,7 @@ export function BlogPostCard({ post }: { post: BlogPost }) {
             className="group flex items-stretch h-full bg-card ring-1 ring-border/70 rounded-2xl overflow-hidden shadow-card hover:ring-primary/40 hover:-translate-y-0.5 transition-all"
         >
             {post.heroImage && (
-                <div className="w-28 sm:w-44 md:w-52 flex-shrink-0 bg-muted/40 overflow-hidden">
+                <div className="w-28 sm:w-36 md:w-40 flex-shrink-0 bg-muted/40 overflow-hidden">
                     <img
                         src={post.heroImage}
                         alt={post.heroAlt ?? post.title}

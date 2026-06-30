@@ -92,10 +92,10 @@ export function BlogIndexPage() {
 
                     <div className="hairline mb-8" />
 
-                    {/* Post list — horizontal cards, image left / preview right */}
+                    {/* Post list — horizontal cards (image left / preview right) in a grid */}
                     <motion.ul
                         {...whileInView(0.05)}
-                        className="grid grid-cols-1 gap-4 sm:gap-5 pb-6 list-none max-w-3xl"
+                        className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 pb-6 list-none"
                     >
                         {posts.map((post, i) => (
                             <motion.li key={post.slug} {...staggerCard(i)}>

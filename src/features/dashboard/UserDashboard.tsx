@@ -31,8 +31,10 @@ import {
   XCircle,
   MapPin,
   Image as ImageIcon,
-  Envelope
+  Envelope,
+  Package
 } from '@phosphor-icons/react';
+import { MovingSalesTab } from "./MovingSalesTab";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -62,10 +64,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const navigate = useNavigate();
   const { whileInView, reduced } = useMotionPrefs();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
   const { isMobile } = useDeviceInfo();
 
-  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "profile" | "archived">(tabParam || "ads");
+  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "profile" | "archived">(tabParam || "ads");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -247,7 +249,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Sync activeTab with URL search params (for bottom nav navigation)
   useEffect(() => {
-    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
     if (tabParam && tabParam !== activeTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
@@ -294,6 +296,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           ads: adsContentRef,
           chats: chatsContentRef,
           saved: savedContentRef,
+          // MovingSalesTab manages its own scroll; reuse the ads ref (null when
+          // the sales tab is active, so the optional-chain below simply no-ops).
+          sales: adsContentRef,
           profile: profileContentRef,
           archived: archivedContentRef,
         };
@@ -717,6 +722,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                     },
                     { id: "saved", label: "Saved Flyers", icon: Heart },
+                    { id: "sales", label: "Moving sales", icon: Package },
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
                   ].map((tab) => {
@@ -804,6 +810,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       Pin Next Flyer
                     </button>
                   </header>
+
+                  {/* Entry point to Moving Sale Mode (visible on all viewports) */}
+                  <button
+                    type="button"
+                    onClick={() => { void navigate("/sell/moving-sale"); }}
+                    className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] p-3 text-left transition active:scale-[0.99]"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                      <Package size={20} weight="fill" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-foreground">
+                        Moving house? Run a moving sale
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        List everything at once — photos in, listings out.
+                      </span>
+                    </span>
+                  </button>
 
                   <div className="space-y-3 sm:space-y-4">
                     {userAds === undefined ? (
@@ -1171,6 +1196,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </div>
                 </section>
               )}
+
+              {activeTab === "sales" && <MovingSalesTab />}
 
               {activeTab === "profile" && (
                 <section ref={profileContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Profile settings">

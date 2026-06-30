@@ -117,3 +117,28 @@ unhoistableHeaders: new Set(["x-amz-checksum-crc32"])
 **Decision**: Execute an inline blocking script in `<head>` to apply the theme class before the first paint.
 
 **Why**: Eliminates the "Flash of Unstyled Content" where a dark-mode user sees a white screen during initial load.
+
+---
+
+## Moving Sale Mode (2026-06-30)
+
+**Decision**: Model a moving sale as a first-class `saleEvents` entity (with
+`saleBundles` and new `ads` fields), and ship the flow **core-first with AI
+photo-to-listing and the $9 paywall stubbed behind explicit seams**.
+
+**Why**: The feature wraps three not-yet-built dependencies (AI photo-to-listing,
+cross-posting pack, printable flyers) and needs an LLM vision key + a Stripe
+account that don't exist yet. Building the full data model, seller flow, public
+buyer page, dashboard surface, QR and a print-to-PDF flyer end-to-end — with a
+manual fallback where AI plugs in and an owner-callable `publishSaleEvent` where
+the Stripe webhook plugs in — delivers a working product now and de-risks the two
+integrations independently.
+
+**Rejected**: (a) waiting on Stripe/LLM before building anything; (b) a flag on
+`ads` instead of a `saleEvents` table — can't model the draft→active→ended
+lifecycle or bundle pricing cleanly.
+
+**Key invariants**: sold items use `isSold` (stay visible/greyed), never
+`isDeleted`; the slug is minted once at publish and never changes (printed flyers
+encode it); `isPaid` gates the public page. Full implementation notes:
+`.agent/gatheredContext/features/moving-sale.md`.

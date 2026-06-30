@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-05-09
+**Last Updated**: 2026-06-30
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 
@@ -13,6 +13,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 | Task | Primary Context | Related Context |
 |------|----------------|-----------------|
 | **Authentication/Login** | `features/authentication.md` | `infrastructure/database.md` |
+| **Moving Sale Mode** | `features/moving-sale.md` | `infrastructure/database.md`, `features/image-upload.md` |
 | **Image Upload** | `features/image-upload.md` | `infrastructure/storage.md` |
 | **Notifications** | `features/notifications.md` | `infrastructure/database.md` |
 | **Admin Features** | `features/admin.md` | `infrastructure/database.md` |

@@ -27,6 +27,12 @@ const applicationTables = {
     isDeleted: v.optional(v.boolean()), // Logical delete flag
     views: v.number(),
 
+    // Moving Sale Mode: an ad can belong to a sale event.
+    saleEventId: v.optional(v.id("saleEvents")), // FK → saleEvents (null for regular ads)
+    isSold: v.optional(v.boolean()),             // Sold marker — NOT isDeleted; sold items stay visible (greyed) on the sale page
+    bundleId: v.optional(v.id("saleBundles")),   // Optional FK → saleBundles
+    condition: v.optional(v.string()),           // e.g. "New", "Like new", "Good", "Fair" — surfaced in batch review
+
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
   })
@@ -35,6 +41,7 @@ const applicationTables = {
     .index("by_active", ["isActive"])
     .index("by_user", ["userId"])
     .index("by_deleted", ["isDeleted"])
+    .index("by_sale_event", ["saleEventId"])
     .searchIndex("search_ads", {
       searchField: "title",
       filterFields: ["categoryId", "location", "isActive", "isDeleted"],
@@ -145,6 +152,42 @@ const applicationTables = {
     description: v.string(),   // Human-readable description
   })
     .index("by_key", ["key"]),
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Moving Sale Mode
+  // A first-class "sale event" groups many ads into one shareable, time-boxed
+  // sale with a public page, bundle pricing, and a pickup window.
+  // ──────────────────────────────────────────────────────────────────────────
+  saleEvents: defineTable({
+    userId: v.id("users"),                 // Owner (seller)
+    slug: v.optional(v.string()),          // Permanent public URL slug, e.g. "amirs-sale-richmond-k7p2". Minted at publish time, never regenerated (printed flyers encode it).
+    title: v.string(),                     // "Amir's Moving Sale"
+    suburb: v.string(),                    // Display-only, e.g. "Richmond, VIC"
+    note: v.optional(v.string()),          // Optional note for buyers
+    pickupWindowStart: v.number(),         // Timestamp
+    pickupWindowEnd: v.number(),           // Timestamp
+    status: v.union(
+      v.literal("draft"),                  // Being built / previewed privately, not yet published
+      v.literal("active"),                 // Paid + live
+      v.literal("ended")                   // Pickup window closed
+    ),
+    itemCap: v.number(),                   // 10 for free, 25 for the $9 pack
+    isPaid: v.boolean(),                   // Gates the public page (set true on publish; STUB until Stripe)
+    flyerPdfUrl: v.optional(v.string()),   // R2 key for cached printable flyer, null until first generated
+    expiresAt: v.optional(v.number()),     // Auto-close target (after pickup window)
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
+
+  saleBundles: defineTable({
+    saleEventId: v.id("saleEvents"),       // FK → saleEvents
+    label: v.string(),                     // "Home office setup"
+    bundlePrice: v.number(),               // Seller-set or AI-suggested bundle price
+    adIds: v.array(v.id("ads")),           // Ads included in this bundle
+  })
+    .index("by_sale_event", ["saleEventId"]),
 };
 
 // Extend the auth tables to add custom fields

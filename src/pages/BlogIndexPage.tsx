@@ -63,11 +63,11 @@ export function BlogIndexPage() {
                     <button
                         type="button"
                         onClick={() => { void navigate("/"); }}
-                        aria-label="Go back to home"
-                        className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
+                        aria-label="Go to FlyerBoard home"
+                        className="flex items-center gap-2 h-10 pl-2 pr-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
                     >
-                        <CaretLeft className="w-5 h-5" />
-                        <span className="hidden sm:inline">Back</span>
+                        <CaretLeft className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-display font-semibold">FlyerBoard</span>
                     </button>
                 }
                 centerNode={
@@ -76,7 +76,7 @@ export function BlogIndexPage() {
                 rightNode={<ThemeToggle />}
             />
 
-            <section className="min-h-screen bg-background pb-bottom-nav md:pb-12">
+            <section className="min-h-screen bg-background pb-12">
                 <div className="content-max-width mx-auto container-padding">
 
                     {/* Hero */}

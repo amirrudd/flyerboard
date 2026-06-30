@@ -14,6 +14,11 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
     const { isAuthenticated } = useSession();
     const user = isAuthenticated ? { name: "User" } : null;
 
+    // The blog is a read-focused, document-style section — no bottom nav on mobile.
+    if (location.pathname.startsWith("/blog")) {
+        return null;
+    }
+
     const isActive = (path: string) => {
         if (path.startsWith('/dashboard')) {
             const currentParams = new URLSearchParams(location.search);

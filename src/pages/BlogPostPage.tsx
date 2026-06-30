@@ -61,7 +61,7 @@ export function BlogPostPage() {
 
     const canonical = postUrl(post.slug);
     const keywordsContent = post.keywords.join(", ");
-    const related = getRelatedPosts(post.slug);
+    const related = getRelatedPosts(post.slug, 2);
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -162,7 +162,7 @@ export function BlogPostPage() {
                                 <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-5">
                                     Keep reading
                                 </h2>
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {related.map((p) => (
                                         <motion.div key={p.slug} {...whileInView(0.05)}>
                                             <BlogPostCard post={p} />

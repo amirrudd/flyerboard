@@ -1,19 +1,11 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
 import { CaretLeft, ArrowRight } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { Header } from "../features/layout/Header";
-import { getAllPosts } from "../lib/blog";
-
-const SITE_URL = "https://flyerboard.com.au";
-
-function formatDate(date: string): string {
-    if (!date) return "";
-    const parsed = new Date(date);
-    return Number.isNaN(parsed.getTime()) ? date : format(parsed, "d MMM yyyy");
-}
+import { getAllPosts, formatBlogDate } from "../lib/blog";
+import { SITE_URL, postUrl } from "../lib/site";
 
 export function BlogIndexPage() {
     const navigate = useNavigate();
@@ -39,7 +31,7 @@ export function BlogIndexPage() {
             description: post.description,
             datePublished: post.date,
             dateModified: post.updated ?? post.date,
-            url: `${SITE_URL}/blog/${post.slug}`,
+            url: postUrl(post.slug),
             author: { "@type": "Organization", name: post.author },
         })),
     };
@@ -125,7 +117,7 @@ export function BlogIndexPage() {
                                     </p>
                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
                                         <time dateTime={post.date} className="text-xs text-muted-foreground">
-                                            {formatDate(post.date)}
+                                            {formatBlogDate(post.date)}
                                         </time>
                                         <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                                             Read

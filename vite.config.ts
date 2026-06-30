@@ -4,8 +4,7 @@ import path from "path";
 import fs from "fs";
 import viteCompression from "vite-plugin-compression";
 import { parseFrontmatter } from "./src/lib/frontmatter";
-
-const SITE_URL = "https://flyerboard.com.au";
+import { SITE_URL, postUrl } from "./src/lib/site";
 
 // Emits /llms.txt and /sitemap.xml from the blog markdown at build time so the
 // blog stays discoverable by AI crawlers and search engines without a manual
@@ -46,7 +45,7 @@ function blogDiscoverabilityPlugin() {
           "## Blog",
           "Practical guides on buying and selling locally:",
           "",
-          ...posts.map((p) => `- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`),
+          ...posts.map((p) => `- [${p.title}](${postUrl(p.slug)}): ${p.description}`),
           "",
         ].join("\n");
         fs.writeFileSync(path.join(outDir, "llms.txt"), llms);
@@ -54,7 +53,7 @@ function blogDiscoverabilityPlugin() {
         const staticPaths = ["/", "/blog", "/about", "/support", "/terms", "/community-guidelines"];
         const urls = [
           ...staticPaths.map((p) => ({ loc: `${SITE_URL}${p}`, lastmod: "" })),
-          ...posts.map((p) => ({ loc: `${SITE_URL}/blog/${p.slug}`, lastmod: p.updated })),
+          ...posts.map((p) => ({ loc: postUrl(p.slug), lastmod: p.updated })),
         ];
         const sitemap =
           `<?xml version="1.0" encoding="UTF-8"?>\n` +

@@ -6,6 +6,7 @@
 // no backend, no Convex table. Ordering is newest-first to match the rest of the
 // app (see the "feed always newest-first" product rule).
 
+import { format } from "date-fns";
 import { parseFrontmatter } from "./frontmatter";
 
 export interface BlogPost {
@@ -48,10 +49,11 @@ function buildPost(path: string, raw: string): BlogPost {
         ? declaredReadingTime
         : Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
 
+    const singleKeyword = asString(data.keywords);
     const keywords = Array.isArray(data.keywords)
         ? data.keywords
-        : asString(data.keywords)
-            ? [asString(data.keywords) as string]
+        : singleKeyword
+            ? [singleKeyword]
             : [];
 
     return {
@@ -78,4 +80,11 @@ export function getAllPosts(): BlogPost[] {
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
     return posts.find((post) => post.slug === slug);
+}
+
+/** Formats an ISO post date; falls back to the raw string if unparseable. */
+export function formatBlogDate(date: string, pattern = "d MMM yyyy"): string {
+    if (!date) return "";
+    const parsed = new Date(date);
+    return Number.isNaN(parsed.getTime()) ? date : format(parsed, pattern);
 }

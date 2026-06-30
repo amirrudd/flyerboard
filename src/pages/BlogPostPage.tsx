@@ -1,20 +1,12 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
 import { CaretLeft, ArrowLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { Header } from "../features/layout/Header";
 import { MarkdownContent } from "../components/MarkdownContent";
-import { getPostBySlug } from "../lib/blog";
-
-const SITE_URL = "https://flyerboard.com.au";
-
-function formatDate(date: string): string {
-    if (!date) return "";
-    const parsed = new Date(date);
-    return Number.isNaN(parsed.getTime()) ? date : format(parsed, "d MMMM yyyy");
-}
+import { getPostBySlug, formatBlogDate } from "../lib/blog";
+import { SITE_URL, postUrl } from "../lib/site";
 
 export function BlogPostPage() {
     const navigate = useNavigate();
@@ -56,7 +48,8 @@ export function BlogPostPage() {
         );
     }
 
-    const canonical = `${SITE_URL}/blog/${post.slug}`;
+    const canonical = postUrl(post.slug);
+    const keywordsContent = post.keywords.join(", ");
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -70,7 +63,7 @@ export function BlogPostPage() {
             name: "FlyerBoard",
             url: SITE_URL,
         },
-        keywords: post.keywords.join(", "),
+        keywords: keywordsContent,
         articleSection: post.category,
         mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
         url: canonical,
@@ -80,7 +73,7 @@ export function BlogPostPage() {
         <>
             <title>{`${post.title} — FlyerBoard Blog`}</title>
             <meta name="description" content={post.description} />
-            <meta name="keywords" content={post.keywords.join(", ")} />
+            <meta name="keywords" content={keywordsContent} />
             <meta name="author" content={post.author} />
             <link rel="canonical" href={canonical} />
             <meta property="og:type" content="article" />
@@ -124,7 +117,7 @@ export function BlogPostPage() {
                                 {post.category}
                             </span>
                             <time dateTime={post.date} className="text-sm text-muted-foreground">
-                                {formatDate(post.date)}
+                                {formatBlogDate(post.date, "d MMMM yyyy")}
                             </time>
                             <span className="text-sm text-muted-foreground">·</span>
                             <span className="text-sm text-muted-foreground">{post.readingTime} min read</span>

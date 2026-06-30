@@ -28,7 +28,7 @@ describe("parseFrontmatter", () => {
     });
 
     it("ignores a leading UTF-8 BOM", () => {
-        const { data } = parseFrontmatter(`﻿---\ntitle: BOM\n---\nbody`);
+        const { data } = parseFrontmatter(`\uFEFF---\ntitle: BOM\n---\nbody`);
         expect(data.title).toBe("BOM");
     });
 });

@@ -1,6 +1,6 @@
 # Quality Gates (type-check, lint, CI, Stop hook)
 
-Last Updated: 2026-06-28
+Last Updated: 2026-06-30
 
 How regressions are caught in FlyerBoard. Three layers: local Stop hook (per turn),
 the `lint` script (pre-commit, manual), and CI `build.yml` (required to merge).
@@ -65,5 +65,28 @@ ONLY descope widgets. Don't rely on the global `JSX` namespace; use narrow liter
 
 `eslint . --fix` here stripped *necessary* type assertions (broke tests) and rewrote generated
 `coverage/*.js`. Fix by rule with verification (`tsc -b` + `vitest run`), not blanket autofix.
+
+## Convex backend tests with `convex-test` (added 2026-06-30)
+
+Backend functions are tested in-memory with `convex-test` (devDeps: `convex-test`,
+`@edge-runtime/vm`). Pattern — see `convex/saleEvents.test.ts` / `convex/saleChats.test.ts`:
+
+- Each file MUST start with `// @vitest-environment edge-runtime` (convex-test needs it).
+- `convexTest(schema, modules)` spins a fresh backend against the real schema + functions.
+- 🔴 **Glob gotcha**: the canonical `import.meta.glob("./**/!(*.*.*)*.*s")` from the
+  convex-test docs returns **`[]`** under this repo's vite/vitest (the extglob `!(...)`
+  brace pattern isn't expanded), so convex-test fails with *"Could not find the
+  _generated directory"*. Fix used: glob `./**/*.ts` + `./**/*.js` and filter out
+  `.d.ts` and `*.test/*.spec` files in JS. Keep this filter or you'll re-import the
+  test file itself.
+- **Auth simulation (Descope, not Convex Auth)**: insert a `users` row with
+  `tokenIdentifier: "u1"`, then `t.withIdentity({ subject: "u1" })`. `getDescopeUserId`
+  matches `tokenIdentifier === identity.subject`. Plain `t` (no identity) = unauthenticated
+  → mutations throw "Must be logged in…". An identity whose subject matches no user row
+  also reads as unauthenticated.
+- `addSaleItems` needs ≥1 `categories` row seeded (calls `getDefaultCategoryId`).
+- `t.run(async (ctx) => …)` callbacks that `await` MUST be declared `async` — SWC errors
+  loudly ("await isn't allowed in non-async function") otherwise.
+- Run just these: `npx vitest run convex/saleEvents.test.ts convex/saleChats.test.ts`.
 
 See also: [[regression-guardrails plan]] at `.agent/plans/regression-guardrails.md`.

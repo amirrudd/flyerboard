@@ -148,3 +148,95 @@ unhoistableHeaders: new Set(["x-amz-checksum-crc32"])
 **Decision**: Execute an inline blocking script in `<head>` to apply the theme class before the first paint.
 
 **Why**: Eliminates the "Flash of Unstyled Content" where a dark-mode user sees a white screen during initial load.
+
+---
+
+## Moving Sale Mode (2026-06-30)
+
+**Decision**: Model a moving sale as a first-class `saleEvents` entity (with
+`saleBundles` and new `ads` fields), and ship the flow **core-first with AI
+photo-to-listing and the $9 paywall stubbed behind explicit seams**.
+
+**Why**: The feature wraps three not-yet-built dependencies (AI photo-to-listing,
+cross-posting pack, printable flyers) and needs an LLM vision key + a Stripe
+account that don't exist yet. Building the full data model, seller flow, public
+buyer page, dashboard surface, QR and a print-to-PDF flyer end-to-end — with a
+manual fallback where AI plugs in and an owner-callable `publishSaleEvent` where
+the Stripe webhook plugs in — delivers a working product now and de-risks the two
+integrations independently.
+
+**Rejected**: (a) waiting on Stripe/LLM before building anything; (b) a flag on
+`ads` instead of a `saleEvents` table — can't model the draft→active→ended
+lifecycle or bundle pricing cleanly.
+
+**Key invariants**: sold items use `isSold` (stay visible/greyed), never
+`isDeleted`; the slug is minted once at publish and never changes (printed flyers
+encode it); `isPaid` gates the public page. Full implementation notes:
+`.agent/gatheredContext/features/moving-sale.md`.
+
+---
+
+## Moving Sale Mode v2 — free model + sale-level messaging + feed integration (2026-06-30)
+
+**Decision**: Revised Moving Sale Mode per the v2 design: (a) the mode is **fully free**
+including the public page — the $9 publish paywall is removed; monetisation moves to
+optional **à-la-carte add-ons** (AI bulk listing, QR+PDF flyer, 7-day search pin) offered
+on the share screen; (b) **sale-level messaging** — one thread per buyer per Sale with item
+chips, replacing the route-to-`/ad/:id` shortcut; (c) **feed integration** — sale-item
+badge/strip, a distinct Sale event card, an ad-detail sale banner, and a max-3-items-per-Sale
+de-dup rule; (d) the **PostAd mode selector** as the primary entry point.
+
+**Why**: "Pay to publish" has no obvious justification and depresses supply; "the mode is
+free, speed/visibility are paid" is transparent ("AI costs API money") and grows inventory,
+which feeds the marketplace flywheel. Sale-level threads match how movers actually negotiate
+("can I get the chair and the bookshelf for $70?"). Feed integration makes sale items
+discoverable by category while the Sale event card sells the whole haul by location.
+
+**Notable invariants/gotchas**: `getSaleBySlug` now gates on `status`, not payment;
+`chats.adId` became optional (6 call sites guarded; sale-thread notifications deferred);
+add-ons are stubbed (`purchaseAddon`) pending Stripe; `isPaid`/`itemCap` kept as optional
+legacy fields. Full notes: `.agent/gatheredContext/features/moving-sale.md` (v2 section).
+
+---
+
+## Moving Sale Mode v3 — Sale card in the unified feed (2026-06-30)
+
+**Decision**: Drop the separate "Sale event card" section pinned above the marketplace feed
+(v2) and instead render each active Sale as ONE card **inside the regular date-sorted grid**,
+identical card shell to a single listing, differentiated only by a 2×2 image thumbnail with a
+graceful degradation ladder. The feed sort rule is unchanged — Sale cards interleave by
+`createdAt` within the existing newest-first order.
+
+**Why**: A separate pinned section creates two parallel feeds competing for attention. One
+feed, one card per Sale, sorted by date, keeps the buyer experience coherent and preserves the
+"pin your flyer to the top" model (a fresh Sale appears at top and sinks as newer listings
+arrive). The thumbnail is the only differentiator, so a Sale reads as "a listing that happens
+to be a whole sale," not a foreign UI element.
+
+**Implementation**: `AdsGrid` gained an optional `saleCards` prop and merges ads + sale cards by
+timestamp; `SaleThumbnail` owns the 4+/3/2/1/0-photo ladder; `getActiveSales` returns the card
+payload (pinned-first dropped). Built via the design skill in redesign-preserve mode. The
+standalone **Bundle Listing** feature from the same v3 doc was scoped out for a later session.
+Full notes: `.agent/gatheredContext/features/moving-sale.md` (v3 section).
+
+---
+
+## Moving Sale Mode v3.1 — feed items un-differentiated; banner is the discovery surface (2026-06-30)
+
+**Decision**: Stop differentiating individual sale items in the feed entirely (no badge,
+strip, or footer — they render identically to single listings), and move all sale-context
+discovery to a richer banner on the ad detail page. The whole-Sale 2×2 card remains the only
+feed-level signal.
+
+**Why**: The "In a moving sale ›" feed-card footer created a nested-tap-target problem — the
+chevron read as the primary CTA, so buyers tapped expecting the item and landed on the Sale
+page. Removing it eliminates the confusion. The ad detail page is the right moment to surface
+"there's more" (the buyer is already interested in the item), and it has room for a proper
+banner: title-cased seller name, suburb/items/pickup/price sub-line, and a thumbnail strip
+(current item dimmed + 3 others + "+N").
+
+**Implementation**: `getSaleSummaries` (which powered the feed badges) replaced by
+`getSaleBannerForAd(adId)`. `AdsGrid` lost the `saleSummaries` prop; `AdDetail` renders the new
+banner. The max-3-items-per-Sale feed de-dup and the whole-Sale card are unchanged. Built via
+the design skill (height-neutral cards, title-case, no em-dashes in new copy). Full notes:
+`.agent/gatheredContext/features/moving-sale.md` (v3.1 section).

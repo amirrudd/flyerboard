@@ -73,6 +73,7 @@ describe('UserDashboard', () => {
 
         // Order: getCurrentUserWithStats, getUserAds, sellerChats(skip), buyerChats(skip), savedAds(skip), archivedChats(skip), chatMessages(skip), unreadCounts(skip)
         vi.mocked(useQuery)
+            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
             .mockReturnValueOnce({  // getCurrentUserWithStats (combined)
                 user: { _id: 'user1', name: 'Test User' },
                 stats: { totalAds: 0, totalViews: 0 }
@@ -81,6 +82,7 @@ describe('UserDashboard', () => {
             .mockReturnValueOnce(undefined) // sellerChats (skipped - not chats tab)
             .mockReturnValueOnce(undefined) // buyerChats (skipped - not chats tab)
             .mockReturnValueOnce(undefined) // savedAds (skipped - not saved tab)
+            .mockReturnValueOnce(undefined) // savedSales (skipped - not saved tab)
             .mockReturnValueOnce(undefined) // archivedChats (skipped)
             .mockReturnValueOnce(undefined) // chatMessages (skipped)
             .mockReturnValueOnce(undefined); // unreadCounts (skipped)
@@ -106,11 +108,13 @@ describe('UserDashboard', () => {
         // that is long enough to cover multiple renders (9 queries * 3 renders = 27)
         const mockReturns: any[] = [];
         for (let i = 0; i < 5; i++) { // Mock 5 render cycles
+            mockReturns.push(true);          // getFeatureFlag: movingSaleMode
             mockReturns.push(userWithStats); // getCurrentUserWithStats
             mockReturns.push([]);            // getUserAds
             mockReturns.push(undefined);     // sellerChats
             mockReturns.push(undefined);     // buyerChats
             mockReturns.push(undefined);     // savedAds
+            mockReturns.push(undefined);     // savedSales
             mockReturns.push(undefined);     // archivedChats
             mockReturns.push(undefined);     // chatMessages
             mockReturns.push(undefined);     // unreadCounts
@@ -135,6 +139,7 @@ describe('UserDashboard', () => {
 
         // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
+            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
             .mockReturnValueOnce({  // getCurrentUserWithStats
                 user: { _id: 'user1', name: 'Test User' },
                 stats: { totalAds: 0, totalViews: 0 }
@@ -143,6 +148,7 @@ describe('UserDashboard', () => {
             .mockReturnValueOnce(undefined) // sellerChats (skipped)
             .mockReturnValueOnce(undefined) // buyerChats (skipped)
             .mockReturnValueOnce(undefined) // savedAds (skipped)
+            .mockReturnValueOnce(undefined) // savedSales (skipped)
             .mockReturnValueOnce(undefined) // archivedChats (skipped)
             .mockReturnValueOnce(undefined) // chatMessages (skipped)
             .mockReturnValueOnce(undefined); // unreadCounts (skipped)
@@ -180,11 +186,13 @@ describe('UserDashboard', () => {
 
         // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
+            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
             .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
             .mockReturnValueOnce([])    // getUserAds (will be fetched after redirect to ads tab)
             .mockReturnValueOnce(undefined) // sellerChats (skipped)
             .mockReturnValueOnce(undefined) // buyerChats (skipped)
             .mockReturnValueOnce(undefined) // savedAds (skipped)
+            .mockReturnValueOnce(undefined) // savedSales (skipped)
             .mockReturnValueOnce(undefined) // archivedChats (skipped)
             .mockReturnValueOnce(undefined) // chatMessages (skipped)
             .mockReturnValueOnce(undefined) // unreadCounts (skipped)

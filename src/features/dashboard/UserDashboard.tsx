@@ -17,11 +17,12 @@ import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
   SquaresFour,
   ChatText,
-  Heart,
+  BookmarkSimple,
   Archive,
   User,
   CaretLeft,
@@ -31,8 +32,10 @@ import {
   XCircle,
   MapPin,
   Image as ImageIcon,
-  Envelope
+  Envelope,
+  Package
 } from '@phosphor-icons/react';
+import { MovingSalesTab } from "./MovingSalesTab";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -62,10 +65,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const navigate = useNavigate();
   const { whileInView, reduced } = useMotionPrefs();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
   const { isMobile } = useDeviceInfo();
 
-  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "profile" | "archived">(tabParam || "ads");
+  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "profile" | "archived">(tabParam || "ads");
+  const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -185,6 +189,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     api.adDetail.getSavedAds,
     activeTab === "saved" ? {} : "skip"
   );
+  const savedSales = useQuery(
+    api.saleEvents.getSavedSaleEvents,
+    activeTab === "saved" && movingSaleModeEnabled ? {} : "skip"
+  );
 
   // Only fetch when viewing the archived tab
   const archivedChats = useQuery(
@@ -247,7 +255,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Sync activeTab with URL search params (for bottom nav navigation)
   useEffect(() => {
-    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "profile" | "archived" | null;
+    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
     if (tabParam && tabParam !== activeTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
@@ -256,6 +264,22 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       setSelectedAdId(null);
     }
   }, [searchParams, activeTab]);
+
+  // Bounce away from the sales tab if Moving Sale Mode is off (e.g. a
+  // bookmarked ?tab=sales link) — the sidebar entry is already hidden below.
+  useEffect(() => {
+    if (activeTab === "sales" && movingSaleModeEnabled === false) {
+      // Only push the URL — the "sync activeTab with URL" effect above is the
+      // single writer of activeTab. Also calling setActiveTab here raced it:
+      // searchParams updates one tick behind direct state, so on the
+      // in-between render this effect saw activeTab="ads" while the sync
+      // effect still saw the stale tab=sales param and flipped it back,
+      // which re-triggered this effect — an infinite ping-pong between the
+      // two effects (reproduced live: browser tab crashed with "Maximum
+      // update depth exceeded" after toggling the flag while on this tab).
+      setSearchParams({ tab: "ads" }, { replace: true });
+    }
+  }, [activeTab, movingSaleModeEnabled, setSearchParams]);
 
   // Scroll to top only when navigating TO dashboard from external route
   useEffect(() => {
@@ -294,6 +318,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           ads: adsContentRef,
           chats: chatsContentRef,
           saved: savedContentRef,
+          // MovingSalesTab manages its own scroll; reuse the ads ref (null when
+          // the sales tab is active, so the optional-chain below simply no-ops).
+          sales: adsContentRef,
           profile: profileContentRef,
           archived: archivedContentRef,
         };
@@ -716,7 +743,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       icon: ChatText,
                       badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                     },
-                    { id: "saved", label: "Saved Flyers", icon: Heart },
+                    { id: "saved", label: "Saved Flyers", icon: BookmarkSimple },
+                    ...(movingSaleModeEnabled
+                      ? [{ id: "sales", label: "Moving sales", icon: Package }]
+                      : []),
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
                   ].map((tab) => {
@@ -804,6 +834,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       Pin Next Flyer
                     </button>
                   </header>
+
+                  {/* Entry point to Moving Sale Mode (visible on all viewports) */}
+                  <button
+                    type="button"
+                    onClick={() => { void navigate("/sell/moving-sale"); }}
+                    className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] p-3 text-left transition active:scale-[0.99]"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                      <Package size={20} weight="fill" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-foreground">
+                        Moving house? Run a moving sale
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        List everything at once — photos in, listings out.
+                      </span>
+                    </span>
+                  </button>
 
                   <div className="space-y-3 sm:space-y-4">
                     {userAds === undefined ? (
@@ -978,7 +1027,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   <div className="flex items-start justify-between gap-3 mb-2">
                                     <div className="min-w-0">
                                       <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 truncate">
-                                        {chat.ad?.title || "Deleted Flyer"}
+                                        {chat.ad?.title || (chat.sale ? `🏠 ${chat.sale.title}` : "Deleted Flyer")}
                                       </h3>
                                       {!chat.ad?.isActive && chat.ad && (
                                         <span className="inline-flex items-center px-2.5 py-0.5 bg-destructive/10 text-destructive text-xs font-medium rounded-full ring-1 ring-destructive/20 mb-1">
@@ -1088,18 +1137,18 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type your message..."
                                     className="flex-1 h-11 px-4 bg-muted/50 ring-1 ring-transparent rounded-full focus:ring-ring focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all"
-                                    disabled={!chat.ad?.isActive}
+                                    disabled={chat.ad ? !chat.ad.isActive : !chat.sale}
                                   />
                                   <button
                                     type="submit"
-                                    disabled={!newMessage.trim() || !chat.ad?.isActive}
+                                    disabled={!newMessage.trim() || (chat.ad ? !chat.ad.isActive : !chat.sale)}
                                     aria-label="Send message"
                                     className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                   >
                                     Send
                                   </button>
                                 </div>
-                                {!chat.ad?.isActive && (
+                                {chat.ad && !chat.ad.isActive && (
                                   <p className="text-xs text-destructive mt-2">
                                     Cannot send messages - flyer is inactive or deleted
                                   </p>
@@ -1116,6 +1165,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
               {activeTab === "saved" && (
                 <section ref={savedContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Saved flyers">
+                  {savedSales !== undefined && savedSales.length > 0 && (
+                    <div className="mb-6 pb-6 border-b border-border/70">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-3">Saved Sales</h3>
+                      <div className="grid gap-2 sm:gap-3">
+                        {savedSales.map((saved) => (
+                          <button
+                            key={saved._id}
+                            type="button"
+                            onClick={() => { void navigate(`/sale/${saved.sale.slug}`); }}
+                            className="flex items-center gap-3 ring-1 ring-border/70 rounded-xl p-3 hover:ring-foreground/15 hover:shadow-card transition-all text-left bg-card"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5" weight="fill" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground truncate">{saved.sale.title}</p>
+                              <p className="text-xs text-muted-foreground">{saved.sale.suburb} · {saved.sale.itemCount} items</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <header className="mb-6">
                     <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Bookmarks</span>
                     <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Saved Ads</h2>
@@ -1131,7 +1204,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : savedAds.length === 0 ? (
                       // Empty state
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><BookmarkSimple className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No saved ads</h3>
                         <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Save ads you're interested in to view them here</p>
                       </div>
@@ -1171,6 +1244,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </div>
                 </section>
               )}
+
+              {activeTab === "sales" && movingSaleModeEnabled && <MovingSalesTab />}
 
               {activeTab === "profile" && (
                 <section ref={profileContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Profile settings">

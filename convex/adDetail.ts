@@ -266,10 +266,13 @@ export const sendMessage = mutation({
       throw createError("Not authorized to send messages in this chat", { chatId: args.chatId, userId, buyerId: chat.buyerId, sellerId: chat.sellerId });
     }
 
-    // Check if the ad still exists and is not deleted
-    const ad = await ctx.db.get(chat.adId);
-    if (!ad || ad.isDeleted) {
-      throw createError("Cannot send message - flyer no longer available", { chatId: args.chatId, adId: chat.adId });
+    // For single-listing chats, check the ad still exists. Sale threads (no adId)
+    // are gated by the sale itself, so skip this check.
+    if (chat.adId) {
+      const ad = await ctx.db.get(chat.adId);
+      if (!ad || ad.isDeleted) {
+        throw createError("Cannot send message - flyer no longer available", { chatId: args.chatId, adId: chat.adId });
+      }
     }
 
     // Insert message

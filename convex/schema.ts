@@ -27,6 +27,12 @@ const applicationTables = {
     isDeleted: v.optional(v.boolean()), // Logical delete flag
     views: v.number(),
 
+    // Moving Sale Mode: an ad can belong to a sale event.
+    saleEventId: v.optional(v.id("saleEvents")), // FK → saleEvents (null for regular ads)
+    isSold: v.optional(v.boolean()),             // Sold marker — NOT isDeleted; sold items stay visible (greyed) on the sale page
+    bundleId: v.optional(v.id("saleBundles")),   // Optional FK → saleBundles
+    condition: v.optional(v.string()),           // e.g. "New", "Like new", "Good", "Fair" — surfaced in batch review
+
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
   })
@@ -35,13 +41,16 @@ const applicationTables = {
     .index("by_active", ["isActive"])
     .index("by_user", ["userId"])
     .index("by_deleted", ["isDeleted"])
+    .index("by_sale_event", ["saleEventId"])
     .searchIndex("search_ads", {
       searchField: "title",
       filterFields: ["categoryId", "location", "isActive", "isDeleted"],
     }),
 
   chats: defineTable({
-    adId: v.id("ads"),
+    // Exactly one of adId / saleEventId is set (enforced in mutations, not the validator).
+    adId: v.optional(v.id("ads")),               // single-listing thread (null for Sale threads)
+    saleEventId: v.optional(v.id("saleEvents")), // Sale thread — one per buyer per Sale (v2)
     buyerId: v.id("users"),
     sellerId: v.id("users"),
     lastMessageAt: v.number(),
@@ -51,6 +60,7 @@ const applicationTables = {
     archivedBySeller: v.optional(v.boolean()),
   })
     .index("by_ad_and_buyer", ["adId", "buyerId"])
+    .index("by_sale_event_buyer", ["saleEventId", "buyerId"]) // 1 thread per buyer per Sale
     .index("by_buyer", ["buyerId"])
     .index("by_seller", ["sellerId"])
     .index("by_ad", ["adId"])
@@ -62,6 +72,7 @@ const applicationTables = {
     senderId: v.id("users"),
     content: v.string(),
     timestamp: v.number(),
+    referencedAdIds: v.optional(v.array(v.id("ads"))), // sale-item chips referenced in this message (v2)
   })
     .index("by_chat", ["chatId"])
     .index("by_timestamp", ["timestamp"]),
@@ -72,6 +83,14 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_ad", ["userId", "adId"]),
+
+  /** Bookmarking a whole Sale (not its individual items) — mirrors savedAds. */
+  savedSaleEvents: defineTable({
+    userId: v.id("users"),
+    saleEventId: v.id("saleEvents"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_sale", ["userId", "saleEventId"]),
 
   reports: defineTable({
     reporterId: v.id("users"),          // User submitting the report
@@ -145,6 +164,46 @@ const applicationTables = {
     description: v.string(),   // Human-readable description
   })
     .index("by_key", ["key"]),
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Moving Sale Mode
+  // A first-class "sale event" groups many ads into one shareable, time-boxed
+  // sale with a public page, bundle pricing, and a pickup window.
+  // ──────────────────────────────────────────────────────────────────────────
+  saleEvents: defineTable({
+    userId: v.id("users"),                 // Owner (seller)
+    slug: v.optional(v.string()),          // Permanent public URL slug, e.g. "amirs-sale-richmond-k7p2". Minted at publish time, never regenerated (printed flyers encode it).
+    title: v.string(),                     // "Amir's Moving Sale"
+    suburb: v.string(),                    // Display-only, e.g. "Richmond, VIC"
+    note: v.optional(v.string()),          // Optional note for buyers
+    pickupWindowStart: v.number(),         // Timestamp
+    pickupWindowEnd: v.number(),           // Timestamp
+    status: v.union(
+      v.literal("draft"),                  // Being built, not yet published
+      v.literal("active"),                 // Published + live (free — no payment gate in v2)
+      v.literal("ended")                   // Pickup window closed
+    ),
+    // v2 tier model: the mode is FREE. Publishing and the public page cost nothing.
+    // Monetisation is à-la-carte add-ons tracked in `unlockedAddons`.
+    unlockedAddons: v.optional(v.array(v.string())), // e.g. ["flyer","pin","ai"] — purchased upgrades (stubbed)
+    pinnedUntil: v.optional(v.number()),   // 7-day search-pin add-on expiry
+    itemCap: v.optional(v.number()),       // legacy/back-compat — no longer enforced (free = unlimited)
+    isPaid: v.optional(v.boolean()),       // legacy/back-compat — no longer gates the page
+    flyerPdfUrl: v.optional(v.string()),   // R2 key for cached printable flyer, null until first generated
+    expiresAt: v.optional(v.number()),     // Auto-close target (after pickup window)
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
+
+  saleBundles: defineTable({
+    saleEventId: v.id("saleEvents"),       // FK → saleEvents
+    label: v.string(),                     // "Home office setup"
+    bundlePrice: v.number(),               // Seller-set or AI-suggested bundle price
+    adIds: v.array(v.id("ads")),           // Ads included in this bundle
+  })
+    .index("by_sale_event", ["saleEventId"]),
 };
 
 // Extend the auth tables to add custom fields

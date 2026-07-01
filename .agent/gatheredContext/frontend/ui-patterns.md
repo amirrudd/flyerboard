@@ -1,6 +1,12 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-06-28
+**Last Updated**: 2026-07-01
+
+## `position: fixed` inside `<main>` needs a portal (2026-07-01)
+`Layout.tsx`'s `<main>` (`mobile-scroll-container` class, `index.css`) sets `contain: layout style paint` for scroll performance. Per spec, `contain: layout`/`paint` makes an element a **containing block for `position: fixed` descendants** — any plain `fixed` div nested inside `<main>` (which every routed page renders into) pins to `<main>`'s full scrollable content height, not the viewport. Symptom: a "sticky" bottom bar drifts into the middle of the page as the user scrolls, instead of staying pinned to the screen edge.
+- **Fix**: `createPortal(<div className="fixed ...">, document.body)`. `AdDetail.tsx`'s mobile FABs already do this (comment: "Using Portal to ensure fixed positioning works") — that's the precedent to copy for any new fixed-position UI, not just this one component.
+- **Gotcha found while fixing**: once a fixed element correctly portals to `document.body`, remember it now competes with the persistent mobile `BottomNav` (`fixed bottom-0`, `z-50`, `md:hidden`) for the same screen real estate. Offset with `bottom-[var(--bottom-nav-height)] md:bottom-0` (same CSS var `AdDetail`'s FABs use) rather than a plain `bottom-0`, or the new element renders invisibly behind the nav bar.
+- Fixed in `PublicSaleView.tsx`'s sale-message sticky footer (2026-07-01) — it had shipped without the portal.
 
 ## Thumbnail fill: blurred backdrop (2026-06-28)
 The shared `ImageDisplay` (`src/components/ui/ImageDisplay.tsx`) has an opt-in `backdrop` prop. When true it renders the image `object-contain` (never cropped) on top of a blurred, `scale-110 blur-2xl opacity-80 object-cover` copy of itself inside an `absolute inset-0` container. This fills any aspect-ratio box with no empty letterbox bars and no cropping — used by the browse grid (`AdsGrid.tsx`, the `aspect-[4/3]` box).

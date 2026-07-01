@@ -22,6 +22,8 @@ const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPa
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+const MovingSalePage = lazy(() => import("./pages/MovingSalePage"));
+const PublicSalePage = lazy(() => import("./pages/PublicSalePage"));
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
@@ -39,6 +41,14 @@ export default function App() {
           <BrowserRouter>
             <SpeedInsights />
             <Routes>
+              {/* Immersive seller flow — full screen, outside the app shell */}
+              <Route path="/sell/moving-sale" element={
+                <ErrorBoundary>
+                  <Suspense fallback={<PageLoader />}>
+                    <MovingSalePage />
+                  </Suspense>
+                </ErrorBoundary>
+              } />
               <Route element={<Layout />}>
                 {/* Eager: Home is critical path */}
                 <Route path="/" element={<HomePage />} />
@@ -48,6 +58,14 @@ export default function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <AdDetailPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                {/* Public buyer-facing moving sale page */}
+                <Route path="/sale/:slug" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <PublicSalePage />
                     </Suspense>
                   </ErrorBoundary>
                 } />

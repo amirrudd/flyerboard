@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PostAd } from './PostAd';
 import { useMutation, useQuery } from 'convex/react';
 import { searchLocations } from '../../lib/locationService';
@@ -82,7 +83,9 @@ describe('PostAd', () => {
     });
 
     it('should render form fields', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         expect(screen.getByText('Title *')).toBeInTheDocument();
         expect(screen.getByText('Category *')).toBeInTheDocument();
@@ -92,7 +95,9 @@ describe('PostAd', () => {
     });
 
     it('should validate required fields on submit', async () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const submitButton = screen.getByText('Pin Flyer');
         fireEvent.click(submitButton);
@@ -105,7 +110,9 @@ describe('PostAd', () => {
         const mockLocation = { id: 1, locality: 'Sydney', state: 'NSW', postcode: '2000', lat: 0, long: 0 };
         vi.mocked(searchLocations).mockResolvedValue([mockLocation]);
 
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         // Fill form
         fireEvent.change(screen.getByPlaceholderText('Enter a descriptive title'), { target: { value: 'Test Ad' } });
@@ -148,7 +155,9 @@ describe('PostAd', () => {
     it('should pre-fill form when editing', () => {
         const editingAd = makeAd();
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         expect(screen.getByDisplayValue('Existing Ad')).toBeInTheDocument();
         expect(screen.getByText('Update Flyer')).toBeInTheDocument();
@@ -157,7 +166,9 @@ describe('PostAd', () => {
     it('should show delete button when editing', () => {
         const editingAd = makeAd();
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         // Delete button should be visible (either with text or just icon on mobile)
         const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -167,7 +178,9 @@ describe('PostAd', () => {
     it('should show confirmation dialog when delete is clicked', async () => {
         const editingAd = makeAd();
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         const deleteButton = screen.getByRole('button', { name: /delete/i });
         fireEvent.click(deleteButton);
@@ -181,7 +194,9 @@ describe('PostAd', () => {
     it('should show and hide delete confirmation dialog', async () => {
         const editingAd = makeAd();
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         // Click delete button in the header
         const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -210,7 +225,9 @@ describe('PostAd', () => {
     });
 
     it('should not show delete button when creating new ad', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         // Delete button should not be present
         const deleteButton = screen.queryByRole('button', { name: /delete/i });
@@ -218,7 +235,9 @@ describe('PostAd', () => {
     });
 
     it('should enforce character limits on form fields', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const titleInput = screen.getByPlaceholderText<HTMLInputElement>('Enter a descriptive title');
         const descriptionTextarea = screen.getByPlaceholderText<HTMLTextAreaElement>('Describe your item...');
@@ -231,14 +250,18 @@ describe('PostAd', () => {
     });
 
     it('should display character counter for description textarea', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         // Check for character counter
         expect(screen.getByText('0 / 1500 characters')).toBeInTheDocument();
     });
 
     it('should update character counter when typing', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const descriptionTextarea = screen.getByPlaceholderText('Describe your item...');
 
@@ -261,7 +284,9 @@ describe('PostAd', () => {
             images: ['old-image-1.jpg', 'old-image-2.jpg', 'old-image-3.jpg'], // 3 existing images
         });
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         // The component initializes with editingAd.images
         // Now simulate ImageUpload calling onImagesChange with only 1 image (user removed 2)
@@ -284,7 +309,9 @@ describe('PostAd', () => {
     });
 
     it('should only accept whole numbers in price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -300,7 +327,9 @@ describe('PostAd', () => {
     });
 
     it('should reject decimal values in price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -317,7 +346,9 @@ describe('PostAd', () => {
     });
 
     it('should reject leading zeros in price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -333,7 +364,9 @@ describe('PostAd', () => {
     });
 
     it('should reject non-numeric characters in price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -350,7 +383,9 @@ describe('PostAd', () => {
     });
 
     it('should reject values exceeding maximum price', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -364,7 +399,9 @@ describe('PostAd', () => {
     });
 
     it('should allow clearing the price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
 
@@ -382,7 +419,9 @@ describe('PostAd', () => {
     // ============================================================================
 
     it('should render listing type selector with three options', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         expect(screen.getByText('Listing Type *')).toBeInTheDocument();
         expect(screen.getByText('For Sale')).toBeInTheDocument();
@@ -391,7 +430,9 @@ describe('PostAd', () => {
     });
 
     it('should default to "sale" listing type and show price field', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         // Price field should be visible for sale type
         expect(screen.getByText('Price (AUD) *')).toBeInTheDocument();
@@ -400,7 +441,9 @@ describe('PostAd', () => {
     });
 
     it('should hide price field when "exchange" type is selected', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const exchangeButton = screen.getByText('Exchange');
         fireEvent.click(exchangeButton);
@@ -412,7 +455,9 @@ describe('PostAd', () => {
     });
 
     it('should show both price and exchange fields when "both" type is selected', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         const bothButton = screen.getByText('Both');
         fireEvent.click(bothButton);
@@ -423,7 +468,9 @@ describe('PostAd', () => {
     });
 
     it('should clear price when switching to "exchange" type', () => {
-        render(<PostAd onBack={mockOnBack} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+        );
 
         // Enter a price first
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -448,7 +495,9 @@ describe('PostAd', () => {
             images: ['img.jpg'],
         });
 
-        render(<PostAd onBack={mockOnBack} editingAd={editingAd} />);
+        render(
+            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+        );
 
         // Price field should be hidden
         expect(screen.queryByText('Price (AUD) *')).not.toBeInTheDocument();

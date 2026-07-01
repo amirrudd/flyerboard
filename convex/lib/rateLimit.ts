@@ -21,6 +21,10 @@ interface RateLimitConfig {
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     // Flyer operations
     createAd: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
+
+    // Moving Sale Mode — sale events are heavier (bulk items + AI). Cap creation tightly.
+    createSaleEvent: { maxRequests: 5, windowMs: 24 * 60 * 60 * 1000 }, // 5 per day
+    addSaleItems: { maxRequests: 60, windowMs: 60 * 60 * 1000 },        // 60 item-creates per hour (covers a 25-item sale + retries)
     updateAd: { maxRequests: 30, windowMs: 60 * 60 * 1000 }, // 30 per hour
     deleteAd: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
 

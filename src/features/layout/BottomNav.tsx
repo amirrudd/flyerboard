@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { House, Plus, User, ChatText, Heart, SquaresFour } from "@phosphor-icons/react";
+import { House, Plus, User, ChatText, BookmarkSimple, SquaresFour } from "@phosphor-icons/react";
 import { useSession } from "@descope/react-sdk";
 import { memo } from "react";
 
@@ -64,7 +64,7 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     className={navItemClass(isActive("/dashboard?tab=saved"))}
                 >
                     {isActive("/dashboard?tab=saved") && <ActiveDot />}
-                    <Heart size={22} weight={isActive("/dashboard?tab=saved") ? "fill" : "regular"} />
+                    <BookmarkSimple size={22} weight={isActive("/dashboard?tab=saved") ? "fill" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Saved</span>
                 </button>
 

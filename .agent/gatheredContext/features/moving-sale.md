@@ -1,6 +1,87 @@
 # Moving Sale Mode
 
-**Last Updated**: 2026-06-30 (v3.1)
+**Last Updated**: 2026-07-01 (public page A/B test)
+
+## Public sale page A/B test (2026-07-01)
+Two designs of the buyer-facing `/sale/:slug` page now coexist, both theme-matched
+(our CSS-var tokens, `dc3626` primary, Fraunces/Plus Jakarta Sans) but visually
+distinct:
+- **Variant A** — `PublicSaleView.tsx` (original card-based layout, unchanged).
+- **Variant B** — `PublicSaleViewEditorial.tsx` (serif-led redesign adapted from a
+  Claude Design mockup: big Fraunces headline, inverted dark countdown panel,
+  "Most wanted" featured item, "Best value" bundle badge, suburb-pin location
+  card, and a row of small logistics tag-chips near the bottom — "Cash or
+  transfer" / "Bring a friend for big stuff" / "First in, best dressed"). Same
+  props contract as Variant A plus optional `sellerImage`/`sellerVerified`.
+- **Split mechanism**: `useSaleDesignVariant.ts` — no analytics/experimentation
+  pipeline exists in this app (confirmed by search: `featureFlags` is boolean-only,
+  no variant/rollout concept, no PostHog/GrowthBook/etc.), so this is a
+  self-contained 50/50 localStorage-persisted coin flip per browser, with a
+  `?variant=a|b` URL override (also persisted) for manual QA/demoing. Resolved
+  once via `useState`'s lazy initializer, not an effect, to avoid re-rolling on
+  re-render.
+- **Not yet built**: any actual conversion tracking (message-click, share-click,
+  etc.) tagged by variant — there's nowhere to send that data yet. If the A/B
+  test needs to produce a real winner, that's a follow-up decision (what metric,
+  where it's stored/viewed), not assumed here.
+- **Config toggle (2026-07-01)**: `movingSaleDesignForceB` — a normal boolean
+  row in the existing `featureFlags` table (no new infra; deliberately NOT
+  Firebase — `getFeatureFlag` is a public, reactive Convex query, so toggling
+  it from Admin > Feature Flags updates every open client instantly with no
+  redeploy). When enabled, everyone gets Variant B, overriding the per-browser
+  random split (but not the `?variant=` URL override, which still wins — see
+  precedence in `PublicSalePage.tsx`: URL > force flag > sticky random pick).
+  Bootstrapped locally via `seed:setFeatureFlagLocal` (`convex/seed.ts`) since
+  the real `createFeatureFlag`/`updateFeatureFlag` mutations are admin-gated
+  and no local admin user existed — flip it through the real Admin UI once one
+  does; the dev helper writes the identical row shape.
+- **Header/theme-toggle was missing (2026-07-01, fixed)**: `Header` (with
+  `ThemeToggle`) is NOT rendered globally by `Layout.tsx` — despite importing
+  it, `Layout` never puts `<Header>` in its JSX. Every page that wants a
+  header renders its own `<Header>` instance (`HomePage`, `AdDetail`, `PostAd`,
+  dashboards, static pages…). `PublicSalePage` never did, so visitors had no
+  way to switch dark/light mode. Fixed by adding a minimal `<Header
+  leftNode={back} centerNode={wordmark} rightNode={<ThemeToggle />} />`,
+  mirroring `AdDetail`'s pattern exactly (when you supply `rightNode` yourself,
+  you're responsible for including `ThemeToggle` — the default only renders if
+  `rightNode` is omitted). **If a new page ever feels chrome-less, check for a
+  missing `<Header>` first — it is not inherited.**
+- **Save = bookmark whole Sale, not bulk-save items (2026-07-01)**: Added
+  `savedSaleEvents` table + `saveSaleEvent`/`isSaleEventSaved`/
+  `getSavedSaleEvents` in `convex/saleEvents.ts`, mirroring `savedAds`/
+  `saveAd`/`isAdSaved` exactly. Rationale: a Sale is already a first-class
+  entity (own detail page, own message thread — see the sale-level messaging
+  section above), so bookmarking it should behave like bookmarking an ad, not
+  fan out into saving its individual items. Shared save/animate/toast logic
+  lives in `useSaveSaleEvent.ts` (used by both page variants) — mirrors
+  `AdDetail.tsx`'s `handleSave`/`heartControls` pop-animation pattern exactly.
+  Surfaced in `UserDashboard.tsx`'s "Saved" tab as a "Saved Sales" section
+  above "Saved Ads" (only rendered when non-empty).
+- **App-wide icon swap: Heart → BookmarkSimple for "save" (2026-07-01)**. The
+  mockup used a bookmark icon for its save button; the app's prior convention
+  was a Heart (favorite-style) icon. Decision: standardize on
+  `BookmarkSimple` everywhere save-related, since "Saved"/"Bookmarks" is
+  already the app's own language for this feature (dashboard tab literally
+  says "Bookmarks" → "Saved Ads") — bookmark reads as "save for later",
+  heart reads as "like", and the former matches. Changed in exactly 3 files
+  (small, contained blast radius — checked via grep first): `BottomNav.tsx`
+  (Saved tab icon), `AdDetail.tsx` (save button ×2), `UserDashboard.tsx`
+  (Saved Flyers tab icon + empty-state icon). `Heart` remains used elsewhere
+  for unrelated things (e.g. `categoryIcons.tsx`'s Hobbies category) — that's
+  fine, only the *save-affordance* meaning changed.
+- **Test gotcha**: `UserDashboard.test.tsx` mocks `useQuery` **positionally by
+  call order**, not by which query function is called (`mockReturns.push(...)`
+  / chained `.mockReturnValueOnce(...)` in the exact sequence the component's
+  hooks fire). Adding a new `useQuery` call anywhere in `UserDashboard.tsx`
+  shifts every subsequent mocked return by one slot and silently breaks
+  unrelated tests. If you add a hook call there, grep the test file for
+  `mockReturnValueOnce`/`mockReturns.push` and insert a matching entry at the
+  same position in every sequence.
+- `PublishStep.tsx`'s seller live-preview still only renders Variant A —
+  intentional, it's a confirmation UI, not part of the buyer-facing test.
+- `getSaleBySlug` (`convex/saleEvents.ts`) now also returns `seller.isVerified`
+  (was previously omitted) so Variant B can show the same `/verified-badge.svg`
+  used by `SellerProfile.tsx` elsewhere in the app.
 
 ## ⚠️ v3.1 update (2026-06-30) — feed items un-differentiated; richer ad-detail banner
 
@@ -192,6 +273,33 @@ npx convex run seed:seedMovingSale '{"email":"you@example.com"}'
 It prints the slug — open `/sale/<slug>`. Uses external image URLs so no R2 upload
 is needed (`getImageUrl` returns http refs as-is).
 
+`seedMovingSale` never clears anything unless you pass `{"reset": true}`, and
+even then it only clears *that same resolved user's* prior `-demo-` sales — it
+happily piles up a new sale event + 8 duplicate items every time you re-run it
+without `reset`. If you've run it repeatedly across a long session, use the
+sibling `seed:wipeSeededMovingSales` (added 2026-07-01) to wipe every seeded sale
+event/item/bundle plus placeholder `seed|...` users in one shot before reseeding
+— it correctly skips any real Descope-synced user (no `seed|` token prefix).
+
+**This worktree's local Convex data lives in the worktree's own
+`.convex/local/default/convex_local_backend.sqlite3`** — a separate file from
+the main checkout's `~/.convex/anonymous-convex-backend-state/anonymous-FlyerBoard/`
+database. Symptom of running dev from the wrong directory: `npm run dev` from
+the main repo binds to the main repo's ports (3210/3211) and its own dataset;
+from a worktree it binds to the worktree's ports (3212/3213 here) and a
+*completely separate* dataset. If you `cd` to the wrong directory before
+`npm run dev`, you'll be looking at a different local database with different
+seed history — items "disappearing"/duplicating is almost always this, not
+data loss. Always confirm with `lsof -p <convex-dev-pid> | awk '$4=="cwd"'`
+before assuming data was deleted.
+
+The worktree's database also never gets the general marketplace sample data
+(`convex/sampleData.ts` → `sampleData:clearAndCreateSampleData`, e.g. the
+"2020 Toyota Camry Hybrid" listing) unless you run it explicitly — it isn't
+seeded automatically just because Moving Sale data exists. Note this mutation
+**deletes all existing ads and categories** before recreating its 5 sample
+users' listings, so run it *before* `seedMovingSale`, not after.
+
 ## Gotchas hit during the build
 - **Lint forbids BOTH `set-state-in-effect` AND `refs-during-render`** (custom
   react-hooks rules, error-level). To "adjust state when async data loads"
@@ -207,3 +315,81 @@ is needed (`getImageUrl` returns http refs as-is).
   `.env.local`; `convex dev --once` spun up a *local anonymous* deployment that
   needs `CONVEX_AUTH_ISSUER` + `DESCOPE_PROJECT_ID` set (`npx convex env set ...`,
   dummy values) before codegen/push succeeds. Local-only, no shared impact.
+- **Variant B (2026-07-01) fixes, ported straight from the original Claude
+  Design mockup that hadn't made it into the first pass**:
+  - The rotated "MOVING SALE {SUBURB}" corner stamp on the hero was simply
+    missed during the initial port (not a deliberate cut) — re-added, themed
+    with `border-primary`/`text-primary`/`bg-card` instead of the mockup's
+    hardcoded hex.
+  - The sticky category-filter bar used `sticky top-0`, which put it at the
+    *exact same* scroll position as the app's own `<Header>` (also `sticky
+    top-0`, `z-50` — see the "Header was missing" note above). Since both
+    share `top-0`, the lower z-index pill bar renders fully hidden behind the
+    header once stuck, instead of appearing broken/absent. First tried `sticky
+    top-21` (an existing token — `5.0625rem` = 57px header + 24px gap, used by
+    `AdDetail`'s desktop **sidebar**) — that resolved the overlap but left a
+    visible 24px dead strip of bare background between header and pills once
+    stuck, which read as a rendering bug rather than intentional breathing
+    room. `top-21`'s 24px buffer suits a sidebar card sitting apart from the
+    header; a horizontal filter/tab bar should feel *docked* to the header
+    instead. Landed on `sticky top-[57px]` (Header's literal `h-[57px]`) for
+    zero gap — pills sit flush under the header like a tab strip, still with
+    no overlap since it no longer shares `top-0` with the header. **For a
+    sticky element that should dock directly under `<Header>` with no visible
+    seam, match the header's exact height, not `top-21` — that token is for
+    sidebar-style content that wants breathing room, not tab bars.**
+  - Item images (featured + grid) now use `ImageDisplay`'s `backdrop` prop —
+    the same blurred-backdrop fill `AdsGrid` uses on the home feed. `PublicSaleView`
+    (Variant A) already had this; Editorial didn't. Bundle thumbnails
+    intentionally still use plain `object-cover` in both variants (too small at
+    46px for the effect to read, and A doesn't do it there either).
+  - Share button had no animation in either variant (Save already mirrors
+    `AdDetail`'s `heartControls` pop; Share didn't have its `shareControls`
+    counterpart). Added `useAnimation()` + `scale: [1, 1.18, 0.96, 1]` pop on
+    click to both, matching `AdDetail.handleShare` exactly.
+
+## Feature flag: `movingSaleMode` (2026-07-01)
+Whole-feature kill switch, seeded via `migrations:seedFeatureFlags` (`enabled:
+true` by default — this gates the already-shipped feature going forward, it's
+not a dark launch). Managed from Admin > Feature Flags like any other flag
+(`getAllFeatureFlags` lists it automatically, no special-casing needed there).
+New shared hook: `useFeatureFlag(key)` (`src/hooks/useFeatureFlag.ts`) — thin
+wrapper over `useQuery(api.featureFlags.getFeatureFlag, {key})`, returns
+`undefined` while loading (callers should treat that as "not yet known", not
+default to shown/hidden).
+
+Gated entry points, all skip cleanly (existing data untouched, nothing
+deleted):
+- `PostAd.tsx` — the "Moving Sale" mode-selector tile is hidden when off;
+  falls back straight to the single-item form (there's nothing else to select).
+- `MovingSalePage.tsx` (`/sell/moving-sale`) — redirects to `/` if the flag is
+  off, same pattern as the existing unauthenticated-user redirect.
+- `PublicSalePage.tsx` (`/sale/:slug`) — shows the same "This sale isn't
+  available" empty state used for missing/expired sales. A toggled-off flag
+  and a bad slug are indistinguishable to the visitor, on purpose.
+- `HomePage.tsx` — the `getActiveSales` query (feed Sale cards) is skipped
+  when the flag is off or still loading (`!movingSaleModeEnabled`), not just
+  when a category filter is active.
+- `UserDashboard.tsx` — "Moving sales" sidebar tab is filtered out of the
+  SECTIONS array when off; `getSavedSaleEvents` ("Saved Sales" section) is
+  also skipped, since surfacing links to a now-gated public page would be
+  confusing. A `useEffect` bounces anyone on `?tab=sales` back to `?tab=ads`
+  if the flag flips off mid-session (mirrors the existing mobile-archived-tab
+  redirect right above it in the same file — **use that exact
+  `eslint-disable-next-line react-hooks/set-state-in-effect` comment
+  pattern**, this repo's custom lint rule forbids a bare `setState` in an
+  effect otherwise).
+- `PublishStep.tsx`'s live preview and the seller flow itself
+  (`MovingSaleFlow`) aren't separately gated — they're only reachable via the
+  already-gated `MovingSalePage` route.
+
+**Test gotcha (again)**: adding `useFeatureFlag` to `PostAd`/`MovingSalePage`/
+`PublicSalePage`/`HomePage`/`UserDashboard` means a new `useQuery` call fires
+in each. `UserDashboard.test.tsx`'s positional mocks (see the gotcha above)
+needed a 5th round of `mockReturnValueOnce`/`mockReturns.push` insertions —
+this one at the very front of each sequence, since `useFeatureFlag` is called
+near the top of the component, before `getCurrentUserWithStats`.
+`MovingSalePage.test.tsx` didn't mock `convex/react` at all before (the
+component had no Convex calls); added a `vi.mock('convex/react', () => ({
+useQuery: vi.fn() }))` plus a `beforeEach` default of `true`, and a new test
+for the disabled-flag redirect.

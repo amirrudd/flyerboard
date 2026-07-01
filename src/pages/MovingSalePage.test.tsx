@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useQuery } from 'convex/react';
 import { MovingSalePage } from './MovingSalePage';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -18,6 +19,11 @@ vi.mock('@descope/react-sdk', () => ({
     useSession: () => mockUseSession(),
 }));
 
+// The movingSaleMode feature flag — default enabled unless a test overrides it.
+vi.mock('convex/react', () => ({
+    useQuery: vi.fn(),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
@@ -30,6 +36,8 @@ vi.mock('react-router-dom', async () => {
 describe('MovingSalePage - Route Guard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // Feature enabled by default; individual tests override with mockReturnValueOnce.
+        vi.mocked(useQuery).mockReturnValue(true);
     });
 
     it('shows PageLoader and does not navigate while session is loading', () => {
@@ -94,5 +102,19 @@ describe('MovingSalePage - Route Guard', () => {
         );
 
         expect(screen.getByTestId('initial-sale-id')).toHaveTextContent('none');
+    });
+
+    it('redirects home when movingSaleMode is disabled, even for an authenticated user', () => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        vi.mocked(useQuery).mockReturnValue(false);
+
+        render(
+            <MemoryRouter>
+                <MovingSalePage />
+            </MemoryRouter>
+        );
+
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+        expect(screen.queryByTestId('moving-sale-flow')).not.toBeInTheDocument();
     });
 });

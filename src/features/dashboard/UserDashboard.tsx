@@ -17,11 +17,12 @@ import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
   SquaresFour,
   ChatText,
-  Heart,
+  BookmarkSimple,
   Archive,
   User,
   CaretLeft,
@@ -68,6 +69,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const { isMobile } = useDeviceInfo();
 
   const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "profile" | "archived">(tabParam || "ads");
+  const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -187,6 +189,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     api.adDetail.getSavedAds,
     activeTab === "saved" ? {} : "skip"
   );
+  const savedSales = useQuery(
+    api.saleEvents.getSavedSaleEvents,
+    activeTab === "saved" && movingSaleModeEnabled ? {} : "skip"
+  );
 
   // Only fetch when viewing the archived tab
   const archivedChats = useQuery(
@@ -258,6 +264,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       setSelectedAdId(null);
     }
   }, [searchParams, activeTab]);
+
+  // Bounce away from the sales tab if Moving Sale Mode is off (e.g. a
+  // bookmarked ?tab=sales link) — the sidebar entry is already hidden below.
+  useEffect(() => {
+    if (activeTab === "sales" && movingSaleModeEnabled === false) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirecting away from a tab hidden by a feature flag
+      setActiveTab("ads");
+      setSearchParams({ tab: "ads" }, { replace: true });
+    }
+  }, [activeTab, movingSaleModeEnabled, setSearchParams]);
 
   // Scroll to top only when navigating TO dashboard from external route
   useEffect(() => {
@@ -721,8 +737,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       icon: ChatText,
                       badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
                     },
-                    { id: "saved", label: "Saved Flyers", icon: Heart },
-                    { id: "sales", label: "Moving sales", icon: Package },
+                    { id: "saved", label: "Saved Flyers", icon: BookmarkSimple },
+                    ...(movingSaleModeEnabled
+                      ? [{ id: "sales", label: "Moving sales", icon: Package }]
+                      : []),
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
                   ].map((tab) => {
@@ -1141,6 +1159,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
               {activeTab === "saved" && (
                 <section ref={savedContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Saved flyers">
+                  {savedSales !== undefined && savedSales.length > 0 && (
+                    <div className="mb-6 pb-6 border-b border-border/70">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-3">Saved Sales</h3>
+                      <div className="grid gap-2 sm:gap-3">
+                        {savedSales.map((saved) => (
+                          <button
+                            key={saved._id}
+                            type="button"
+                            onClick={() => { void navigate(`/sale/${saved.sale.slug}`); }}
+                            className="flex items-center gap-3 ring-1 ring-border/70 rounded-xl p-3 hover:ring-foreground/15 hover:shadow-card transition-all text-left bg-card"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5" weight="fill" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground truncate">{saved.sale.title}</p>
+                              <p className="text-xs text-muted-foreground">{saved.sale.suburb} · {saved.sale.itemCount} items</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <header className="mb-6">
                     <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Bookmarks</span>
                     <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Saved Ads</h2>
@@ -1156,7 +1198,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : savedAds.length === 0 ? (
                       // Empty state
                       <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><Heart className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
+                        <div className="flex justify-center mb-4"><BookmarkSimple className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
                         <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No saved ads</h3>
                         <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Save ads you're interested in to view them here</p>
                       </div>
@@ -1197,7 +1239,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 </section>
               )}
 
-              {activeTab === "sales" && <MovingSalesTab />}
+              {activeTab === "sales" && movingSaleModeEnabled && <MovingSalesTab />}
 
               {activeTab === "profile" && (
                 <section ref={profileContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Profile settings">

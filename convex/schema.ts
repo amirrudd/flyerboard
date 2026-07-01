@@ -84,6 +84,14 @@ const applicationTables = {
     .index("by_user", ["userId"])
     .index("by_user_and_ad", ["userId", "adId"]),
 
+  /** Bookmarking a whole Sale (not its individual items) — mirrors savedAds. */
+  savedSaleEvents: defineTable({
+    userId: v.id("users"),
+    saleEventId: v.id("saleEvents"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_sale", ["userId", "saleEventId"]),
+
   reports: defineTable({
     reporterId: v.id("users"),          // User submitting the report
     reportType: v.string(),              // "ad", "profile", or "chat"

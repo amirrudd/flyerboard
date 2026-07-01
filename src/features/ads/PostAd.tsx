@@ -13,6 +13,7 @@ import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake, Package, CaretRight } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 
 interface ImageState {
   id: string;
@@ -70,6 +71,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
   const categoryWrapperRef = useRef<HTMLDivElement>(null);
 
   const categories = useQuery(api.categories.getCategories);
+  const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const createAd = useMutation(api.posts.createAd);
   const updateAd = useMutation(api.posts.updateAd);
   const deleteAd = useMutation(api.posts.deleteAd);
@@ -433,7 +435,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
           {/* Mode selector — entry point #1 into Moving Sale Mode. New posts only;
               "Single item" is the default and keeps the form below unchanged. */}
-          {!editingAd && (
+          {!editingAd && movingSaleModeEnabled && (
             <div className="grid grid-cols-2 gap-3">
               <div
                 className="rounded-2xl border-2 border-primary bg-primary/5 p-4"

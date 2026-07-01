@@ -410,6 +410,11 @@ export const seedFeatureFlags = internalMutation({
         description: "Allow users to self-verify their identity from their dashboard",
         enabled: true,
       },
+      {
+        key: "movingSaleMode",
+        description: "Moving Sale Mode — bulk-list flow, public sale pages, dashboard sales tab, and feed sale cards. Disabling hides every entry point (safety kill switch), it does not delete existing sales.",
+        enabled: true,
+      },
     ];
 
     const results = {

@@ -59,6 +59,83 @@ const SEED_ITEMS: SeedItem[] = [
   { title: "Commuter bike", price: 150, condition: "Good", categorySlug: "sports", image: PHOTO("1485965120184-e220f721d03e") },
 ];
 
+/**
+ * Local-dev-only: wipe every seeded Moving Sale (and its items/bundles) plus
+ * the placeholder `seed|...` users created to own them. Safe to delete —
+ * targets only rows created by seedMovingSale, never a real Descope-synced user.
+ *
+ * Run it with:
+ *   npx convex run seed:wipeSeededMovingSales
+ */
+export const wipeSeededMovingSales = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const sales = await ctx.db.query("saleEvents").collect();
+    let items = 0;
+    let bundles = 0;
+    for (const sale of sales) {
+      const saleItems = await ctx.db
+        .query("ads")
+        .withIndex("by_sale_event", (q) => q.eq("saleEventId", sale._id))
+        .collect();
+      for (const item of saleItems) await ctx.db.delete(item._id);
+      items += saleItems.length;
+      const saleBundles = await ctx.db
+        .query("saleBundles")
+        .withIndex("by_sale_event", (q) => q.eq("saleEventId", sale._id))
+        .collect();
+      for (const b of saleBundles) await ctx.db.delete(b._id);
+      bundles += saleBundles.length;
+      await ctx.db.delete(sale._id);
+    }
+
+    const users = await ctx.db.query("users").collect();
+    let placeholderUsers = 0;
+    for (const user of users) {
+      if (user.tokenIdentifier?.startsWith("seed|")) {
+        await ctx.db.delete(user._id);
+        placeholderUsers++;
+      }
+    }
+
+    return { sales: sales.length, items, bundles, placeholderUsers };
+  },
+});
+
+/**
+ * Local-dev-only: create or update a feature flag without going through the
+ * admin-only `featureFlags:createFeatureFlag`/`updateFeatureFlag` mutations
+ * (useful for toggling flags via `npx convex run` when no admin user is set
+ * up locally yet). Mirrors the real flag shape exactly — safe to flip back
+ * through the real Admin > Feature Flags UI once an admin exists.
+ *
+ * Run it with:
+ *   npx convex run seed:setFeatureFlagLocal '{"key":"movingSaleDesignForceB","enabled":true,"description":"Force everyone to Moving Sale design Variant B"}'
+ */
+export const setFeatureFlagLocal = internalMutation({
+  args: {
+    key: v.string(),
+    enabled: v.boolean(),
+    description: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { enabled: args.enabled, description: args.description });
+      return { updated: true };
+    }
+    await ctx.db.insert("featureFlags", {
+      key: args.key,
+      enabled: args.enabled,
+      description: args.description,
+    });
+    return { created: true };
+  },
+});
+
 export const seedMovingSale = internalMutation({
   args: {
     email: v.optional(v.string()),

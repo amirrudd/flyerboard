@@ -15,7 +15,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, CaretLeft, ShareNetwork, Heart, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
+import { Flag, CaretLeft, ShareNetwork, BookmarkSimple, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
@@ -394,7 +394,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     title={displaySaved ? "Remove from saved" : "Save ad"}
                   >
                     <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
-                      <Heart className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
+                      <BookmarkSimple className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
                     </motion.span>
                   </motion.button>
                   <motion.button
@@ -776,7 +776,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                             : 'bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15'
                             }`}
                         >
-                          <Heart className="w-4 h-4" weight={displaySaved ? "fill" : "regular"} />
+                          <BookmarkSimple className="w-4 h-4" weight={displaySaved ? "fill" : "regular"} />
                           {displaySaved ? 'Remove from Saved' : 'Save Ad'}
                         </button>
                         <button

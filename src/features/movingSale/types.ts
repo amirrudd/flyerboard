@@ -19,6 +19,8 @@ export interface SaleBundle {
 }
 
 export interface SaleEventCore {
+  /** Absent only for in-progress seller-flow previews before the sale is created. */
+  _id?: Id<"saleEvents">;
   title: string;
   suburb: string;
   note?: string;

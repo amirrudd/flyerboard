@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { motion, useAnimation } from "framer-motion";
 import {
   MapPin,
   Package,
@@ -11,6 +12,7 @@ import {
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useCountdown } from "./useCountdown";
+import { useSaveSaleEvent } from "./useSaveSaleEvent";
 import {
   formatAUD,
   formatPickupRange,
@@ -55,9 +57,21 @@ export function PublicSaleView({
   onItemClick,
   onShare,
 }: PublicSaleViewProps) {
-  const { fadeUp, staggerCard } = useMotionPrefs();
+  const { fadeUp, staggerCard, reduced } = useMotionPrefs();
   const countdown = useCountdown(sale.pickupWindowStart);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const { displaySaved, toggleSaved, bookmarkControls } = useSaveSaleEvent(sale._id);
+  const shareControls = useAnimation();
+
+  function handleShareClick() {
+    onShare?.();
+    if (!reduced) {
+      void shareControls.start({
+        scale: [1, 1.18, 0.96, 1],
+        transition: { duration: 0.32, ease: "easeOut" },
+      });
+    }
+  }
 
   const sold = items.filter((i) => i.isSold).length;
   const available = items.length - sold;
@@ -241,7 +255,7 @@ export function PublicSaleView({
         )}
 
         {/* 6. Items grid (sold items stay, greyed) */}
-        <section className="mt-6 px-4 pb-32">
+        <section className="mt-6 px-4 pb-[calc(var(--bottom-nav-height)_+_6rem)] md:pb-24">
           <h2 className="mb-3 font-display text-lg font-semibold text-foreground">
             {activeCategory === "all"
               ? "All items"
@@ -318,10 +332,15 @@ export function PublicSaleView({
         </div>
       )}
 
-      {/* 8. Sticky footer CTA — single sale-level conversation */}
-      {!preview && (
+      {/* 8. Sticky footer CTA — single sale-level conversation.
+          Portal'd to document.body: the app shell's scroll container (<main>,
+          Layout.tsx) sets `contain: layout style paint` for scroll perf, which
+          makes it a containing block for `position: fixed` descendants — so a
+          plain fixed div here would pin to <main>'s content height instead of
+          the viewport. Same escape hatch as AdDetail's mobile FABs. */}
+      {!preview && createPortal(
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur"
+          className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] md:bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur"
           style={{ paddingBottom: "var(--safe-area-inset-bottom)" }}
         >
           <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
@@ -333,23 +352,36 @@ export function PublicSaleView({
               <ChatCircle size={20} weight="fill" />
               Message {sellerFirstName}
             </button>
-            <button
+            <motion.button
               type="button"
-              onClick={onShare}
+              onClick={handleShareClick}
+              whileTap={{ scale: 0.9 }}
               aria-label="Share this sale"
               className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card text-foreground"
             >
-              <ShareNetwork size={20} />
-            </button>
-            <button
+              <motion.span animate={shareControls} style={{ display: "inline-flex" }}>
+                <ShareNetwork size={20} />
+              </motion.span>
+            </motion.button>
+            <motion.button
               type="button"
-              aria-label="Save this sale"
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card text-foreground"
+              onClick={() => { void toggleSaved(); }}
+              whileTap={{ scale: 0.9 }}
+              aria-label={displaySaved ? "Remove from saved" : "Save this sale"}
+              aria-pressed={displaySaved}
+              className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${
+                displaySaved
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground"
+              }`}
             >
-              <BookmarkSimple size={20} />
-            </button>
+              <motion.span animate={bookmarkControls} style={{ display: "inline-flex" }}>
+                <BookmarkSimple size={20} weight={displaySaved ? "fill" : "regular"} />
+              </motion.span>
+            </motion.button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

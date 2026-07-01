@@ -10,6 +10,7 @@ import { useSession } from "@descope/react-sdk";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AdsFilterBar } from "../features/ads/AdsFilterBar";
 import { useAdFilters } from "../hooks/useAdFilters";
+import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
 import { toast } from "sonner";
@@ -82,9 +83,10 @@ export function HomePage() {
   }, [filteredAds]);
 
   // Only needed for the Sale event cards, which render on the uncategorised feed.
+  const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const activeSales = useQuery(
     api.saleEvents.getActiveSales,
-    selectedCategory ? "skip" : {}
+    selectedCategory || !movingSaleModeEnabled ? "skip" : {}
   );
   // For now, just use a simple user object when authenticated
   // TODO: Fetch actual user data from Convex once Descope integration is complete

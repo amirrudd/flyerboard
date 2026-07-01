@@ -586,7 +586,12 @@ export const getSaleBySlug = query({
         status: sale.status,
       },
       seller: seller
-        ? { _id: seller._id, name: seller.name ?? null, image: seller.image ?? null }
+        ? {
+            _id: seller._id,
+            name: seller.name ?? null,
+            image: seller.image ?? null,
+            isVerified: seller.isVerified ?? false,
+          }
         : null,
       items,
       bundles,
@@ -686,5 +691,95 @@ export const getActiveSales = query({
         };
       })
     );
+  },
+});
+
+// ============================================================================
+// SAVED SALES — bookmarking a whole Sale (mirrors savedAds/saveAd/isAdSaved).
+// A Sale is a first-class entity in its own right (own detail page, own
+// message thread), so saving it means bookmarking the Sale itself — not
+// fanning out into a bulk-save of its individual items.
+// ============================================================================
+
+export const saveSaleEvent = mutation({
+  args: { saleEventId: v.id("saleEvents") },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      throw createError("Must be logged in to save a sale", {
+        operation: "saveSaleEvent",
+        saleEventId: args.saleEventId,
+      });
+    }
+
+    const sale = await ctx.db.get(args.saleEventId);
+    if (!sale || sale.status === "draft") {
+      throw createError("Sale not found", { saleEventId: args.saleEventId, userId });
+    }
+
+    const existing = await ctx.db
+      .query("savedSaleEvents")
+      .withIndex("by_user_and_sale", (q) =>
+        q.eq("userId", userId).eq("saleEventId", args.saleEventId)
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      return { saved: false };
+    }
+    await ctx.db.insert("savedSaleEvents", { userId, saleEventId: args.saleEventId });
+    return { saved: true };
+  },
+});
+
+export const isSaleEventSaved = query({
+  args: { saleEventId: v.id("saleEvents") },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) return false;
+
+    const saved = await ctx.db
+      .query("savedSaleEvents")
+      .withIndex("by_user_and_sale", (q) =>
+        q.eq("userId", userId).eq("saleEventId", args.saleEventId)
+      )
+      .unique();
+    return !!saved;
+  },
+});
+
+/** For the dashboard's "Saved" tab — every Sale this user has bookmarked. */
+export const getSavedSaleEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) return [];
+
+    const saved = await ctx.db
+      .query("savedSaleEvents")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .collect();
+
+    const withSale = await Promise.all(
+      saved.map(async (row) => {
+        const sale = await ctx.db.get(row.saleEventId);
+        if (!sale || sale.status === "draft") return null;
+        const items = await saleItems(ctx, sale._id);
+        return {
+          _id: row._id,
+          sale: {
+            _id: sale._id,
+            slug: sale.slug as string,
+            title: sale.title,
+            suburb: sale.suburb,
+            itemCount: items.length,
+          },
+        };
+      })
+    );
+
+    return withSale.filter((x): x is NonNullable<typeof x> => x !== null);
   },
 });

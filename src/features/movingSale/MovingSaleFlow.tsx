@@ -69,6 +69,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   const bundles = editor?.bundles ?? [];
   const saleCore: SaleEventCore | null = editor
     ? {
+        _id: editor.sale._id,
         title: editor.sale.title,
         suburb: editor.sale.suburb,
         note: editor.sale.note,

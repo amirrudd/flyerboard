@@ -24,6 +24,8 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const MovingSalePage = lazy(() => import("./pages/MovingSalePage"));
 const PublicSalePage = lazy(() => import("./pages/PublicSalePage"));
+const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
 export default function App() {
   const { isSessionLoading } = useSession();
@@ -113,6 +115,20 @@ export default function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <AboutUsPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/blog" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <BlogIndexPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                <Route path="/blog/:slug" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <BlogPostPage />
                     </Suspense>
                   </ErrorBoundary>
                 } />

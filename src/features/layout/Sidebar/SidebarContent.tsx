@@ -114,6 +114,7 @@ export const SidebarContent = memo(function SidebarContent({
                 <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                     {[
                         { label: "About Us", href: "/about" },
+                        { label: "Blog", href: "/blog" },
                         { label: "Support", href: "/support" },
                         { label: "Terms", href: "/terms" },
                         { label: "Privacy", href: "/terms#privacy" },

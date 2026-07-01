@@ -1,4 +1,5 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { triggerHomeScrollToTop, HOME_SCROLL_KEY } from "../../lib/homeScrollBridge";
 import { House, Plus, User, ChatText, BookmarkSimple, SquaresFour } from "@phosphor-icons/react";
 import { useSession } from "@descope/react-sdk";
 import { memo } from "react";
@@ -12,6 +13,11 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
     const navigate = useNavigate();
     const { isAuthenticated } = useSession();
     const user = isAuthenticated ? { name: "User" } : null;
+
+    // The blog is a read-focused, document-style section — no bottom nav on mobile.
+    if (location.pathname.startsWith("/blog")) {
+        return null;
+    }
 
     const isActive = (path: string) => {
         if (path.startsWith('/dashboard')) {
@@ -29,6 +35,15 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             void navigate(path);
         } else {
             setShowAuthModal(true);
+        }
+    };
+
+    const handleHomeClick = () => {
+        if (isActive("/")) {
+            triggerHomeScrollToTop();
+            sessionStorage.removeItem(HOME_SCROLL_KEY);
+        } else {
+            void navigate("/");
         }
     };
 
@@ -53,11 +68,11 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
             }}
         >
             <div className="grid grid-cols-5 items-end px-4 pt-2 pb-4">
-                <Link to="/" className={navItemClass(isActive("/"))}>
+                <button onClick={handleHomeClick} className={navItemClass(isActive("/"))}>
                     {isActive("/") && <ActiveDot />}
                     <House size={22} weight={isActive("/") ? "bold" : "regular"} />
                     <span className="text-[11px] font-medium tracking-wide">Home</span>
-                </Link>
+                </button>
 
                 <button
                     onClick={() => handleAuthGuard("/dashboard?tab=saved")}

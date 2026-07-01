@@ -16,6 +16,7 @@ import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
+import { registerHomeScroll, unregisterHomeScroll, HOME_SCROLL_KEY } from "../lib/homeScrollBridge";
 
 interface LayoutContext {
   setShowAuthModal: (show: boolean) => void;
@@ -166,6 +167,73 @@ export function HomePage() {
     }
   }, [newAdIds, clearNewAdIds]);
 
+  // Preserve scroll position across bottom-nav tab switches.
+  // On mobile <main> is the scroll container; on desktop adsFeedRef is — pick
+  // whichever actually overflows. The feed grows as ad images load, so a single
+  // rAF restore lands too early: scrollTop gets clamped to the not-yet-tall
+  // content and stays there. We re-apply across frames until the target is
+  // reached or a short deadline passes, and suppress saving while restoring so
+  // the clamped intermediate values don't clobber the real saved offset.
+  useEffect(() => {
+    const feedEl = adsFeedRef.current;
+    const mainEl = document.querySelector("main");
+
+    const activeScroller = (): HTMLElement | null => {
+      if (feedEl && feedEl.scrollHeight > feedEl.clientHeight) return feedEl;
+      if (mainEl && mainEl.scrollHeight > mainEl.clientHeight) return mainEl;
+      return null;
+    };
+
+    let restoring = false;
+    let raf = 0;
+    const saved = sessionStorage.getItem(HOME_SCROLL_KEY);
+    if (saved) {
+      const pos = Number(saved);
+      const start = performance.now();
+      restoring = true;
+      const tick = () => {
+        const el = activeScroller();
+        if (el) el.scrollTop = pos;
+        const reached = !!el && Math.abs(el.scrollTop - pos) <= 1;
+        if (!reached && performance.now() - start < 1500) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          restoring = false;
+        }
+      };
+      raf = requestAnimationFrame(tick);
+    }
+
+    // Persist the scroll offset, but ignore programmatic focus jumps. Clicking
+    // an ad card focuses it, and the browser's scroll-into-view jumps <main> to
+    // a new position right before we navigate away — which would otherwise be
+    // saved as the user's place. A focus jump is always preceded by `focusin`
+    // (which bubbles), so we suppress saving for a brief window after one.
+    let suppressUntil = 0;
+    const onFocusIn = () => { suppressUntil = performance.now() + 150; };
+    const save = (e: Event) => {
+      if (restoring) return; // don't persist clamped values mid-restore
+      if (performance.now() < suppressUntil) return; // focus-induced jump
+      const el = e.currentTarget as HTMLElement;
+      // Treat near-top as "no saved position" so a scroll-to-top (whose smooth
+      // animation fires trailing scroll events) doesn't leave a stale offset.
+      if (el.scrollTop > 4) sessionStorage.setItem(HOME_SCROLL_KEY, String(el.scrollTop));
+      else sessionStorage.removeItem(HOME_SCROLL_KEY);
+    };
+    const scrollers = [feedEl, mainEl].filter(Boolean) as HTMLElement[];
+    for (const el of scrollers) {
+      el.addEventListener("scroll", save, { passive: true });
+      el.addEventListener("focusin", onFocusIn);
+    }
+    return () => {
+      cancelAnimationFrame(raf);
+      for (const el of scrollers) {
+        el.removeEventListener("scroll", save);
+        el.removeEventListener("focusin", onFocusIn);
+      }
+    };
+  }, []);
+
   // Scroll-to-top — one listener per scroll container; only the active one fires per breakpoint
   const adsFeedRef = useRef<HTMLDivElement>(null);
   const mainElRef = useRef<Element | null>(null);
@@ -189,6 +257,12 @@ export function HomePage() {
     adsFeedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     mainElRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // Register scroll-to-top so BottomNav can trigger it without direct ref access.
+  useEffect(() => {
+    registerHomeScroll(handleScrollToTop);
+    return () => unregisterHomeScroll();
+  }, [handleScrollToTop]);
 
   // Infinite scroll with IntersectionObserver
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);

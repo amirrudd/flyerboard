@@ -269,8 +269,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // bookmarked ?tab=sales link) — the sidebar entry is already hidden below.
   useEffect(() => {
     if (activeTab === "sales" && movingSaleModeEnabled === false) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirecting away from a tab hidden by a feature flag
-      setActiveTab("ads");
+      // Only push the URL — the "sync activeTab with URL" effect above is the
+      // single writer of activeTab. Also calling setActiveTab here raced it:
+      // searchParams updates one tick behind direct state, so on the
+      // in-between render this effect saw activeTab="ads" while the sync
+      // effect still saw the stale tab=sales param and flipped it back,
+      // which re-triggered this effect — an infinite ping-pong between the
+      // two effects (reproduced live: browser tab crashed with "Maximum
+      // update depth exceeded" after toggling the flag while on this tab).
       setSearchParams({ tab: "ads" }, { replace: true });
     }
   }, [activeTab, movingSaleModeEnabled, setSearchParams]);

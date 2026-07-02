@@ -50,6 +50,10 @@ Then deploy. The frontend (`src/lib/imageUrl.ts`) derives public URLs from store
 when this is set; unset, it falls back to the legacy presigned-URL query (`posts.getImageUrl`),
 so the variable is safe to add/remove independently of code deploys.
 
+**Local dev**: add the same line to `.env.local` (and to any worktree's copy). Not required —
+unset just means the presigned fallback — but with it set, local dev exercises the same
+code path as prod (dev shares the same R2 bucket, so locally-uploaded images serve fine).
+
 ## Verifying
 
 Use **GET, not HEAD** — HEAD requests don't populate Cloudflare's cache and will show

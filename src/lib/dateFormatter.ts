@@ -1,19 +1,19 @@
 /**
- * Formats a date for display using Australian locale conventions (dd/mm/yyyy).
+ * Formats a date for display using the visitor's own browser locale
+ * (e.g. dd/mm/yyyy for en-AU, mm/dd/yyyy for en-US) rather than a
+ * hardcoded locale, so each visitor sees dates in their own convention.
  * @param date - A Date, or a timestamp/date-string accepted by `new Date()`
- * @returns Formatted date string, e.g. "2/07/2026"
  */
 export function formatDate(date: Date | number | string): string {
     const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleDateString("en-AU");
+    return d.toLocaleDateString();
 }
 
 /**
- * Formats a date and time for display using Australian locale conventions.
+ * Formats a date and time for display using the visitor's own browser locale.
  * @param date - A Date, or a timestamp/date-string accepted by `new Date()`
- * @returns Formatted date-time string, e.g. "2/07/2026, 8:26 pm"
  */
 export function formatDateTime(date: Date | number | string): string {
     const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleString("en-AU");
+    return d.toLocaleString();
 }

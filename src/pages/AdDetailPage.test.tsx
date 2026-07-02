@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { AdDetailPage } from './AdDetailPage';
 
-// Mock react-router-dom
+// Mock react-router-dom. useOutletContext supplies Layout's shared auth-modal
+// setter (the page no longer owns a modal of its own — see Layout.tsx).
 const mockNavigate = vi.fn();
+const mockSetShowAuthModal = vi.fn();
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
     return {
@@ -12,6 +14,7 @@ vi.mock('react-router-dom', async () => {
         useNavigate: () => mockNavigate,
         useParams: () => ({ id: 'test-ad-id' }),
         useLocation: () => ({ state: null, pathname: '/ads/test-ad-id' }),
+        useOutletContext: () => ({ setShowAuthModal: mockSetShowAuthModal }),
     };
 });
 
@@ -33,14 +36,10 @@ vi.mock('../features/ads/AdDetail', () => ({
     ),
 }));
 
-// Mock SmsOtpSignIn
-vi.mock('../features/auth/SmsOtpSignIn', () => ({
-    SmsOtpSignIn: () => <div data-testid="auth-modal">Auth Component</div>
-}));
-
 describe('AdDetailPage - Navigation', () => {
     beforeEach(() => {
         mockNavigate.mockClear();
+        mockSetShowAuthModal.mockClear();
     });
 
     it('should navigate back when back button is clicked', async () => {
@@ -84,23 +83,20 @@ describe('AdDetailPage - Navigation', () => {
         expect(screen.getByTestId('ad-id')).toHaveTextContent('test-ad-id');
     });
 
-    it('should show auth modal when sign in is triggered', async () => {
+    it('should open the shared Layout auth modal when sign in is triggered', () => {
         render(
             <BrowserRouter>
                 <AdDetailPage />
             </BrowserRouter>
         );
 
-        // Auth modal should not be visible initially
-        expect(screen.queryByTestId('auth-modal')).not.toBeInTheDocument();
+        // The page no longer owns a modal — it delegates to Layout's via outlet context
+        expect(mockSetShowAuthModal).not.toHaveBeenCalled();
 
         // Click the auth button
         const authButton = screen.getByTestId('auth-button');
         fireEvent.click(authButton);
 
-        // Auth modal should now be visible
-        await waitFor(() => {
-            expect(screen.getByTestId('auth-modal')).toBeInTheDocument();
-        });
+        expect(mockSetShowAuthModal).toHaveBeenCalledWith(true);
     });
 });

@@ -6,7 +6,7 @@ import { CaretLeft, Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { PageLoader } from "../components/PageLoader";
-import { Header } from "../features/layout/Header";
+import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { PublicSaleView } from "../features/movingSale/PublicSaleView";
 import { PublicSaleViewEditorial } from "../features/movingSale/PublicSaleViewEditorial";
@@ -37,30 +37,29 @@ export function PublicSalePage() {
 
   // No search/location bar or post/sign-in actions on this single-purpose,
   // link-shared page — just a way back and the theme toggle it was missing.
-  const saleHeader = (
-    <Header
-      leftNode={
-        <button
-          type="button"
-          onClick={() => { void navigate("/"); }}
-          className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <CaretLeft className="h-5 w-5" />
-          <span className="hidden sm:inline">Back to flyers</span>
-        </button>
-      }
-      centerNode={
-        <button
-          type="button"
-          onClick={() => { void navigate("/"); }}
-          className="cursor-pointer font-display text-xl font-semibold tracking-[-0.02em] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
-        >
-          FlyerBoard
-        </button>
-      }
-      rightNode={<ThemeToggle />}
-    />
-  );
+  // Registered on the persistent Layout header (config rebuilt every render).
+  useHeaderSlots({
+    leftNode: (
+      <button
+        type="button"
+        onClick={() => { void navigate("/"); }}
+        className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <CaretLeft className="h-5 w-5" />
+        <span className="hidden sm:inline">Back to flyers</span>
+      </button>
+    ),
+    centerNode: (
+      <button
+        type="button"
+        onClick={() => { void navigate("/"); }}
+        className="cursor-pointer font-display text-xl font-semibold tracking-[-0.02em] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+      >
+        FlyerBoard
+      </button>
+    ),
+    rightNode: <ThemeToggle />,
+  });
 
   if (data === undefined || movingSaleModeEnabled === undefined) return <PageLoader />;
 
@@ -69,7 +68,6 @@ export function PublicSalePage() {
   if (data === null || movingSaleModeEnabled === false) {
     return (
       <div className="bg-background">
-        {saleHeader}
         <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-6 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <Package size={32} />
@@ -126,7 +124,6 @@ export function PublicSalePage() {
 
   return (
     <div className="min-h-[100dvh] bg-background pb-6">
-      {saleHeader}
       {effectiveVariant === "B" ? (
         <PublicSaleViewEditorial
           sale={data.sale}

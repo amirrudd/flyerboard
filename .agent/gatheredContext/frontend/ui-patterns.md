@@ -1,6 +1,6 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-07-01
+**Last Updated**: 2026-07-02
 
 ## `position: fixed` inside `<main>` needs a portal (2026-07-01)
 `Layout.tsx`'s `<main>` (`mobile-scroll-container` class, `index.css`) sets `contain: layout style paint` for scroll performance. Per spec, `contain: layout`/`paint` makes an element a **containing block for `position: fixed` descendants** — any plain `fixed` div nested inside `<main>` (which every routed page renders into) pins to `<main>`'s full scrollable content height, not the viewport. Symptom: a "sticky" bottom bar drifts into the middle of the page as the user scrolls, instead of staying pinned to the screen edge.
@@ -202,21 +202,36 @@ const [currentIndex, setCurrentIndex] = useState(0);
 - Main container: `px-4 sm:px-8 pt-16 pb-28 sm:pb-32` (space for counter and thumbnails)
 - Image display: `w-full h-full object-contain` (maintains aspect ratio)
 
-### Header
-**File**: `src/features/layout/Header.tsx`
+### Header — persistent app shell (2026-07-02)
+**Files**: `src/features/layout/Header.tsx` (visuals — unchanged), `src/features/layout/HeaderSlots.tsx` (slot registration), `src/features/layout/Layout.tsx` (the ONE instance)
 
-**Purpose**: Consistent header across all pages.
+**Purpose**: ONE `<Header>` instance rendered by `Layout`, persisting across all routes under it. Pages must NOT render `<Header>` themselves anymore — doing so would double the header. They customise via slot registration:
 
-**Pattern**: Slot-based layout
 ```typescript
-<Header
-  leftNode={<BackButton />}
-  centerNode={<Title />}
-  rightNode={<Actions />}
-/>
+import { useHeaderSlots } from "@/features/layout/HeaderSlots";
+
+// inside the page component, top-level, BEFORE any early return:
+useHeaderSlots({
+  leftNode: <BackButton />,
+  centerNode: <Title />,
+  rightNode: <Actions />,   // or `hidden: true` for full-screen sub-views
+});
 ```
 
-**Responsive**:
+Pages that register nothing (HomePage) get the default header — search / location / sidebar state wired from `MarketplaceContext` by Layout's `PersistentHeader`, auth via Descope `useSession()`.
+
+**Why / how (load-bearing details)**:
+- **Stale closures are impossible by design**: `useHeaderSlots` re-pushes the freshly built config on EVERY render (no-dep `useLayoutEffect`). Do NOT memoize the config. Slot JSX may close over live state (e.g. AdDetail's `displaySaved`).
+- **No render loop**: registrations live in an external `HeaderSlotsStore`; only Layout's `PersistentHeader` subscribes (`useSyncExternalStore`), so pushing a config re-renders the header, never the registering page.
+- **Nesting = mount-order stack, last mounted wins**: dashboard registers its header; the inline `<AdDetail>` it opens registers on top; on close the dashboard header is restored automatically. Caveat: don't mount two registrants in the same commit (child layout-effects run before the parent's, inverting the stack) — sub-screens must mount on a later interaction, which they all do today.
+- **Conditional pages**: hooks rules mean the hook call must be unconditional — build the config conditionally instead (see `AdDetail.tsx`: not-found / loading-skeleton / loaded each produce a different `HeaderSlotsConfig`, one `useHeaderSlots(headerSlots)` call before the early returns).
+- **`hidden: true`**: reserved for sub-views that never had a header (dashboard's AdMessages screen, dashboard `!user`, admin loading/access-denied). Don't use it on normal pages.
+- **Header stays INSIDE `<main>`** (before the `<Outlet/>`), not above it: `<main>` is the mobile scroll container and the header is `sticky top-0`; pages compute sticky offsets (`sticky top-21` sidebars in AdDetail/UserDashboard) against the 57px header living in the same scroller. Moving it outside `<main>` shifts every `top-21` by 57px. Related: HomePage's root is `md:h-[calc(100%-57px)]` so header + page = exactly 100% of `<main>` on desktop (keeps `<main>` non-scrollable there; the feed div remains the desktop scroller — see routing-navigation.md scroll preservation).
+- **Suspense**: lazy-route fallbacks only replace the Outlet area; the header no longer unmounts/remounts on navigation or chunk load.
+- **Auth modal**: Layout owns the single OTP modal; pages reach it via `useOutletContext<{ setShowAuthModal }>()` (AdDetailPage's local duplicate was removed 2026-07-02).
+- **Unit tests**: components that register slots render inside `HeaderSlotsHarness` from `src/test/headerSlotsTestUtils.tsx` (renders the current slots into `header-left/center/right` testids). Outside a provider the hook is a no-op.
+
+**Responsive** (unchanged, in Header.tsx):
 - Mobile: Compact, icon-only buttons
 - Desktop: Full text labels
 

@@ -5,7 +5,7 @@ description: FlyerBoard project architecture overview
 
 # Architecture
 
-**Last Updated**: 2026-01-17
+**Last Updated**: 2026-07-02
 
 ## Stack
 - **Frontend**: React 19 + TypeScript + Vite
@@ -38,6 +38,7 @@ convex/               # Backend functions and schema
 - **Client-side caching**: Ads cached by filter combination to prevent reloads
 - **Responsive design**: Mobile-first, sidebar collapses on mobile (<768px)
 - **Route-based code splitting**: React.lazy() for all routes except HomePage to reduce initial bundle size
+- **Persistent app-shell header (2026-07-02)**: `Layout` renders the single `<Header>` instance inside `<main>` before the `<Outlet/>`; it survives route changes and Suspense chunk loads. Pages customise it by registering slots with `useHeaderSlots({ leftNode, centerNode, rightNode, hidden? })` from `src/features/layout/HeaderSlots.tsx` — an external store + `useSyncExternalStore` host, re-registered every render so slot JSX never closes over stale state; registrations stack in mount order (last mounted wins, so inline sub-screens like dashboard→AdDetail override then restore). Never render `<Header>` from a page. Full pattern + gotchas: `ui-patterns.md` → "Header — persistent app shell".
 - **PWA support**: Installable app with push notifications
 - **Rate limiting**: Mutation-level rate limits via `convex/lib/rateLimit.ts`
 - **Image compression**: Client-side WebP compression via browser-image-compression

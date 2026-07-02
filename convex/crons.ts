@@ -10,4 +10,13 @@ crons.interval(
     internal.notifications.emailNotifications.sendBatchedNotifications
 );
 
+// Purge R2 images for soft-deleted ads past their retention window.
+// Runs daily at 09:00 UTC (quiet hour — off-peak for AU/US traffic).
+crons.cron(
+    "purge-deleted-ad-images",
+    "0 9 * * *",
+    internal.imageCleanup.purgeDeletedAdImages,
+    {}
+);
+
 export default crons;

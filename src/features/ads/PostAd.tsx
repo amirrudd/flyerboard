@@ -8,7 +8,7 @@ import { ImageUpload } from "../../components/ui/ImageUpload";
 import { CircularProgress } from "../../components/ui/CircularProgress";
 import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
-import { Header } from "../layout/Header";
+import { useHeaderSlots } from "../layout/HeaderSlots";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake, Package, CaretRight } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
@@ -394,43 +394,43 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
   const needsPrice = formData.listingType === "sale" || formData.listingType === "both";
   const needsExchange = formData.listingType === "exchange" || formData.listingType === "both";
 
+  // Customise the persistent Layout header (config rebuilt every render so the
+  // delete button tracks isSubmitting without stale closures)
+  useHeaderSlots({
+    leftNode: (
+      <button
+        type="button"
+        onClick={handleCancel}
+        aria-label="Back"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors rounded-full px-3 h-10 hover:bg-muted/60 active:scale-[0.98]"
+      >
+        <CaretLeft className="w-5 h-5" />
+        <span className="hidden sm:inline">Back</span>
+      </button>
+    ),
+    centerNode: (
+      <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {editingAd ? "Edit Flyer" : "Pin New Flyer"}
+      </h1>
+    ),
+    rightNode: editingAd ? (
+      <button
+        type="button"
+        onClick={() => setShowDeleteConfirm(true)}
+        aria-label="Delete flyer"
+        className="flex items-center gap-2 text-destructive hover:bg-destructive/10 transition-colors font-medium rounded-full px-3 h-10 ring-1 ring-destructive/30 hover:ring-destructive/60 active:scale-[0.98] disabled:opacity-60"
+        disabled={isSubmitting}
+      >
+        <Trash className="w-4 h-4" />
+        <span className="hidden sm:inline">Delete</span>
+      </button>
+    ) : (
+      <span />
+    ),
+  });
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header
-        leftNode={
-          <button
-            type="button"
-            onClick={handleCancel}
-            aria-label="Back"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors rounded-full px-3 h-10 hover:bg-muted/60 active:scale-[0.98]"
-          >
-            <CaretLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-        }
-        centerNode={
-          <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-            {editingAd ? "Edit Flyer" : "Pin New Flyer"}
-          </h1>
-        }
-        rightNode={
-          editingAd ? (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              aria-label="Delete flyer"
-              className="flex items-center gap-2 text-destructive hover:bg-destructive/10 transition-colors font-medium rounded-full px-3 h-10 ring-1 ring-destructive/30 hover:ring-destructive/60 active:scale-[0.98] disabled:opacity-60"
-              disabled={isSubmitting}
-            >
-              <Trash className="w-4 h-4" />
-              <span className="hidden sm:inline">Delete</span>
-            </button>
-          ) : (
-            <span />
-          )
-        }
-      />
-
       <main className="flex-1 w-full max-w-3xl mx-auto container-padding py-8 pb-bottom-nav md:pb-8">
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
           {/* Mode selector — entry point #1 into Moving Sale Mode. New posts only;

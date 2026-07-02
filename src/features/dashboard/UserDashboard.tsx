@@ -11,7 +11,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { AdDetail } from "../ads/AdDetail";
 import { AdMessages } from "../ads/AdMessages";
 import { SignOutButton } from "../auth/SignOutButton";
-import { Header } from "../layout/Header";
+import { useHeaderSlots } from "../layout/HeaderSlots";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
@@ -469,8 +469,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
-  const handleViewFlyer = (adId: Id<"ads">) => {
-    void navigate(`/ad/${adId}`);
+  const handleViewFlyer = (adId: Id<"ads">, ad?: unknown) => {
+    void navigate(`/ad/${adId}`, ad ? { state: { initialAd: ad } } : undefined);
     // Mark as read when viewing flyer
     if (expandedChatId) {
       void markAsRead({ chatId: expandedChatId });
@@ -559,6 +559,62 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
+  // ── Persistent Layout header ─────────────────────────────────────────────
+  // Registered before the early returns below (hooks rules). Config is rebuilt
+  // every render so the back button tracks isMobile/activeTab without stale
+  // closures. Sub-screens:
+  //  - AdMessages / "please sign in" never had a header → hidden.
+  //  - inline AdDetail registers its OWN slots on top of these (stack), so the
+  //    detail header wins while it's open and this one is restored on close.
+  useHeaderSlots(
+    !user || showMessagesForAd
+      ? { hidden: true }
+      : {
+        leftNode: (
+          <button
+            type="button"
+            onClick={() => {
+              // On mobile, if we're not on the default "ads" tab, go back to it first
+              if (isMobile && activeTab !== "ads") {
+                // Set scroll intent to top - prevents auto-scroll race condition
+                scrollIntentRef.current = 'top';
+                setShouldScrollToContent(false);
+                setActiveTab("ads");
+                setSearchParams({ tab: "ads" }, { replace: true });
+              } else {
+                // Otherwise, leave the dashboard
+                onBack();
+              }
+            }}
+            aria-label="Back"
+            className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
+          >
+            <CaretLeft className="w-5 h-5" />
+            <span className="hidden md:inline text-sm font-medium">back</span>
+          </button>
+        ),
+        centerNode: (
+          <span className="font-display text-xl font-semibold tracking-tight text-foreground">
+            <span className="md:hidden">My dashboard</span>
+            <span className="hidden md:inline">FlyerBoard</span>
+          </span>
+        ),
+        rightNode: (
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <>
+              <div className="md:hidden">
+                <SignOutButton onSignOut={onBack} iconOnly />
+              </div>
+              <div className="hidden md:block">
+                <SignOutButton onSignOut={onBack} />
+              </div>
+            </>
+          </div>
+        ),
+      }
+  );
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -600,50 +656,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   return (
     <>
       <div className="bg-background flex flex-col">
-        <Header
-          leftNode={
-            <button
-              type="button"
-              onClick={() => {
-                // On mobile, if we're not on the default "ads" tab, go back to it first
-                if (isMobile && activeTab !== "ads") {
-                  // Set scroll intent to top - prevents auto-scroll race condition
-                  scrollIntentRef.current = 'top';
-                  setShouldScrollToContent(false);
-                  setActiveTab("ads");
-                  setSearchParams({ tab: "ads" }, { replace: true });
-                } else {
-                  // Otherwise, leave the dashboard
-                  onBack();
-                }
-              }}
-              aria-label="Back"
-              className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
-            >
-              <CaretLeft className="w-5 h-5" />
-              <span className="hidden md:inline text-sm font-medium">back</span>
-            </button>
-          }
-          centerNode={
-            <span className="font-display text-xl font-semibold tracking-tight text-foreground">
-              <span className="md:hidden">My dashboard</span>
-              <span className="hidden md:inline">FlyerBoard</span>
-            </span>
-          }
-          rightNode={
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              <>
-                <div className="md:hidden">
-                  <SignOutButton onSignOut={onBack} iconOnly />
-                </div>
-                <div className="hidden md:block">
-                  <SignOutButton onSignOut={onBack} />
-                </div>
-              </>
-            </div>
-          }
-        />
+        {/* Header slots registered on the persistent Layout header above */}
 
         <div className="flex-1 w-full content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 md:gap-6">
@@ -1052,7 +1065,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleViewFlyer(chat.ad!._id);
+                                            handleViewFlyer(chat.ad!._id, chat.ad);
                                           }}
                                           className="text-primary hover:underline text-sm font-semibold"
                                         >

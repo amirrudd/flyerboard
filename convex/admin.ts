@@ -393,6 +393,7 @@ export const deleteUserAccount = mutation({
             await ctx.db.patch(ad._id, {
                 isDeleted: true,
                 isActive: false,
+                deletedAt: Date.now(),
             });
         }
 
@@ -454,6 +455,7 @@ export const deleteFlyerAdmin = mutation({
         await ctx.db.patch(args.adId, {
             isDeleted: true,
             isActive: false,
+            deletedAt: Date.now(),
         });
 
         logAdminAction("Flyer deleted by admin", { adminId: adminUser, adId: args.adId, ownerId: ad.userId });

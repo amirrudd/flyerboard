@@ -4,6 +4,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
 import { useState, useEffect } from "react";
 import { Image as ImageIcon } from '@phosphor-icons/react';
+import { resolvePublicImageUrl } from "@/lib/imageUrl";
 
 interface ImageDisplayProps {
   // New prop (preferred)
@@ -31,14 +32,23 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
   // Use imageRef if provided, otherwise fall back to src
   const reference = imageRef || src;
 
+  // Prefer a stable public URL (CDN-cacheable) when one can be resolved
+  // locally — this skips the Convex round trip entirely and, more
+  // importantly, avoids minting a fresh presigned URL on every mount (which
+  // defeats the browser HTTP cache). Falls back to the query when the R2
+  // custom domain isn't configured (VITE_R2_PUBLIC_URL unset) or the ref is
+  // a legacy Convex `_storage` id.
+  const publicUrl = resolvePublicImageUrl(reference);
+
   const imageUrl = useQuery(
     api.posts.getImageUrl,
-    reference ? { imageRef: reference } : "skip"
+    reference && !publicUrl ? { imageRef: reference } : "skip"
   );
 
-  // Determine the source to display. Prioritize imageUrl from Convex, then fallback to src prop.
+  // Determine the source to display. Prioritize the resolved public URL, then
+  // the Convex query result, then fallback to src prop.
   // Note: imageUrl can be null/undefined while loading or if the ref is invalid.
-  const displaySrc = imageUrl || src;
+  const displaySrc = publicUrl || imageUrl || src;
 
   // Handle error state
   const handleError = () => {

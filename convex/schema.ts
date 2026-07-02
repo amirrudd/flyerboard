@@ -25,6 +25,8 @@ const applicationTables = {
     userId: v.id("users"),
     isActive: v.boolean(),
     isDeleted: v.optional(v.boolean()), // Logical delete flag
+    deletedAt: v.optional(v.number()),  // Epoch ms when soft-deleted; drives image-retention cleanup
+    imagesPurgedAt: v.optional(v.number()), // Epoch ms when images were purged from R2 (ad row is kept, isDeleted stays true)
     views: v.number(),
 
     // Moving Sale Mode: an ad can belong to a sale event.

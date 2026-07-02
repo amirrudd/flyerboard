@@ -1,11 +1,11 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { Header } from "../features/layout/Header";
 import { Sidebar } from "../features/layout/Sidebar/index";
 import { AdsGrid } from "../features/ads/AdsGrid";
-import { useSession } from "@descope/react-sdk";
 // AuthModal removed, using global one from Layout
+// Header removed too — the persistent default header is rendered by Layout
+// (wired straight from MarketplaceContext), so HomePage passes nothing.
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AdsFilterBar } from "../features/ads/AdsFilterBar";
@@ -14,13 +14,9 @@ import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
 import { toast } from "sonner";
-import { useNavigate, useSearchParams, useOutletContext, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { registerHomeScroll, unregisterHomeScroll, HOME_SCROLL_KEY } from "../lib/homeScrollBridge";
-
-interface LayoutContext {
-  setShowAuthModal: (show: boolean) => void;
-}
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -31,16 +27,11 @@ export function HomePage() {
   );
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShowAuthModal } = useOutletContext<LayoutContext>();
 
   const {
     categories,
     selectedCategory,
     setSelectedCategory,
-    searchQuery,
-    setSearchQuery,
-    selectedLocation,
-    setSelectedLocation,
     sidebarCollapsed,
     setSidebarCollapsed,
     isCategoriesLoading,
@@ -51,9 +42,6 @@ export function HomePage() {
     newAdIds,
     clearNewAdIds,
   } = useMarketplace();
-
-  // Use Descope session for authentication state
-  const { isAuthenticated } = useSession();
 
   // Price-range filter only. We deliberately never re-sort: the feed is always
   // newest-first because the product's core value is "pin your flyer to the top"
@@ -89,9 +77,6 @@ export function HomePage() {
     api.saleEvents.getActiveSales,
     selectedCategory || !movingSaleModeEnabled ? "skip" : {}
   );
-  // For now, just use a simple user object when authenticated
-  // TODO: Fetch actual user data from Convex once Descope integration is complete
-  const user = isAuthenticated ? { name: "User" } : null;
 
   // Handle location change and save to cookies
 
@@ -289,18 +274,11 @@ export function HomePage() {
   }, [status, loadMore]);
 
   return (
-    <div className="flex flex-col bg-background md:h-full">
-      <Header
-        sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        user={user}
-        setShowAuthModal={setShowAuthModal}
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-      />
-
+    // md:h-[calc(100%-57px)]: the persistent 57px Header now sits ABOVE this
+    // root (rendered by Layout inside <main>), so on desktop the page fills
+    // the rest of <main> exactly — total content = header + page = 100%,
+    // keeping <main> non-scrollable on md+ (the feed div stays the scroller).
+    <div className="flex flex-col bg-background md:h-[calc(100%-57px)]">
       <div className="content-max-width mx-auto container-padding py-6 w-full md:flex-1 md:min-h-0 md:py-0 md:pt-6">
         <div className="flex gap-8 items-start md:h-full">
           <div className="hidden md:block self-start flex-shrink-0">

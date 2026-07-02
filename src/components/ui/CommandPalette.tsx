@@ -61,8 +61,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   );
 
   const handleSelectListing = useCallback(
-    (id: string) => {
-      void navigate(`/ad/${id}`);
+    (id: string, listing?: unknown) => {
+      void navigate(`/ad/${id}`, listing ? { state: { initialAd: listing } } : undefined);
       onClose();
     },
     [navigate, onClose]
@@ -159,7 +159,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                     <button
                       type="button"
                       className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-4 hover:bg-accent transition-colors"
-                      onClick={() => handleSelectListing(listing._id)}
+                      onClick={() => handleSelectListing(listing._id, listing)}
                     >
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-foreground line-clamp-1">

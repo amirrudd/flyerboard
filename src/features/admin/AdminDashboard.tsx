@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Header } from "../layout/Header";
+import { useHeaderSlots } from "../layout/HeaderSlots";
 import {
     CaretLeft,
     Users,
@@ -27,6 +27,39 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     const [activeTab, setActiveTab] = useState<"users" | "flyers" | "reports" | "chats" | "categories" | "flags">("users");
 
     const isAdmin = useQuery(api.admin.isCurrentUserAdmin);
+
+    // Persistent Layout header — the loading / access-denied states never had
+    // a header, so hide it there; registered before the early returns (hooks
+    // rules) and rebuilt every render by design.
+    useHeaderSlots(
+        !isAdmin
+            ? { hidden: true }
+            : {
+                leftNode: (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        aria-label="Back"
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <CaretLeft className="w-5 h-5" aria-hidden="true" />
+                        <span className="hidden md:inline">Back</span>
+                    </button>
+                ),
+                centerNode: (
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary" aria-hidden="true" />
+                        <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
+                    </div>
+                ),
+                rightNode: (
+                    <div className="flex items-center gap-2">
+                        <span className="hidden md:inline text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Admin Mode</span>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
+                    </div>
+                ),
+            }
+    );
 
     // Show loading state while checking admin status
     if (isAdmin === undefined) {
@@ -84,32 +117,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
     return (
         <div className="min-h-screen bg-background">
-            <Header
-                leftNode={
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        aria-label="Back"
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <CaretLeft className="w-5 h-5" aria-hidden="true" />
-                        <span className="hidden md:inline">Back</span>
-                    </button>
-                }
-                centerNode={
-                    <div className="flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" aria-hidden="true" />
-                        <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
-                    </div>
-                }
-                rightNode={
-                    <div className="flex items-center gap-2">
-                        <span className="hidden md:inline text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">Admin Mode</span>
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
-                    </div>
-                }
-            />
-
+            {/* Header slots registered on the persistent Layout header above */}
             <main className="content-max-width mx-auto container-padding py-6">
                 {/* Tabs Navigation */}
                 <nav

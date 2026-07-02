@@ -325,7 +325,7 @@ export const removeSaleItem = mutation({
         adId: args.adId,
       });
     }
-    await ctx.db.patch(args.adId, { isDeleted: true, isActive: false });
+    await ctx.db.patch(args.adId, { isDeleted: true, isActive: false, deletedAt: Date.now() });
     return args.adId;
   },
 });

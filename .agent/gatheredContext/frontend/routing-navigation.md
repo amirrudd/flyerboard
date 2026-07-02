@@ -5,7 +5,7 @@ description: Routing and navigation structure
 
 # Routing & Navigation
 
-**Last Updated**: 2026-06-29
+**Last Updated**: 2026-07-02
 
 ## Routes (React Router v7)
 - **/**: HomePage (Flyers grid)
@@ -73,3 +73,51 @@ scroll position; tapping Home while already on Home scrolls to top.
 - **Home tab is a `<button>`, not `<Link>`**: needed so the same handler can
   either scroll-to-top (when already on `/`) or `navigate("/")` — avoids
   `<Link>` + `preventDefault` event-ordering ambiguity.
+
+## Ad detail instant-render via `location.state.initialAd`
+
+- **Pattern**: when navigating to `/ad/:id` and the caller already has the ad
+  object in scope (feed card, saved-ad card, chat's linked ad, command-palette
+  search result), pass it through router state so `AdDetailPage`/`AdDetail`
+  can render instantly instead of waiting for `getAdWithContext` to resolve:
+  `navigate(\`/ad/${ad._id}\`, { state: { initialAd: ad } })`. `AdDetailPage.tsx`
+  reads it as `location.state?.initialAd` and forwards it to
+  `<AdDetail initialAd={...} />`, which does `const displayAd = ad || initialAd`.
+  **The key must be `initialAd` on both sides** — it was `ad` on the read side
+  from Nov 2025 (commit b313bda) until 2026-07-02, silently making the whole
+  optimization dead for ~8 months (every navigation, including from the feed,
+  fell through to the full skeleton). Fixed in `src/pages/AdDetailPage.tsx`.
+- **Call sites that pass `initialAd`** (full object in scope at click time):
+  `HomePage.tsx` (`AdsGrid`'s `onAdClick`), `UserDashboard.tsx`
+  (`handleViewFlyer(adId, ad)` from the chats tab's linked `chat.ad`),
+  `CommandPalette.tsx` (`handleSelectListing(id, listing)` from search
+  results). All three now pass `{ state: { initialAd } }` conditionally (only
+  when the object is available) so the signature stays backward compatible.
+- **Call sites deliberately left without it**: the dashboard's "Saved" tab
+  and "My Ads" tab don't navigate to `/ad/:id` at all — they set
+  `selectedAdId` and render `<AdDetail adId={selectedAdId} />` inline (no
+  `initialAd` prop passed there either; not this pattern's concern). Moving
+  Sale pages don't link to individual `/ad/:id` routes.
+- **`initialAd` is partial/feed-shaped, not the full query shape** — guard any
+  field only present on `getAdWithContext`'s result (e.g. `adCategory` is
+  still computed from `ad?.categoryId`, the live query, not
+  `displayAd?.categoryId`, so the category breadcrumb intentionally still
+  waits for the query even when `initialAd` renders the rest instantly).
+  Never assume `displayAd` has seller ratings, save-state, or chat context —
+  those only exist once the real `ad` object replaces `initialAd`.
+
+## Ad detail breadcrumb — zero-CLS pattern
+
+- `AdDetail.tsx`'s `<nav aria-label="Breadcrumb">` (~line 441) is now
+  **unconditionally rendered** in both the `!displayAd` skeleton branch and
+  the loaded branch, at the same height, so there's no vertical layout shift
+  between them. Title crumb: `displayAd?.title` when present, else a
+  `shimmer bg-muted rounded h-3 w-16` placeholder sized like the text. The
+  category crumb (`adCategory && ...`) is still conditional — that only
+  changes *width*, not height, which is acceptable per the project's CLS bar
+  (only vertical shift matters).
+  - Previously the whole `<nav>` was wrapped in `{displayAd && ...}`, so on a
+    cold load (no `initialAd`) it popped in only after `getAdWithContext`
+    resolved, pushing the image gallery down. Fixed by adding a matching
+    breadcrumb skeleton to the `!displayAd` loading branch too, not just
+    removing the conditional in the loaded branch.

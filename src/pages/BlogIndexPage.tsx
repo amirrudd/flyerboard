@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaretLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
-import { Header } from "../features/layout/Header";
+import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { BlogPostCard } from "../components/BlogPostCard";
 import { getAllPosts } from "../lib/blog";
@@ -17,6 +17,25 @@ export function BlogIndexPage() {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    // Customise the persistent Layout header (config rebuilt every render by design)
+    useHeaderSlots({
+        leftNode: (
+            <button
+                type="button"
+                onClick={() => { void navigate("/"); }}
+                aria-label="Go to FlyerBoard home"
+                className="flex items-center gap-2 h-10 pl-2 pr-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
+            >
+                <CaretLeft className="w-5 h-5 flex-shrink-0" />
+                <span className="font-display font-semibold">FlyerBoard</span>
+            </button>
+        ),
+        centerNode: (
+            <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Blog</span>
+        ),
+        rightNode: <ThemeToggle />,
+    });
 
     // GEO: an ItemList of every post makes the index machine-readable for AI
     // crawlers and search engines (see docs/guides/blog-content-guideline.md).
@@ -56,24 +75,6 @@ export function BlogIndexPage() {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-
-            <Header
-                leftNode={
-                    <button
-                        type="button"
-                        onClick={() => { void navigate("/"); }}
-                        aria-label="Go to FlyerBoard home"
-                        className="flex items-center gap-2 h-10 pl-2 pr-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
-                    >
-                        <CaretLeft className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-display font-semibold">FlyerBoard</span>
-                    </button>
-                }
-                centerNode={
-                    <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Blog</span>
-                }
-                rightNode={<ThemeToggle />}
             />
 
             <section className="min-h-screen bg-background pb-12">

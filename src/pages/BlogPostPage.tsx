@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CaretLeft, ArrowLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
-import { Header } from "../features/layout/Header";
+import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { BlogPostCard } from "../components/BlogPostCard";
@@ -42,15 +42,28 @@ export function BlogPostPage() {
         window.scrollTo(0, 0);
     }, [slug]);
 
+    // Customise the persistent Layout header — must be called before the
+    // early return below (hooks rules); config rebuilt every render by design.
+    useHeaderSlots(
+        post
+            ? {
+                leftNode: backButton,
+                centerNode: (
+                    <span className="font-display text-lg font-semibold tracking-tight text-foreground truncate">Blog</span>
+                ),
+                rightNode: <ThemeToggle />,
+            }
+            : {
+                leftNode: backButton,
+                centerNode: <span className="font-display text-lg font-semibold text-foreground">Blog</span>,
+                rightNode: <div />,
+            }
+    );
+
     if (!post) {
         return (
             <>
                 <title>Post not found — FlyerBoard Blog</title>
-                <Header
-                    leftNode={backButton}
-                    centerNode={<span className="font-display text-lg font-semibold text-foreground">Blog</span>}
-                    rightNode={<div />}
-                />
                 <section className="min-h-screen bg-background flex items-center justify-center container-padding">
                     <div className="text-center">
                         <h1 className="font-display text-2xl font-semibold text-foreground mb-2">Post not found</h1>
@@ -104,14 +117,6 @@ export function BlogPostPage() {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-
-            <Header
-                leftNode={backButton}
-                centerNode={
-                    <span className="font-display text-lg font-semibold tracking-tight text-foreground truncate">Blog</span>
-                }
-                rightNode={<ThemeToggle />}
             />
 
             <section className="min-h-screen bg-background pb-12 md:pb-16">

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AdDetail } from './AdDetail';
 import { BrowserRouter } from 'react-router-dom';
 import { toast } from 'sonner';
+import { HeaderSlotsHarness } from '../../test/headerSlotsTestUtils';
 
 // Mock Descope SDK
 const mockUseSession = vi.fn();
@@ -23,15 +24,9 @@ vi.mock('sonner', () => ({
     },
 }));
 
-vi.mock('../layout/Header', () => ({
-    Header: ({ leftNode, centerNode, rightNode }: any) => (
-        <div data-testid="header">
-            <div data-testid="header-left">{leftNode}</div>
-            <div data-testid="header-center">{centerNode}</div>
-            <div data-testid="header-right">{rightNode}</div>
-        </div>
-    ),
-}));
+// AdDetail no longer renders <Header> itself — it registers slots on the
+// persistent Layout header (see HeaderSlots.tsx). Tests render it inside
+// HeaderSlotsHarness, which displays the registered slots.
 
 vi.mock('../layout/HeaderRightActions', () => ({
     HeaderRightActions: () => <div data-testid="header-right-actions">Actions</div>,
@@ -138,11 +133,13 @@ describe('AdDetail - Share Functionality', () => {
     const renderAdDetail = () => {
         return render(
             <BrowserRouter>
-                <AdDetail
-                    adId={mockAdId}
-                    onBack={mockOnBack}
-                    onShowAuth={mockOnShowAuth}
-                />
+                <HeaderSlotsHarness>
+                    <AdDetail
+                        adId={mockAdId}
+                        onBack={mockOnBack}
+                        onShowAuth={mockOnShowAuth}
+                    />
+                </HeaderSlotsHarness>
             </BrowserRouter>
         );
     };
@@ -305,15 +302,17 @@ describe('AdDetail - Share Functionality', () => {
 
             const { container } = render(
                 <BrowserRouter>
-                    <AdDetail
-                        adId={'loading-id' as any}
-                        onBack={mockOnBack}
-                        onShowAuth={mockOnShowAuth}
-                    />
+                    <HeaderSlotsHarness>
+                        <AdDetail
+                            adId={'loading-id' as any}
+                            onBack={mockOnBack}
+                            onShowAuth={mockOnShowAuth}
+                        />
+                    </HeaderSlotsHarness>
                 </BrowserRouter>
             );
 
-            // Should show loading state
+            // Should show loading state (rendered via the header slots harness)
             expect(screen.getByText('Loading...')).toBeInTheDocument();
 
             // Find the content container in skeleton state (the one with flex-1, not the header)

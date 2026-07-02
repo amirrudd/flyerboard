@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "convex/react";
-import { Header } from "../layout/Header";
+import { useHeaderSlots, type HeaderSlotsConfig } from "../layout/HeaderSlots";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -192,27 +192,143 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     }
   };
 
+  // Hoisted above the early returns so the header slots below can use it.
+  const displayAd = ad || initialAd;
+
+  // ── Persistent Layout header ─────────────────────────────────────────────
+  // AdDetail no longer renders its own <Header>; it registers slots on the
+  // shared Layout header instead (also correct when AdDetail is embedded
+  // inline in the dashboard — its registration stacks on top of the
+  // dashboard's and pops off on unmount). The config is rebuilt every render,
+  // so nodes may freely close over live state (displaySaved, user, handlers).
+  // Must be computed/registered BEFORE the early returns (hooks rules).
+  let headerSlots: HeaderSlotsConfig;
+  if (ad === null) {
+    // Ad not found
+    headerSlots = {
+      leftNode: (
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <CaretLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Back to flyers</span>
+          </button>
+        </div>
+      ),
+      centerNode: (
+        <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
+      ),
+      rightNode: <div />,
+    };
+  } else if (!displayAd) {
+    // Loading skeleton (previously an inline <header> in the skeleton state)
+    headerSlots = {
+      leftNode: (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <CaretLeft className="w-5 h-5" />
+          <span className="hidden sm:inline">Back to flyers</span>
+        </button>
+      ),
+      centerNode: (
+        <span className="font-display text-xl font-semibold text-foreground tracking-tight">Loading...</span>
+      ),
+      rightNode: (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
+          <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
+        </div>
+      ),
+    };
+  } else {
+    headerSlots = {
+      leftNode: (
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="hidden sm:inline">Back to flyers</span>
+          </button>
+        </div>
+      ),
+      centerNode: (
+        <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
+      ),
+      rightNode: (
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={() => { void handleShare(); }}
+              whileTap={{ scale: 0.9 }}
+              className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+              title="Share flyer"
+            >
+              <motion.span animate={shareControls} style={{ display: 'inline-flex' }}>
+                <ShareNetwork className="w-5 h-5" />
+              </motion.span>
+            </motion.button>
+            {user && displayAd.userId !== user._id && (
+              <>
+                <motion.button
+                  onClick={() => { void handleSave(); }}
+                  whileTap={{ scale: 0.88 }}
+                  className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
+                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }`}
+                  title={displaySaved ? "Remove from saved" : "Save ad"}
+                >
+                  <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
+                    <BookmarkSimple className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
+                  </motion.span>
+                </motion.button>
+                <motion.button
+                  onClick={() => setShowReportModal(true)}
+                  whileTap={{ scale: 0.9 }}
+                  className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
+                  title="Report flyer"
+                >
+                  <Flag className="w-5 h-5" />
+                </motion.button>
+              </>
+            )}
+          </div>
+
+          <div className="h-6 w-px bg-border hidden sm:block"></div>
+
+          <div className="hidden sm:flex items-center gap-4">
+            <HeaderRightActions
+              user={user}
+              isAuthenticated={isAuthenticated}
+              onPostClick={() => {
+                if (user) {
+                  void navigate('/post', { state: { from: `/ad/${adId}` } });
+                } else {
+                  onShowAuth();
+                }
+              }}
+              onDashboardClick={() => { void navigate('/dashboard'); }}
+              onSignInClick={onShowAuth}
+            />
+          </div>
+        </div>
+      ),
+    };
+  }
+  useHeaderSlots(headerSlots);
+
   // If ad is explicitly null (loaded but not found), show not found state
   if (ad === null) {
     return (
       <div className="min-h-screen bg-background">
-        <Header
-          leftNode={
-            <div className="flex items-center gap-6 flex-shrink-0">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <CaretLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Back to flyers</span>
-              </button>
-            </div>
-          }
-          centerNode={
-            <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
-          }
-          rightNode={<div />}
-        />
         <div className="content-max-width mx-auto container-padding py-12 text-center">
           <div className="bg-card ring-1 ring-border/70 rounded-2xl p-12 shadow-card max-w-lg mx-auto">
             <SmileySad className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" weight="light" />
@@ -229,8 +345,6 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       </div>
     );
   }
-
-  const displayAd = ad || initialAd;
 
   // v3.1: if this ad belongs to a Sale, show the rich context banner here (feed
   // items are no longer differentiated — this is the sole discovery surface).
@@ -253,28 +367,17 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   if (!displayAd) {
     return (
       <div className="bg-background flex flex-col">
-        {/* Header skeleton */}
-        <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
-          <div className="content-max-width mx-auto container-padding">
-            <div className="flex items-center justify-between h-14">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <CaretLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Back to flyers</span>
-              </button>
-              <span className="font-display text-xl font-semibold text-foreground tracking-tight">Loading...</span>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
-                <div className="w-10 h-10 bg-muted rounded-lg animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Header skeleton is registered on the persistent Layout header above */}
 
         {/* Loading content - MATCHES LOADED STRUCTURE EXACTLY */}
         <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
+          {/* Breadcrumb skeleton - same height as loaded nav to avoid CLS */}
+          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
+            <span>/</span>
+            <span className="shimmer bg-muted rounded h-3 w-16 inline-block" aria-hidden="true" />
+          </nav>
+
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main Content - 70% */}
             <div className="lg:w-[70%] min-w-0 space-y-6">
@@ -351,102 +454,28 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   return (
     <div className="bg-background flex flex-col">
-      {/* Header */}
-      <Header
-        leftNode={
-          <div className="flex items-center gap-6 flex-shrink-0">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="hidden sm:inline">Back to flyers</span>
-            </button>
-          </div>
-        }
-        centerNode={
-          <button type="button" onClick={onBack} aria-label="Back to flyers" className="font-display text-xl font-semibold text-foreground cursor-pointer tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">FlyerBoard</button>
-        }
-        rightNode={
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <motion.button
-                onClick={() => { void handleShare(); }}
-                whileTap={{ scale: 0.9 }}
-                className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
-                title="Share flyer"
-              >
-                <motion.span animate={shareControls} style={{ display: 'inline-flex' }}>
-                  <ShareNetwork className="w-5 h-5" />
-                </motion.span>
-              </motion.button>
-              {user && displayAd.userId !== user._id && (
-                <>
-                  <motion.button
-                    onClick={() => { void handleSave(); }}
-                    whileTap={{ scale: 0.88 }}
-                    className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
-                      ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                      }`}
-                    title={displaySaved ? "Remove from saved" : "Save ad"}
-                  >
-                    <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
-                      <BookmarkSimple className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
-                    </motion.span>
-                  </motion.button>
-                  <motion.button
-                    onClick={() => setShowReportModal(true)}
-                    whileTap={{ scale: 0.9 }}
-                    className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
-                    title="Report flyer"
-                  >
-                    <Flag className="w-5 h-5" />
-                  </motion.button>
-                </>
-              )}
-            </div>
-
-            <div className="h-6 w-px bg-border hidden sm:block"></div>
-
-            <div className="hidden sm:flex items-center gap-4">
-              <HeaderRightActions
-                user={user}
-                isAuthenticated={isAuthenticated}
-                onPostClick={() => {
-                  if (user) {
-                    void navigate('/post', { state: { from: `/ad/${adId}` } });
-                  } else {
-                    onShowAuth();
-                  }
-                }}
-                onDashboardClick={() => { void navigate('/dashboard'); }}
-                onSignInClick={onShowAuth}
-              />
-            </div>
-          </div>
-        }
-      />
+      {/* Header slots (back / FlyerBoard / share+save) are registered on the
+          persistent Layout header above the early returns */}
 
       <div className="w-full flex-1 content-max-width mx-auto container-padding py-6 pb-bottom-nav md:pb-6">
-        {/* Breadcrumbs */}
-        {displayAd && (
-          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
-            {adCategory && (
-              <>
-                <span>/</span>
-                <button onClick={onBack} className="hover:text-foreground transition-colors">
-                  {adCategory.name}
-                </button>
-              </>
-            )}
-            <span>/</span>
+        {/* Breadcrumbs — always rendered (same height loading or loaded) to avoid CLS */}
+        <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <button onClick={onBack} className="hover:text-foreground transition-colors">Home</button>
+          {adCategory && (
+            <>
+              <span>/</span>
+              <button onClick={onBack} className="hover:text-foreground transition-colors">
+                {adCategory.name}
+              </button>
+            </>
+          )}
+          <span>/</span>
+          {displayAd?.title ? (
             <span className="text-foreground/70 line-clamp-1 max-w-[180px] sm:max-w-xs">{displayAd.title}</span>
-          </nav>
-        )}
+          ) : (
+            <span className="shimmer bg-muted rounded h-3 w-16 inline-block" aria-hidden="true" />
+          )}
+        </nav>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content - 70% of container width */}

@@ -2,14 +2,67 @@ import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { X } from '@phosphor-icons/react';
 import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Header } from "./Header";
+import { HeaderSlotsContext, HeaderSlotsStore } from "./HeaderSlots";
+import { useMarketplace } from "../../context/MarketplaceContext";
 import { CommandPalette } from "../../components/ui/CommandPalette";
+
+/**
+ * The single persistent Header instance for every route under Layout.
+ * Rendered INSIDE <main> (before the Outlet) on purpose: <main> is the mobile
+ * scroll container and the header is `sticky top-0`, so keeping it in the
+ * scroller preserves the exact pre-existing layout (incl. `sticky top-21`
+ * offsets that pages like AdDetail compute against the 57px header).
+ *
+ * Default props come from MarketplaceContext (search/location/sidebar state
+ * already lived there); pages override via useHeaderSlots().
+ */
+function PersistentHeader({
+    store,
+    setShowAuthModal,
+}: {
+    store: HeaderSlotsStore;
+    setShowAuthModal: (show: boolean) => void;
+}) {
+    const slots = useSyncExternalStore(store.subscribe, store.getSnapshot);
+    const {
+        searchQuery,
+        setSearchQuery,
+        selectedLocation,
+        setSelectedLocation,
+        sidebarCollapsed,
+        setSidebarCollapsed,
+    } = useMarketplace();
+    // UI auth state via Descope useSession (not a Convex query — avoids first-paint flicker)
+    const { isAuthenticated } = useSession();
+    const user = isAuthenticated ? { name: "User" } : null;
+
+    if (slots?.hidden) return null;
+
+    return (
+        <Header
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            user={user}
+            setShowAuthModal={setShowAuthModal}
+            selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
+            leftNode={slots?.leftNode}
+            centerNode={slots?.centerNode}
+            rightNode={slots?.rightNode}
+        />
+    );
+}
 
 export function Layout() {
     const { isAuthenticated } = useSession();
     const [showAuthModal, setShowAuthModal] = useState(false);
+    // Lazy-initialised once; the store instance is stable for Layout's lifetime.
+    const [headerSlotsStore] = useState(() => new HeaderSlotsStore());
     const [isModalDismissable, setIsModalDismissable] = useState(true);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
 
@@ -27,7 +80,10 @@ export function Layout() {
     return (
         <div className="flex flex-col h-dynamic-screen overflow-hidden pt-safe bg-background">
             <main className="flex-1 overflow-y-auto md:overflow-hidden mobile-scroll-container scrollbar-hide">
-                <Outlet context={{ setShowAuthModal }} />
+                <HeaderSlotsContext.Provider value={headerSlotsStore}>
+                    <PersistentHeader store={headerSlotsStore} setShowAuthModal={setShowAuthModal} />
+                    <Outlet context={{ setShowAuthModal }} />
+                </HeaderSlotsContext.Provider>
             </main>
 
             {/* Bottom Nav - positioned outside flex flow for proper fixed positioning */}

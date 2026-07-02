@@ -19,6 +19,7 @@ import type * as descopeAuth from "../descopeAuth.js";
 import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as image_actions from "../image_actions.js";
+import type * as imageCleanup from "../imageCleanup.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_emailUtils from "../lib/emailUtils.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   featureFlags: typeof featureFlags;
   http: typeof http;
   image_actions: typeof image_actions;
+  imageCleanup: typeof imageCleanup;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/auth": typeof lib_auth;
   "lib/emailUtils": typeof lib_emailUtils;

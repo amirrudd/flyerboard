@@ -5,6 +5,7 @@ import { PostAd } from './PostAd';
 import { useMutation, useQuery } from 'convex/react';
 import { searchLocations } from '../../lib/locationService';
 import type { Doc, Id } from '../../../convex/_generated/dataModel';
+import { HeaderSlotsHarness } from '../../test/headerSlotsTestUtils';
 
 // Typed factory so editing-ad fixtures satisfy the full Doc<"ads"> shape
 // (including system + required fields like _creationTime, userId, isActive, views).
@@ -45,16 +46,8 @@ vi.mock('../../components/ui/ImageUpload', () => ({
     ),
 }));
 
-// Mock Header
-vi.mock('../layout/Header', () => ({
-    Header: ({ leftNode, centerNode, rightNode }: any) => (
-        <div data-testid="header">
-            {leftNode}
-            {centerNode}
-            {rightNode}
-        </div>
-    ),
-}));
+// PostAd no longer renders <Header> itself — it registers slots on the
+// persistent Layout header; tests render inside HeaderSlotsHarness instead.
 
 // Mock category icons
 vi.mock('../../lib/categoryIcons', () => ({
@@ -84,7 +77,7 @@ describe('PostAd', () => {
 
     it('should render form fields', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         expect(screen.getByText('Title *')).toBeInTheDocument();
@@ -96,7 +89,7 @@ describe('PostAd', () => {
 
     it('should validate required fields on submit', async () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const submitButton = screen.getByText('Pin Flyer');
@@ -111,7 +104,7 @@ describe('PostAd', () => {
         vi.mocked(searchLocations).mockResolvedValue([mockLocation]);
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Fill form
@@ -156,7 +149,7 @@ describe('PostAd', () => {
         const editingAd = makeAd();
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         expect(screen.getByDisplayValue('Existing Ad')).toBeInTheDocument();
@@ -167,7 +160,7 @@ describe('PostAd', () => {
         const editingAd = makeAd();
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Delete button should be visible (either with text or just icon on mobile)
@@ -179,7 +172,7 @@ describe('PostAd', () => {
         const editingAd = makeAd();
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -195,7 +188,7 @@ describe('PostAd', () => {
         const editingAd = makeAd();
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Click delete button in the header
@@ -226,7 +219,7 @@ describe('PostAd', () => {
 
     it('should not show delete button when creating new ad', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Delete button should not be present
@@ -236,7 +229,7 @@ describe('PostAd', () => {
 
     it('should enforce character limits on form fields', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const titleInput = screen.getByPlaceholderText<HTMLInputElement>('Enter a descriptive title');
@@ -251,7 +244,7 @@ describe('PostAd', () => {
 
     it('should display character counter for description textarea', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Check for character counter
@@ -260,7 +253,7 @@ describe('PostAd', () => {
 
     it('should update character counter when typing', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const descriptionTextarea = screen.getByPlaceholderText('Describe your item...');
@@ -285,7 +278,7 @@ describe('PostAd', () => {
         });
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // The component initializes with editingAd.images
@@ -310,7 +303,7 @@ describe('PostAd', () => {
 
     it('should only accept whole numbers in price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -328,7 +321,7 @@ describe('PostAd', () => {
 
     it('should reject decimal values in price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -347,7 +340,7 @@ describe('PostAd', () => {
 
     it('should reject leading zeros in price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -365,7 +358,7 @@ describe('PostAd', () => {
 
     it('should reject non-numeric characters in price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -384,7 +377,7 @@ describe('PostAd', () => {
 
     it('should reject values exceeding maximum price', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -400,7 +393,7 @@ describe('PostAd', () => {
 
     it('should allow clearing the price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const priceInput = screen.getByPlaceholderText<HTMLInputElement>('0');
@@ -420,7 +413,7 @@ describe('PostAd', () => {
 
     it('should render listing type selector with three options', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         expect(screen.getByText('Listing Type *')).toBeInTheDocument();
@@ -431,7 +424,7 @@ describe('PostAd', () => {
 
     it('should default to "sale" listing type and show price field', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Price field should be visible for sale type
@@ -442,7 +435,7 @@ describe('PostAd', () => {
 
     it('should hide price field when "exchange" type is selected', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const exchangeButton = screen.getByText('Exchange');
@@ -456,7 +449,7 @@ describe('PostAd', () => {
 
     it('should show both price and exchange fields when "both" type is selected', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         const bothButton = screen.getByText('Both');
@@ -469,7 +462,7 @@ describe('PostAd', () => {
 
     it('should clear price when switching to "exchange" type', () => {
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Enter a price first
@@ -496,7 +489,7 @@ describe('PostAd', () => {
         });
 
         render(
-            <MemoryRouter><PostAd onBack={mockOnBack} editingAd={editingAd} /></MemoryRouter>
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} editingAd={editingAd} /></HeaderSlotsHarness></MemoryRouter>
         );
 
         // Price field should be hidden

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Envelope, ChatText, User, FileText, CaretLeft } from '@phosphor-icons/react';
 import { toast } from "sonner";
-import { Header } from "../features/layout/Header";
+import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { logDebug } from "../lib/logger";
 
 export default function SupportPage() {
@@ -32,25 +32,27 @@ export default function SupportPage() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // Customise the persistent Layout header (config rebuilt every render by design)
+    useHeaderSlots({
+        leftNode: (
+            <button
+                type="button"
+                onClick={() => { void navigate('/'); }}
+                aria-label="Go back to home"
+                className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
+            >
+                <CaretLeft className="w-5 h-5" />
+                <span className="hidden sm:inline">Back</span>
+            </button>
+        ),
+        centerNode: (
+            <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Support Center</span>
+        ),
+        rightNode: <div />,
+    });
+
     return (
         <>
-            <Header
-                leftNode={
-                    <button
-                        type="button"
-                        onClick={() => { void navigate('/'); }}
-                        aria-label="Go back to home"
-                        className="flex items-center gap-2 h-10 px-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
-                    >
-                        <CaretLeft className="w-5 h-5" />
-                        <span className="hidden sm:inline">Back</span>
-                    </button>
-                }
-                centerNode={
-                    <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Support Center</span>
-                }
-                rightNode={<div />}
-            />
             <section className="min-h-screen bg-background py-12 pb-bottom-nav md:pb-12">
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto space-y-10">

@@ -197,11 +197,11 @@ export const deleteAd = mutation({
     }
 
     // Soft delete by marking as deleted
-    // Images remain in R2 for potential restoration
-    // TODO: Implement cleanup job to hard delete flyers after 30+ days
+    // Images remain in R2 until the retention-policy cleanup job purges them (see convex/imageCleanup.ts)
     await ctx.db.patch(args.adId, {
       isDeleted: true,
       isActive: false,
+      deletedAt: Date.now(),
     });
 
     logOperation("Flyer soft-deleted", { adId: args.adId, userId });

@@ -140,7 +140,8 @@ R2_BUCKET=flyer-board-images
 ```
 
 ### Frontend (Vercel)
-**None needed** - Frontend never accesses R2 directly, only through Convex presigned URLs.
+- `VITE_R2_PUBLIC_URL=https://img.flyerboard.com.au` — public R2 custom domain for CDN-cached image *reads* (since 2026-07-02). Unset → falls back to presigned URLs via `posts.getImageUrl`.
+- Uploads still never touch R2 credentials from the frontend — writes go through Convex presigned URLs only.
 
 ## Image Retrieval
 
@@ -206,7 +207,7 @@ When an ad is deleted:
 
 ## Performance Optimization
 
-### Signed URL Caching — PARTIALLY FIXED 2026-07-02 (env-gated, domain not attached yet)
+### Signed URL Caching — FIXED & LIVE 2026-07-02 (stable public URLs via CDN)
 Background (still true today when `VITE_R2_PUBLIC_URL` is unset): `r2.getUrl()` mints a *new* SigV4 presigned URL on every call, and `ImageDisplay` re-ran `posts.getImageUrl` on every mount (Convex drops the query subscription on unmount) → browser HTTP cache never hit → full re-download from R2 on every Home ↔ AdDetail navigation. Presigned URLs also point at `*.r2.cloudflarestorage.com` directly, bypassing the Cloudflare CDN.
 
 **Fix landed (client-side, env-gated)**: `src/lib/imageUrl.ts` exports `resolvePublicImageUrl(imageRef, publicBase = import.meta.env.VITE_R2_PUBLIC_URL)`. When `VITE_R2_PUBLIC_URL` is set (e.g. `https://img.flyerboard.com.au`, trailing slash normalized away), it derives a **stable, CDN-cacheable** URL directly from the key — no Convex round trip, no per-mount signature churn:
@@ -214,20 +215,28 @@ Background (still true today when `VITE_R2_PUBLIC_URL` is unset): `r2.getUrl()` 
 - Legacy unprefixed keys starting with `flyers/`, `profiles/`, or `ad/` → `${base}/<key>`. **Keep these three prefixes in sync with the server-side check in `convex/posts.ts` `getImageUrl` (~lines 385-393)** — they're duplicated by necessity (client needs to decide without a round trip) and will silently drift if only one side is edited.
 - `http(s)://` and `data:` refs always resolve locally (no round trip needed, no env dependency) — this is a strict improvement even before the domain is attached.
 - Legacy Convex `_storage` IDs (no `/`, no known prefix) always return `null` — no stable public URL exists for these; they keep going through `getImageUrl`.
-- Unset `VITE_R2_PUBLIC_URL` → returns `null` for R2 refs, and `ImageDisplay` falls back to the query exactly as before. **The R2 custom domain is NOT attached yet in any environment**, so today this is a no-op for R2 keys in prod — only the http/data passthrough is live.
+- Unset `VITE_R2_PUBLIC_URL` → returns `null` for R2 refs, and `ImageDisplay` falls back to the query exactly as before (this is how local dev without the env var behaves).
 
 `ImageDisplay.tsx` usage: `const publicUrl = resolvePublicImageUrl(reference); const imageUrl = useQuery(api.posts.getImageUrl, reference && !publicUrl ? { imageRef: reference } : "skip"); const displaySrc = publicUrl || imageUrl || src;` — the query is skipped entirely once a public URL resolves.
 
-**Still open**: attach the R2 custom domain (Cloudflare-proxied, long `Cache-Control`) and set `VITE_R2_PUBLIC_URL` in Vercel to actually activate CDN caching for R2 keys. Once attached, `getImageUrl` in `convex/posts.ts` remains as the fallback path for legacy `_storage` IDs only — do not remove it. Only one direct call site for `api.posts.getImageUrl` exists in the frontend (`ImageDisplay.tsx`); everything else routes through that component.
+**Infra — DONE 2026-07-02 (verified live)**:
+- R2 custom domain `img.flyerboard.com.au` attached to the `flyer-board-images` bucket (R2 dashboard → bucket → Custom Domains; status Active/Enabled). Note: presigned URLs and custom domains are mutually exclusive access paths — presigned only works on `*.r2.cloudflarestorage.com`, the CDN only works on the custom domain.
+- Cloudflare **Cache Rule** `cache-r2-images` on the `flyerboard.com.au` ZONE (not the R2 bucket page — Caching → Cache Rules): Hostname equals `img.flyerboard.com.au` → Eligible for cache, Edge TTL 1 month (ignore origin), Browser TTL 1 year (override origin). Both TTL overrides are REQUIRED: R2 objects carry no `Cache-Control` metadata and the UUID keys have no file extension, so without the rule Cloudflare returns `cf-cache-status: DYNAMIC` (no caching). 1-year browser TTL is safe because keys are write-once UUIDs.
+- `VITE_R2_PUBLIC_URL=https://img.flyerboard.com.au` set in Vercel (production).
+- Verified: `GET` #1 → `cf-cache-status: MISS`, #2 → `HIT` with `cache-control: max-age=31536000`. **Verification gotcha: use GET, not HEAD (`curl -I`) — HEAD requests do not populate Cloudflare's cache and report `DYNAMIC` even when the rule works.**
+
+`getImageUrl` in `convex/posts.ts` remains as the fallback path for legacy `_storage` IDs only — do not remove it. Only one direct call site for `api.posts.getImageUrl` exists in the frontend (`ImageDisplay.tsx`); everything else routes through that component.
+
+**Interaction with the cleanup cron**: after `purgeDeletedAdImages` deletes an object, edge/browser caches may serve it until their TTL lapses (up to 1 month edge / 1 year browser). Acceptable for deleted classifieds images; do not "fix" this by shortening TTLs.
 
 ### Direct Uploads
 - Bypasses Convex backend
 - No 5MB limit
 - Faster for large files
 
-### CDN Integration
-- R2 integrates with Cloudflare CDN
-- Images served from edge locations
+### CDN Integration (live since 2026-07-02)
+- Images served from `img.flyerboard.com.au` (Cloudflare edge cache in front of the R2 bucket)
+- Requires the zone-level Cache Rule described above — attaching the custom domain alone does NOT enable caching
 - Low latency worldwide
 
 ## Testing

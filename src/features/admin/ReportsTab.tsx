@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { formatDateTime } from "../../lib/dateFormatter";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Warning, CheckCircle, Clock } from '@phosphor-icons/react';
@@ -174,7 +175,7 @@ export function ReportsTab() {
 
                                     {/* Timestamp */}
                                     <div className="text-xs text-muted-foreground/70 mb-3 tabular-nums">
-                                        Reported {new Date(report.createdAt).toLocaleString()}
+                                        Reported {formatDateTime(report.createdAt)}
                                     </div>
 
                                     {/* Actions */}

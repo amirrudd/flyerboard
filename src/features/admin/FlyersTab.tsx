@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
+import { formatDate } from "../../lib/dateFormatter";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -190,7 +191,7 @@ export function FlyersTab() {
                                     {/* Category and Date */}
                                     <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground/70 mb-3 tabular-nums">
                                         {flyer.category && <span>Category: {flyer.category.name}</span>}
-                                        <span>Posted {new Date(flyer._creationTime).toLocaleDateString()}</span>
+                                        <span>Posted {formatDate(flyer._creationTime)}</span>
                                         <span>{flyer.images.length} images</span>
                                     </div>
 

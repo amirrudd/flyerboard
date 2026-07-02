@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
+import { formatDate } from "../../lib/dateFormatter";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -209,7 +210,7 @@ export function UsersTab() {
                                             <span>{user.totalAds || 0} flyers</span>
                                             <span>{user.activeAds || 0} active</span>
                                             <span className="text-xs text-muted-foreground/70">
-                                                Joined {new Date(user._creationTime).toLocaleDateString()}
+                                                Joined {formatDate(user._creationTime)}
                                             </span>
                                         </div>
 

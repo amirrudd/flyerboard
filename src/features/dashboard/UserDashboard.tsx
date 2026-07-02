@@ -849,7 +849,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </header>
 
                   {/* Entry point to Moving Sale Mode (visible on all viewports) */}
-                  <button
+                  {movingSaleModeEnabled && <button
                     type="button"
                     onClick={() => { void navigate("/sell/moving-sale"); }}
                     className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] p-3 text-left transition active:scale-[0.99]"
@@ -865,7 +865,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         List everything at once — photos in, listings out.
                       </span>
                     </span>
-                  </button>
+                  </button>}
 
                   <div className="space-y-3 sm:space-y-4">
                     {userAds === undefined ? (

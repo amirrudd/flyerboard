@@ -237,7 +237,7 @@ function makeCyclingQueryMock(flagValue: boolean | undefined) {
     const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
     const sequence = [flagValue, { user, stats }, [], ...Array(8).fill(undefined)];
     let i = 0;
-    vi.mocked(useQuery).mockImplementation(() => sequence[i++ % sequence.length] as any);
+    vi.mocked(useQuery).mockImplementation(() => sequence[i++ % sequence.length]);
 }
 
 describe('Moving Sale banner', () => {

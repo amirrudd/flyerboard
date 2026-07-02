@@ -4,6 +4,15 @@ import { UserDashboard } from './UserDashboard';
 import { useQuery } from 'convex/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
+
 // Mock Descope SDK
 const mockUseSession = vi.fn();
 const mockUseUser = vi.fn();
@@ -214,5 +223,80 @@ describe('UserDashboard', () => {
             const url = new URL(window.location.href);
             expect(url.searchParams.get('tab')).not.toBe('archived');
         }, { timeout: 1000 });
+    });
+});
+
+// Helper: build a cycling useQuery mock that handles multiple re-renders.
+// Slot order matches UserDashboard's hook call order:
+//   1. getFeatureFlag (movingSaleMode)
+//   2. getCurrentUserWithStats
+//   3. getUserAds
+//   4-10. skipped queries (all undefined)
+function makeCyclingQueryMock(flagValue: boolean | undefined) {
+    const user = { _id: 'u1', name: 'Test User', email: 'test@test.com' };
+    const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
+    const sequence = [flagValue, { user, stats }, [], ...Array(8).fill(undefined)];
+    let i = 0;
+    vi.mocked(useQuery).mockImplementation(() => sequence[i++ % sequence.length] as any);
+}
+
+describe('Moving Sale banner', () => {
+    const mockOnBack = vi.fn();
+    const mockOnPostAd = vi.fn();
+    const mockOnEditAd = vi.fn();
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockUseUser.mockReturnValue({ user: { name: 'Test', email: 'test@test.com', picture: '' } });
+    });
+
+    it('renders the Moving house banner when movingSaleMode is enabled', () => {
+        makeCyclingQueryMock(true);
+
+        render(
+            <MemoryRouter>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('Moving house? Run a moving sale')).toBeInTheDocument();
+    });
+
+    it('hides the Moving house banner when movingSaleMode is disabled', () => {
+        makeCyclingQueryMock(false);
+
+        render(
+            <MemoryRouter>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByText('Moving house? Run a moving sale')).not.toBeInTheDocument();
+    });
+
+    it('hides the Moving house banner while the feature flag is loading', () => {
+        makeCyclingQueryMock(undefined);
+
+        render(
+            <MemoryRouter>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByText('Moving house? Run a moving sale')).not.toBeInTheDocument();
+    });
+
+    it('navigates to /sell/moving-sale when the banner is clicked', () => {
+        makeCyclingQueryMock(true);
+
+        render(
+            <MemoryRouter>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByText('Moving house? Run a moving sale'));
+        expect(mockNavigate).toHaveBeenCalledWith('/sell/moving-sale');
     });
 });

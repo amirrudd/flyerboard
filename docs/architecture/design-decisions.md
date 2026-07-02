@@ -240,3 +240,41 @@ banner: title-cased seller name, suburb/items/pickup/price sub-line, and a thumb
 banner. The max-3-items-per-Sale feed de-dup and the whole-Sale card are unchanged. Built via
 the design skill (height-neutral cards, title-case, no em-dashes in new copy). Full notes:
 `.agent/gatheredContext/features/moving-sale.md` (v3.1 section).
+
+---
+
+## Image Delivery via Public CDN (Jul 2026)
+
+### Stable public URLs instead of presigned URLs for image reads
+**Decision**: Serve listing/profile images from a public R2 custom domain
+(`img.flyerboard.com.au`, Cloudflare-proxied with a zone Cache Rule: Edge TTL 1 month,
+Browser TTL 1 year) with URLs derived client-side from the stored key
+(`src/lib/imageUrl.ts`, gated on `VITE_R2_PUBLIC_URL`). Presigned URLs remain only for
+uploads and as the read fallback for legacy `_storage` IDs.
+
+**Why**: The original "presigned URLs for security" choice (Dec 2025) was correct for
+uploads but wrong for reads. Every read minted a fresh SigV4 URL through a per-image
+Convex query, which (a) defeated the browser HTTP cache — the URL changed on every
+mount, so every Home ↔ AdDetail navigation re-downloaded every image; (b) bypassed the
+Cloudflare CDN entirely — presigned URLs only work on `*.r2.cloudflarestorage.com`,
+which Cloudflare does not edge-cache, and cannot be used with custom domains (the two
+access paths are mutually exclusive); and (c) added an N+1 query round trip before any
+image could even start downloading. Marketplace images are public content displayed on
+public pages — signing reads bought no security and cost the entire caching stack.
+1-year browser TTL is safe because keys are write-once UUIDs; a changed image is always
+a new URL.
+
+**Rejected**: a second image host per site domain (`img.flyerboard.au`) — it would split
+the browser/CDN cache with zero benefit since `<img>` loads are not origin-restricted.
+
+### Deleted-ad image retention policy
+**Decision**: A daily cron (`convex/imageCleanup.ts`) purges R2 images of ads soft-deleted
+more than `IMAGE_CLEANUP_RETENTION_DAYS` (default 30) days ago, stamping `imagesPurgedAt`
+and emptying `images` — the ad row itself is never hard-deleted. `deletedAt` is stamped
+at every soft-delete site; pre-existing deleted ads are backfilled so their retention
+clock starts at rollout.
+
+**Why**: Images were accumulating in R2 forever ("Future: Automated Cleanup" TODO since
+Dec 2025). 30 days preserves the restore window users actually use while bounding storage
+cost. The policy is an env var so it can change without a deploy. Edge/browser caches may
+serve a purged image until TTL lapses — accepted trade-off, not worth shortening TTLs.

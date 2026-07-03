@@ -1,6 +1,6 @@
 # Moving Sale Mode
 
-**Last Updated**: 2026-07-01 (public page A/B test)
+**Last Updated**: 2026-07-02 (Bundle Listing frontend)
 
 ## Public sale page A/B test (2026-07-01)
 Two designs of the buyer-facing `/sale/:slug` page now coexist, both theme-matched
@@ -393,3 +393,54 @@ near the top of the component, before `getCurrentUserWithStats`.
 component had no Convex calls); added a `vi.mock('convex/react', () => ({
 useQuery: vi.fn() }))` plus a `beforeEach` default of `true`, and a new test
 for the disabled-flag redirect.
+
+## Bundle Listing frontend (2026-07-02)
+
+Bundle Listing reuses the `saleBundles` table (standalone bundles have no
+`saleEventId`). Backend in `convex/bundles.ts` (exports `BUNDLE_MIN_ITEMS=2`,
+`BUNDLE_MAX_ITEMS=4`). Frontend surface:
+
+- `src/features/bundles/BundleFlow.tsx` — 3-step wizard (pick → price → confirm),
+  props `{ preselectAdId?: string }`. Uses `api.bundles.getEligibleAdsForBundle`
+  (ineligible ads carry a `reason` string: "Sold" / "In another bundle" /
+  "In a moving sale") and `createBundle`. On success: `toast.success` +
+  `navigate("/dashboard?tab=ads")`.
+- `src/pages/BundlePage.tsx` — route shell mirroring `MovingSalePage.tsx`,
+  reads `?preselect`, gated on `useFeatureFlag("bundleListing")` (redirects to
+  `/` when the flag is explicitly `false`). Route `/sell/bundle` registered in
+  `App.tsx` **outside** the `<Layout />` block (full-screen flow), same
+  Suspense/ErrorBoundary wrapping as `/sell/moving-sale`.
+- `src/features/bundles/BundleManageModal.tsx` — `createPortal` modal (mirrors
+  UserDashboard's delete-confirm modal shell). `getBundle` + the edit/remove/
+  cancel/markSold mutations. `removeBundleItem` returns `{ status }`; when
+  `status === "cancelled"` (dropped below min 2) close + toast "Bundle broken up".
+  `markBundleSold` throws if an item already sold individually — caught, message
+  shown via `toast.error(err.message)`.
+
+**Accent colour = BLUE** for all bundle UI (Tailwind `blue-600`/`blue-700`,
+never raw hex — Moving Sale is red/`primary`). Icon = Phosphor `Package`
+weight="fill".
+
+**Dashboard integration** (`UserDashboard.tsx`, all flag-gated on
+`bundleModeEnabled = useFeatureFlag("bundleListing")`): a blue outline
+"Bundle ads" button beside "Pin Next Flyer"; `getMyBundles` → a
+`Map<adId,{bundleId,label}>` for per-card tags; each ad card shows either a
+blue "In bundle: {label}" tag (opens `BundleManageModal`) or a "Bundle this →"
+action (navigates `/sell/bundle?preselect={adId}`) when the ad is eligible
+(`!isSold && !bundleId && !saleEventId`). Both handlers `stopPropagation` so
+they don't trigger the card's edit-on-click.
+
+**Test gotcha (again — see positional-mock note above)**: the two new hooks
+(`useFeatureFlag("bundleListing")` right after `movingSaleMode`, and
+`getMyBundles` right after `getUserAds`) added TWO slots to
+`UserDashboard.test.tsx`'s positional `useQuery` mocks. All four
+`mockReturnValueOnce` blocks, the counter-based `mockReturns.push` block, and
+the `makeCyclingQueryMock` sequence needed the extra `false` (bundleListing)
+and `undefined` (getMyBundles) entries inserted in order.
+
+**Framer-motion test gotcha**: `BundleFlow` uses `<AnimatePresence mode="wait">`
+for step transitions. In jsdom the exit transition never completes, so the
+previous step stays mounted and `getByText` for the next step fails. Fix in
+`BundleFlow.test.tsx`: `vi.mock("framer-motion")` to make `AnimatePresence` a
+passthrough `Fragment`, `motion.*` plain forwarded elements (strip motion-only
+props), and `useReducedMotion` → `true`.

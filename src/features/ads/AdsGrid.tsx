@@ -1,12 +1,13 @@
 import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
-import { MagnifyingGlass, Repeat, House } from '@phosphor-icons/react';
+import { MagnifyingGlass, Repeat, House, Package } from '@phosphor-icons/react';
 import { memo, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
+import { BundleThumbnail } from "../bundles/BundleThumbnail";
 
 interface Ad {
   _id: Id<"ads">;
@@ -39,10 +40,25 @@ export interface SaleFeedCard {
   covers: string[];
 }
 
-/** A feed cell is either a normal ad or a Sale card; merged by date. */
+/** A whole Bundle rendered as one card in the date-sorted feed. */
+export interface BundleFeedCard {
+  _id: string;
+  label: string;
+  createdAt: number;
+  itemCount: number;
+  location: string;
+  bundlePrice: number;
+  separatelyTotal: number;
+  savings: number;
+  covers: string[];
+  adIds: string[];
+}
+
+/** A feed cell is either a normal ad, a Sale card, or a Bundle card; merged by date. */
 type FeedEntry =
   | { kind: "ad"; sortKey: number; ad: Ad }
-  | { kind: "sale"; sortKey: number; sale: SaleFeedCard };
+  | { kind: "sale"; sortKey: number; sale: SaleFeedCard }
+  | { kind: "bundle"; sortKey: number; bundle: BundleFeedCard };
 
 interface Category {
   _id: Id<"categories">;
@@ -63,6 +79,9 @@ interface AdsGridProps {
   /** Whole-Sale cards, interleaved into the same date-sorted grid. */
   saleCards?: SaleFeedCard[];
   onSaleClick?: (slug: string) => void;
+  /** Whole-Bundle cards, interleaved into the same date-sorted grid. */
+  bundleCards?: BundleFeedCard[];
+  onBundleClick?: (card: BundleFeedCard) => void;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -76,11 +95,14 @@ export const AdsGrid = memo(function AdsGrid({
   newAdIds = new Set(),
   saleCards = [],
   onSaleClick,
+  bundleCards = [],
+  onBundleClick,
 }: AdsGridProps) {
   const { staggerCard } = useMotionPrefs();
 
-  // Merge ads + Sale cards into one date-sorted feed (newest first). The sort
-  // rule is unchanged — Sale cards simply slot in at their own creation date.
+  // Merge ads + Sale cards + Bundle cards into one date-sorted feed (newest
+  // first). The sort rule is unchanged — Sale/Bundle cards simply slot in at
+  // their own creation date.
   const feed = useMemo<FeedEntry[]>(() => {
     const adEntries: FeedEntry[] = (ads ?? []).map((ad) => ({
       kind: "ad",
@@ -92,8 +114,13 @@ export const AdsGrid = memo(function AdsGrid({
       sortKey: sale.createdAt,
       sale,
     }));
-    return [...adEntries, ...saleEntries].sort((a, b) => b.sortKey - a.sortKey);
-  }, [ads, saleCards]);
+    const bundleEntries: FeedEntry[] = bundleCards.map((bundle) => ({
+      kind: "bundle",
+      sortKey: bundle.createdAt,
+      bundle,
+    }));
+    return [...adEntries, ...saleEntries, ...bundleEntries].sort((a, b) => b.sortKey - a.sortKey);
+  }, [ads, saleCards, bundleCards]);
 
   const handleAdClick = useCallback((ad: Ad) => {
     onAdClick(ad);
@@ -222,6 +249,68 @@ export const AdsGrid = memo(function AdsGrid({
                       <span className="tabular">{sale.itemCount} items</span>
                       <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
                         View sale
+                      </span>
+                    </div>
+                  </div>
+                </motion.article>
+              );
+            }
+
+            // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
+            if (entry.kind === "bundle") {
+              const bundle = entry.bundle;
+              return (
+                <motion.article
+                  key={`bundle-${bundle._id}`}
+                  onClick={() => onBundleClick?.(bundle)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onBundleClick?.(bundle);
+                    }
+                  }}
+                  onMouseMove={handleSpotlightMove}
+                  {...staggerCard(index)}
+                  className="spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ring-border/70 hover:ring-foreground/15"
+                >
+                  <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
+                    <BundleThumbnail covers={bundle.covers} itemCount={bundle.itemCount} />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
+                    <div className="absolute top-2.5 left-2.5 bg-blue-600 text-white px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
+                      <Package className="w-3 h-3" weight="fill" />
+                      Bundle
+                    </div>
+                    {bundle.savings > 0 && (
+                      <div className="absolute bottom-2.5 right-2.5 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
+                        Save {formatPrice(bundle.savings)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-3.5 pt-3 pb-3.5">
+                    <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+                      {bundle.label}
+                    </h2>
+                    <div className="mt-1 flex items-baseline justify-between gap-2">
+                      <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
+                        {bundle.location}
+                      </p>
+                      <div className="flex flex-col items-end flex-shrink-0">
+                        {bundle.separatelyTotal > bundle.bundlePrice && (
+                          <p className="text-[11px] text-muted-foreground/80 line-through tabular leading-none mb-0.5">
+                            {formatPrice(bundle.separatelyTotal)}
+                          </p>
+                        )}
+                        <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
+                          {formatPrice(bundle.bundlePrice)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
+                      <span className="tabular">{bundle.itemCount} items</span>
+                      <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
+                        View bundle
                       </span>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
@@ -36,6 +36,7 @@ import {
   Package
 } from '@phosphor-icons/react';
 import { MovingSalesTab } from "./MovingSalesTab";
+import { BundleManageModal } from "../bundles/BundleManageModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -70,7 +71,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "profile" | "archived">(tabParam || "ads");
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
+  const bundleModeEnabled = useFeatureFlag("bundleListing");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [manageBundleId, setManageBundleId] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
   const [nameError, setNameError] = useState<string>("");
@@ -173,6 +176,20 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     api.posts.getUserAds,
     activeTab === "ads" ? {} : "skip"
   );
+
+  // Bundles the seller owns — used to tag ad cards that belong to a bundle.
+  const myBundles = useQuery(
+    api.bundles.getMyBundles,
+    activeTab === "ads" && bundleModeEnabled ? {} : "skip"
+  );
+  // adId -> { bundleId, label } for O(1) per-card tag lookup.
+  const bundleByAdId = useMemo(() => {
+    const map = new Map<string, { bundleId: string; label: string }>();
+    for (const b of myBundles ?? []) {
+      for (const adId of b.adIds) map.set(adId, { bundleId: b._id, label: b.label });
+    }
+    return map;
+  }, [myBundles]);
 
   // Only fetch when viewing the chats tab
   const sellerChats = useQuery(
@@ -839,13 +856,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Your listings</span>
                       <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">My Flyers</h2>
                     </div>
-                    <button
-                      type="button"
-                      onClick={onPostAd}
-                      className="inline-flex items-center justify-center h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
-                    >
-                      Pin Next Flyer
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {bundleModeEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => { void navigate("/sell/bundle"); }}
+                          className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-transparent text-blue-700 dark:text-blue-400 font-semibold ring-1 ring-blue-600/40 hover:bg-blue-600/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
+                        >
+                          <Package size={18} weight="fill" />
+                          Bundle ads
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={onPostAd}
+                        className="inline-flex items-center justify-center h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
+                      >
+                        Pin Next Flyer
+                      </button>
+                    </div>
                   </header>
 
                   {/* Entry point to Moving Sale Mode (visible on all viewports) */}
@@ -928,6 +957,43 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   </p>
                                 </div>
                               </div>
+
+                              {/* Bundle membership tag / "Bundle this" action (flag-gated) */}
+                              {bundleModeEnabled && (() => {
+                                const inBundle = bundleByAdId.get(ad._id);
+                                if (inBundle) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setManageBundleId(inBundle.bundleId);
+                                      }}
+                                      className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400 ring-1 ring-blue-600/20 hover:bg-blue-600/15 transition"
+                                    >
+                                      <Package size={13} weight="fill" className="shrink-0" />
+                                      <span className="truncate">In bundle: {inBundle.label}</span>
+                                    </button>
+                                  );
+                                }
+                                const eligible = !ad.isSold && !ad.bundleId && !ad.saleEventId;
+                                if (eligible) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void navigate(`/sell/bundle?preselect=${ad._id}`);
+                                      }}
+                                      className="mb-2 inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                                    >
+                                      <Package size={13} weight="fill" />
+                                      Bundle this →
+                                    </button>
+                                  );
+                                }
+                                return null;
+                              })()}
 
                               {/* Stats and Status */}
                               <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
@@ -1446,6 +1512,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       </div>
 
       {/* Delete Flyer Confirmation Modal */}
+      {manageBundleId && (
+        <BundleManageModal
+          bundleId={manageBundleId}
+          onClose={() => setManageBundleId(null)}
+        />
+      )}
+
       {showDeleteConfirm && createPortal(
         <div
           className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"

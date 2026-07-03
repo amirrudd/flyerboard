@@ -367,3 +367,59 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
         expect(onSaleClick).toHaveBeenCalledWith('janes-sale');
     });
 });
+
+// ============================================================================
+// BUNDLE LISTING FEED — the whole-Bundle card is a feed differentiator,
+// mirroring the whole-Sale card above.
+// ============================================================================
+
+describe('AdsGrid - bundle listing feed', () => {
+    const bundleCard = {
+        _id: 'bundle1',
+        label: 'Kitchen Starter Bundle',
+        createdAt: 2000,
+        itemCount: 3,
+        location: 'Fitzroy, VIC',
+        bundlePrice: 80,
+        separatelyTotal: 120,
+        savings: 40,
+        covers: ['b1.jpg', 'b2.jpg', 'b3.jpg'],
+        adIds: ['adB1', 'adB2', 'adB3'],
+    };
+
+    it('renders a whole-Bundle card from bundleCards (badge, save pill, price, item count)', () => {
+        render(
+            <AdsGrid
+                ads={[]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                bundleCards={[bundleCard]}
+            />
+        );
+        expect(screen.getByText('Kitchen Starter Bundle')).toBeInTheDocument();
+        expect(screen.getByText('Bundle')).toBeInTheDocument();
+        expect(screen.getByText('Save $40')).toBeInTheDocument();
+        expect(screen.getByText('$80')).toBeInTheDocument();
+        expect(screen.getByText('$120')).toBeInTheDocument();
+        expect(screen.getByText('3 items')).toBeInTheDocument();
+    });
+
+    it('clicking the Bundle card calls onBundleClick with the card', () => {
+        const onBundleClick = vi.fn();
+        render(
+            <AdsGrid
+                ads={[]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                onBundleClick={onBundleClick}
+                bundleCards={[bundleCard]}
+            />
+        );
+        fireEvent.click(screen.getByText('Kitchen Starter Bundle'));
+        expect(onBundleClick).toHaveBeenCalledWith(bundleCard);
+    });
+});

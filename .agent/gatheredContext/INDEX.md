@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-06-30
+**Last Updated**: 2026-07-02 (added Bundle Listing)
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 
@@ -14,6 +14,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 |------|----------------|-----------------|
 | **Authentication/Login** | `features/authentication.md` | `infrastructure/database.md` |
 | **Moving Sale Mode** | `features/moving-sale.md` | `infrastructure/database.md`, `features/image-upload.md` |
+| **Bundle Listing** | `features/bundles.md` | `features/moving-sale.md` (shares `saleBundles`), `infrastructure/database.md` |
 | **Blog / SEO / GEO content** | `features/blog.md` | `frontend/routing-navigation.md`, `../../docs/guides/blog-content-guideline.md` |
 | **Image Upload** | `features/image-upload.md` | `infrastructure/storage.md` |
 | **Notifications** | `features/notifications.md` | `infrastructure/database.md` |

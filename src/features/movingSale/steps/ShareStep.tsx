@@ -14,6 +14,7 @@ import {
   PushPin,
   Lock,
   Check,
+  X,
 } from "@phosphor-icons/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -28,6 +29,9 @@ interface ShareStepProps {
   items: SaleItem[];
   itemCount: number;
   unlockedAddons: string[];
+  /** Leave the wizard. The WizardShell header (with its X) is hidden on this
+   *  step and the route has no bottom nav, so this is the only way out. */
+  onDone: () => void;
 }
 
 function escapeHtml(s: string): string {
@@ -104,6 +108,7 @@ export function ShareStep({
   items,
   itemCount,
   unlockedAddons,
+  onDone,
 }: ShareStepProps) {
   const url = `${window.location.origin}/sale/${slug}`;
   const purchaseAddon = useMutation(api.saleEvents.purchaseAddon);
@@ -174,7 +179,15 @@ export function ShareStep({
   }
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-8">
+    <div className="relative mx-auto w-full max-w-md px-4 py-8">
+      <button
+        type="button"
+        onClick={onDone}
+        aria-label="Close"
+        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+      >
+        <X size={20} />
+      </button>
       <div className="text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
           <CheckCircle size={36} weight="fill" />
@@ -302,6 +315,14 @@ export function ShareStep({
       >
         View your live sale page →
       </a>
+
+      <button
+        type="button"
+        onClick={onDone}
+        className="mt-6 flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/25 transition-all hover:bg-primary/90 active:scale-[0.98]"
+      >
+        Done — go to my dashboard
+      </button>
     </div>
   );
 }

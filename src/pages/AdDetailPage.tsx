@@ -22,11 +22,22 @@ export function AdDetailPage() {
     // Get initialAd from location state if available
     const initialAd = location.state?.initialAd;
 
+    // React Router stores its own history index in history.state.idx; 0 means
+    // this is the first in-app entry (deep link, shared URL, new tab), where
+    // navigate(-1) would be a no-op or leave the site entirely.
+    const handleBack = () => {
+        if (typeof window.history.state?.idx === "number" && window.history.state.idx > 0) {
+            void navigate(-1);
+        } else {
+            void navigate("/");
+        }
+    };
+
     return (
         <AdDetail
             adId={adId}
             initialAd={initialAd}
-            onBack={() => { void navigate(-1); }}
+            onBack={handleBack}
             onShowAuth={() => setShowAuthModal(true)}
         />
     );

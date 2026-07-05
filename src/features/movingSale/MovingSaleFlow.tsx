@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { X, Package, Sparkle, Tag, Lightning } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
@@ -26,9 +27,13 @@ interface MovingSaleFlowProps {
 
 export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, isSessionLoading } = useSession();
   const { isUserSynced } = useUserSync();
   const ready = isAuthenticated && !isSessionLoading && isUserSynced;
+  // Pre-publish exits return to where the wizard was opened from (the /post
+  // mode selector passes from:'/post'); post-publish always goes to dashboard.
+  const exitTarget = location.state?.from === "/post" ? "/post" : "/dashboard";
 
   const [step, setStep] = useState<FlowStep>(initialSaleId ? "review" : "intro");
   const [saleEventId, setSaleEventId] = useState<Id<"saleEvents"> | null>(initialSaleId);
@@ -41,6 +46,17 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
     api.saleEvents.getSaleEditor,
     ready && saleEventId ? { saleEventId } : "skip"
   );
+
+  // getSaleEditor resolves to null (not undefined) when the sale doesn't
+  // exist or belongs to another user — without this redirect the loading
+  // guard below spins forever on a stale/foreign ?sale=<id> deep link.
+  const saleUnavailable = ready && saleEventId !== null && editor === null;
+  useEffect(() => {
+    if (saleUnavailable) {
+      toast.error("That sale isn't available — it may have been removed.");
+      void navigate("/dashboard", { replace: true });
+    }
+  }, [saleUnavailable, navigate]);
 
   const createSaleEvent = useMutation(api.saleEvents.createSaleEvent);
   const updateSaleEvent = useMutation(api.saleEvents.updateSaleEvent);
@@ -113,7 +129,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
         setStep("bundles");
         break;
       default:
-        void navigate("/dashboard");
+        void navigate(exitTarget);
     }
   }
 
@@ -130,11 +146,11 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
       currentStep={progressIndex}
       totalSteps={PROGRESS_STEPS.length}
       onBack={handleBack}
-      onExit={() => { void navigate("/dashboard"); }}
+      onExit={() => { void navigate(exitTarget); }}
       showHeader={step !== "intro" && step !== "share"}
     >
       {step === "intro" && (
-        <IntroStep onStart={() => setStep("setup")} onExit={() => { void navigate("/dashboard"); }} />
+        <IntroStep onStart={() => setStep("setup")} onExit={() => { void navigate(exitTarget); }} />
       )}
 
       {step === "setup" && (
@@ -198,6 +214,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
           items={items}
           itemCount={items.length}
           unlockedAddons={editor?.sale.unlockedAddons ?? []}
+          onDone={() => { void navigate("/dashboard"); }}
         />
       )}
     </WizardShell>

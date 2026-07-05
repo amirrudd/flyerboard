@@ -118,8 +118,31 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [profileData, setProfileData] = useState({ name: "", email: "" });
   const [nameError, setNameError] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
-  const [selectedAdId, setSelectedAdId] = useState<Id<"ads"> | null>(null);
-  const [showMessagesForAd, setShowMessagesForAd] = useState<Id<"ads"> | null>(null);
+  // Inline drill-in views are URL-encoded (mirrors the chats tab's ?chat=
+  // pattern): ?ad=<id> renders AdDetail, ?messages=<id> renders AdMessages.
+  // URL as source of truth means refresh restores the view and tab switches
+  // (which write fresh params) implicitly close it.
+  const selectedAdId = searchParams.get("ad") as Id<"ads"> | null;
+  const showMessagesForAd = searchParams.get("messages") as Id<"ads"> | null;
+  // Single writer for URL-encoded view state. For each key in `updates`, a
+  // string sets it, null clears it, undefined leaves it untouched; `force`
+  // keys are always set. replace:true so back/refresh restore the encoded
+  // state without polluting history on every selection.
+  const updateSearchParams = (
+    updates: Record<string, string | null | undefined>,
+    force?: Record<string, string>,
+  ) => {
+    const params = new URLSearchParams(searchParams);
+    if (force) for (const [k, v] of Object.entries(force)) params.set(k, v);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue; // leave untouched
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    setSearchParams(params, { replace: true });
+  };
+  const updateInlineViewParams = (next: { ad?: string | null; messages?: string | null }) =>
+    updateSearchParams(next);
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
   const [showReportModal, setShowReportModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -333,9 +356,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     if (tabParam && tabParam !== activeTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
-      // Clear any open message views when navigating via URL (e.g., bottom nav)
-      setShowMessagesForAd(null);
-      setSelectedAdId(null);
+      // Open inline views (?ad= / ?messages=) are URL-derived, so tab
+      // navigation that writes fresh params closes them automatically.
     }
   }, [searchParams, activeTab]);
 
@@ -538,18 +560,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
    * touches the keys passed (null clears a key). replace:true so back/refresh
    * restore the inbox state without polluting history on every selection.
    */
-  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", "chats");
-    const setOrDelete = (key: string, value: string | null | undefined) => {
-      if (value === undefined) return; // key not passed — leave untouched
-      if (value) params.set(key, value);
-      else params.delete(key);
-    };
-    setOrDelete("chat", next.chat);
-    setOrDelete("flyer", next.flyer);
-    setSearchParams(params, { replace: true });
-  };
+  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) =>
+    updateSearchParams(next, { tab: "chats" });
 
   const handleArchiveChat = async (chatId: Id<"chats">) => {
     try {
@@ -726,7 +738,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     return (
       <AdMessages
         adId={showMessagesForAd}
-        onBack={() => setShowMessagesForAd(null)}
+        onBack={() => updateInlineViewParams({ messages: null })}
       />
     );
   }
@@ -736,7 +748,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     return (
       <AdDetail
         adId={selectedAdId}
-        onBack={() => setSelectedAdId(null)}
+        onBack={() => updateInlineViewParams({ ad: null })}
         onShowAuth={() => { }}
       />
     );
@@ -913,7 +925,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         type="button"
                         onClick={() => {
                           setActiveTab("profile");
-                          setSearchParams({ tab: "profile" });
+                          setSearchParams({ tab: "profile" }, { replace: true });
                         }}
                         className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary/[0.08] ring-1 ring-primary/30 text-primary text-sm font-semibold hover:bg-primary/[0.14] hover:ring-primary/50 active:scale-[0.98] transition-all"
                       >
@@ -1086,7 +1098,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowMessagesForAd(ad._id);
+                                    updateInlineViewParams({ messages: ad._id });
                                   }}
                                   aria-label="Messages"
                                   className="relative inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
@@ -1324,7 +1336,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       savedAds.filter(savedAd => savedAd.ad).map((savedAd) => (
                         <article
                           key={savedAd._id}
-                          onClick={() => setSelectedAdId(savedAd.ad!._id)}
+                          onClick={() => updateInlineViewParams({ ad: savedAd.ad!._id })}
                           className="ring-1 ring-border/70 rounded-2xl p-4 hover:ring-foreground/15 hover:shadow-card transition-all duration-300 cursor-pointer group bg-card"
                         >
                           <div className="flex items-start gap-4">

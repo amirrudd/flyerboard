@@ -94,6 +94,56 @@ scroll position; tapping Home while already on Home scrolls to top.
 - Tests encoding this contract: `src/pages/PostAdPage.test.tsx`
   ("navigate back to the ad detail page when editing from ad detail").
 
+## Navigation contracts from the 2026-07-05 audit (all defects fixed on `fix/navigation-audit`)
+
+A 6-auditor + adversarial-verify audit confirmed 3 high / 4 low defects; all
+were fixed the same day. The resulting contracts to preserve:
+
+- **`/ad/:id` back fallback**: `AdDetailPage.handleBack` only calls
+  `navigate(-1)` when `window.history.state?.idx > 0` (React Router stores its
+  history index there); otherwise it goes to `/`. Deep-linked/shared ads
+  previously had dead back controls (or exited the site). Related in-repo
+  patterns: `BlogPostPage.tsx` uses `location.state?.from ?? '/'`;
+  `PublicSalePage.tsx` uses unconditional `navigate('/')`.
+- **Wizard steps that hide the WizardShell header must supply their own
+  exit** (that's the documented WizardShell contract): Moving Sale's ShareStep
+  now takes an `onDone` prop and renders an X + "Done — go to my dashboard"
+  button. IntroStep already had its own X.
+- **`getSaleEditor` null vs undefined**: `null` = not found / not owned,
+  `undefined` = loading. `MovingSaleFlow` redirects to `/dashboard`
+  (replace + toast) when it resolves `null` — a bare `!editor → PageLoader`
+  guard spins forever on stale/foreign `?sale=<id>` deep links.
+- **`/sell/moving-sale` honors `state.from === '/post'`** for pre-publish
+  exits (Back-from-intro, X); post-publish always exits to `/dashboard`. The
+  `/post` Moving Sale tile passes that state and `window.confirm`s first when
+  the form is dirty (the route leaves Layout, so PostAd unmounts and typed
+  data is gone).
+- **`onBack(reason?)` on PostAd**: `"cancel"` returns to `from` even for new
+  posts (abandoning ≠ completing); `"delete"` never returns to the deleted
+  ad's `/ad/<id>` (dashboard or refreshed home instead); undefined (completed)
+  keeps the original routing (edit → back to ad, new → home + forceRefresh).
+- **Dashboard inline views are URL params**: `?ad=<id>` (inline AdDetail,
+  saved tab) and `?messages=<id>` (AdMessages) via `updateInlineViewParams`,
+  mirroring `?chat=` — `replace: true`, URL is source of truth, so refresh
+  restores the view and tab switches (fresh params) implicitly close it.
+  Don't reintroduce `useState` for these.
+- **Every dashboard tab switch passes `{ replace: true }`** to
+  `setSearchParams` (the email-banner at ~line 916 was the one outlier).
+- **`/admin` role check is route-level**: `AdminDashboardPage` queries
+  `isCurrentUserAdmin` (gated on `isUserSynced`) and redirects non-admins to
+  `/` with replace; AdminDashboard's internal Access Denied remains as
+  defense-in-depth.
+
+Verified-correct in the same audit (don't "re-fix"): edit-from-ad-detail
+return path; PostAdPage/DashboardPage/MovingSalePage/BundlePage auth guards
+all use `replace: true`; BottomNav auth-gating, active-tab detection incl.
+`?tab=`, and deliberate hiding on `/blog*`; unified-inbox `?tab=chats&chat=`
+URL-as-source-of-truth; BundleFlow has Back + X on every step; blog/static/
+sale pages' back controls are deep-link-safe. Note: the default Header's
+"Pin Your Flyer" CTA (`Header.tsx:502`, `from: window.location.pathname`)
+never renders on `/dashboard` — UserDashboard registers its own header
+`rightNode` — so its query-param-stripping is unreachable there.
+
 ## Ad detail instant-render via `location.state.initialAd`
 
 - **Pattern**: when navigating to `/ad/:id` and the caller already has the ad

@@ -25,7 +25,8 @@ interface ImageState {
 }
 
 interface PostAdProps {
-  onBack: () => void;
+  /** reason: undefined = completed save/post, "cancel" = abandoned, "delete" = flyer deleted */
+  onBack: (reason?: "cancel" | "delete") => void;
   editingAd?: Doc<"ads">;
   origin?: string;
 }
@@ -163,7 +164,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
 
 
   const handleCancel = () => {
-    onBack();
+    onBack("cancel");
   };
 
   const handleDelete = async () => {
@@ -173,7 +174,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
     try {
       await deleteAd({ adId: editingAd._id });
       toast.success("Flyer deleted successfully!");
-      onBack();
+      onBack("delete");
     } catch (error: any) {
       toast.error(error.message || "Failed to delete flyer");
     } finally {
@@ -448,7 +449,18 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
               </div>
               <button
                 type="button"
-                onClick={() => { void navigate("/sell/moving-sale"); }}
+                onClick={() => {
+                  // /sell/moving-sale lives outside Layout, so this form fully
+                  // unmounts and everything typed so far is gone — warn first.
+                  const formDirty =
+                    formData.title.trim() !== "" ||
+                    formData.description.trim() !== "" ||
+                    images.length > 0;
+                  if (formDirty && !window.confirm("Switching to Moving Sale will discard what you've entered here. Continue?")) {
+                    return;
+                  }
+                  void navigate("/sell/moving-sale", { state: { from: "/post" } });
+                }}
                 className="group flex flex-col rounded-2xl border-2 border-border bg-card p-4 text-left transition hover:border-primary/40 active:scale-[0.99]"
               >
                 <span className="flex items-center gap-1.5">

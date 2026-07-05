@@ -59,15 +59,27 @@ export function HomePage() {
 
   // Moving Sale feed integration (v3.1): individual sale items render exactly like
   // single listings (no badge/strip). We only (a) cap how many items from one Sale
-  // show in the feed, and (b) inject the whole-Sale card.
+  // show in the feed, and (b) inject the whole-Sale card. Bundles (v2) get the same
+  // treatment, gentler: a 4-item bundle would otherwise yield 5 cards from one
+  // seller (4 members + the bundle card), so cap members at 2 on this feed.
+  // Category/search results stay uncapped — "members look like plain listings in
+  // search" is a deliberate design decision (see bundle-listing-design.md).
   const displayAds = useMemo(() => {
     if (!filteredAds) return filteredAds;
     const perSale = new Map<string, number>();
+    const perBundle = new Map<string, number>();
     return filteredAds.filter((a) => {
-      if (!a.saleEventId) return true;
-      const n = (perSale.get(a.saleEventId) ?? 0) + 1;
-      perSale.set(a.saleEventId, n);
-      return n <= 3; // de-dup: at most 3 items from one Sale in the feed
+      if (a.saleEventId) {
+        const n = (perSale.get(a.saleEventId) ?? 0) + 1;
+        perSale.set(a.saleEventId, n);
+        return n <= 3; // de-dup: at most 3 items from one Sale in the feed
+      }
+      if (a.bundleId) {
+        const n = (perBundle.get(a.bundleId) ?? 0) + 1;
+        perBundle.set(a.bundleId, n);
+        return n <= 2; // de-dup: at most 2 members per bundle in the feed
+      }
+      return true;
     });
   }, [filteredAds]);
 
@@ -87,11 +99,11 @@ export function HomePage() {
   );
 
   // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
-  // the first member ad's detail page — the bundle banner there reveals the
-  // full deal.
+  // the bundle's own detail page (the "Deal Ticket", bundle v2) — the bundle
+  // is a first-class destination, not a proxy for its first member ad.
   const handleBundleClick = useCallback(
-    (card: { adIds: string[] }) => {
-      void navigate(`/ad/${card.adIds[0]}`, { state: { fromBundle: true } });
+    (card: { _id: string }) => {
+      void navigate(`/bundle/${card._id}`);
     },
     [navigate]
   );

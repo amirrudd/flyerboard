@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { House, Image as ImageIcon } from "@phosphor-icons/react";
+import { House, Image as ImageIcon, Package } from "@phosphor-icons/react";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { RoleChip } from "./RoleChip";
 import { UnreadBadge } from "./UnreadBadge";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import type { ChipRole, InboxChat, InboxRole } from "./types";
-import { getChipRole, getCounterpartName, getItemTitle, isSaleThread } from "./helpers";
+import { getChipRole, getCounterpartName, getItemTitle, isBundleThread, isSaleThread } from "./helpers";
 
 export interface InboxRowProps {
   chat: InboxChat;
@@ -38,6 +38,7 @@ export function InboxRow({
   const { listStagger } = useMotionPrefs();
 
   const isSale = isSaleThread(chat);
+  const isBundle = isBundleThread(chat);
   const chipRole: ChipRole = getChipRole(chat, role);
   const counterpartName = getCounterpartName(chat, role);
   const itemTitle = getItemTitle(chat);
@@ -74,6 +75,10 @@ export function InboxRow({
         {isSale ? (
           <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center ring-1 ring-border/60 shrink-0">
             <House className="w-5 h-5" weight="fill" aria-hidden="true" />
+          </div>
+        ) : isBundle ? (
+          <div className="w-12 h-12 rounded-xl bg-bundle/10 text-bundle-emphasis flex items-center justify-center ring-1 ring-border/60 shrink-0">
+            <Package className="w-5 h-5" weight="fill" aria-hidden="true" />
           </div>
         ) : chat.ad?.images?.[0] ? (
           <ImageDisplay

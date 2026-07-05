@@ -12,6 +12,7 @@ import type * as adDetail from "../adDetail.js";
 import type * as admin from "../admin.js";
 import type * as ads from "../ads.js";
 import type * as auth from "../auth.js";
+import type * as bundleChats from "../bundleChats.js";
 import type * as bundles from "../bundles.js";
 import type * as categories from "../categories.js";
 import type * as crons from "../crons.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   ads: typeof ads;
   auth: typeof auth;
+  bundleChats: typeof bundleChats;
   bundles: typeof bundles;
   categories: typeof categories;
   crons: typeof crons;

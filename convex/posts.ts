@@ -279,9 +279,10 @@ export const getSellerChats = query({
     // Get additional info for each chat
     const chatsWithInfo = await Promise.all(
       chats.map(async (chat) => {
-        // Sale threads (v2) set saleEventId and leave adId undefined.
+        // Sale/Bundle threads set saleEventId/bundleId and leave adId undefined.
         const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
         const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
+        const bundle = chat.bundleId ? await ctx.db.get(chat.bundleId) : null;
         const buyer = await ctx.db.get(chat.buyerId);
 
         // Latest message for the inbox snippet (same pattern as messages.getAdChats)
@@ -297,6 +298,7 @@ export const getSellerChats = query({
           ...chat,
           ad,
           sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
+          bundle: bundle ? { _id: bundle._id, label: bundle.label, status: bundle.status ?? "active" } : null,
           buyer: buyer ? {
             ...buyer,
             averageRating: buyer.averageRating || 0,
@@ -331,6 +333,7 @@ export const getBuyerChats = query({
       chats.map(async (chat) => {
         const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
         const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
+        const bundle = chat.bundleId ? await ctx.db.get(chat.bundleId) : null;
         const seller = await ctx.db.get(chat.sellerId);
 
         // Latest message for the inbox snippet (same pattern as messages.getAdChats)
@@ -346,6 +349,7 @@ export const getBuyerChats = query({
           ...chat,
           ad,
           sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
+          bundle: bundle ? { _id: bundle._id, label: bundle.label, status: bundle.status ?? "active" } : null,
           seller: seller ? {
             ...seller,
             averageRating: seller.averageRating || 0,

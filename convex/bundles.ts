@@ -194,6 +194,14 @@ export const createBundle = mutation({
       if (ad.isSold) {
         throw createError("A sold item can't be bundled", { operation: "createBundle", adId });
       }
+      if (ad.listingType === "exchange") {
+        // Bundles are sale-only: a trade-only item has no price, which would
+        // silently corrupt the "vs $X separately" savings math.
+        throw createError("A trade-only item can't be bundled — bundles need sale prices", {
+          operation: "createBundle",
+          adId,
+        });
+      }
       if (ad.bundleId) {
         throw createError("An item is already in another bundle", { operation: "createBundle", adId });
       }
@@ -520,7 +528,7 @@ export const getActiveBundleFeedCards = query({
           separatelyTotal: total,
           savings,
           covers: items.map((i) => i.images[0]).filter((s): s is string => Boolean(s)),
-          adIds: items.map((i) => i._id), // for feed-card tap-through (first item's ad page)
+          adIds: items.map((i) => i._id), // member ads (thumbnail links etc.)
         };
       })
     );
@@ -549,6 +557,7 @@ export const getEligibleAdsForBundle = query({
     return ads.map((ad) => {
       let reason: string | null = null;
       if (ad.isSold) reason = "Sold";
+      else if (ad.listingType === "exchange") reason = "Trade-only";
       else if (ad.bundleId) reason = "In another bundle";
       else if (ad.saleEventId) reason = "In a moving sale";
       return {
@@ -560,5 +569,157 @@ export const getEligibleAdsForBundle = query({
         reason,
       };
     });
+  },
+});
+
+/**
+ * Public payload for the bundle detail page (`/bundle/:id`) — the "Deal Ticket".
+ * No auth required (mirrors the public sale page). Returns null for missing,
+ * deleted, Sale-scoped, or cancelled bundles (cancelled bundles no longer
+ * reference their ads, so there's nothing meaningful to render).
+ *
+ * `partial`/`sold` bundles still resolve: old links and message threads must
+ * keep working, and the partial page converts the visit into the remaining
+ * individually-available items.
+ */
+export const getPublicBundle = query({
+  args: { bundleId: v.id("saleBundles") },
+  handler: async (ctx, args) => {
+    const bundle = await ctx.db.get(args.bundleId);
+    if (!bundle || bundle.isDeleted || bundle.saleEventId) return null;
+    const status = bundleStatus(bundle);
+    if (status === "cancelled") return null;
+
+    // Keep sold members (rendered greyed with a SOLD pill) — only drop deleted ones.
+    const items = await hydrateBundleItems(ctx, bundle.adIds);
+    if (items.length === 0) return null;
+
+    const total = separatelyTotal(items);
+    const { savings, savingsPct } = computeSavings(total, bundle.bundlePrice);
+
+    const ownerId = await bundleOwnerId(ctx, bundle);
+    const seller = ownerId ? await ctx.db.get(ownerId) : null;
+    const viewerId = await getDescopeUserId(ctx);
+
+    return {
+      _id: bundle._id,
+      label: bundle.label,
+      status,
+      bundlePrice: bundle.bundlePrice,
+      separatelyTotal: total,
+      savings,
+      savingsPct,
+      location: items[0]?.location ?? "",
+      createdAt: bundle._creationTime,
+      isOwner: Boolean(viewerId && ownerId && viewerId === ownerId),
+      seller: seller
+        ? { _id: seller._id, name: seller.name, image: seller.image ?? null, isVerified: Boolean(seller.isVerified) }
+        : null,
+      items: items.map((i) => ({
+        adId: i._id,
+        title: i.title,
+        image: i.images[0] ?? null,
+        price: i.price ?? 0,
+        condition: i.condition ?? null,
+        isSold: Boolean(i.isSold),
+      })),
+    };
+  },
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Saved bundles — bookmarking a whole Bundle (mirrors saleEvents.saveSaleEvent
+// & friends). A bundle is a first-class entity (own detail page, own message
+// thread), so saving bookmarks the bundle itself — not its individual items.
+// ──────────────────────────────────────────────────────────────────────────
+
+export const saveBundle = mutation({
+  args: { bundleId: v.id("saleBundles") },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      throw createError("Must be logged in to save a bundle", {
+        operation: "saveBundle",
+        bundleId: args.bundleId,
+      });
+    }
+
+    const bundle = await ctx.db.get(args.bundleId);
+    if (!bundle || bundle.isDeleted || bundle.saleEventId) {
+      throw createError("Bundle not found", { bundleId: args.bundleId, userId });
+    }
+
+    const existing = await ctx.db
+      .query("savedBundles")
+      .withIndex("by_user_and_bundle", (q) =>
+        q.eq("userId", userId).eq("bundleId", args.bundleId)
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      return { saved: false };
+    }
+    await ctx.db.insert("savedBundles", { userId, bundleId: args.bundleId });
+    return { saved: true };
+  },
+});
+
+export const isBundleSaved = query({
+  args: { bundleId: v.id("saleBundles") },
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) return false;
+
+    const saved = await ctx.db
+      .query("savedBundles")
+      .withIndex("by_user_and_bundle", (q) =>
+        q.eq("userId", userId).eq("bundleId", args.bundleId)
+      )
+      .unique();
+    return !!saved;
+  },
+});
+
+/** For the dashboard's "Saved" tab — every Bundle this user has bookmarked. */
+export const getSavedBundles = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) return [];
+
+    const saved = await ctx.db
+      .query("savedBundles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .collect();
+
+    const withBundle = await Promise.all(
+      saved.map(async (row) => {
+        const bundle = await ctx.db.get(row.bundleId);
+        if (!bundle || bundle.isDeleted || bundle.saleEventId) return null;
+        const status = bundleStatus(bundle);
+        if (status === "cancelled") return null;
+        const items = await hydrateBundleItems(ctx, bundle.adIds);
+        if (items.length === 0) return null;
+        const total = separatelyTotal(items);
+        const { savings } = computeSavings(total, bundle.bundlePrice);
+        return {
+          _id: row._id,
+          bundle: {
+            _id: bundle._id,
+            label: bundle.label,
+            status,
+            bundlePrice: bundle.bundlePrice,
+            savings,
+            itemCount: items.length,
+            location: items[0]?.location ?? "",
+            covers: items.map((i) => i.images[0]).filter((s): s is string => Boolean(s)),
+          },
+        };
+      })
+    );
+
+    return withBundle.filter((x): x is NonNullable<typeof x> => x !== null);
   },
 });

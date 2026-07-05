@@ -1,4 +1,4 @@
-import { House, ShoppingCart, Tag } from "@phosphor-icons/react";
+import { House, Package, ShoppingCart, Tag } from "@phosphor-icons/react";
 import type { ChipRole } from "./types";
 
 export interface RoleChipProps {
@@ -9,6 +9,7 @@ const CHIP_CONFIG = {
   selling: { label: "Selling", Icon: Tag },
   buying: { label: "Buying", Icon: ShoppingCart },
   sale: { label: "Sale", Icon: House },
+  bundle: { label: "Bundle", Icon: Package },
 } as const;
 
 /** Small neutral pill telling the user which side of a conversation they're on. */

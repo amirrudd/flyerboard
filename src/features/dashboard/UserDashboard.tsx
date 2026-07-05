@@ -23,6 +23,7 @@ import {
   MessageComposer,
   ConversationHeader,
   isSaleThread,
+  isBundleThread,
   getCounterpartName,
   getItemTitle,
 } from "../messages";
@@ -286,6 +287,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const savedSales = useQuery(
     api.saleEvents.getSavedSaleEvents,
     activeTab === "saved" && movingSaleModeEnabled ? {} : "skip"
+  );
+  const savedBundles = useQuery(
+    api.bundles.getSavedBundles,
+    activeTab === "saved" && bundleModeEnabled ? {} : "skip"
   );
 
   // Only fetch when viewing the archived tab
@@ -651,6 +656,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // ── Unified inbox derived state (shared helpers — same derivations as InboxRow) ──
   const activeIsSale = activeConversation ? isSaleThread(activeConversation) : false;
+  const activeIsBundle = activeConversation ? isBundleThread(activeConversation) : false;
   const counterpartName = activeConversation
     ? getCounterpartName(activeConversation, activeConversation.role)
     : "Deleted User";
@@ -1250,13 +1256,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             subtitle={`${activeConversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
                             price={activeConversation.ad?.price}
                             onBack={() => updateChatParams({ chat: null })}
-                            viewItemLabel={activeIsSale ? "View sale" : "View flyer"}
+                            viewItemLabel={activeIsSale ? "View sale" : activeIsBundle ? "View bundle" : "View flyer"}
                             onViewItem={
                               activeConversation.ad && activeConversation.adId
                                 ? () => { void navigate(`/ad/${activeConversation.adId}`); }
                                 : activeIsSale && activeConversation.sale?.slug
                                   ? () => { void navigate(`/sale/${activeConversation.sale?.slug}`); }
-                                  : undefined
+                                  : activeIsBundle && activeConversation.bundle
+                                    ? () => { void navigate(`/bundle/${activeConversation.bundle?._id}`); }
+                                    : undefined
                             }
                             onReport={() => setShowReportModal(true)}
                           />
@@ -1268,8 +1276,20 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             onSend={async (content) => {
                               await sendMessage({ chatId: activeConversation._id as Id<"chats">, content });
                             }}
-                            disabled={activeIsSale ? !activeConversation.sale : !activeConversation.ad?.isActive}
-                            disabledReason={activeIsSale ? "This sale is no longer available" : "This flyer is no longer active"}
+                            disabled={
+                              activeIsSale
+                                ? !activeConversation.sale
+                                : activeIsBundle
+                                  ? !activeConversation.bundle
+                                  : !activeConversation.ad?.isActive
+                            }
+                            disabledReason={
+                              activeIsSale
+                                ? "This sale is no longer available"
+                                : activeIsBundle
+                                  ? "This bundle is no longer available"
+                                  : "This flyer is no longer active"
+                            }
                           />
                         </div>
                       ) : (
@@ -1305,6 +1325,33 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             <div className="min-w-0 flex-1">
                               <p className="font-semibold text-foreground truncate">{saved.sale.title}</p>
                               <p className="text-xs text-muted-foreground">{saved.sale.suburb} · {saved.sale.itemCount} items</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {savedBundles !== undefined && savedBundles.length > 0 && (
+                    <div className="mb-6 pb-6 border-b border-border/70">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-3">Saved Bundles</h3>
+                      <div className="grid gap-2 sm:gap-3">
+                        {savedBundles.map((saved) => (
+                          <button
+                            key={saved._id}
+                            type="button"
+                            onClick={() => { void navigate(`/bundle/${saved.bundle._id}`); }}
+                            className="flex items-center gap-3 ring-1 ring-border/70 rounded-xl p-3 hover:ring-foreground/15 hover:shadow-card transition-all text-left bg-card"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-bundle/10 text-bundle-emphasis flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5" weight="fill" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground truncate">{saved.bundle.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {saved.bundle.itemCount} items · {formatPriceWithCurrency(saved.bundle.bundlePrice)}
+                                {saved.bundle.status === "partial" && " · no longer available"}
+                              </p>
                             </div>
                           </button>
                         ))}

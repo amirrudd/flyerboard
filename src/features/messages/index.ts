@@ -29,6 +29,7 @@ export { useTotalUnreadCount } from "./useTotalUnreadCount";
 
 export {
   isSaleThread,
+  isBundleThread,
   getChipRole,
   getCounterpart,
   getCounterpartName,
@@ -39,6 +40,7 @@ export type { UseInboxOptions, UseInboxResult } from "./useInbox";
 export type {
   ChipRole,
   InboxAd,
+  InboxBundle,
   InboxChat,
   InboxConversation,
   InboxFilter,

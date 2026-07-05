@@ -33,6 +33,7 @@ export const notifyMessageReceived = internalAction({
     chatId: v.id("chats"),
     adId: v.optional(v.id("ads")),
     saleEventId: v.optional(v.id("saleEvents")),
+    bundleId: v.optional(v.id("saleBundles")),
     messageContent: v.string(),
   },
   handler: async (ctx, args) => {
@@ -56,7 +57,7 @@ export const notifyMessageReceived = internalAction({
     const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
     const context = await ctx.runQuery(
       internal.notifications.queries.getChatNotificationContext,
-      { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId }
+      { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId, bundleId: args.bundleId }
     );
     if (!context) {
       console.log("No notification context (missing ad/sale), skipping email notification");
@@ -217,6 +218,7 @@ export const sendBatchedNotifications = internalAction({
               chatId: notification.chatId,
               adId: notification.adId,
               saleEventId: notification.saleEventId,
+              bundleId: notification.bundleId,
             }
           );
           const itemTitle = context?.title ?? "your listing";

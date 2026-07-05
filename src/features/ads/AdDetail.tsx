@@ -662,6 +662,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                 <BundleBanner
                   {...bundleBanner}
                   onItemClick={(adId) => { void navigate(`/ad/${adId}`); }}
+                  onBannerClick={() => { void navigate(`/bundle/${bundleBanner.bundleId}`); }}
                 />
               )}
 

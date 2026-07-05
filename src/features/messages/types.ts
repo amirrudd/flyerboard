@@ -10,8 +10,8 @@
 /** Which side of a conversation the current user is on. */
 export type InboxRole = "selling" | "buying";
 
-/** Role rendered on a chip — sale threads get their own visual. */
-export type ChipRole = InboxRole | "sale";
+/** Role rendered on a chip — sale and bundle threads get their own visual. */
+export type ChipRole = InboxRole | "sale" | "bundle";
 
 /** Inbox list filter. */
 export type InboxFilter = "all" | "selling" | "buying";
@@ -38,6 +38,12 @@ export interface InboxSale {
   slug?: string | null;
 }
 
+export interface InboxBundle {
+  _id: string;
+  label: string;
+  status?: string;
+}
+
 /**
  * A chat row as returned by `posts.getSellerChats` / `posts.getBuyerChats`.
  * `buyer` is populated on seller-side rows, `seller` on buyer-side rows.
@@ -47,6 +53,7 @@ export interface InboxChat {
   _id: string;
   adId?: string | null;
   saleEventId?: string | null;
+  bundleId?: string | null;
   buyerId: string;
   sellerId: string;
   lastMessageAt: number;
@@ -54,6 +61,7 @@ export interface InboxChat {
   latestMessage?: { content: string; timestamp: number } | null;
   ad?: InboxAd | null;
   sale?: InboxSale | null;
+  bundle?: InboxBundle | null;
   buyer?: InboxUser | null;
   seller?: InboxUser | null;
   archivedByBuyer?: boolean;

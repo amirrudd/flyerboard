@@ -140,6 +140,7 @@ export const notifyMessageReceived = internalAction({
         chatId: v.id("chats"),
         adId: v.optional(v.id("ads")),
         saleEventId: v.optional(v.id("saleEvents")),
+        bundleId: v.optional(v.id("saleBundles")),
     },
     handler: async (ctx, args) => {
         // Get sender info
@@ -147,10 +148,10 @@ export const notifyMessageReceived = internalAction({
             userId: args.senderId,
         });
 
-        // Item-vs-sale title + deep link resolved in one shared place.
+        // Item-vs-sale-vs-bundle title + deep link resolved in one shared place.
         const context = await ctx.runQuery(
             internal.notifications.queries.getChatNotificationContext,
-            { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId }
+            { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId, bundleId: args.bundleId }
         );
         if (!context) {
             console.log("No notification context (missing ad/sale), skipping notification");

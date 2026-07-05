@@ -25,8 +25,19 @@ export const getChatNotificationContext = internalQuery({
         chatId: v.id("chats"),
         adId: v.optional(v.id("ads")),
         saleEventId: v.optional(v.id("saleEvents")),
+        bundleId: v.optional(v.id("saleBundles")),
     },
     handler: async (ctx, args) => {
+        if (args.bundleId) {
+            const bundle = await ctx.db.get(args.bundleId);
+            if (!bundle || bundle.isDeleted) {
+                return null;
+            }
+            return {
+                title: bundle.label,
+                urlPath: `/bundle/${args.bundleId}`,
+            };
+        }
         if (args.saleEventId) {
             const sale = await ctx.db.get(args.saleEventId);
             if (!sale) {

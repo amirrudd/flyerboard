@@ -1,6 +1,6 @@
 # Bundle Listing
 
-**Last Updated**: 2026-07-05 (teal semantic token + dashboard BundlesTab; cap rationale documented)
+**Last Updated**: 2026-07-05 (2nd `/simplify` pass post-merge: shared `WizardShell`, promoted `ItemThumb`, `withBusy` in the manage modal)
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
@@ -88,14 +88,26 @@ efficiency/altitude agents) surfaced it:
 - `bundleOwnerId(ctx, bundle)` — `getBundle` was checking `bundle.sellerId !== userId` directly while `requireOwnedBundle` had a `sellerId ?? (via saleEventId)` fallback; unified into one helper both call.
 - All 5 mutations' `for (const id of ids) { await ctx.db.get(id); ... }` validation/assert loops converted to `Promise.all(ids.map(ctx.db.get))` fetched up front, then a synchronous indexed loop over the resolved array so throw-order/error messages stay identical (concurrent reads, same observable behavior).
 - `useMotionPrefs()` gained a `slideStep()` helper (horizontal slide, mirrors `fadeUp`'s shape) so `BundleFlow.tsx`'s 3-step wizard stops hand-rolling its own easing-curve/reduced-motion object — was a literal duplicate of the hook's `EASE` constant.
-- `BundleFlow.tsx` extracted a 7-line `ItemThumb` component — the "image or Package-icon placeholder" tile was copy-pasted 3x across the picker/price/confirm steps.
+- `ItemThumb` — the "image or Package-icon placeholder" tile. First extracted locally inside `BundleFlow.tsx` (copy-pasted 3x across picker/price/confirm), then **promoted to its own file `src/features/bundles/ItemThumb.tsx`** in the 2nd pass and reused by `BundleManageModal.tsx` (its inline tile was byte-identical, `iconSize={16}`). `BundleThumbnail.tsx` is a *different* pattern (multi-cover vertical strips) — deliberately not consolidated.
+- `withBusy(fallbackError, fn)` in `BundleManageModal.tsx` (2nd pass) — the `setBusy(true)/try
+  → catch toast.error/finally setBusy(false)` scaffolding was copy-pasted across all 4 mutation
+  handlers. Factored into one wrapper; each caller passes its own async body so the **distinct
+  success/error copy and branches stay intact** (`handleRemove`'s `res.status === "cancelled"`
+  break-up path, `handleSavePrice`'s `priceDirty` guard). Handlers are now synchronous
+  void-returning fns wrapping `void withBusy(...)`; the `onClick={() => { void handleX() }}` call
+  sites are unchanged and lint-clean.
 
 **Explicitly left alone** (real findings, wrong scope for a same-diff cleanup — each would touch an already-shipped sibling file):
 - `BundleThumbnail.tsx` vs `SaleThumbnail.tsx` (Moving Sale's sibling thumbnail) share a lot of "degrade by cover count" logic with no common base — worth a shared `MultiImageThumbnail` primitive if a third thumbnail-with-fallback ever appears.
 - `BundleManageModal.tsx`'s `createPortal` shell duplicates `UserDashboard.tsx`'s delete-confirm modal scaffolding — no existing extracted `Modal` primitive to point at yet.
-- `BundleFlow.tsx`'s step/progress-bar wizard shape duplicates `MovingSaleFlow.tsx`'s — second instance of the same shape; worth a `useStepFlow` hook once a third wizard appears, not before.
 - `MIN_ITEMS`/`MAX_ITEMS` stay **locally re-declared** in `BundleFlow.tsx` rather than importing `BUNDLE_MIN_ITEMS`/`BUNDLE_MAX_ITEMS` from `convex/bundles.ts` — that file transitively imports server-only Convex modules (`mutation`/`query`, `getDescopeUserId`, rate limiting) that shouldn't end up in the client bundle. A comment ties the two together instead; if this bites, the right fix is extracting the constants into a convex-free shared file, not a direct cross-boundary import.
 - `posts.ts` importing `detachAdFromBundle` from `bundles.ts` is a new (first-of-its-kind) cross-domain coupling — accepted as-is for one hook; if a second "on ad delete" side effect shows up, centralize via a small lifecycle-hook list instead of a second ad-hoc import.
+
+**Re-reviewed and still left alone (2nd `/simplify` pass, 2026-07-05):**
+- A `notHidden(q)` helper for the `q.neq(isDeleted,true), q.neq(isSold,true)` pair repeated in `convex/ads.ts`'s 4 filter branches — skipped: each site combines it with *different* surrounding conditions, cleanly typing the Convex filter-builder param risks an `any`, and it's a hot query path. Removing 2 short clauses per site isn't worth it.
+- Sharing `MIN/MAX_ITEMS` across the convex↔src boundary (see the constants bullet above) — re-confirmed skip.
+- A shared `validateAdIds` between `createBundle` and `markBundleSold` — skipped: the only truly common part is the one-line `Promise.all(adIds.map(ctx.db.get))` fetch; the existence checks have divergent error copy and the two loops enforce different rule-sets (eligibility/mutual-exclusion vs membership/status). Conflating them would risk weakening validation on high-stakes mutations.
+- Backend micro-opts in `bundles.ts` (single-pass reorder in `getBundleBannerForAd`, batch hydrate in `getMyBundles`, a `by_status` index for `getActiveBundleFeedCards`) — premature: tiny data volumes, feature behind the `bundleListing` flag. Revisit only if post-launch profiling shows a hotspot; the index one needs a schema change + migration.
 
 ## Frontend
 - `src/features/bundles/` — `BundleThumbnail` (feed: N vertical strips, blue "Bundle"
@@ -134,15 +146,29 @@ step content in normal document flow — i.e. they relied on the **body** scroll
 overflow:hidden; height:100% } }` — a deliberate mobile pattern so only "designated containers"
 scroll). Result: on a narrow viewport the wizard's primary CTA ("Create bundle" / "Set a bundle
 price") fell below the fold and was **unreachable** — no scroll possible. Fixed 2026-07-03 in
-`BundleFlow.tsx`: root is now `flex h-[100dvh] flex-col`, the header is a `shrink-0` flex child
-(dropped `sticky`), and the step content lives in a `flex-1 mobile-scroll-container` (the app's
-own iOS-momentum / overscroll-contained scroll utility). Works on all widths — the container
-always owns its scroll instead of leaning on the body. Regression guard:
-`BundleFlow.test.tsx` asserts the CTA is inside `.mobile-scroll-container` and the root is
-`h-[100dvh] flex-col` (jsdom can't measure overflow, so this guards the *structure*; a true
-layout assertion would need Playwright). **`MovingSaleFlow` still uses the old `min-h-[100dvh]`
-body-scroll pattern** (line 128/244) — same latent bug, not yet hit because its steps are
-shorter / `justify-center`; apply the same fix if a moving-sale step ever overflows on mobile.
+`BundleFlow.tsx` **and `MovingSaleFlow.tsx`**: root is `flex h-[100dvh] flex-col`, the header is
+a `shrink-0` flex child (dropped `sticky`), and the step content lives in a `flex-1
+mobile-scroll-container` (the app's own iOS-momentum / overscroll-contained scroll utility).
+Works on all widths — the container always owns its scroll instead of leaning on the body.
+
+**This exact shell is now the shared `src/components/WizardShell.tsx`** (extracted 2026-07-05,
+2nd `/simplify` pass). Both `/sell/*` wizards render `<WizardShell currentStep totalSteps onBack
+onExit accentClassName showHeader>{steps}</WizardShell>` instead of hand-rolling the
+`h-[100dvh]` column + back/progress-dots/exit chrome. Props that differ between the two flows:
+`accentClassName` (`bg-bundle` vs default `bg-primary` for the reached progress dot), `onExit`
+target (`/dashboard?tab=ads` vs `/dashboard`), and `showHeader` — MovingSale passes
+`step !== "intro" && step !== "share"` so those two steps render **full-bleed & headerless**
+(their content still sits inside the `.mobile-scroll-container`, so `IntroStep`'s `min-h-full`
+fills correctly). If you touch the shell, keep the DOM structure byte-identical — the regression
+guards below assume it.
+
+Regression guards: `BundleFlow.test.tsx` asserts the CTA is inside `.mobile-scroll-container` and
+the root is `h-[100dvh] flex-col` (jsdom can't measure overflow, so this guards the *structure*).
+`e2e/wizard-mobile-scroll.spec.ts` (Playwright, Mobile Chrome) proves the CSS *mechanism* by
+reconstructing the shell markup inline against the real stylesheet — note it does **not** import
+the components, so it can't catch a component-level regression; the vitest structure test is the
+one that guards the actual `WizardShell` output. `MovingSaleFlow` has no structural vitest test —
+verify it manually after any shell change.
 
 ### Gotcha: global `input:focus` rule beats scoped `focus:` utilities via CSS cascade layers
 `src/index.css:523` has an unlayered `input:focus, textarea:focus, select:focus { @apply ring-2

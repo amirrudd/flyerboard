@@ -4,13 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { CaretLeft, X, Package, Check } from "@phosphor-icons/react";
+import { Package, Check } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useUserSync } from "../../context/UserSyncContext";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { PageLoader } from "../../components/PageLoader";
-import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { WizardShell } from "../../components/WizardShell";
+import { ItemThumb } from "./ItemThumb";
 import { formatPrice } from "../../lib/priceFormatter";
 
 // Keep in sync with BUNDLE_MIN_ITEMS/BUNDLE_MAX_ITEMS in convex/bundles.ts. Not imported
@@ -116,48 +117,15 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
   const slide = slideStep();
 
   return (
-    // Fixed-height flex column with an internal scroll region. The app disables
-    // body scroll at <=768px (src/index.css), so relying on document flow leaves
-    // the primary button unreachable on narrow viewports — the content must own
-    // its own scroll container instead.
-    <div className="flex h-[100dvh] flex-col bg-background">
-      <header
-        className="shrink-0 border-b border-border bg-background/95 backdrop-blur"
-        style={{ paddingTop: "var(--safe-area-inset-top)" }}
-      >
-        <div className="mx-auto flex max-w-md items-center gap-3 px-3 py-3">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Back"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted"
-          >
-            <CaretLeft size={20} />
-          </button>
-          <div className="flex flex-1 items-center gap-1.5">
-            {STEPS.map((s, i) => (
-              <span
-                key={s}
-                className={`h-1.5 flex-1 rounded-full ${
-                  i <= stepIndex ? "bg-bundle" : "bg-muted"
-                }`}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => { void navigate("/dashboard?tab=ads"); }}
-            aria-label="Exit"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      </header>
-
-      <div className="mobile-scroll-container flex-1">
-        <div className="mx-auto w-full max-w-md px-5 py-6">
-          <AnimatePresence mode="wait">
+    <WizardShell
+      currentStep={stepIndex}
+      totalSteps={STEPS.length}
+      onBack={handleBack}
+      onExit={() => { void navigate("/dashboard?tab=ads"); }}
+      accentClassName="bg-bundle"
+    >
+      <div className="mx-auto w-full max-w-md px-5 py-6">
+        <AnimatePresence mode="wait">
           {step === "pick" && (
             <motion.div key="pick" {...slide}>
               <PickStep
@@ -204,21 +172,9 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
               />
             </motion.div>
           )}
-          </AnimatePresence>
-        </div>
+        </AnimatePresence>
       </div>
-    </div>
-  );
-}
-
-/** Shared item image tile — falls back to a Package placeholder when there's no image. */
-function ItemThumb({ image, title, iconSize = 18 }: { image: string | null; title: string; iconSize?: number }) {
-  return image ? (
-    <ImageDisplay imageRef={image} alt={title} className="h-full w-full object-cover" />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-      <Package size={iconSize} weight="light" />
-    </div>
+    </WizardShell>
   );
 }
 

@@ -23,6 +23,7 @@ const SupportPage = lazy(() => import("./pages/SupportPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const MovingSalePage = lazy(() => import("./pages/MovingSalePage"));
+const BundlePage = lazy(() => import("./pages/BundlePage"));
 const PublicSalePage = lazy(() => import("./pages/PublicSalePage"));
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
@@ -46,6 +47,13 @@ export default function App() {
                 <ErrorBoundary>
                   <Suspense fallback={<PageLoader />}>
                     <MovingSalePage />
+                  </Suspense>
+                </ErrorBoundary>
+              } />
+              <Route path="/sell/bundle" element={
+                <ErrorBoundary>
+                  <Suspense fallback={<PageLoader />}>
+                    <BundlePage />
                   </Suspense>
                 </ErrorBoundary>
               } />

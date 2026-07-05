@@ -78,6 +78,24 @@ export function HomePage() {
     selectedCategory || !movingSaleModeEnabled ? "skip" : {}
   );
 
+  // Bundle Listing feed integration: whole-Bundle cards render on the
+  // uncategorised feed, same rule as Sale cards above.
+  const bundleModeEnabled = useFeatureFlag("bundleListing");
+  const bundleCards = useQuery(
+    api.bundles.getActiveBundleFeedCards,
+    selectedCategory || !bundleModeEnabled ? "skip" : {}
+  );
+
+  // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
+  // the first member ad's detail page — the bundle banner there reveals the
+  // full deal.
+  const handleBundleClick = useCallback(
+    (card: { adIds: string[] }) => {
+      void navigate(`/ad/${card.adIds[0]}`, { state: { fromBundle: true } });
+    },
+    [navigate]
+  );
+
   // Handle location change and save to cookies
 
 
@@ -309,6 +327,8 @@ export function HomePage() {
               newAdIds={newAdIds}
               saleCards={activeSales}
               onSaleClick={handleSaleClick}
+              bundleCards={bundleCards}
+              onBundleClick={handleBundleClick}
             />
 
 

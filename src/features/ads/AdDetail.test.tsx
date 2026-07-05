@@ -111,13 +111,25 @@ describe('AdDetail - Share Functionality', () => {
         // Use mockImplementation to return the right value based on the query
         (useQuery as any).mockImplementation((queryFn: any, args: any) => {
             // Check the query function/args to determine return value
-            // Since we can't easily inspect the function, return adContext as default
             if (args === "skip") {
                 return undefined;
+            }
+            // Feature flags (e.g. bundleListing) are called with `{ key }`. Note:
+            // convex's generated `api` proxy doesn't produce stable function
+            // references across separate property accesses, so we can't
+            // discriminate by `queryFn` identity — the `args` shape is the only
+            // reliable signal here. Default flags to disabled so the Bundle
+            // Listing banner (gated on this) never renders in these tests, which
+            // otherwise crashes on the generic `adContext` fallback below
+            // (it lacks the bundle banner's `items` shape).
+            if (args && typeof args === 'object' && 'key' in args) {
+                return false;
             }
             // For getAdWithContext, return the context
             // For getCurrentUser, return user
             // Since we can't distinguish, just return the adContext for ad queries
+            // (this is also returned for saleBanner/bundleBanner queries, which
+            // is harmless since those are read via optional chaining / gated).
             return adContext;
         });
 

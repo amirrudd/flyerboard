@@ -59,6 +59,13 @@ module.exports = {
         "primary-bright": {
           DEFAULT: "hsl(var(--primary-bright))",
         },
+        // Bundle Listing accent. Semantic token — drives every bundle surface so
+        // re-theming is a one-line change in src/index.css (:root + .dark).
+        bundle: {
+          DEFAULT: "hsl(var(--bundle))",
+          foreground: "hsl(var(--bundle-foreground))",
+          emphasis: "hsl(var(--bundle-emphasis))",
+        },
         // Legacy neutral for backward compatibility during migration
         neutral: {
           50: '#FFFFFF',

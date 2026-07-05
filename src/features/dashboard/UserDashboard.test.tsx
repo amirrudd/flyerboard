@@ -83,11 +83,13 @@ describe('UserDashboard', () => {
         // Order: getCurrentUserWithStats, getUserAds, sellerChats(skip), buyerChats(skip), savedAds(skip), archivedChats(skip), chatMessages(skip), unreadCounts(skip)
         vi.mocked(useQuery)
             .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
+            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
             .mockReturnValueOnce({  // getCurrentUserWithStats (combined)
                 user: { _id: 'user1', name: 'Test User' },
                 stats: { totalAds: 0, totalViews: 0 }
             })
             .mockReturnValueOnce([]) // getUserAds (ads tab is active by default)
+            .mockReturnValueOnce(undefined) // getMyBundles (skipped - flag off)
             .mockReturnValueOnce(undefined) // sellerChats (skipped - not chats tab)
             .mockReturnValueOnce(undefined) // buyerChats (skipped - not chats tab)
             .mockReturnValueOnce(undefined) // savedAds (skipped - not saved tab)
@@ -118,8 +120,10 @@ describe('UserDashboard', () => {
         const mockReturns: any[] = [];
         for (let i = 0; i < 5; i++) { // Mock 5 render cycles
             mockReturns.push(true);          // getFeatureFlag: movingSaleMode
+            mockReturns.push(false);         // getFeatureFlag: bundleListing
             mockReturns.push(userWithStats); // getCurrentUserWithStats
             mockReturns.push([]);            // getUserAds
+            mockReturns.push(undefined);     // getMyBundles
             mockReturns.push(undefined);     // sellerChats
             mockReturns.push(undefined);     // buyerChats
             mockReturns.push(undefined);     // savedAds
@@ -149,11 +153,13 @@ describe('UserDashboard', () => {
         // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
             .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
+            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
             .mockReturnValueOnce({  // getCurrentUserWithStats
                 user: { _id: 'user1', name: 'Test User' },
                 stats: { totalAds: 0, totalViews: 0 }
             })
             .mockReturnValueOnce([]) // getUserAds
+            .mockReturnValueOnce(undefined) // getMyBundles (skipped)
             .mockReturnValueOnce(undefined) // sellerChats (skipped)
             .mockReturnValueOnce(undefined) // buyerChats (skipped)
             .mockReturnValueOnce(undefined) // savedAds (skipped)
@@ -196,8 +202,10 @@ describe('UserDashboard', () => {
         // Order: getCurrentUserWithStats, getUserAds, then skipped queries
         vi.mocked(useQuery)
             .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
+            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
             .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
             .mockReturnValueOnce([])    // getUserAds (will be fetched after redirect to ads tab)
+            .mockReturnValueOnce(undefined) // getMyBundles (skipped)
             .mockReturnValueOnce(undefined) // sellerChats (skipped)
             .mockReturnValueOnce(undefined) // buyerChats (skipped)
             .mockReturnValueOnce(undefined) // savedAds (skipped)
@@ -229,13 +237,15 @@ describe('UserDashboard', () => {
 // Helper: build a cycling useQuery mock that handles multiple re-renders.
 // Slot order matches UserDashboard's hook call order:
 //   1. getFeatureFlag (movingSaleMode)
-//   2. getCurrentUserWithStats
-//   3. getUserAds
-//   4-10. skipped queries (all undefined)
+//   2. getFeatureFlag (bundleListing)
+//   3. getCurrentUserWithStats
+//   4. getUserAds
+//   5. getMyBundles (skipped)
+//   6-13. skipped queries (all undefined)
 function makeCyclingQueryMock(flagValue: boolean | undefined) {
     const user = { _id: 'u1', name: 'Test User', email: 'test@test.com' };
     const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
-    const sequence = [flagValue, { user, stats }, [], ...Array(8).fill(undefined)];
+    const sequence = [flagValue, false, { user, stats }, [], ...Array(9).fill(undefined)];
     let i = 0;
     vi.mocked(useQuery).mockImplementation(() => sequence[i++ % sequence.length]);
 }

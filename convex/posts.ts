@@ -6,6 +6,7 @@ import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
+import { detachAdFromBundle } from "./bundles";
 
 /**
  * Creates a new flyer listing.
@@ -195,6 +196,10 @@ export const deleteAd = mutation({
     if (existingAd.userId !== userId) {
       throw createError("You can only delete your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
     }
+
+    // If this ad is in a standalone bundle, detach it first (moves the bundle to
+    // partial, or cancels it if too few remain). No-op for Sale-scoped bundles.
+    await detachAdFromBundle(ctx, existingAd, "deleted");
 
     // Soft delete by marking as deleted
     // Images remain in R2 until the retention-policy cleanup job purges them (see convex/imageCleanup.ts)

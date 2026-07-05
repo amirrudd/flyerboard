@@ -333,7 +333,9 @@ export function HomePage() {
 
 
             {/* Infinite scroll sentinel and loading states */}
-            <div className="mt-10 flex flex-col items-center">
+            {/* data-testid: masked in e2e visual snapshots — spinner/"End of the
+                Board" depend on live pagination status. */}
+            <div className="mt-10 flex flex-col items-center" data-testid="feed-status">
               {/* Sentinel element for IntersectionObserver */}
               <div ref={loadMoreSentinelRef} className="h-4" />
 

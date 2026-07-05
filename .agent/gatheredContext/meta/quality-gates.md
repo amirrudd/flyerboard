@@ -1,6 +1,6 @@
 # Quality Gates (type-check, lint, CI, Stop hook)
 
-Last Updated: 2026-06-30
+Last Updated: 2026-07-05
 
 How regressions are caught in FlyerBoard. Three layers: local Stop hook (per turn),
 the `lint` script (pre-commit, manual), and CI `build.yml` (required to merge).
@@ -88,5 +88,30 @@ Backend functions are tested in-memory with `convex-test` (devDeps: `convex-test
 - `t.run(async (ctx) => …)` callbacks that `await` MUST be declared `async` — SWC errors
   loudly ("await isn't allowed in non-async function") otherwise.
 - Run just these: `npx vitest run convex/saleEvents.test.ts convex/saleChats.test.ts`.
+
+## Playwright visual snapshots are data-independent (2026-07-05)
+
+`e2e/layout.spec.ts` used to full-page-screenshot the home feed against the live Convex
+deployment — ANY data change (new ad, view-count tick) broke the baselines, so they rotted
+silently. They're now deterministic by construction (full rationale: `e2e/README.md`):
+
+- Dynamic regions carry `data-testid` (`ads-grid` on AdsGrid's root `<section>`,
+  `feed-status` on HomePage's spinner/"End of the Board" block) and are `mask`ed in
+  `toHaveScreenshot`; only stable chrome (header, sidebar, filter bar) is compared.
+  **New live-data elements on snapshotted pages must be added to `DYNAMIC_REGIONS`.**
+- Viewport screenshots, NOT `fullPage` — page height tracks feed length and fails the
+  comparison on dimensions before masks apply.
+- 🔴 `waitForLoadState('networkidle')` does NOT cover Convex WebSocket data — the category
+  list can render empty at screenshot time. Tests wait for a seed category ("Vehicles")
+  to be visible before snapshotting.
+- 🔴 Scrollbar thumb size tracks content height → 22-pixel diffs at the right edge when
+  the feed grows. Tests inject `::-webkit-scrollbar { display:none }` CSS.
+- `test:visual` needs `npx convex dev` running — playwright.config only auto-starts Vite.
+  Without the backend the app renders "0 listings"/no categories and the category wait
+  fails (deliberately: prevents baking empty states into baselines).
+- `visual-tests.yml` (CI, Desktop Chrome only) auto-generates + commits missing `-linux`
+  baselines on the next PR run — deleting stale linux PNGs is safe.
+- No auth fixture exists; `/post` unauthenticated redirects to `/` (asserted, not
+  snapshotted). storageState plan for dashboard/messaging flows: `e2e/README.md`.
 
 See also: [[regression-guardrails plan]] at `.agent/plans/regression-guardrails.md`.

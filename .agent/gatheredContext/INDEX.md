@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-07-05 (added Messaging; Bundle Listing added 2026-07-02)
+**Last Updated**: 2026-07-05 (added Messaging + visual-test determinism notes; Bundle Listing added 2026-07-02)
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 
@@ -27,6 +27,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 | **Routing** | `frontend/routing-navigation.md` | `frontend/architecture.md` |
 | **State Management** | `frontend/state-management.md` | `frontend/architecture.md` |
 | **Mobile/Native** | `platform/native/` | `../../rules/kmp-native-app-guideline.md` |
+| **E2E / visual snapshot tests** | `meta/quality-gates.md` | `e2e/README.md` (in repo root) |
 
 ---
 

@@ -152,7 +152,9 @@ export const AdsGrid = memo(function AdsGrid({
   const headerKicker = categoryName ? 'Category' : 'Marketplace';
 
   return (
-    <section className="flex-1">
+    // data-testid: masked in e2e visual snapshots — everything inside (listing
+    // count, cards, view counts) is live Convex data and changes run-to-run.
+    <section className="flex-1" data-testid="ads-grid">
       {/* Editorial header — kicker over serif display title, count on right with hairline */}
       <header className="mb-7 flex flex-col gap-3 min-h-[92px]">
         <div className="flex items-end justify-between gap-6">

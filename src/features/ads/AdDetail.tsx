@@ -797,7 +797,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   {user && displayAd.userId === user._id ? (
                     // Show Edit button for own flyers
                     <button
-                      onClick={() => { void navigate('/post', { state: { editingAd: displayAd } }); }}
+                      onClick={() => { void navigate('/post', { state: { editingAd: displayAd, from: `/ad/${adId}` } }); }}
                       className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
                     >
                       <PencilSimple className="w-4 h-4" weight="bold" />

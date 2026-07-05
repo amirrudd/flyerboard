@@ -23,9 +23,12 @@ export function PostAdPage() {
 
     const handleBack = () => {
         // If posting from dashboard, navigate back to dashboard
+        // If editing from an ad detail page, return there to show the updated flyer
         // Otherwise navigate to home to see the newly posted flyer
         if (from === '/dashboard') {
             void navigate('/dashboard');
+        } else if (editingAd && from.startsWith('/ad/')) {
+            void navigate(from);
         } else {
             // Pass forceRefresh flag to trigger immediate refresh on home page
             void navigate('/', { state: { forceRefresh: true } });

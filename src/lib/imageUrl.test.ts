@@ -59,11 +59,14 @@ describe("resolvePublicImageUrl", () => {
   });
 
   it("returns null for r2: references when base is unset", () => {
-    expect(resolvePublicImageUrl("r2:flyers/post1/abc.webp", undefined)).toBeNull();
+    // Explicitly clear the env default — .env.local may set VITE_R2_PUBLIC_URL.
+    vi.stubEnv("VITE_R2_PUBLIC_URL", "");
+    expect(resolvePublicImageUrl("r2:flyers/post1/abc.webp")).toBeNull();
   });
 
   it("returns null for legacy prefixed keys when base is unset", () => {
-    expect(resolvePublicImageUrl("flyers/post1/abc.webp", undefined)).toBeNull();
+    vi.stubEnv("VITE_R2_PUBLIC_URL", "");
+    expect(resolvePublicImageUrl("flyers/post1/abc.webp")).toBeNull();
   });
 
   it("returns null for legacy Convex _storage ids regardless of base", () => {

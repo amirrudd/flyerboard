@@ -121,19 +121,25 @@ export const sendPushNotification = internalAction({
 
 /**
  * Internal action to notify a user about a new message
- * Called by the sendMessage mutation
- * 
+ * Called by the sendMessage / sendSaleMessage mutations
+ *
+ * Exactly one of adId / saleEventId should be provided — item-chat vs
+ * Moving Sale thread. adId is optional (was required) so sale threads
+ * (which have no single ad) can share this action.
+ *
  * @param recipientId - User receiving the message
  * @param senderId - User who sent the message
  * @param chatId - Chat ID
- * @param adId - Ad ID for context
+ * @param adId - Ad ID for context (item-chat)
+ * @param saleEventId - Sale event ID for context (sale thread)
  */
 export const notifyMessageReceived = internalAction({
     args: {
         recipientId: v.id("users"),
         senderId: v.id("users"),
         chatId: v.id("chats"),
-        adId: v.id("ads"),
+        adId: v.optional(v.id("ads")),
+        saleEventId: v.optional(v.id("saleEvents")),
     },
     handler: async (ctx, args) => {
         // Get sender info
@@ -141,27 +147,29 @@ export const notifyMessageReceived = internalAction({
             userId: args.senderId,
         });
 
-        // Get ad title for context (using query from queries.ts)
-        const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
-            adId: args.adId,
-        });
-
-        if (!ad) {
-            console.log("Flyer not found, skipping notification");
+        // Item-vs-sale title + deep link resolved in one shared place.
+        const context = await ctx.runQuery(
+            internal.notifications.queries.getChatNotificationContext,
+            { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId }
+        );
+        if (!context) {
+            console.log("No notification context (missing ad/sale), skipping notification");
             return;
         }
+        const title = context.title;
+        const url = context.urlPath;
 
         const senderName = sender?.name || "Someone";
 
-        // Privacy: Don't reveal message content, just show ad title
-        const notificationBody = `New message about "${ad.title}"`;
+        // Privacy: Don't reveal message content, just show item/sale title
+        const notificationBody = `New message about "${title}"`;
 
         // Send push notification
         await ctx.runAction(internal.notifications.pushNotifications.sendPushNotification, {
             userId: args.recipientId,
             title: `Message from ${senderName}`,
             body: notificationBody,
-            url: `/messages/${args.chatId}`,
+            url,
             chatId: args.chatId,
         });
     },

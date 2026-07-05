@@ -3,6 +3,7 @@ import { triggerHomeScrollToTop, HOME_SCROLL_KEY } from "../../lib/homeScrollBri
 import { House, Plus, User, ChatText, BookmarkSimple, SquaresFour } from "@phosphor-icons/react";
 import { useSession } from "@descope/react-sdk";
 import { memo } from "react";
+import { UnreadBadge, useTotalUnreadCount } from "../messages";
 
 interface BottomNavProps {
     setShowAuthModal: (show: boolean) => void;
@@ -13,6 +14,10 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
     const navigate = useNavigate();
     const { isAuthenticated } = useSession();
     const user = isAuthenticated ? { name: "User" } : null;
+
+    // Global unread badge on the Messages item — the hook owns the
+    // auth/user-sync gate and returns 0 while signed out.
+    const totalUnread = useTotalUnreadCount();
 
     // The blog is a read-focused, document-style section — no bottom nav on mobile.
     if (location.pathname.startsWith("/blog")) {
@@ -99,7 +104,13 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                     className={navItemClass(isActive("/dashboard?tab=chats"))}
                 >
                     {isActive("/dashboard?tab=chats") && <ActiveDot />}
-                    <ChatText size={22} weight={isActive("/dashboard?tab=chats") ? "bold" : "regular"} />
+                    <span className="relative">
+                        <ChatText size={22} weight={isActive("/dashboard?tab=chats") ? "bold" : "regular"} />
+                        <UnreadBadge
+                            count={totalUnread}
+                            className="absolute -top-1.5 -right-3 shadow-sm"
+                        />
+                    </span>
                     <span className="text-[11px] font-medium tracking-wide">Messages</span>
                 </button>
 

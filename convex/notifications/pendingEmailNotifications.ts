@@ -4,13 +4,15 @@ import { Id } from "../_generated/dataModel";
 
 /**
  * Queue an email notification for batching
- * Called by sendMessage mutation instead of sending immediately
+ * Called by sendMessage / sendSaleMessage mutations instead of sending immediately.
+ * Exactly one of adId / saleEventId should be provided (item-chat vs sale thread).
  */
 export const queueEmailNotification = internalMutation({
     args: {
         recipientId: v.id("users"),
         chatId: v.id("chats"),
-        adId: v.id("ads"),
+        adId: v.optional(v.id("ads")),
+        saleEventId: v.optional(v.id("saleEvents")),
         senderId: v.id("users"),
         messageContent: v.string(),
     },
@@ -19,6 +21,7 @@ export const queueEmailNotification = internalMutation({
             recipientId: args.recipientId,
             chatId: args.chatId,
             adId: args.adId,
+            saleEventId: args.saleEventId,
             senderId: args.senderId,
             messageContent: args.messageContent,
             createdAt: Date.now(),

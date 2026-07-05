@@ -1,6 +1,7 @@
 import { mutation, query, action, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
+import { countUnreadForChat } from "./lib/unread";
 import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -278,17 +279,14 @@ export const getSellerChats = query({
         const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
         const buyer = await ctx.db.get(chat.buyerId);
 
-        // Get unread message count
-        const unreadCount = await ctx.db
+        // Latest message for the inbox snippet (same pattern as messages.getAdChats)
+        const latestMessage = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) =>
-            q.and(
-              q.neq(q.field("senderId"), userId),
-              q.gt(q.field("timestamp"), chat.lastReadBySeller || 0)
-            )
-          )
-          .collect();
+          .order("desc")
+          .first();
+
+        const unreadCount = await countUnreadForChat(ctx, chat, userId, "seller");
 
         return {
           ...chat,
@@ -299,12 +297,13 @@ export const getSellerChats = query({
             averageRating: buyer.averageRating || 0,
             ratingCount: buyer.ratingCount || 0,
           } : null,
-          unreadCount: unreadCount.length,
+          latestMessage,
+          unreadCount,
         };
       })
     );
 
-    return chatsWithInfo;
+    return chatsWithInfo.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
   },
 });
 
@@ -329,17 +328,14 @@ export const getBuyerChats = query({
         const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
         const seller = await ctx.db.get(chat.sellerId);
 
-        // Get unread message count
-        const unreadCount = await ctx.db
+        // Latest message for the inbox snippet (same pattern as messages.getAdChats)
+        const latestMessage = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) =>
-            q.and(
-              q.neq(q.field("senderId"), userId),
-              q.gt(q.field("timestamp"), chat.lastReadByBuyer || 0)
-            )
-          )
-          .collect();
+          .order("desc")
+          .first();
+
+        const unreadCount = await countUnreadForChat(ctx, chat, userId, "buyer");
 
         return {
           ...chat,
@@ -350,12 +346,13 @@ export const getBuyerChats = query({
             averageRating: seller.averageRating || 0,
             ratingCount: seller.ratingCount || 0,
           } : null,
-          unreadCount: unreadCount.length,
+          latestMessage,
+          unreadCount,
         };
       })
     );
 
-    return chatsWithInfo;
+    return chatsWithInfo.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
   },
 });
 

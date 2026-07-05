@@ -277,6 +277,18 @@ bundle-listing-design.md` § "v2 — Bundle becomes a first-class destination".
   math. `"both"` stays eligible (has a price). Moving Sale is safe by construction (its
   wizard hardcodes `listingType: "sale"`).
 
+### Gotcha: `position: fixed` inside `<main>` doesn't pin to the viewport — portal to body
+Layout's `<main class="mobile-scroll-container">` sets `contain: layout style paint`
+(deliberate scroll-perf CSS, `src/index.css` ~414). `contain: layout` makes `<main>` the
+containing block for `position: fixed` descendants, so an inline fixed CTA bar SCROLLS AWAY
+with the content instead of pinning to the viewport (caught by Amir on the bundle page,
+2026-07-05). PublicSaleView/PublicSaleViewEditorial already knew this — their footer CTAs
+are `createPortal(..., document.body)` with a comment citing "same escape hatch as
+AdDetail's mobile FABs". `PublicBundleView` initially missed the portal when mirroring;
+fixed. **Rule: any viewport-fixed element rendered under `<main>` must portal to
+`document.body`.** (The BottomNav is a sibling of `<main>`, so `bottom-[var(--bottom-nav-height)]`
+offsets still line up after portaling.)
+
 ### /simplify pass on v2 (same day) — shared helpers extracted
 4 parallel review agents (reuse/simplification/efficiency/altitude) over the v2 diff:
 - **`src/hooks/useSaveToggle.ts`** — the optimistic bookmark toggle (optimistic state,

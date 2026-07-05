@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   BookmarkSimple,
@@ -279,7 +280,13 @@ export function PublicBundleView({
         )}
       </div>
 
-      {/* ── Sticky CTA ──────────────────────────────────────────────────── */}
+      {/* ── Sticky CTA ──────────────────────────────────────────────────────
+          Portal'd to document.body (mirrors PublicSaleView): the app shell's
+          scroll container (<main>, Layout.tsx) sets `contain: layout style
+          paint` for scroll perf, which makes it the containing block for
+          `position: fixed` descendants — an inline fixed div would scroll away
+          with the content instead of pinning to the viewport. */}
+      {createPortal(
       <div
         className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border bg-card/95 backdrop-blur md:bottom-0"
         style={{ paddingBottom: "var(--safe-area-inset-bottom)" }}
@@ -317,7 +324,9 @@ export function PublicBundleView({
             </button>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
     </div>
   );
 }

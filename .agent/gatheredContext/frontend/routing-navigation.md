@@ -5,7 +5,7 @@ description: Routing and navigation structure
 
 # Routing & Navigation
 
-**Last Updated**: 2026-07-02
+**Last Updated**: 2026-07-05
 
 ## Routes (React Router v7)
 - **/**: HomePage (Flyers grid)
@@ -73,6 +73,26 @@ scroll position; tapping Home while already on Home scrolls to top.
 - **Home tab is a `<button>`, not `<Link>`**: needed so the same handler can
   either scroll-to-top (when already on `/`) or `navigate("/")` — avoids
   `<Link>` + `preventDefault` event-ordering ambiguity.
+
+## `/post` back-navigation contract (`location.state.from`)
+
+- **Every navigation to `/post` must pass `state.from`** (the originating
+  path) alongside `editingAd` when editing. `PostAdPage.handleBack` routes on
+  it: `/dashboard` → back to dashboard; `editingAd && from.startsWith('/ad/')`
+  → back to that ad detail (so the seller sees the updated flyer); everything
+  else → `/` with `{ forceRefresh: true }` (intentional for *new* posts — the
+  poster should land on the feed and see their new flyer).
+- **Gotcha (fixed 2026-07-05)**: AdDetail's "Edit Flyer" button passed only
+  `{ editingAd }` without `from`, so Back/Cancel/save-complete from the edit
+  form dumped the user on the home screen instead of returning to their ad.
+  If you add a new edit entry point, pass both keys or the fallback branch
+  silently swallows the return path — there's no runtime warning.
+- `onBack` is called both on cancel *and* after a successful edit save
+  (`PostAd.tsx` calls `onBack()` immediately for edits; new posts route
+  through the notification-permission modal first). The returned-to AdDetail
+  shows fresh data automatically (reactive Convex query).
+- Tests encoding this contract: `src/pages/PostAdPage.test.tsx`
+  ("navigate back to the ad detail page when editing from ad detail").
 
 ## Ad detail instant-render via `location.state.initialAd`
 

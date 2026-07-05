@@ -85,7 +85,7 @@ describe('PostAdPage - Navigation Tests', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
 
-    it('should navigate to home with forceRefresh when onBack is called from ad detail page', () => {
+    it('should navigate to home with forceRefresh when posting a new ad from ad detail page', () => {
         mockUseLocation.mockReturnValue({
             state: { from: '/ad/123' },
         });
@@ -99,8 +99,25 @@ describe('PostAdPage - Navigation Tests', () => {
         const backButton = screen.getByTestId('back-button');
         backButton.click();
 
-        // Non-dashboard routes navigate to home with forceRefresh
+        // New posts (no editingAd) go home with forceRefresh so the new flyer is visible
         expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
+    });
+
+    it('should navigate back to the ad detail page when editing from ad detail', () => {
+        mockUseLocation.mockReturnValue({
+            state: { editingAd: { _id: 'ad123', title: 'Test Ad' }, from: '/ad/ad123' },
+        });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        const backButton = screen.getByTestId('back-button');
+        backButton.click();
+
+        expect(mockNavigate).toHaveBeenCalledWith('/ad/ad123');
     });
 
     it('should navigate to home with forceRefresh when no from state is provided', () => {

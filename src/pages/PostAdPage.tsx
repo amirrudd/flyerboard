@@ -21,7 +21,23 @@ export function PostAdPage() {
         return <PageLoader />;
     }
 
-    const handleBack = () => {
+    const handleBack = (reason?: "cancel" | "delete") => {
+        // Deleted flyer: its detail page would render not-found, so never
+        // return to /ad/<id> — dashboard (their flyers) or refreshed home.
+        if (reason === 'delete') {
+            if (from === '/dashboard') {
+                void navigate('/dashboard');
+            } else {
+                void navigate('/', { state: { forceRefresh: true } });
+            }
+            return;
+        }
+        // Cancel: return the user to wherever they came from — abandoning the
+        // form shouldn't dump them on home when they started on an ad page.
+        if (reason === 'cancel' && from.startsWith('/ad/')) {
+            void navigate(from);
+            return;
+        }
         // If posting from dashboard, navigate back to dashboard
         // If editing from an ad detail page, return there to show the updated flyer
         // Otherwise navigate to home to see the newly posted flyer

@@ -7,7 +7,9 @@ import { MemoryRouter } from 'react-router-dom';
 vi.mock('../features/ads/PostAd', () => ({
     PostAd: ({ onBack, editingAd, origin }: any) => (
         <div data-testid="post-ad-component">
-            <button onClick={onBack} data-testid="back-button">Back</button>
+            <button onClick={() => onBack()} data-testid="back-button">Back</button>
+            <button onClick={() => onBack('cancel')} data-testid="cancel-button">Cancel</button>
+            <button onClick={() => onBack('delete')} data-testid="delete-button">Delete</button>
             <div data-testid="editing-ad">{editingAd ? 'Editing' : 'Creating'}</div>
             <div data-testid="origin">{origin}</div>
         </div>
@@ -101,6 +103,56 @@ describe('PostAdPage - Navigation Tests', () => {
 
         // New posts (no editingAd) go home with forceRefresh so the new flyer is visible
         expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
+    });
+
+    it('should return to the ad detail page when cancelling a new post started there', () => {
+        mockUseLocation.mockReturnValue({
+            state: { from: '/ad/123' },
+        });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        screen.getByTestId('cancel-button').click();
+
+        // Cancel abandons the form — return to where the user came from
+        expect(mockNavigate).toHaveBeenCalledWith('/ad/123');
+    });
+
+    it('should not return to the deleted flyer\'s detail page after delete', () => {
+        mockUseLocation.mockReturnValue({
+            state: { editingAd: { _id: 'ad123', title: 'Test Ad' }, from: '/ad/ad123' },
+        });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        screen.getByTestId('delete-button').click();
+
+        // The ad no longer exists — its detail page would render not-found
+        expect(mockNavigate).toHaveBeenCalledWith('/', { state: { forceRefresh: true } });
+    });
+
+    it('should return to the dashboard after deleting a flyer opened from there', () => {
+        mockUseLocation.mockReturnValue({
+            state: { editingAd: { _id: 'ad123', title: 'Test Ad' }, from: '/dashboard' },
+        });
+
+        render(
+            <MemoryRouter>
+                <PostAdPage />
+            </MemoryRouter>
+        );
+
+        screen.getByTestId('delete-button').click();
+
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
 
     it('should navigate back to the ad detail page when editing from ad detail', () => {

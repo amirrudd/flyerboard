@@ -40,35 +40,52 @@ describe('AdDetailPage - Navigation', () => {
     beforeEach(() => {
         mockNavigate.mockClear();
         mockSetShowAuthModal.mockClear();
+        // Default: first in-app history entry (React Router idx 0), i.e. a
+        // deep link / new tab — navigate(-1) would leave the site.
+        window.history.replaceState({ idx: 0 }, '');
     });
 
-    it('should navigate back when back button is clicked', async () => {
+    it('should navigate back in history when there are prior in-app entries', async () => {
+        window.history.replaceState({ idx: 2 }, '');
+
         render(
             <BrowserRouter>
                 <AdDetailPage />
             </BrowserRouter>
         );
 
-        // Find and click the back button
         const backButton = screen.getByTestId('back-button');
         fireEvent.click(backButton);
 
-        // Verify navigate was called with -1 (go back)
         expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 
-    it('should navigate back when FlyerBoard header is clicked', async () => {
+    it('should fall back to home on back when deep-linked (no in-app history)', async () => {
         render(
             <BrowserRouter>
                 <AdDetailPage />
             </BrowserRouter>
         );
 
-        // Find and click the header title
+        const backButton = screen.getByTestId('back-button');
+        fireEvent.click(backButton);
+
+        // idx 0 → navigate(-1) would exit the site; fall back to home instead
+        expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+
+    it('should navigate back when FlyerBoard header is clicked', async () => {
+        window.history.replaceState({ idx: 1 }, '');
+
+        render(
+            <BrowserRouter>
+                <AdDetailPage />
+            </BrowserRouter>
+        );
+
         const headerTitle = screen.getByTestId('header-title');
         fireEvent.click(headerTitle);
 
-        // Verify navigate was called with -1
         expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 

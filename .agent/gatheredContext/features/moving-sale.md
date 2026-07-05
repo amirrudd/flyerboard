@@ -1,6 +1,6 @@
 # Moving Sale Mode
 
-**Last Updated**: 2026-07-02 (Bundle Listing frontend)
+**Last Updated**: 2026-07-05 (MovingSaleFlow chrome now uses shared `WizardShell`)
 
 ## Public sale page A/B test (2026-07-01)
 Two designs of the buyer-facing `/sale/:slug` page now coexist, both theme-matched
@@ -230,7 +230,11 @@ All mutations: `getDescopeUserId` + ownership check (`requireOwnedSale` helper).
 
 ## Frontend (`src/features/movingSale/`)
 - `MovingSaleFlow.tsx` — orchestrator state machine (intro→setup→upload→review→
-  bundles→paywall→share). Drives everything off `getSaleEditor` (reactive).
+  bundles→paywall→share). Drives everything off `getSaleEditor` (reactive). The
+  full-screen chrome (fixed-height column + back/progress/exit header + internal
+  `.mobile-scroll-container`) is the shared `src/components/WizardShell.tsx` (extracted
+  2026-07-05, also used by `BundleFlow`). `intro`/`share` pass `showHeader={false}` to
+  render full-bleed; see the WizardShell + scroll-container notes in `bundles.md`.
 - `steps/` — `SetupStep` (pickup presets, not raw timestamps), `UploadStep`
   (bulk upload → R2 → `addSaleItems`), `ReviewStep` (card-by-card, confidence
   badge, progress chips, inline price stepper, `BottomSheet` edit, "Later" skip),

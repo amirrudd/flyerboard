@@ -3,11 +3,12 @@ import { useMutation, useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { motion } from "framer-motion";
-import { CaretLeft, X, Package, Sparkle, Tag, Lightning } from "@phosphor-icons/react";
+import { X, Package, Sparkle, Tag, Lightning } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useUserSync } from "../../context/UserSyncContext";
 import { PageLoader } from "../../components/PageLoader";
+import { WizardShell } from "../../components/WizardShell";
 import { SetupStep, type SetupValues } from "./steps/SetupStep";
 import { UploadStep } from "./steps/UploadStep";
 import { ReviewStep } from "./steps/ReviewStep";
@@ -125,48 +126,13 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   const progressIndex = PROGRESS_STEPS.indexOf(step);
 
   return (
-    // Fixed-height flex column with an internal scroll region — the app disables
-    // body scroll at <=768px (src/index.css), so step content (and its primary CTA)
-    // must own its own scroll container or it becomes unreachable on narrow viewports.
-    <div className="flex h-[100dvh] flex-col bg-background">
-      {/* Chrome */}
-      {step !== "intro" && step !== "share" && (
-        <header
-          className="shrink-0 border-b border-border bg-background/95 backdrop-blur"
-          style={{ paddingTop: "var(--safe-area-inset-top)" }}
-        >
-          <div className="mx-auto flex max-w-md items-center gap-3 px-3 py-3">
-            <button
-              type="button"
-              onClick={handleBack}
-              aria-label="Back"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted"
-            >
-              <CaretLeft size={20} />
-            </button>
-            <div className="flex flex-1 items-center gap-1.5">
-              {PROGRESS_STEPS.map((s, i) => (
-                <span
-                  key={s}
-                  className={`h-1.5 flex-1 rounded-full ${
-                    i <= progressIndex ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => { void navigate("/dashboard"); }}
-              aria-label="Exit"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </header>
-      )}
-
-      <div className="mobile-scroll-container flex-1">
+    <WizardShell
+      currentStep={progressIndex}
+      totalSteps={PROGRESS_STEPS.length}
+      onBack={handleBack}
+      onExit={() => { void navigate("/dashboard"); }}
+      showHeader={step !== "intro" && step !== "share"}
+    >
       {step === "intro" && (
         <IntroStep onStart={() => setStep("setup")} onExit={() => { void navigate("/dashboard"); }} />
       )}
@@ -234,8 +200,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
           unlockedAddons={editor?.sale.unlockedAddons ?? []}
         />
       )}
-      </div>
-    </div>
+    </WizardShell>
   );
 }
 

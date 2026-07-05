@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Package, X, Trash } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { ImageDisplay } from "../../components/ui/ImageDisplay";
+import { ItemThumb } from "./ItemThumb";
 import { formatPrice } from "../../lib/priceFormatter";
 
 interface BundleManageModalProps {
@@ -38,22 +38,30 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
   const parsedPrice = Number(priceInput) || 0;
   const priceDirty = bundle ? parsedPrice > 0 && parsedPrice !== bundle.bundlePrice : false;
 
-  async function handleSavePrice() {
-    if (!priceDirty) return;
+  // Run a bundle mutation with the shared busy-state + error-toast scaffolding.
+  // Each caller supplies its own success/close behaviour and error copy — those
+  // stay intentionally distinct per action.
+  async function withBusy(fallbackError: string, fn: () => Promise<void>) {
     setBusy(true);
     try {
-      await updateBundlePrice({ bundleId: bundleId as Id<"saleBundles">, bundlePrice: parsedPrice });
-      toast.success("Bundle price updated");
+      await fn();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update the price");
+      toast.error(err instanceof Error ? err.message : fallbackError);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleRemove(adId: string) {
-    setBusy(true);
-    try {
+  function handleSavePrice() {
+    if (!priceDirty) return;
+    void withBusy("Couldn't update the price", async () => {
+      await updateBundlePrice({ bundleId: bundleId as Id<"saleBundles">, bundlePrice: parsedPrice });
+      toast.success("Bundle price updated");
+    });
+  }
+
+  function handleRemove(adId: string) {
+    void withBusy("Couldn't remove the item", async () => {
       const res = await removeBundleItem({
         bundleId: bundleId as Id<"saleBundles">,
         adId: adId as Id<"ads">,
@@ -64,37 +72,23 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
       } else {
         toast.success("Item removed from bundle");
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't remove the item");
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
-  async function handleMarkSold() {
-    setBusy(true);
-    try {
+  function handleMarkSold() {
+    void withBusy("Couldn't mark the bundle sold", async () => {
       await markBundleSold({ bundleId: bundleId as Id<"saleBundles"> });
       toast.success("Bundle marked as sold");
       onClose();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't mark the bundle sold");
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
-  async function handleCancel() {
-    setBusy(true);
-    try {
+  function handleCancel() {
+    void withBusy("Couldn't cancel the bundle", async () => {
       await cancelBundle({ bundleId: bundleId as Id<"saleBundles"> });
       toast.success("Bundle cancelled");
       onClose();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't cancel the bundle");
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
   return createPortal(
@@ -156,13 +150,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
                   }`}
                 >
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg ring-1 ring-border/60">
-                    {it.image ? (
-                      <ImageDisplay imageRef={it.image} alt={it.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                        <Package size={16} weight="light" />
-                      </div>
-                    )}
+                    <ItemThumb image={it.image} title={it.title} iconSize={16} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{it.title}</p>

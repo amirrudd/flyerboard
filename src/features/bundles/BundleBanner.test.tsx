@@ -38,6 +38,7 @@ describe('BundleBanner', () => {
     itemCount: 2,
     items: [currentItem, otherItem],
     onItemClick: vi.fn(),
+    onBannerClick: vi.fn(),
   };
 
   it('renders the heading', () => {
@@ -78,9 +79,23 @@ describe('BundleBanner', () => {
 
   it('does not render the current item thumbnail as a clickable button', () => {
     render(<BundleBanner {...baseProps} />);
+    // Two buttons: the banner body itself (→ bundle page) and the "other"
+    // item thumbnail (→ its ad). The current item stays a plain div.
     const buttons = screen.getAllByRole('button');
-    // Only the "other" item should be a button; the current item is a plain div.
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveAttribute('title', 'Dining Table');
+    expect(buttons).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'View bundle deal' })).toBeInTheDocument();
+    expect(screen.getByTitle('Dining Table')).toBeInTheDocument();
+    expect(screen.queryByTitle('Sofa')).not.toBeInTheDocument();
+  });
+
+  it('banner body tap fires onBannerClick; item tap does not (stopPropagation)', () => {
+    const onBannerClick = vi.fn();
+    const onItemClick = vi.fn();
+    render(<BundleBanner {...baseProps} onBannerClick={onBannerClick} onItemClick={onItemClick} />);
+    fireEvent.click(screen.getByTitle('Dining Table'));
+    expect(onItemClick).toHaveBeenCalledWith('ad-other');
+    expect(onBannerClick).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'View bundle deal' }));
+    expect(onBannerClick).toHaveBeenCalledOnce();
   });
 });

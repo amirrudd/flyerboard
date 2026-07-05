@@ -53,6 +53,7 @@ async function insertAd(
     location?: string;
     saleEventId?: Id<"saleEvents">;
     bundleId?: Id<"saleBundles">;
+    listingType?: "sale" | "exchange" | "both";
   }
 ): Promise<Id<"ads">> {
   return t.run(async (ctx) =>
@@ -60,6 +61,7 @@ async function insertAd(
       title: opts.title ?? "Item",
       description: "desc",
       price: opts.price ?? 100,
+      ...(opts.listingType ? { listingType: opts.listingType } : {}),
       location: opts.location ?? "Richmond, VIC",
       categoryId: opts.categoryId,
       images: opts.images ?? ["r2:flyers/x/1.jpg"],
@@ -551,5 +553,170 @@ describe("mutual exclusivity with Moving Sale", () => {
     await expect(
       asUser.mutation(api.bundles.createBundle, { adIds: [saleAd, standalone], bundlePrice: 100 })
     ).rejects.toThrow(/moving sale/i);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Exchange guard (bundle v2) — bundles are sale-only
+// ──────────────────────────────────────────────────────────────────────────
+describe("exchange guard", () => {
+  test("createBundle rejects a trade-only (exchange) ad", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const sale = await insertAd(t, { userId, categoryId, title: "Sofa", price: 350 });
+    const trade = await insertAd(t, { userId, categoryId, title: "Swap chair", listingType: "exchange" });
+    await expect(
+      asUser.mutation(api.bundles.createBundle, { adIds: [sale, trade], bundlePrice: 300 })
+    ).rejects.toThrow(/trade-only/i);
+  });
+
+  test("both-type ads (sale + trade) remain bundleable", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId, listingType: "both", price: 100 });
+    const b = await insertAd(t, { userId, categoryId, listingType: "sale", price: 100 });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 150 });
+    expect(bundleId).toBeDefined();
+  });
+
+  test("getEligibleAdsForBundle flags exchange ads as Trade-only", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const trade = await insertAd(t, { userId, categoryId, listingType: "exchange" });
+    const list = await asUser.query(api.bundles.getEligibleAdsForBundle, {});
+    const row = list.find((x) => x._id === trade)!;
+    expect(row.eligible).toBe(false);
+    expect(row.reason).toMatch(/trade/i);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// getPublicBundle — the /bundle/:id "Deal Ticket" payload
+// ──────────────────────────────────────────────────────────────────────────
+describe("getPublicBundle", () => {
+  test("returns the full payload without auth (public page)", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId, title: "Sofa", price: 350 });
+    const b = await insertAd(t, { userId, categoryId, title: "Table", price: 280 });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 530,
+    });
+
+    // Anonymous viewer — no identity at all.
+    const payload = await t.query(api.bundles.getPublicBundle, { bundleId });
+    expect(payload).not.toBeNull();
+    expect(payload!.status).toBe("active");
+    expect(payload!.bundlePrice).toBe(530);
+    expect(payload!.separatelyTotal).toBe(630);
+    expect(payload!.savings).toBe(100);
+    expect(payload!.savingsPct).toBe(16);
+    expect(payload!.isOwner).toBe(false);
+    expect(payload!.seller?.name).toBe("Amir");
+    expect(payload!.items.map((i) => i.title)).toEqual(["Sofa", "Table"]);
+  });
+
+  test("isOwner is true for the seller", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId });
+    const b = await insertAd(t, { userId, categoryId });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 150 });
+    const payload = await asUser.query(api.bundles.getPublicBundle, { bundleId });
+    expect(payload!.isOwner).toBe(true);
+  });
+
+  test("partial bundle still resolves with the sold member flagged", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId, title: "Sofa", price: 350 });
+    const b = await insertAd(t, { userId, categoryId, title: "Table", price: 280 });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 530 });
+    await asUser.mutation(api.bundles.markBundleItemSold, { adId: b });
+
+    const payload = await t.query(api.bundles.getPublicBundle, { bundleId });
+    expect(payload).not.toBeNull();
+    expect(payload!.status).toBe("partial");
+    const soldItem = payload!.items.find((i) => i.title === "Table")!;
+    expect(soldItem.isSold).toBe(true);
+  });
+
+  test("returns null for cancelled bundles and Sale-scoped bundles", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId });
+    const b = await insertAd(t, { userId, categoryId });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 150 });
+    await asUser.mutation(api.bundles.cancelBundle, { bundleId });
+    expect(await t.query(api.bundles.getPublicBundle, { bundleId })).toBeNull();
+
+    const saleEventId = await t.run((ctx) =>
+      ctx.db.insert("saleEvents", {
+        userId,
+        title: "Sale",
+        suburb: "Coogee",
+        status: "active",
+        slug: "sale-1",
+        pickupWindowStart: Date.now(),
+        pickupWindowEnd: Date.now() + 3600_000,
+        createdAt: Date.now(),
+      })
+    );
+    const saleBundleId = await t.run((ctx) =>
+      ctx.db.insert("saleBundles", {
+        saleEventId,
+        label: "Sale bundle",
+        bundlePrice: 50,
+        adIds: [a, b],
+      })
+    );
+    expect(await t.query(api.bundles.getPublicBundle, { bundleId: saleBundleId })).toBeNull();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Saved bundles — mirrors savedSaleEvents
+// ──────────────────────────────────────────────────────────────────────────
+describe("saved bundles", () => {
+  async function freshWithBundle() {
+    const base = await fresh();
+    const a = await insertAd(base.t, { userId: base.userId, categoryId: base.categoryId, title: "Sofa", price: 350 });
+    const b = await insertAd(base.t, { userId: base.userId, categoryId: base.categoryId, title: "Table", price: 280 });
+    const bundleId = await base.asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 530,
+    });
+    await seedUser(base.t, "u2", "Buyer");
+    const asBuyer = base.t.withIdentity({ subject: "u2" });
+    return { ...base, bundleId, asBuyer };
+  }
+
+  test("saveBundle requires auth", async () => {
+    const { t, bundleId } = await freshWithBundle();
+    await expect(t.mutation(api.bundles.saveBundle, { bundleId })).rejects.toThrow(/logged in/i);
+  });
+
+  test("toggles save / unsave and isBundleSaved tracks it", async () => {
+    const { bundleId, asBuyer } = await freshWithBundle();
+
+    expect(await asBuyer.query(api.bundles.isBundleSaved, { bundleId })).toBe(false);
+    expect(await asBuyer.mutation(api.bundles.saveBundle, { bundleId })).toEqual({ saved: true });
+    expect(await asBuyer.query(api.bundles.isBundleSaved, { bundleId })).toBe(true);
+    expect(await asBuyer.mutation(api.bundles.saveBundle, { bundleId })).toEqual({ saved: false });
+    expect(await asBuyer.query(api.bundles.isBundleSaved, { bundleId })).toBe(false);
+  });
+
+  test("getSavedBundles returns the dashboard payload", async () => {
+    const { bundleId, asBuyer } = await freshWithBundle();
+    await asBuyer.mutation(api.bundles.saveBundle, { bundleId });
+
+    const saved = await asBuyer.query(api.bundles.getSavedBundles, {});
+    expect(saved).toHaveLength(1);
+    expect(saved[0].bundle._id).toBe(bundleId);
+    expect(saved[0].bundle.label).toBe("Sofa + Table");
+    expect(saved[0].bundle.status).toBe("active");
+    expect(saved[0].bundle.bundlePrice).toBe(530);
+    expect(saved[0].bundle.itemCount).toBe(2);
+  });
+
+  test("a cancelled bundle drops out of the saved list", async () => {
+    const { asUser, bundleId, asBuyer } = await freshWithBundle();
+    await asBuyer.mutation(api.bundles.saveBundle, { bundleId });
+    await asUser.mutation(api.bundles.cancelBundle, { bundleId });
+    expect(await asBuyer.query(api.bundles.getSavedBundles, {})).toEqual([]);
   });
 });

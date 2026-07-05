@@ -25,6 +25,7 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const MovingSalePage = lazy(() => import("./pages/MovingSalePage"));
 const BundlePage = lazy(() => import("./pages/BundlePage"));
 const PublicSalePage = lazy(() => import("./pages/PublicSalePage"));
+const PublicBundlePage = lazy(() => import("./pages/PublicBundlePage"));
 const BlogIndexPage = lazy(() => import("./pages/BlogIndexPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
@@ -74,6 +75,14 @@ export default function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <PublicSalePage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                {/* Public buyer-facing bundle page (the "Deal Ticket") */}
+                <Route path="/bundle/:id" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <PublicBundlePage />
                     </Suspense>
                   </ErrorBoundary>
                 } />

@@ -1,6 +1,6 @@
 # Bundle Listing
 
-**Last Updated**: 2026-07-05 (2nd `/simplify` pass post-merge: shared `WizardShell`, promoted `ItemThumb`, `withBusy` in the manage modal)
+**Last Updated**: 2026-07-05 (v2: public `/bundle/:id` Deal Ticket page, bundle threads, savedBundles, exchange guard, feed cap)
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
@@ -74,9 +74,11 @@ BEFORE soft-deleting — a deleted member drops the bundle to `partial` (or `can
 **Call-site audit done:** `saleEvents.setBundles` now also writes `sellerId` + `status:"active"`
 so Sale-created bundles match the standalone shape.
 
-Feed-card tap-through has no dedicated public bundle page (out of scope) — it navigates to
-the first member ad's `/ad/:id`, where the banner reveals the full deal. Banner item
-thumbnails link to each member ad; the current item is dimmed + non-clickable.
+~~Feed-card tap-through has no dedicated public bundle page~~ **Superseded by v2 (2026-07-05,
+see "Bundle v2" section below):** the feed card now navigates to `/bundle/:id`, the bundle's
+own public page. The ad-detail banner's *body* also taps through to it; banner item thumbnails
+still link to each member ad (with `stopPropagation`); the current item stays dimmed +
+non-clickable.
 
 ### Shared helpers (added in a `/simplify` pass, post-build)
 The 4 read queries and 5 mutations had converged on the same few patterns copy-pasted
@@ -214,3 +216,125 @@ Bundle Listing, but now fixed as a side effect since it shares the same queries.
 
 Backend: `convex/bundles.test.ts` (29 tests — eligibility, caps, mutual exclusivity,
 sold-state machine incl. atomic race, detach-on-delete, all queries).
+
+## Bundle v2 — the bundle is a first-class destination (2026-07-05)
+
+Founder review found the v1 flaw: the feed card tapped through to `adIds[0]`, so a bundle
+had no page, no shareable URL, and no way to message *about the bundle*. v2 mirrors how
+Moving Sale solved the same "grouping without a duplicate `ads` row" trade-off: grouping
+table + derived feed card + **dedicated public route**. Design: `ResearchLab/ideas/
+bundle-listing-design.md` § "v2 — Bundle becomes a first-class destination".
+
+### Public page — `/bundle/:id`, the "Deal Ticket"
+- Chosen from 3 mocked directions (Storefront / Deal Ticket / Editorial Set). The page
+  leads with the OFFER, not the products: receipt-style ticket (line items with dotted
+  leaders, dashed perforated rule with edge notches, struck "Separately $X", bundle price
+  at display size in Fraunces, rotated "Save $Y / Z% off" stamp), image strip below (each
+  thumb links to its member ad), trust line, seller card, sticky CTA. Deliberately looks
+  nothing like an ad page — that ambiguity was the original flaw.
+- `PublicBundlePage.tsx` (route inside `<Layout>`, lazy, mirrors `PublicSalePage`) +
+  `PublicBundleView.tsx` (presentational) + `BundleMessageModal.tsx`.
+- Backend: `bundles.getPublicBundle` — public/no-auth; returns null for missing/deleted/
+  Sale-scoped/**cancelled**; `partial`/`sold` still resolve (old links + threads must keep
+  working). Payload includes `isOwner` (owner sees a "manage" CTA → `/dashboard?tab=bundles`
+  instead of messaging themselves).
+- **Partial state finally has a home**: notice naming the sold member, sold rows greyed with
+  a SOLD pill + struck price, "Buy {remaining} for $X ›" links replace the deal block.
+
+### Bundle-scoped messaging — `convex/bundleChats.ts` (mirrors `saleChats.ts`)
+- `chats` gained `bundleId` + `by_bundle_buyer` index. Exactly one of adId/saleEventId/
+  bundleId per chat (mutation-enforced, not validator).
+- `sendBundleMessage` / `getBundleThread`; one thread per buyer per bundle; NO item chips
+  (unlike sale threads) — a bundle IS the package, the conversation is about the deal.
+- Rejects cancelled bundles ("Bundle not found") and self-messaging.
+- **Notification chain extended end-to-end with optional `bundleId`**:
+  `notifications/queries.getChatNotificationContext` (title = bundle.label, urlPath =
+  `/bundle/:id`), push `notifyMessageReceived`, `queueEmailNotification` +
+  `pendingEmailNotifications` table column + both email send paths. Without the context
+  extension, bundle-thread pushes would be silently skipped ("No notification context").
+- Unified inbox renders bundle threads: `posts.getSellerChats`/`getBuyerChats` hydrate
+  `bundle: {_id,label,status}`; messages lib gained `isBundleThread`, `ChipRole "bundle"`
+  (Phosphor `Package` chip), teal `bg-bundle/10` row thumbnail, `getItemTitle` falls back
+  to bundle label; dashboard thread header shows "View bundle" and the composer disables
+  with "This bundle is no longer available" when the bundle row is gone.
+
+### Saved bundles — mirrors savedSaleEvents exactly
+- `savedBundles` table (`by_user`, `by_user_and_bundle`), `bundles.saveBundle` (toggle) /
+  `isBundleSaved` / `getSavedBundles` (drops cancelled/deleted bundles at read time),
+  `useSaveBundle` hook (optimistic + pop animation, mirrors `useSaveSaleEvent`), bookmark
+  heart in the Deal Ticket band, "Saved Bundles" section in the dashboard Saved tab
+  (between Saved Sales and Saved Ads; teal icon tile).
+- Ads + whole Sales were already savable — bundles were the only gap (v1 had no page to
+  host a save button).
+
+### Feed cap + exchange guard
+- `HomePage.displayAds`: bundle members capped at **2 per bundle** on the uncategorised
+  feed (sales stay at 3) so a 4-item bundle doesn't yield 5 same-seller cards. Category/
+  search stays uncapped (deliberate: "members look like plain listings in search").
+- **Bundles are sale-only** (product rule: only standard ads can be trade/exchange):
+  `createBundle` throws on `listingType: "exchange"` ("trade-only"); picker reason
+  "Trade-only". Rationale: exchange ads have no `price` → `?? 0` corrupts the savings
+  math. `"both"` stays eligible (has a price). Moving Sale is safe by construction (its
+  wizard hardcodes `listingType: "sale"`).
+
+### Gotcha: `position: fixed` inside `<main>` doesn't pin to the viewport — portal to body
+Layout's `<main class="mobile-scroll-container">` sets `contain: layout style paint`
+(deliberate scroll-perf CSS, `src/index.css` ~414). `contain: layout` makes `<main>` the
+containing block for `position: fixed` descendants, so an inline fixed CTA bar SCROLLS AWAY
+with the content instead of pinning to the viewport (caught by Amir on the bundle page,
+2026-07-05). PublicSaleView/PublicSaleViewEditorial already knew this — their footer CTAs
+are `createPortal(..., document.body)` with a comment citing "same escape hatch as
+AdDetail's mobile FABs". `PublicBundleView` initially missed the portal when mirroring;
+fixed. **Rule: any viewport-fixed element rendered under `<main>` must portal to
+`document.body`.** (The BottomNav is a sibling of `<main>`, so `bottom-[var(--bottom-nav-height)]`
+offsets still line up after portaling.)
+
+### /simplify pass on v2 (same day) — shared helpers extracted
+4 parallel review agents (reuse/simplification/efficiency/altitude) over the v2 diff:
+- **`src/hooks/useSaveToggle.ts`** — the optimistic bookmark toggle (optimistic state,
+  toast copy, reduced-motion pop animation) extracted from the identical
+  `useSaveSaleEvent`/`useSaveBundle` bodies; both are now thin wrappers binding their
+  Convex queries. Also gates the `getCurrentUser` subscription on `isAuthenticated`
+  (anonymous public-page visitors no longer open it). Next savable entity = ~10 lines.
+- **`src/lib/share.ts` `sharePage(title)`** — native-share/clipboard fallback extracted
+  from the verbatim copies in `PublicSalePage` + `PublicBundlePage`.
+- **`BundleMessageModal` composes from the shared chat library** — `MessageBubble` +
+  `MessageComposer` from `src/features/messages/` replace the hand-rolled bubbles/composer
+  (honors the "never hand-roll chat UI" rule). Bubbles are brand-primary like every other
+  chat surface; only the modal SHELL mirrors SaleMessageModal. Scroll lock now uses the
+  shared `useScrollLock` (iOS-aware) instead of raw `body.overflow`.
+- **`UserDashboard`**: per-kind thread facts (`viewItemLabel` / `onViewItem` / composer
+  disabled+reason) computed once in a `threadMeta` object next to `activeIsSale`/`activeIsBundle`
+  — the four parallel 3-way ternary chains in JSX collapsed to property reads. Saved-tab
+  Sales/Bundles rows share a local `SavedGroupRow` component.
+- **`posts.getSellerChats`/`getBuyerChats`**: per-chat hydration (ad/sale/bundle/counterpart/
+  latestMessage/unread) now runs in one `Promise.all` — the chain was fully sequential and
+  grew by one await per thread kind.
+- **Payload trims**: `getPublicBundle` dropped unused `createdAt`/`condition`;
+  `getSavedBundles` returns only what the Saved-tab card renders (label/status/price/count).
+- **`BundleBanner.onBannerClick` made required** — sole caller always passes it; killed 5
+  conditional attribute expressions.
+- `HomePage.displayAds` sale/bundle caps share one `underCap` helper + composite-key map.
+- `sendBundleMessage` skips the redundant `lastMessageAt` patch on first-message chat creation
+  (insert already sets it). NOTE: `saleChats.ts` still has the copied redundant patch — left
+  alone (shipped file).
+
+**Reviewed and deliberately skipped** (follow-ups if the area is touched again):
+- Notification chain: `bundleId` is threaded as a third optional per-kind arg through 4
+  signatures + a `pendingEmailNotifications` column. The deeper fix is deriving the kind
+  from the `chats` row via the existing `chatId` arg in `getChatNotificationContext` —
+  would remove all per-kind args and the silent-skip failure mode for future kinds, but
+  touches shipped ad/sale notification callers. Do this when adding a 4th thread kind.
+- `convex/lib/chatThread.ts` (shared send-thread + notify fan-out for messages/saleChats/
+  bundleChats) — right mechanism, but unifying 3 files incl. shipped ones is its own change.
+- Shared `ThreadModal` (SaleMessageModal shell minus chips) — revisit when SaleMessageModal
+  is next touched; the composer/bubble reuse already captured most of the win.
+- Test-infra dedup (`loadConvexModules` ×5, framer-motion mock ×2) — established convention.
+
+### Tests
+- `convex/bundles.test.ts` grew getPublicBundle / saved-bundles / exchange-guard suites;
+  `convex/bundleChats.test.ts` (new, mirrors saleChats.test.ts incl. the scheduled-push +
+  pending-email assertions); `PublicBundleView.test.tsx` covers active/partial/sold/owner
+  states. Full suite 558 tests + `npm run lint` clean.
+- Gotcha: test inserts into `saleEvents` need `status` from the draft/active/ended union
+  and required `createdAt` — "published" is not a valid status literal.

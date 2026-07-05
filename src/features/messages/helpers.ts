@@ -10,8 +10,14 @@ export function isSaleThread(chat: InboxChat): boolean {
   return Boolean(chat.saleEventId);
 }
 
+export function isBundleThread(chat: InboxChat): boolean {
+  return Boolean(chat.bundleId);
+}
+
 export function getChipRole(chat: InboxChat, role: InboxRole): ChipRole {
-  return isSaleThread(chat) ? "sale" : role;
+  if (isSaleThread(chat)) return "sale";
+  if (isBundleThread(chat)) return "bundle";
+  return role;
 }
 
 /** The other party in the conversation, from the current user's role. */
@@ -26,11 +32,12 @@ export function getCounterpartName(chat: InboxChat, role: InboxRole): string {
   return getCounterpart(chat, role)?.name || "Deleted User";
 }
 
-/** Display title for the item/sale a conversation is about. */
+/** Display title for the item/sale/bundle a conversation is about. */
 export function getItemTitle(chat: InboxChat): string {
   return (
     chat.ad?.title ??
     chat.sale?.title ??
-    (isSaleThread(chat) ? "Moving Sale" : "Deleted Flyer")
+    chat.bundle?.label ??
+    (isSaleThread(chat) ? "Moving Sale" : isBundleThread(chat) ? "Bundle" : "Deleted Flyer")
   );
 }

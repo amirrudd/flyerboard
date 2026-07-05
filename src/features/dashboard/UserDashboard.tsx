@@ -23,6 +23,7 @@ import {
   MessageComposer,
   ConversationHeader,
   isSaleThread,
+  isBundleThread,
   getCounterpartName,
   getItemTitle,
 } from "../messages";
@@ -82,6 +83,35 @@ const INBOX_EMPTY_COPY: Record<InboxFilter, { title: string; body: string }> = {
     body: "Message a seller from any flyer to start a conversation",
   },
 };
+
+/** One row in the Saved tab's Sales/Bundles groups — identical shell, per-kind tint. */
+function SavedGroupRow({
+  tintClass,
+  title,
+  subtitle,
+  onClick,
+}: {
+  tintClass: string;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 ring-1 ring-border/70 rounded-xl p-3 hover:ring-foreground/15 hover:shadow-card transition-all text-left bg-card"
+    >
+      <div className={`w-10 h-10 rounded-lg ${tintClass} flex items-center justify-center flex-shrink-0`}>
+        <Package className="w-5 h-5" weight="fill" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold text-foreground truncate">{title}</p>
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+    </button>
+  );
+}
 
 function CountUp({ value, reduced }: { value: number; reduced: boolean }) {
   const motionValue = useMotionValue(reduced ? value : 0);
@@ -286,6 +316,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const savedSales = useQuery(
     api.saleEvents.getSavedSaleEvents,
     activeTab === "saved" && movingSaleModeEnabled ? {} : "skip"
+  );
+  const savedBundles = useQuery(
+    api.bundles.getSavedBundles,
+    activeTab === "saved" && bundleModeEnabled ? {} : "skip"
   );
 
   // Only fetch when viewing the archived tab
@@ -651,6 +685,38 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // ── Unified inbox derived state (shared helpers — same derivations as InboxRow) ──
   const activeIsSale = activeConversation ? isSaleThread(activeConversation) : false;
+  const activeIsBundle = activeConversation ? isBundleThread(activeConversation) : false;
+  // Per-kind facts for the thread pane (header label/route, composer availability)
+  // derived ONCE — extend here when a new thread kind appears, not in the JSX.
+  const threadMeta = !activeConversation
+    ? null
+    : activeIsSale
+      ? {
+          viewItemLabel: "View sale",
+          onViewItem: activeConversation.sale?.slug
+            ? () => { void navigate(`/sale/${activeConversation.sale?.slug}`); }
+            : undefined,
+          composerDisabled: !activeConversation.sale,
+          composerDisabledReason: "This sale is no longer available",
+        }
+      : activeIsBundle
+        ? {
+            viewItemLabel: "View bundle",
+            onViewItem: activeConversation.bundle
+              ? () => { void navigate(`/bundle/${activeConversation.bundle?._id}`); }
+              : undefined,
+            composerDisabled: !activeConversation.bundle,
+            composerDisabledReason: "This bundle is no longer available",
+          }
+        : {
+            viewItemLabel: "View flyer",
+            onViewItem:
+              activeConversation.ad && activeConversation.adId
+                ? () => { void navigate(`/ad/${activeConversation.adId}`); }
+                : undefined,
+            composerDisabled: !activeConversation.ad?.isActive,
+            composerDisabledReason: "This flyer is no longer active",
+          };
   const counterpartName = activeConversation
     ? getCounterpartName(activeConversation, activeConversation.role)
     : "Deleted User";
@@ -1250,14 +1316,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             subtitle={`${activeConversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
                             price={activeConversation.ad?.price}
                             onBack={() => updateChatParams({ chat: null })}
-                            viewItemLabel={activeIsSale ? "View sale" : "View flyer"}
-                            onViewItem={
-                              activeConversation.ad && activeConversation.adId
-                                ? () => { void navigate(`/ad/${activeConversation.adId}`); }
-                                : activeIsSale && activeConversation.sale?.slug
-                                  ? () => { void navigate(`/sale/${activeConversation.sale?.slug}`); }
-                                  : undefined
-                            }
+                            viewItemLabel={threadMeta!.viewItemLabel}
+                            onViewItem={threadMeta!.onViewItem}
                             onReport={() => setShowReportModal(true)}
                           />
                           <ConversationThread
@@ -1268,8 +1328,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             onSend={async (content) => {
                               await sendMessage({ chatId: activeConversation._id as Id<"chats">, content });
                             }}
-                            disabled={activeIsSale ? !activeConversation.sale : !activeConversation.ad?.isActive}
-                            disabledReason={activeIsSale ? "This sale is no longer available" : "This flyer is no longer active"}
+                            disabled={threadMeta!.composerDisabled}
+                            disabledReason={threadMeta!.composerDisabledReason}
                           />
                         </div>
                       ) : (
@@ -1293,20 +1353,30 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-3">Saved Sales</h3>
                       <div className="grid gap-2 sm:gap-3">
                         {savedSales.map((saved) => (
-                          <button
+                          <SavedGroupRow
                             key={saved._id}
-                            type="button"
+                            tintClass="bg-primary/10 text-primary"
+                            title={saved.sale.title}
+                            subtitle={`${saved.sale.suburb} · ${saved.sale.itemCount} items`}
                             onClick={() => { void navigate(`/sale/${saved.sale.slug}`); }}
-                            className="flex items-center gap-3 ring-1 ring-border/70 rounded-xl p-3 hover:ring-foreground/15 hover:shadow-card transition-all text-left bg-card"
-                          >
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                              <Package className="w-5 h-5" weight="fill" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-foreground truncate">{saved.sale.title}</p>
-                              <p className="text-xs text-muted-foreground">{saved.sale.suburb} · {saved.sale.itemCount} items</p>
-                            </div>
-                          </button>
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {savedBundles !== undefined && savedBundles.length > 0 && (
+                    <div className="mb-6 pb-6 border-b border-border/70">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-3">Saved Bundles</h3>
+                      <div className="grid gap-2 sm:gap-3">
+                        {savedBundles.map((saved) => (
+                          <SavedGroupRow
+                            key={saved._id}
+                            tintClass="bg-bundle/10 text-bundle-emphasis"
+                            title={saved.bundle.label}
+                            subtitle={`${saved.bundle.itemCount} items · ${formatPriceWithCurrency(saved.bundle.bundlePrice)}${saved.bundle.status === "partial" ? " · no longer available" : ""}`}
+                            onClick={() => { void navigate(`/bundle/${saved.bundle._id}`); }}
+                          />
                         ))}
                       </div>
                     </div>

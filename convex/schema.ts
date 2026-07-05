@@ -50,9 +50,10 @@ const applicationTables = {
     }),
 
   chats: defineTable({
-    // Exactly one of adId / saleEventId is set (enforced in mutations, not the validator).
-    adId: v.optional(v.id("ads")),               // single-listing thread (null for Sale threads)
+    // Exactly one of adId / saleEventId / bundleId is set (enforced in mutations, not the validator).
+    adId: v.optional(v.id("ads")),               // single-listing thread (null for Sale/Bundle threads)
     saleEventId: v.optional(v.id("saleEvents")), // Sale thread — one per buyer per Sale (v2)
+    bundleId: v.optional(v.id("saleBundles")),   // Bundle thread — one per buyer per bundle (bundle v2)
     buyerId: v.id("users"),
     sellerId: v.id("users"),
     lastMessageAt: v.number(),
@@ -63,6 +64,7 @@ const applicationTables = {
   })
     .index("by_ad_and_buyer", ["adId", "buyerId"])
     .index("by_sale_event_buyer", ["saleEventId", "buyerId"]) // 1 thread per buyer per Sale
+    .index("by_bundle_buyer", ["bundleId", "buyerId"]) // 1 thread per buyer per bundle
     .index("by_buyer", ["buyerId"])
     .index("by_seller", ["sellerId"])
     .index("by_ad", ["adId"])
@@ -93,6 +95,14 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_sale", ["userId", "saleEventId"]),
+
+  /** Bookmarking a whole Bundle (not its individual items) — mirrors savedSaleEvents. */
+  savedBundles: defineTable({
+    userId: v.id("users"),
+    bundleId: v.id("saleBundles"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_bundle", ["userId", "bundleId"]),
 
   reports: defineTable({
     reporterId: v.id("users"),          // User submitting the report
@@ -151,11 +161,13 @@ const applicationTables = {
   pendingEmailNotifications: defineTable({
     recipientId: v.id("users"),
     chatId: v.id("chats"),
-    // Exactly one of adId / saleEventId is set (item-chat vs sale-thread notification).
-    // adId made optional (was required) to support sale-thread notifications — existing
-    // rows all have adId set, so this widening is additive/backward-compatible.
+    // Exactly one of adId / saleEventId / bundleId is set (item-chat vs sale-thread
+    // vs bundle-thread notification). adId made optional (was required) to support
+    // sale-thread notifications — existing rows all have adId set, so this widening
+    // is additive/backward-compatible; bundleId added the same way (bundle v2).
     adId: v.optional(v.id("ads")),
     saleEventId: v.optional(v.id("saleEvents")),
+    bundleId: v.optional(v.id("saleBundles")),
     senderId: v.id("users"),
     messageContent: v.string(),
     createdAt: v.number(),

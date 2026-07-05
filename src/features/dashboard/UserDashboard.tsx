@@ -33,9 +33,12 @@ import {
   MapPin,
   Image as ImageIcon,
   Envelope,
-  Package
+  Package,
+  Plus,
+  Stack
 } from '@phosphor-icons/react';
 import { MovingSalesTab } from "./MovingSalesTab";
+import { BundlesTab } from "./BundlesTab";
 import { BundleManageModal } from "../bundles/BundleManageModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
@@ -66,10 +69,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const navigate = useNavigate();
   const { whileInView, reduced } = useMotionPrefs();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
+  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived" | null;
   const { isMobile } = useDeviceInfo();
 
-  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "profile" | "archived">(tabParam || "ads");
+  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived">(tabParam || "ads");
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const bundleModeEnabled = useFeatureFlag("bundleListing");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -272,7 +275,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Sync activeTab with URL search params (for bottom nav navigation)
   useEffect(() => {
-    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "profile" | "archived" | null;
+    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived" | null;
     if (tabParam && tabParam !== activeTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
@@ -297,6 +300,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       setSearchParams({ tab: "ads" }, { replace: true });
     }
   }, [activeTab, movingSaleModeEnabled, setSearchParams]);
+
+  // Same guard for the bundles tab when Bundle Listing is off. Only pushes the
+  // URL (the URL→activeTab sync effect is the single writer) to avoid the
+  // effect ping-pong documented on the sales guard above.
+  useEffect(() => {
+    if (activeTab === "bundles" && bundleModeEnabled === false) {
+      setSearchParams({ tab: "ads" }, { replace: true });
+    }
+  }, [activeTab, bundleModeEnabled, setSearchParams]);
 
   // Scroll to top only when navigating TO dashboard from external route
   useEffect(() => {
@@ -335,9 +347,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           ads: adsContentRef,
           chats: chatsContentRef,
           saved: savedContentRef,
-          // MovingSalesTab manages its own scroll; reuse the ads ref (null when
-          // the sales tab is active, so the optional-chain below simply no-ops).
+          // MovingSalesTab / BundlesTab manage their own scroll; reuse the ads
+          // ref (null when those tabs are active, so the chain below no-ops).
           sales: adsContentRef,
+          bundles: adsContentRef,
           profile: profileContentRef,
           archived: archivedContentRef,
         };
@@ -777,6 +790,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ...(movingSaleModeEnabled
                       ? [{ id: "sales", label: "Moving sales", icon: Package }]
                       : []),
+                    ...(bundleModeEnabled
+                      ? [{ id: "bundles", label: "Bundles", icon: Stack }]
+                      : []),
                     { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
                   ].map((tab) => {
@@ -861,7 +877,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                         <button
                           type="button"
                           onClick={() => { void navigate("/sell/bundle"); }}
-                          className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-transparent text-blue-700 dark:text-blue-400 font-semibold ring-1 ring-blue-600/40 hover:bg-blue-600/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
+                          className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-transparent text-bundle-emphasis font-semibold ring-1 ring-bundle/40 hover:bg-bundle/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bundle focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                         >
                           <Package size={18} weight="fill" />
                           Bundle ads
@@ -969,7 +985,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         e.stopPropagation();
                                         setManageBundleId(inBundle.bundleId);
                                       }}
-                                      className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400 ring-1 ring-blue-600/20 hover:bg-blue-600/15 transition"
+                                      className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-bundle/10 px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/20 hover:bg-bundle/15 transition"
                                     >
                                       <Package size={13} weight="fill" className="shrink-0" />
                                       <span className="truncate">In bundle: {inBundle.label}</span>
@@ -985,10 +1001,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                         e.stopPropagation();
                                         void navigate(`/sell/bundle?preselect=${ad._id}`);
                                       }}
-                                      className="mb-2 inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400 hover:underline"
+                                      className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/40 hover:bg-bundle/10 active:scale-[0.98] transition"
                                     >
-                                      <Package size={13} weight="fill" />
-                                      Bundle this →
+                                      <Plus size={13} weight="bold" className="shrink-0" />
+                                      Add to a bundle
                                     </button>
                                   );
                                 }
@@ -1325,6 +1341,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               )}
 
               {activeTab === "sales" && movingSaleModeEnabled && <MovingSalesTab />}
+
+              {activeTab === "bundles" && bundleModeEnabled && <BundlesTab />}
 
               {activeTab === "profile" && (
                 <section ref={profileContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Profile settings">

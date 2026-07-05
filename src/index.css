@@ -35,6 +35,13 @@
     --input: 25 14% 87%;
     --ring: 5 71% 51%;
 
+    /* Bundle Listing accent (teal). Semantic token — re-theme the whole feature
+       here, never per-component. --bundle = solid, -foreground = text on solid,
+       -emphasis = ink on a tinted (bundle/10) surface. */
+    --bundle: 174 84% 32%;
+    --bundle-foreground: 0 0% 100%;
+    --bundle-emphasis: 175 77% 26%;
+
     --radius: 0.5rem;
 
     /* Tinted shadow channel — carries warm/red hue instead of pure black */
@@ -85,6 +92,10 @@
        The dark --primary (5 65% 42%) only hits ~2.86:1 vs the dark
        background and fails WCAG AA for UI components. */
     --ring: 5 75% 60%;
+    /* Bundle accent — dark mode: brighter solid + lighter ink for tint contrast */
+    --bundle: 172 66% 40%;
+    --bundle-foreground: 0 0% 100%;
+    --bundle-emphasis: 172 66% 55%;
     --primary-bright: 5 75% 65%;
     /* Softer, brighter variant for text readability on dark backgrounds.
        Measured 6.22:1 vs --background and 3.36:1 vs --primary-foreground. */

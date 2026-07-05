@@ -111,7 +111,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-bundle text-white">
               <Package size={18} weight="fill" />
             </span>
             <h2
@@ -138,7 +138,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
         ) : (
           <>
             {bundle.status !== "active" && (
-              <p className="mb-4 rounded-lg bg-blue-600/10 px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-400">
+              <p className="mb-4 rounded-lg bg-bundle/10 px-3 py-2 text-xs font-medium text-bundle-emphasis">
                 {bundle.status === "partial"
                   ? "An item sold individually — the bundle deal is no longer active."
                   : bundle.status === "sold"
@@ -192,8 +192,8 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
                 <dd className="tabular-nums text-muted-foreground">{formatPrice(bundle.separatelyTotal)}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-blue-700 dark:text-blue-400">Buyers save</dt>
-                <dd className="font-semibold tabular-nums text-blue-700 dark:text-blue-400">
+                <dt className="text-bundle-emphasis">Buyers save</dt>
+                <dd className="font-semibold tabular-nums text-bundle-emphasis">
                   {formatPrice(bundle.savings)}
                 </dd>
               </div>
@@ -205,7 +205,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
                   Bundle price
                 </label>
                 <div className="mt-1.5 flex items-center gap-2">
-                  <div className="flex flex-1 items-center rounded-xl ring-1 ring-border focus-within:ring-2 focus-within:ring-blue-600">
+                  <div className="flex flex-1 items-center rounded-xl ring-1 ring-border focus-within:ring-2 focus-within:ring-bundle">
                     <span className="pl-3 text-base font-semibold text-muted-foreground">$</span>
                     <input
                       id="manage-bundle-price"
@@ -221,7 +221,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
                     type="button"
                     disabled={!priceDirty || busy}
                     onClick={() => { void handleSavePrice(); }}
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-bundle px-4 text-sm font-semibold text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Save
                   </button>
@@ -234,7 +234,7 @@ export function BundleManageModal({ bundleId, onClose }: BundleManageModalProps)
                 type="button"
                 disabled={busy}
                 onClick={() => { void handleMarkSold(); }}
-                className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition active:scale-[0.99] disabled:opacity-50"
+                className="mt-5 w-full rounded-xl bg-bundle px-4 py-3 text-sm font-semibold text-white transition active:scale-[0.99] disabled:opacity-50"
               >
                 Mark sold as a bundle
               </button>

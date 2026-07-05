@@ -1,6 +1,6 @@
 # Bundle Listing
 
-**Last Updated**: 2026-07-03 (mobile scroll-container fix for `/sell/bundle` wizard)
+**Last Updated**: 2026-07-05 (teal semantic token + dashboard BundlesTab)
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
@@ -106,8 +106,20 @@ efficiency/altitude agents) surfaced it:
 - `AdDetail` renders `BundleBanner` right after the Sale banner (an ad is never in both).
 - `UserDashboard` ads tab: blue "Bundle ads" header button, per-card "📦 In bundle: {label}"
   tag (opens manage modal) or "Bundle this →" (→ `/sell/bundle?preselect=`), all flag-gated.
-- **Accent color = BLUE** (Tailwind `blue-*`) to distinguish from Moving Sale's red/primary —
-  a deliberate design-doc mandate, not a token violation. Icon = Phosphor `Package`.
+- **Accent color = TEAL, via a semantic token** (2026-07-05, was hardcoded `blue-*`). Every
+  bundle surface uses the `bundle` Tailwind color — `bg-bundle` (solid), `text-bundle-foreground`
+  (on solid), `text-bundle-emphasis` (ink on a `bundle/10` tint), `ring-bundle`, `border-bundle`.
+  The values live in ONE place: `--bundle` / `--bundle-foreground` / `--bundle-emphasis` in
+  `src/index.css` (`:root` + `.dark`, mode-aware), wired in `tailwind.config.js`. Re-theme the
+  whole feature by editing those 3 CSS vars — never reintroduce raw `blue-*`/`teal-*` classes.
+  `-emphasis` is mode-aware so the old `text-blue-700 dark:text-blue-400` pairs collapsed to a
+  single `text-bundle-emphasis`. Icon = Phosphor `Package`; nav-tab icon = `Stack`.
+- **Dashboard `BundlesTab`** (`src/features/dashboard/BundlesTab.tsx`) — a dedicated "Bundles"
+  sidebar tab (gated on `bundleModeEnabled`, mirrors the `sales`/`MovingSalesTab` pattern incl.
+  the URL-redirect guard when the flag is off). Lists the seller's bundles (reuses
+  `BundleThumbnail` + `BundleManageModal`), with status pills active/partial/sold/cancelled.
+  This is the primary place to *find* a bundle; the per-ad "In bundle: …" tag is the secondary
+  entry. Tab union + scroll `refMap` in `UserDashboard.tsx` both needed the new `"bundles"` key.
 - Motion via `useMotionPrefs()` only (bakes in reduced-motion); `AnimatePresence` for wizard
   step transitions.
 

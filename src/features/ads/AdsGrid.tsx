@@ -278,12 +278,12 @@ export const AdsGrid = memo(function AdsGrid({
                   <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
                     <BundleThumbnail covers={bundle.covers} itemCount={bundle.itemCount} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
-                    <div className="absolute top-2.5 left-2.5 bg-blue-600 text-white px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
+                    <div className="absolute top-2.5 left-2.5 bg-bundle text-white px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
                       <Package className="w-3 h-3" weight="fill" />
                       Bundle
                     </div>
                     {bundle.savings > 0 && (
-                      <div className="absolute bottom-2.5 right-2.5 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
+                      <div className="absolute bottom-2.5 right-2.5 bg-bundle text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
                         Save {formatPrice(bundle.savings)}
                       </div>
                     )}

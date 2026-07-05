@@ -19,6 +19,11 @@ import { formatPrice } from "../../lib/priceFormatter";
 const MIN_ITEMS = 2;
 const MAX_ITEMS = 4;
 
+/** Auto-generated bundle name from the first two item titles (shared by the price + confirm steps). */
+function autoBundleLabel(items: { title: string }[]): string {
+  return items.map((i) => i.title).slice(0, 2).join(" + ") || "My bundle";
+}
+
 type Step = "pick" | "price" | "confirm";
 const STEPS: Step[] = ["pick", "price", "confirm"];
 
@@ -134,7 +139,7 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
               <span
                 key={s}
                 className={`h-1.5 flex-1 rounded-full ${
-                  i <= stepIndex ? "bg-blue-600" : "bg-muted"
+                  i <= stepIndex ? "bg-bundle" : "bg-muted"
                 }`}
               />
             ))}
@@ -247,7 +252,7 @@ function PickStep({
 
   return (
     <div>
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600 mb-1">
+      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-bundle mb-1">
         Step 1 of 3
       </span>
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
@@ -258,7 +263,7 @@ function PickStep({
       </p>
 
       <div className="mt-4 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600/10 px-3 py-1 text-sm font-semibold text-blue-700 dark:text-blue-400">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-bundle/10 px-3 py-1 text-sm font-semibold text-bundle-emphasis">
           <Package size={16} weight="fill" />
           {selected.length} of {maxItems} selected
         </span>
@@ -287,7 +292,7 @@ function PickStep({
                 transition={{ type: "spring", stiffness: 400, damping: 28 }}
                 className={`relative aspect-square overflow-hidden rounded-xl text-left ring-1 transition ${
                   isSelected
-                    ? "ring-2 ring-blue-600"
+                    ? "ring-2 ring-bundle"
                     : "ring-border/70 hover:ring-foreground/20"
                 } ${ad.eligible ? "" : "cursor-not-allowed opacity-45"}`}
                 aria-pressed={isSelected}
@@ -296,7 +301,7 @@ function PickStep({
                 <ItemThumb image={ad.image} title={ad.title} iconSize={24} />
 
                 {isSelected && (
-                  <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm">
+                  <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-bundle text-white shadow-sm">
                     <Check size={14} weight="bold" />
                   </span>
                 )}
@@ -322,7 +327,7 @@ function PickStep({
         type="button"
         disabled={!canProceed}
         onClick={onNext}
-        className="mt-8 w-full rounded-xl bg-blue-600 px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-8 w-full rounded-xl bg-bundle px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {canProceed ? "Set a bundle price" : `Select at least ${MIN_ITEMS}`}
       </button>
@@ -359,11 +364,11 @@ function PriceStep({
   canProceed: boolean;
   onNext: () => void;
 }) {
-  const autoName = items.map((i) => i.title).slice(0, 2).join(" + ") || "My bundle";
+  const autoName = autoBundleLabel(items);
 
   return (
     <div>
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600 mb-1">
+      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-bundle mb-1">
         Step 2 of 3
       </span>
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
@@ -396,7 +401,7 @@ function PriceStep({
         <label htmlFor="bundle-price" className="block text-sm font-medium text-foreground">
           Bundle price
         </label>
-        <div className="mt-1.5 flex items-center rounded-xl ring-1 ring-border focus-within:ring-2 focus-within:ring-blue-600">
+        <div className="mt-1.5 flex items-center rounded-xl ring-1 ring-border focus-within:ring-2 focus-within:ring-bundle">
           <span className="pl-3.5 text-lg font-semibold text-muted-foreground">$</span>
           <input
             id="bundle-price"
@@ -422,7 +427,7 @@ function PriceStep({
           maxLength={80}
           onChange={(e) => onLabelChange(e.target.value)}
           placeholder={autoName}
-          className="mt-1.5 w-full rounded-xl bg-transparent px-3.5 py-3 text-sm text-foreground ring-1 ring-border outline-none focus:ring-2! focus:ring-blue-600! focus:border-transparent!"
+          className="mt-1.5 w-full rounded-xl bg-transparent px-3.5 py-3 text-sm text-foreground ring-1 ring-border outline-none focus:ring-2! focus:ring-bundle! focus:border-transparent!"
         />
       </div>
 
@@ -434,7 +439,7 @@ function PriceStep({
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600/10 px-3.5 py-3 text-sm font-semibold text-blue-700 dark:text-blue-400"
+              className="flex items-center gap-1.5 rounded-xl bg-bundle/10 px-3.5 py-3 text-sm font-semibold text-bundle-emphasis"
             >
               <Check size={16} weight="bold" />
               Buyers save {formatPrice(savings)} ({savingsPct}%)
@@ -458,7 +463,7 @@ function PriceStep({
         type="button"
         disabled={!canProceed}
         onClick={onNext}
-        className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-6 w-full rounded-xl bg-bundle px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
       >
         Review bundle
       </button>
@@ -487,20 +492,20 @@ function ConfirmStep({
   submitting: boolean;
   onCreate: () => void;
 }) {
-  const name = label.trim() || items.map((i) => i.title).slice(0, 2).join(" + ") || "My bundle";
+  const name = label.trim() || autoBundleLabel(items);
 
   return (
     <div>
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600 mb-1">
+      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-bundle mb-1">
         Step 3 of 3
       </span>
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
         Confirm your bundle
       </h1>
 
-      <div className="mt-5 rounded-2xl ring-1 ring-blue-600/25 bg-blue-600/[0.04] p-4">
+      <div className="mt-5 rounded-2xl ring-1 ring-bundle/25 bg-bundle/[0.04] p-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-bundle text-white">
             <Package size={18} weight="fill" />
           </span>
           <h2 className="font-display text-lg font-semibold text-foreground">{name}</h2>
@@ -514,21 +519,21 @@ function ConfirmStep({
           ))}
         </div>
 
-        <dl className="mt-4 space-y-1.5 border-t border-blue-600/15 pt-4 text-sm">
+        <dl className="mt-4 space-y-1.5 border-t border-bundle/15 pt-4 text-sm">
           <div className="flex items-center justify-between">
             <dt className="text-muted-foreground">Separately</dt>
             <dd className="tabular-nums text-muted-foreground line-through">{formatPrice(separatelyTotal)}</dd>
           </div>
           <div className="flex items-center justify-between">
             <dt className="font-semibold text-foreground">Bundle price</dt>
-            <dd className="font-display text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-400">
+            <dd className="font-display text-lg font-semibold tabular-nums text-bundle-emphasis">
               {formatPrice(bundlePrice)}
             </dd>
           </div>
           {savings > 0 && (
             <div className="flex items-center justify-between">
-              <dt className="text-blue-700 dark:text-blue-400">Buyers save</dt>
-              <dd className="font-semibold tabular-nums text-blue-700 dark:text-blue-400">
+              <dt className="text-bundle-emphasis">Buyers save</dt>
+              <dd className="font-semibold tabular-nums text-bundle-emphasis">
                 {formatPrice(savings)} ({savingsPct}%)
               </dd>
             </div>
@@ -544,7 +549,7 @@ function ConfirmStep({
         type="button"
         disabled={submitting}
         onClick={onCreate}
-        className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-6 w-full rounded-xl bg-bundle px-4 py-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? "Creating…" : "Create bundle"}
       </button>

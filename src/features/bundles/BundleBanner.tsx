@@ -53,10 +53,10 @@ export function BundleBanner({
   return (
     <motion.div
       {...whileInView(0.05)}
-      className="mb-6 w-full rounded-2xl border border-blue-500/20 bg-blue-50/60 p-4 text-left dark:bg-blue-500/[0.06]"
+      className="mb-6 w-full rounded-2xl border border-bundle/20 bg-bundle/10 p-4 text-left dark:bg-bundle/[0.06]"
     >
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bundle text-white">
           <Package size={20} weight="fill" />
         </span>
         <span className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ export function BundleBanner({
               {i > 0 && <span className="text-xs font-semibold text-muted-foreground">+</span>}
               {item.isCurrent ? (
                 <div
-                  className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md ring-2 ring-blue-500"
+                  className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md ring-2 ring-bundle"
                   aria-label={`${item.title} (you're viewing this item)`}
                 >
                   <ImageDisplay imageRef={item.image} alt="" className="h-full w-full object-cover opacity-50" />
@@ -104,7 +104,7 @@ export function BundleBanner({
           <p className="mt-1 text-xs text-muted-foreground line-through decoration-muted-foreground/50">
             vs {formatPrice(separatelyTotal)} separately
           </p>
-          <span className="mt-1 inline-block rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-400">
+          <span className="mt-1 inline-block rounded-full bg-bundle/15 px-2 py-0.5 text-[11px] font-semibold text-bundle-emphasis">
             Save {savingsPct}%
           </span>
         </div>

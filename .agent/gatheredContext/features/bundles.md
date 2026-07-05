@@ -1,6 +1,6 @@
 # Bundle Listing
 
-**Last Updated**: 2026-07-05 (teal semantic token + dashboard BundlesTab)
+**Last Updated**: 2026-07-05 (teal semantic token + dashboard BundlesTab; cap rationale documented)
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
@@ -49,7 +49,11 @@ declared optional, **every new write populates them**, reads treat missing `stat
 
 ## Backend — `convex/bundles.ts`
 Constants `BUNDLE_MIN_ITEMS = 2`, `BUNDLE_MAX_ITEMS = 4` (the doc's "exactly N" is a
-tunable constant; 2–4 is what shipped).
+tunable constant; 2–4 is what shipped). The 2–4 cap is a deliberate product decision
+(2026-07-05), not arbitrary: 4 covers the "room set" mental model that makes bundling
+attractive; item-count monetisation was considered and deferred (see
+`docs/architecture/design-decisions.md` § "Bundle Listing — item cap"). Don't lower the
+cap or gate it behind payment without revisiting that decision.
 
 Mutations: `createBundle({adIds,bundlePrice,label?})` (validates eligibility + caps +
 rate limit `createBundle`), `updateBundlePrice`, `removeBundleItem` (auto-cancels if

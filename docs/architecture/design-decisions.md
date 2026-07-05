@@ -303,3 +303,23 @@ banner shows the full deal, avoiding a new route and duplicate search content.
 **Mutual exclusivity**: `ads.bundleId` and `ads.saleEventId` are mutually exclusive
 (a bundle item is never also a Sale item). Enforced in `createBundle` and by the picker's
 eligibility query. `ads.bundleId` stays singular — overlapping bundles deferred.
+
+## Bundle Listing — item cap 2–4, free; item-count monetisation deferred (2026-07-05)
+
+**Decision**: bundles hold 2–4 items and the feature is entirely free. Confirmed by
+Amir on 2026-07-05 after weighing "cap at 2 now, monetise larger bundles later" against
+launching at 4.
+
+**Why 4**: the mental model that makes bundling attractive is the *room set* — bed +
+nightstand + dresser + mirror, or sofa + coffee table + chairs. That's 3–4 items.
+Capping at 2 covers only the pair case and guts the value proposition.
+
+**Why not monetise item count**: a size gate lands its friction on adoption, not
+revenue — sellers won't pay to add a 3rd item; they'll skip the feature. This also keeps
+Bundle Listing consistent with the Moving Sale Mode monetisation philosophy: core usage
+is free, paid add-ons sit on distribution/visibility (AI, QR/PDF, search pin).
+
+**Deferred, not rejected**: if a paid tier is ever wanted, ">4 items / unlimited bundle
+size" is the cleaner upsell than "more than 2" — but only if real usage data shows
+demand for larger bundles. `BUNDLE_MAX_ITEMS` in `convex/bundles.ts` is the single
+constant to change.

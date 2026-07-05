@@ -275,3 +275,94 @@ export const seedMovingSale = internalMutation({
     };
   },
 });
+
+/**
+ * Seed a few standalone furniture ads owned by a real (logged-in) user so you can
+ * test Bundle Listing without hand-posting them. The owner must have logged in at
+ * least once (so their Convex `users` row exists).
+ *
+ *   npx convex run seed:seedBundleAds '{"email":"you@example.com"}'
+ *
+ * Prints the ad ids. Then in the app: Dashboard → My Flyers → "Bundle ads".
+ * Pass `{"reset": true}` to first delete this user's previously-seeded demo ads.
+ */
+const BUNDLE_SEED_ADS = [
+  {
+    title: "Mid-century 3-seat sofa",
+    description: "Walnut frame, forest-green wool. Barely used, from a smoke-free home.",
+    price: 350,
+    images: ["https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&h=600&fit=crop"],
+  },
+  {
+    title: "Solid oak dining table",
+    description: "Seats six. A few honest marks but structurally perfect.",
+    price: 280,
+    images: ["https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800&h=600&fit=crop"],
+  },
+  {
+    title: "Round marble coffee table",
+    description: "White carrara top, brass legs. Statement piece.",
+    price: 120,
+    images: ["https://images.unsplash.com/photo-1499933374294-4584851497cc?w=800&h=600&fit=crop"],
+  },
+];
+
+export const seedBundleAds = internalMutation({
+  args: { email: v.optional(v.string()), phone: v.optional(v.string()), reset: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    // Resolve the owner by email (or phone) — mirrors seedMovingSale.
+    let user = null;
+    if (args.email) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", args.email))
+        .first();
+    }
+    if (!user && args.phone) {
+      user = await ctx.db.query("users").filter((q) => q.eq(q.field("phone"), args.phone)).first();
+    }
+    if (!user) {
+      throw new Error(
+        `No user found for ${args.email ?? args.phone ?? "(none provided)"} — make sure they've logged in at least once.`
+      );
+    }
+
+    if (args.reset) {
+      const owned = await ctx.db
+        .query("ads")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+      for (const ad of owned) {
+        if (BUNDLE_SEED_ADS.some((s) => s.title === ad.title)) await ctx.db.delete(ad._id);
+      }
+    }
+
+    const category = await ctx.db.query("categories").first();
+    if (!category) throw new Error("No categories exist — run sampleData:clearAndCreateSampleData first.");
+
+    const createdIds: Id<"ads">[] = [];
+    for (const seed of BUNDLE_SEED_ADS) {
+      const id = await ctx.db.insert("ads", {
+        title: seed.title,
+        description: seed.description,
+        listingType: "sale",
+        price: seed.price,
+        location: "Richmond, VIC",
+        categoryId: category._id,
+        images: seed.images,
+        userId: user._id,
+        isActive: true,
+        isSold: false,
+        views: 0,
+      });
+      createdIds.push(id);
+    }
+
+    return {
+      success: true,
+      createdIds,
+      owner: { id: user._id, name: user.name ?? null, email: user.email ?? null },
+      message: `Seeded ${createdIds.length} standalone ads for ${user.name ?? user.email}. Dashboard → My Flyers → "Bundle ads".`,
+    };
+  },
+});

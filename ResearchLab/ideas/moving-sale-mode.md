@@ -1,6 +1,12 @@
 # Moving sale mode (multi-item decluttering flow)
 
-- **Status:** Exploring
+> **Shipped, merged — 2026-07-02.**
+> Full UX spec, competitive research, data model, buyer page design, batch review UI, QR integration, and free-vs-paid tier analysis:
+> → [`moving-sale-mode-design.md`](./moving-sale-mode-design.md)
+> Bundle Listing — a related but separate feature (small fixed-size item bundles, no sale page) — split out to its own doc:
+> → [`bundle-listing-design.md`](./bundle-listing-design.md)
+
+- **Status:** Shipped
 - **Created:** 2026-05-09
 - **Last touched:** 2026-05-09
 

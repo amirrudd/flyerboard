@@ -58,15 +58,16 @@ describe("resolvePublicImageUrl", () => {
     );
   });
 
+  // NB: pass an explicit empty base, NOT `undefined`. Passing `undefined` triggers
+  // the parameter default (`import.meta.env.VITE_R2_PUBLIC_URL`), which Vite now
+  // injects from .env.local (the CDN went live), so the "unset" case wouldn't be
+  // exercised. An empty string hits the same `if (!publicBase) return null` branch.
   it("returns null for r2: references when base is unset", () => {
-    // Explicitly clear the env default — .env.local may set VITE_R2_PUBLIC_URL.
-    vi.stubEnv("VITE_R2_PUBLIC_URL", "");
-    expect(resolvePublicImageUrl("r2:flyers/post1/abc.webp")).toBeNull();
+    expect(resolvePublicImageUrl("r2:flyers/post1/abc.webp", "")).toBeNull();
   });
 
   it("returns null for legacy prefixed keys when base is unset", () => {
-    vi.stubEnv("VITE_R2_PUBLIC_URL", "");
-    expect(resolvePublicImageUrl("flyers/post1/abc.webp")).toBeNull();
+    expect(resolvePublicImageUrl("flyers/post1/abc.webp", "")).toBeNull();
   });
 
   it("returns null for legacy Convex _storage ids regardless of base", () => {

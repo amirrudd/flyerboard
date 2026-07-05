@@ -37,6 +37,10 @@ import { paginationOptsValidator } from "convex/server";
  *   paginationOpts: { numItems: 20, cursor: null }
  * });
  * ```
+ *
+ * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
+ * shouldn't browse as available. Direct links (e.g. a seller's own dashboard) still
+ * resolve via `getAdById`, which is unfiltered.
  */
 export const getAds = query({
   args: {
@@ -66,7 +70,7 @@ export const getAds = query({
 
           return searchQuery;
         })
-        .filter((q) => q.neq(q.field("isDeleted"), true))
+        .filter((q) => q.and(q.neq(q.field("isDeleted"), true), q.neq(q.field("isSold"), true)))
         .take(50); // Limit search results since we can't easily paginate
 
       return {
@@ -92,6 +96,7 @@ export const getAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
+            q.neq(q.field("isSold"), true),
             args.maxCreationTime && args.categoryId
               ? q.lte(q.field("_creationTime"), args.maxCreationTime)
               : true
@@ -243,6 +248,7 @@ export const getLatestAds = query({
         .filter((q) =>
           q.and(
             q.neq(q.field("isDeleted"), true),
+            q.neq(q.field("isSold"), true),
             q.gt(q.field("_creationTime"), args.sinceTimestamp)
           )
         )
@@ -268,6 +274,7 @@ export const getLatestAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
+            q.neq(q.field("isSold"), true),
             args.categoryId
               ? q.gt(q.field("_creationTime"), args.sinceTimestamp)
               : true

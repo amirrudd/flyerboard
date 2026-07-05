@@ -91,5 +91,15 @@ export function useMotionPrefs() {
     } as const;
   }
 
-  return { reduced, fadeUp, whileInView, staggerCard, bubbleIn, listStagger, scalePop };
+  /** Horizontal slide in/out — for step-wizard transitions (e.g. BundleFlow). */
+  function slideStep() {
+    return {
+      initial: { opacity: 0, x: reduced ? 0 : 24 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: reduced ? 0 : -24 },
+      transition: { duration: reduced ? 0 : 0.28, ease: EASE },
+    } as const;
+  }
+
+  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop };
 }

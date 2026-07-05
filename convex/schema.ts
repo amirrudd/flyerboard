@@ -203,13 +203,32 @@ const applicationTables = {
     .index("by_slug", ["slug"])
     .index("by_status", ["status"]),
 
+  // Bundles serve two callers off one table:
+  //   • Moving Sale step-5 "bundle suggestions" — always carry a `saleEventId`.
+  //   • Standalone Bundle Listing — `saleEventId` is undefined (null = standalone).
+  // `sellerId`/`status` are declared optional purely so a schema push validates
+  // against the pre-existing Moving Sale rows that predate these fields; every
+  // NEW write populates both, a backfill migration fills the old rows
+  // (`migrations:backfillSaleBundles`), and reads treat a missing `status` as
+  // "active". See ResearchLab/ideas/bundle-listing-design.md → "Schema — reconciliation".
   saleBundles: defineTable({
-    saleEventId: v.id("saleEvents"),       // FK → saleEvents
-    label: v.string(),                     // "Home office setup"
+    sellerId: v.optional(v.id("users")),   // Owner. Always set on new rows; backfilled from saleEvent.userId on legacy rows.
+    saleEventId: v.optional(v.id("saleEvents")), // FK → saleEvents; undefined = standalone bundle
+    label: v.string(),                     // "Home office setup" — doubles as the standalone bundle's display title
     bundlePrice: v.number(),               // Seller-set or AI-suggested bundle price
-    adIds: v.array(v.id("ads")),           // Ads included in this bundle
+    adIds: v.array(v.id("ads")),           // Ads included in this bundle (exactly N for standalone)
+    status: v.optional(                    // Sold-state machine; missing => "active"
+      v.union(
+        v.literal("active"),               // deal live, every item still buyable individually
+        v.literal("partial"),              // an item sold individually — bundle price gone
+        v.literal("sold"),                 // bought as a bundle (all items isSold, atomic)
+        v.literal("cancelled"),            // seller broke up the bundle; items revert to standalone
+      )
+    ),
+    isDeleted: v.optional(v.boolean()),    // Soft-delete flag (project-wide pattern)
   })
-    .index("by_sale_event", ["saleEventId"]),
+    .index("by_sale_event", ["saleEventId"])
+    .index("by_seller", ["sellerId"]),
 };
 
 // Extend the auth tables to add custom fields

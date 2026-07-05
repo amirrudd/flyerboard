@@ -415,6 +415,11 @@ export const seedFeatureFlags = internalMutation({
         description: "Moving Sale Mode — bulk-list flow, public sale pages, dashboard sales tab, and feed sale cards. Disabling hides every entry point (safety kill switch), it does not delete existing sales.",
         enabled: true,
       },
+      {
+        key: "bundleListing",
+        description: "Bundle Listing — group a few standalone ads at a discount. Gates the dashboard 'Bundle ads' button, the ad-detail bundle banner, and feed bundle cards. Disabling hides every entry point (safety kill switch), it does not delete existing bundles.",
+        enabled: true,
+      },
     ];
 
     const results = {
@@ -439,6 +444,54 @@ export const seedFeatureFlags = internalMutation({
     return {
       success: true,
       message: `Created ${results.created.length} flags, ${results.existing.length} already existed`,
+      results,
+    };
+  },
+});
+
+/**
+ * Backfill `sellerId` and `status` on `saleBundles` rows that predate Bundle
+ * Listing (Moving Sale Mode shipped the table without them). Idempotent — safe to
+ * run repeatedly; only touches rows missing a field.
+ *
+ * `sellerId` is derived from the owning sale event (`saleEvent.userId`). Rows with
+ * neither a `sellerId` nor a resolvable `saleEventId` are reported as orphans and
+ * left untouched (should not exist in practice).
+ *
+ * Usage: npx convex run migrations:backfillSaleBundles
+ */
+export const backfillSaleBundles = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const bundles = await ctx.db.query("saleBundles").collect();
+    const results = { patched: 0, skipped: 0, orphaned: [] as string[] };
+
+    for (const bundle of bundles) {
+      const patch: { sellerId?: (typeof bundle)["sellerId"]; status?: "active" } = {};
+
+      if (!bundle.sellerId) {
+        if (bundle.saleEventId) {
+          const sale = await ctx.db.get(bundle.saleEventId);
+          if (sale) patch.sellerId = sale.userId;
+        }
+        if (!patch.sellerId) {
+          results.orphaned.push(bundle._id);
+          continue;
+        }
+      }
+      if (!bundle.status) patch.status = "active";
+
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(bundle._id, patch);
+        results.patched += 1;
+      } else {
+        results.skipped += 1;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Patched ${results.patched}, skipped ${results.skipped}, orphaned ${results.orphaned.length}`,
       results,
     };
   },

@@ -125,11 +125,14 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   const progressIndex = PROGRESS_STEPS.indexOf(step);
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    // Fixed-height flex column with an internal scroll region — the app disables
+    // body scroll at <=768px (src/index.css), so step content (and its primary CTA)
+    // must own its own scroll container or it becomes unreachable on narrow viewports.
+    <div className="flex h-[100dvh] flex-col bg-background">
       {/* Chrome */}
       {step !== "intro" && step !== "share" && (
         <header
-          className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur"
+          className="shrink-0 border-b border-border bg-background/95 backdrop-blur"
           style={{ paddingTop: "var(--safe-area-inset-top)" }}
         >
           <div className="mx-auto flex max-w-md items-center gap-3 px-3 py-3">
@@ -163,6 +166,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
         </header>
       )}
 
+      <div className="mobile-scroll-container flex-1">
       {step === "intro" && (
         <IntroStep onStart={() => setStep("setup")} onExit={() => { void navigate("/dashboard"); }} />
       )}
@@ -230,6 +234,7 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
           unlockedAddons={editor?.sale.unlockedAddons ?? []}
         />
       )}
+      </div>
     </div>
   );
 }
@@ -241,7 +246,7 @@ function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => voi
     { icon: <Lightning size={20} weight="fill" />, text: "Share with a link — or add a QR + printable flyer" },
   ];
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 py-6">
+    <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-6">
       <button
         type="button"
         onClick={onExit}

@@ -244,6 +244,14 @@ export const addSaleItems = mutation({
 
     const defaultCategoryId = await getDefaultCategoryId(ctx);
 
+    // Mutual exclusivity with Bundle Listing is upheld here structurally, not by a
+    // guard: every sale item is a BRAND-NEW ad born with `saleEventId` set and no
+    // `bundleId`. There is no path that adopts an existing (possibly bundled) ad
+    // into a sale, and an ad's `saleEventId` is only ever assigned at creation — so
+    // a standalone-bundled ad can never enter a sale. The reciprocal guard lives in
+    // `bundles.createBundle` (rejects any ad that already has a `saleEventId`). If a
+    // future feature lets sellers pull EXISTING ads into a sale, assert `!ad.bundleId`
+    // (and detach/forbid) at that new site.
     const createdIds: Id<"ads">[] = [];
     for (let i = 0; i < args.items.length; i++) {
       const item = args.items[i];
@@ -372,7 +380,7 @@ export const setBundles = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOwnedSale(ctx, args.saleEventId, "setBundles");
+    const { userId } = await requireOwnedSale(ctx, args.saleEventId, "setBundles");
 
     // Clear existing bundles + member references.
     const existing = await ctx.db
@@ -398,6 +406,8 @@ export const setBundles = mutation({
       if (adIds.length < 2) continue; // a bundle needs at least two items
       const bundleId = await ctx.db.insert("saleBundles", {
         saleEventId: args.saleEventId,
+        sellerId: userId,      // populate the shared field so Sale bundles match standalone ones
+        status: "active",
         label: bundle.label.trim() || "Bundle",
         bundlePrice: bundle.bundlePrice,
         adIds,

@@ -278,3 +278,48 @@ clock starts at rollout.
 Dec 2025). 30 days preserves the restore window users actually use while bounding storage
 cost. The policy is an env var so it can change without a deploy. Edge/browser caches may
 serve a purged image until TTL lapses — accepted trade-off, not worth shortening TTLs.
+
+## Bundle Listing — reusing `saleBundles`, optional-then-backfill schema (Jul 2026)
+**Decision**: Bundle Listing (group 2–4 standalone ads at a discount) reuses the
+`saleBundles` table that Moving Sale Mode had already shipped, rather than a new table.
+A standalone bundle simply leaves `saleEventId` undefined (null = standalone). The three
+new fields Bundle Listing needs — `sellerId`, `status`, `isDeleted` — were added as
+**optional** validators even though `sellerId`/`status` are conceptually required.
+
+**Why optional, not required**: the live deployment already held `saleBundles` rows
+(seed + Moving Sale). Convex rejects a schema push that adds a *required* field while
+existing rows lack it. So the fields are declared optional, every new write populates
+them, reads default a missing `status` to `"active"` (`bundleStatus()` helper), and an
+idempotent backfill (`migrations:backfillSaleBundles`) fills legacy rows (`sellerId`
+from `saleEvent.userId`). This is the single-deploy-safe form of "add required field" and
+can be tightened to required after the backfill runs in prod.
+
+**Rejected**: (a) a separate `bundles` table — duplicates the identical shape and forces
+Moving Sale's step-5 suggestions to pick a table at write time; (b) renaming `label` →
+`title` (early drafts) — `label` already has call sites, renaming buys nothing; (c) a
+public bundle detail page — feed/banner taps route to member ads' `/ad/:id` where the
+banner shows the full deal, avoiding a new route and duplicate search content.
+
+**Mutual exclusivity**: `ads.bundleId` and `ads.saleEventId` are mutually exclusive
+(a bundle item is never also a Sale item). Enforced in `createBundle` and by the picker's
+eligibility query. `ads.bundleId` stays singular — overlapping bundles deferred.
+
+## Bundle Listing — item cap 2–4, free; item-count monetisation deferred (2026-07-05)
+
+**Decision**: bundles hold 2–4 items and the feature is entirely free. Confirmed by
+Amir on 2026-07-05 after weighing "cap at 2 now, monetise larger bundles later" against
+launching at 4.
+
+**Why 4**: the mental model that makes bundling attractive is the *room set* — bed +
+nightstand + dresser + mirror, or sofa + coffee table + chairs. That's 3–4 items.
+Capping at 2 covers only the pair case and guts the value proposition.
+
+**Why not monetise item count**: a size gate lands its friction on adoption, not
+revenue — sellers won't pay to add a 3rd item; they'll skip the feature. This also keeps
+Bundle Listing consistent with the Moving Sale Mode monetisation philosophy: core usage
+is free, paid add-ons sit on distribution/visibility (AI, QR/PDF, search pin).
+
+**Deferred, not rejected**: if a paid tier is ever wanted, ">4 items / unlimited bundle
+size" is the cleaner upsell than "more than 2" — but only if real usage data shows
+demand for larger bundles. `BUNDLE_MAX_ITEMS` in `convex/bundles.ts` is the single
+constant to change.

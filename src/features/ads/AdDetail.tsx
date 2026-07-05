@@ -28,6 +28,8 @@ import { ImageLightbox } from "../../components/ui/ImageLightbox";
 import { formatPriceWithCurrency, formatPrice } from "../../lib/priceFormatter";
 import { formatPickupShort } from "../movingSale/saleHelpers";
 import { trackView, setFlushCallback } from "../../lib/viewTracker";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
+import { BundleBanner } from "../bundles/BundleBanner";
 
 
 interface AdDetailProps {
@@ -354,6 +356,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     displayAd?.saleEventId ? { adId: displayAd._id } : "skip"
   );
 
+  // Bundle Listing (v1): "Available as a bundle" banner for items in an
+  // ACTIVE standalone bundle. Gated on the bundleListing feature flag.
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; matches saleBanner above
+  const bundleBanner = useQuery(
+    api.bundles.getBundleBannerForAd,
+    displayAd?._id ? { adId: displayAd._id } : "skip"
+  );
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; matches the queries above
+  const bundleListingEnabled = useFeatureFlag("bundleListing");
+
   // Auto-open chat for logged-in users viewing other users' ads
   // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional placement after early returns; see note
   useEffect(() => {
@@ -641,6 +653,16 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     )}
                   </div>
                 </button>
+              )}
+
+              {/* Bundle Listing banner — an ad is never in both a Sale and a
+                  standalone bundle, so both banners rendering is impossible,
+                  but placing this one after the sale banner is fine either way. */}
+              {bundleListingEnabled && bundleBanner && (
+                <BundleBanner
+                  {...bundleBanner}
+                  onItemClick={(adId) => { void navigate(`/ad/${adId}`); }}
+                />
               )}
 
               {/* Exchange Description - shown for exchange and both types */}

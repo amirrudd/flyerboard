@@ -35,16 +35,13 @@ export const sendBundleMessage = mutation({
     const bundle = await ctx.db.get(args.bundleId);
     // Only live standalone bundles are messageable; Sale-scoped bundles talk
     // through their Sale thread. Cancelled bundles no longer reference their
-    // ads — nothing to negotiate.
-    if (!bundle || bundle.isDeleted || bundle.saleEventId || bundle.status === "cancelled") {
+    // ads — nothing to negotiate. Standalone bundles always carry sellerId
+    // (populated on every write since the reconciliation), so a missing one
+    // means the row isn't a standalone bundle either.
+    if (!bundle || bundle.isDeleted || bundle.saleEventId || bundle.status === "cancelled" || !bundle.sellerId) {
       throw createError("Bundle not found", { operation: "sendBundleMessage", bundleId: args.bundleId });
     }
     const sellerId = bundle.sellerId;
-    if (!sellerId) {
-      // Standalone bundles always carry sellerId (populated on every write since
-      // the reconciliation); a missing one means the row isn't a standalone bundle.
-      throw createError("Bundle not found", { operation: "sendBundleMessage", bundleId: args.bundleId });
-    }
     if (sellerId === userId) {
       throw createError("You can't message your own bundle", {
         operation: "sendBundleMessage",
@@ -80,7 +77,10 @@ export const sendBundleMessage = mutation({
       content,
       timestamp: now,
     });
-    await ctx.db.patch(chatId, { lastMessageAt: now });
+    // A freshly created chat was already inserted with lastMessageAt: now.
+    if (existing) {
+      await ctx.db.patch(chatId, { lastMessageAt: now });
+    }
 
     // Buyer is always the sender here (sellers can't message their own bundle),
     // so the recipient is always the seller.

@@ -20,7 +20,6 @@ export interface PublicBundleItem {
   title: string;
   image: string | null;
   price: number;
-  condition: string | null;
   isSold: boolean;
 }
 

@@ -710,7 +710,6 @@ describe("saved bundles", () => {
     expect(saved[0].bundle.label).toBe("Sofa + Table");
     expect(saved[0].bundle.status).toBe("active");
     expect(saved[0].bundle.bundlePrice).toBe(530);
-    expect(saved[0].bundle.savings).toBe(100);
     expect(saved[0].bundle.itemCount).toBe(2);
   });
 

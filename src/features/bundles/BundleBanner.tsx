@@ -23,7 +23,7 @@ interface BundleBannerProps {
   items: BundleBannerItem[];
   onItemClick: (adId: string) => void;
   /** Tap anywhere on the banner body → the bundle's own page (bundle v2). */
-  onBannerClick?: () => void;
+  onBannerClick: () => void;
 }
 
 /**
@@ -57,24 +57,16 @@ export function BundleBanner({
     <motion.div
       {...whileInView(0.05)}
       onClick={onBannerClick}
-      role={onBannerClick ? "button" : undefined}
-      tabIndex={onBannerClick ? 0 : undefined}
-      onKeyDown={
-        onBannerClick
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onBannerClick();
-              }
-            }
-          : undefined
-      }
-      aria-label={onBannerClick ? "View bundle deal" : undefined}
-      className={`mb-6 w-full rounded-2xl border border-bundle/20 bg-bundle/10 p-4 text-left dark:bg-bundle/[0.06] ${
-        onBannerClick
-          ? "cursor-pointer transition hover:bg-bundle/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bundle dark:hover:bg-bundle/10"
-          : ""
-      }`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onBannerClick();
+        }
+      }}
+      aria-label="View bundle deal"
+      className="mb-6 w-full cursor-pointer rounded-2xl border border-bundle/20 bg-bundle/10 p-4 text-left transition hover:bg-bundle/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bundle dark:bg-bundle/[0.06] dark:hover:bg-bundle/10"
     >
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bundle text-white">

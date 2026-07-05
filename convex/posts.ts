@@ -280,19 +280,21 @@ export const getSellerChats = query({
     const chatsWithInfo = await Promise.all(
       chats.map(async (chat) => {
         // Sale/Bundle threads set saleEventId/bundleId and leave adId undefined.
-        const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
-        const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
-        const bundle = chat.bundleId ? await ctx.db.get(chat.bundleId) : null;
-        const buyer = await ctx.db.get(chat.buyerId);
-
-        // Latest message for the inbox snippet (same pattern as messages.getAdChats)
-        const latestMessage = await ctx.db
-          .query("messages")
-          .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .order("desc")
-          .first();
-
-        const unreadCount = await countUnreadForChat(ctx, chat, userId, "seller");
+        // Every read here is independent — resolve them concurrently instead of
+        // lengthening the per-chat chain each time a thread kind is added.
+        const [ad, sale, bundle, buyer, latestMessage, unreadCount] = await Promise.all([
+          chat.adId ? ctx.db.get(chat.adId) : null,
+          chat.saleEventId ? ctx.db.get(chat.saleEventId) : null,
+          chat.bundleId ? ctx.db.get(chat.bundleId) : null,
+          ctx.db.get(chat.buyerId),
+          // Latest message for the inbox snippet (same pattern as messages.getAdChats)
+          ctx.db
+            .query("messages")
+            .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
+            .order("desc")
+            .first(),
+          countUnreadForChat(ctx, chat, userId, "seller"),
+        ]);
 
         return {
           ...chat,
@@ -331,19 +333,19 @@ export const getBuyerChats = query({
     // Get additional info for each chat
     const chatsWithInfo = await Promise.all(
       chats.map(async (chat) => {
-        const ad = chat.adId ? await ctx.db.get(chat.adId) : null;
-        const sale = chat.saleEventId ? await ctx.db.get(chat.saleEventId) : null;
-        const bundle = chat.bundleId ? await ctx.db.get(chat.bundleId) : null;
-        const seller = await ctx.db.get(chat.sellerId);
-
-        // Latest message for the inbox snippet (same pattern as messages.getAdChats)
-        const latestMessage = await ctx.db
-          .query("messages")
-          .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .order("desc")
-          .first();
-
-        const unreadCount = await countUnreadForChat(ctx, chat, userId, "buyer");
+        // Same concurrent-hydration pattern as getSellerChats above.
+        const [ad, sale, bundle, seller, latestMessage, unreadCount] = await Promise.all([
+          chat.adId ? ctx.db.get(chat.adId) : null,
+          chat.saleEventId ? ctx.db.get(chat.saleEventId) : null,
+          chat.bundleId ? ctx.db.get(chat.bundleId) : null,
+          ctx.db.get(chat.sellerId),
+          ctx.db
+            .query("messages")
+            .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
+            .order("desc")
+            .first(),
+          countUnreadForChat(ctx, chat, userId, "buyer"),
+        ]);
 
         return {
           ...chat,

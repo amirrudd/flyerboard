@@ -596,7 +596,11 @@ export const getPublicBundle = query({
     if (status === "cancelled") return null;
 
     // Keep sold members (rendered greyed with a SOLD pill) — only drop deleted ones.
-    const items = await hydrateBundleItems(ctx, bundle.adIds);
+    // Viewer identity is independent of the item fetches, so resolve it concurrently.
+    const [items, viewerId] = await Promise.all([
+      hydrateBundleItems(ctx, bundle.adIds),
+      getDescopeUserId(ctx),
+    ]);
     if (items.length === 0) return null;
 
     const total = separatelyTotal(items);
@@ -604,7 +608,6 @@ export const getPublicBundle = query({
 
     const ownerId = await bundleOwnerId(ctx, bundle);
     const seller = ownerId ? await ctx.db.get(ownerId) : null;
-    const viewerId = await getDescopeUserId(ctx);
 
     return {
       _id: bundle._id,
@@ -614,8 +617,7 @@ export const getPublicBundle = query({
       separatelyTotal: total,
       savings,
       savingsPct,
-      location: items[0]?.location ?? "",
-      createdAt: bundle._creationTime,
+      location: items[0].location,
       isOwner: Boolean(viewerId && ownerId && viewerId === ownerId),
       seller: seller
         ? { _id: seller._id, name: seller.name, image: seller.image ?? null, isVerified: Boolean(seller.isVerified) }
@@ -625,7 +627,6 @@ export const getPublicBundle = query({
         title: i.title,
         image: i.images[0] ?? null,
         price: i.price ?? 0,
-        condition: i.condition ?? null,
         isSold: Boolean(i.isSold),
       })),
     };
@@ -707,8 +708,7 @@ export const getSavedBundles = query({
         if (status === "cancelled") return null;
         const items = await hydrateBundleItems(ctx, bundle.adIds);
         if (items.length === 0) return null;
-        const total = separatelyTotal(items);
-        const { savings } = computeSavings(total, bundle.bundlePrice);
+        // Only what the Saved-tab card renders — mirrors getSavedSaleEvents' shape.
         return {
           _id: row._id,
           bundle: {
@@ -716,10 +716,7 @@ export const getSavedBundles = query({
             label: bundle.label,
             status,
             bundlePrice: bundle.bundlePrice,
-            savings,
             itemCount: items.length,
-            location: items[0]?.location ?? "",
-            covers: items.map((i) => i.images[0]).filter((s): s is string => Boolean(s)),
           },
         };
       })

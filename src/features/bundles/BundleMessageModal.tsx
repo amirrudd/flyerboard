@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery } from "convex/react";
 import { useSession } from "@descope/react-sdk";
-import { toast } from "sonner";
-import { X, PaperPlaneRight, CircleNotch } from "@phosphor-icons/react";
+import { X, CircleNotch } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useUserSync } from "../../context/UserSyncContext";
+import { useScrollLock } from "../../hooks/useScrollLock";
 import { AuthModal } from "../auth/AuthModal";
+import { MessageBubble, MessageComposer } from "../messages";
 
 interface BundleMessageModalProps {
   bundleId: Id<"saleBundles">;
@@ -17,10 +18,12 @@ interface BundleMessageModalProps {
 }
 
 /**
- * Bundle-level message thread — mirrors SaleMessageModal minus the item
- * chips (a bundle IS the package, so the conversation is about the deal
- * itself). One conversation per buyer per bundle; also surfaces in the
- * unified inbox. Reuses the app's AuthModal for the Descope sign-in gate.
+ * Bundle-level message thread. The modal shell mirrors SaleMessageModal, but
+ * unlike it there are no item chips (a bundle IS the package — the
+ * conversation is about the deal itself), so the body composes directly from
+ * the shared chat library (`MessageBubble` + `MessageComposer`) instead of
+ * hand-rolling bubbles and a composer. One conversation per buyer per bundle;
+ * also surfaces in the unified inbox.
  */
 export function BundleMessageModal({
   bundleId,
@@ -38,10 +41,9 @@ export function BundleMessageModal({
   );
   const sendMessage = useMutation(api.bundleChats.sendBundleMessage);
 
-  const [text, setText] = useState("");
   const [showAuth, setShowAuth] = useState(false);
-  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { lockScroll, unlockScroll } = useScrollLock();
 
   const sellerFirst = (sellerName ?? "the seller").split(" ")[0];
 
@@ -53,34 +55,16 @@ export function BundleMessageModal({
   // Body scroll lock + Esc.
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onEsc);
     return () => {
-      document.body.style.overflow = "";
+      unlockScroll();
       document.removeEventListener("keydown", onEsc);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, lockScroll, unlockScroll]);
 
   if (!isOpen) return null;
-
-  async function handleSend() {
-    const content = text.trim();
-    if (!content) return;
-    if (!ready) {
-      setShowAuth(true);
-      return;
-    }
-    setSending(true);
-    try {
-      await sendMessage({ bundleId, content });
-      setText("");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send your message.");
-    } finally {
-      setSending(false);
-    }
-  }
 
   return createPortal(
     <div
@@ -89,7 +73,7 @@ export function BundleMessageModal({
       role="presentation"
     >
       <section
-        className="flex h-[80vh] w-full max-w-md flex-col rounded-t-2xl bg-card shadow-2xl ring-1 ring-border/70 sm:h-[600px] sm:rounded-2xl"
+        className="flex h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-card shadow-2xl ring-1 ring-border/70 sm:h-[600px] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -134,17 +118,12 @@ export function BundleMessageModal({
             </div>
           ) : thread && thread.messages.length > 0 ? (
             thread.messages.map((m) => (
-              <div key={m._id} className={`flex ${m.mine ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                    m.mine
-                      ? "bg-bundle text-bundle-foreground"
-                      : "bg-muted text-foreground"
-                  }`}
-                >
-                  {m.content}
-                </div>
-              </div>
+              <MessageBubble
+                key={m._id}
+                content={m.content}
+                timestamp={m.timestamp}
+                isOwn={m.mine}
+              />
             ))
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center">
@@ -155,38 +134,14 @@ export function BundleMessageModal({
           )}
         </div>
 
-        {/* Composer */}
+        {/* Composer — the shared one, so send semantics can't drift from the inbox. */}
         {ready && (
-          <div className="border-t border-border p-3">
-            <div className="flex items-end gap-2">
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleSend();
-                  }
-                }}
-                rows={1}
-                placeholder={`Message ${sellerFirst}…`}
-                className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:ring-bundle/20! focus:border-bundle!"
-              />
-              <button
-                type="button"
-                onClick={() => { void handleSend(); }}
-                disabled={sending || !text.trim()}
-                aria-label="Send"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-bundle text-bundle-foreground disabled:opacity-50"
-              >
-                {sending ? (
-                  <CircleNotch size={18} className="animate-spin" />
-                ) : (
-                  <PaperPlaneRight size={18} weight="fill" />
-                )}
-              </button>
-            </div>
-          </div>
+          <MessageComposer
+            onSend={async (content) => {
+              await sendMessage({ bundleId, content });
+            }}
+            placeholder={`Message ${sellerFirst}…`}
+          />
         )}
       </section>
 

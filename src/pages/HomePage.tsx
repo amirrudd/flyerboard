@@ -66,19 +66,15 @@ export function HomePage() {
   // search" is a deliberate design decision (see bundle-listing-design.md).
   const displayAds = useMemo(() => {
     if (!filteredAds) return filteredAds;
-    const perSale = new Map<string, number>();
-    const perBundle = new Map<string, number>();
+    const counts = new Map<string, number>();
+    const underCap = (key: string, max: number) => {
+      const n = (counts.get(key) ?? 0) + 1;
+      counts.set(key, n);
+      return n <= max;
+    };
     return filteredAds.filter((a) => {
-      if (a.saleEventId) {
-        const n = (perSale.get(a.saleEventId) ?? 0) + 1;
-        perSale.set(a.saleEventId, n);
-        return n <= 3; // de-dup: at most 3 items from one Sale in the feed
-      }
-      if (a.bundleId) {
-        const n = (perBundle.get(a.bundleId) ?? 0) + 1;
-        perBundle.set(a.bundleId, n);
-        return n <= 2; // de-dup: at most 2 members per bundle in the feed
-      }
+      if (a.saleEventId) return underCap(`sale:${a.saleEventId}`, 3);
+      if (a.bundleId) return underCap(`bundle:${a.bundleId}`, 2);
       return true;
     });
   }, [filteredAds]);

@@ -277,6 +277,48 @@ bundle-listing-design.md` § "v2 — Bundle becomes a first-class destination".
   math. `"both"` stays eligible (has a price). Moving Sale is safe by construction (its
   wizard hardcodes `listingType: "sale"`).
 
+### /simplify pass on v2 (same day) — shared helpers extracted
+4 parallel review agents (reuse/simplification/efficiency/altitude) over the v2 diff:
+- **`src/hooks/useSaveToggle.ts`** — the optimistic bookmark toggle (optimistic state,
+  toast copy, reduced-motion pop animation) extracted from the identical
+  `useSaveSaleEvent`/`useSaveBundle` bodies; both are now thin wrappers binding their
+  Convex queries. Also gates the `getCurrentUser` subscription on `isAuthenticated`
+  (anonymous public-page visitors no longer open it). Next savable entity = ~10 lines.
+- **`src/lib/share.ts` `sharePage(title)`** — native-share/clipboard fallback extracted
+  from the verbatim copies in `PublicSalePage` + `PublicBundlePage`.
+- **`BundleMessageModal` composes from the shared chat library** — `MessageBubble` +
+  `MessageComposer` from `src/features/messages/` replace the hand-rolled bubbles/composer
+  (honors the "never hand-roll chat UI" rule). Bubbles are brand-primary like every other
+  chat surface; only the modal SHELL mirrors SaleMessageModal. Scroll lock now uses the
+  shared `useScrollLock` (iOS-aware) instead of raw `body.overflow`.
+- **`UserDashboard`**: per-kind thread facts (`viewItemLabel` / `onViewItem` / composer
+  disabled+reason) computed once in a `threadMeta` object next to `activeIsSale`/`activeIsBundle`
+  — the four parallel 3-way ternary chains in JSX collapsed to property reads. Saved-tab
+  Sales/Bundles rows share a local `SavedGroupRow` component.
+- **`posts.getSellerChats`/`getBuyerChats`**: per-chat hydration (ad/sale/bundle/counterpart/
+  latestMessage/unread) now runs in one `Promise.all` — the chain was fully sequential and
+  grew by one await per thread kind.
+- **Payload trims**: `getPublicBundle` dropped unused `createdAt`/`condition`;
+  `getSavedBundles` returns only what the Saved-tab card renders (label/status/price/count).
+- **`BundleBanner.onBannerClick` made required** — sole caller always passes it; killed 5
+  conditional attribute expressions.
+- `HomePage.displayAds` sale/bundle caps share one `underCap` helper + composite-key map.
+- `sendBundleMessage` skips the redundant `lastMessageAt` patch on first-message chat creation
+  (insert already sets it). NOTE: `saleChats.ts` still has the copied redundant patch — left
+  alone (shipped file).
+
+**Reviewed and deliberately skipped** (follow-ups if the area is touched again):
+- Notification chain: `bundleId` is threaded as a third optional per-kind arg through 4
+  signatures + a `pendingEmailNotifications` column. The deeper fix is deriving the kind
+  from the `chats` row via the existing `chatId` arg in `getChatNotificationContext` —
+  would remove all per-kind args and the silent-skip failure mode for future kinds, but
+  touches shipped ad/sale notification callers. Do this when adding a 4th thread kind.
+- `convex/lib/chatThread.ts` (shared send-thread + notify fan-out for messages/saleChats/
+  bundleChats) — right mechanism, but unifying 3 files incl. shipped ones is its own change.
+- Shared `ThreadModal` (SaleMessageModal shell minus chips) — revisit when SaleMessageModal
+  is next touched; the composer/bubble reuse already captured most of the win.
+- Test-infra dedup (`loadConvexModules` ×5, framer-motion mock ×2) — established convention.
+
 ### Tests
 - `convex/bundles.test.ts` grew getPublicBundle / saved-bundles / exchange-guard suites;
   `convex/bundleChats.test.ts` (new, mirrors saleChats.test.ts incl. the scheduled-push +

@@ -45,8 +45,8 @@ const activeBundle: PublicBundleData = {
   isOwner: false,
   seller: { _id: "user-1", name: "Sarah M.", image: null, isVerified: true },
   items: [
-    { adId: "ad-1", title: "Sofa", image: "r2:x/1.jpg", price: 350, condition: "Good", isSold: false },
-    { adId: "ad-2", title: "Table", image: "r2:x/2.jpg", price: 280, condition: null, isSold: false },
+    { adId: "ad-1", title: "Sofa", image: "r2:x/1.jpg", price: 350, isSold: false },
+    { adId: "ad-2", title: "Table", image: "r2:x/2.jpg", price: 280, isSold: false },
   ],
 };
 

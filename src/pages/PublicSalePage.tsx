@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "convex/react";
-import { toast } from "sonner";
 import { CaretLeft, Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -14,6 +13,7 @@ import { useSaleDesignVariant, getUrlVariantOverride } from "../features/movingS
 import { SaleMessageModal } from "../features/movingSale/SaleMessageModal";
 import type { SaleItem } from "../features/movingSale/types";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
+import { sharePage } from "../lib/share";
 
 export function PublicSalePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -104,23 +104,6 @@ export function PublicSalePage() {
     setMsgOpen(true);
   }
 
-  async function shareSale() {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: data!.sale.title, url });
-      } catch {
-        /* cancelled */
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied");
-      } catch {
-        toast.error("Couldn't copy the link.");
-      }
-    }
-  }
 
   return (
     <div className="min-h-[100dvh] bg-background pb-6">
@@ -135,7 +118,7 @@ export function PublicSalePage() {
           categoriesById={categoriesById}
           onMessageSeller={messageSeller}
           onItemClick={openItem}
-          onShare={() => { void shareSale(); }}
+          onShare={() => { void sharePage(data.sale.title); }}
         />
       ) : (
         <PublicSaleView
@@ -147,7 +130,7 @@ export function PublicSalePage() {
           categoriesById={categoriesById}
           onMessageSeller={messageSeller}
           onItemClick={openItem}
-          onShare={() => { void shareSale(); }}
+          onShare={() => { void sharePage(data.sale.title); }}
         />
       )}
       <SaleMessageModal

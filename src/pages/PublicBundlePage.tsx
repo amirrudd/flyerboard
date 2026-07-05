@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "convex/react";
-import { toast } from "sonner";
 import { CaretLeft, Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
 import { PageLoader } from "../components/PageLoader";
@@ -10,6 +9,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { PublicBundleView } from "../features/bundles/PublicBundleView";
 import { BundleMessageModal } from "../features/bundles/BundleMessageModal";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
+import { sharePage } from "../lib/share";
 
 /**
  * Public bundle detail page (`/bundle/:id`) — bundle v2. Mirrors
@@ -82,24 +82,6 @@ export function PublicBundlePage() {
     );
   }
 
-  async function shareBundle() {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: bundle!.label, url });
-      } catch {
-        /* cancelled */
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied");
-      } catch {
-        toast.error("Couldn't copy the link.");
-      }
-    }
-  }
-
   return (
     <>
       <PublicBundleView
@@ -107,7 +89,7 @@ export function PublicBundlePage() {
         onMessageSeller={() => setMsgOpen(true)}
         onItemClick={(adId) => { void navigate(`/ad/${adId}`); }}
         onManage={() => { void navigate("/dashboard?tab=bundles"); }}
-        onShare={() => { void shareBundle(); }}
+        onShare={() => { void sharePage(bundle.label); }}
       />
       <BundleMessageModal
         bundleId={bundle._id}

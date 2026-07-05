@@ -4,7 +4,6 @@ import { useQuery } from "convex/react";
 import { toast } from "sonner";
 import { CaretLeft, Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
 import { PageLoader } from "../components/PageLoader";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -22,7 +21,9 @@ export function PublicBundlePage() {
   const navigate = useNavigate();
   const bundle = useQuery(
     api.bundles.getPublicBundle,
-    id ? { bundleId: id as Id<"saleBundles"> } : "skip"
+    // Raw URL param — getPublicBundle takes a string and normalizes it, so a
+    // malformed share link renders the friendly empty state instead of throwing.
+    id ? { bundleId: id } : "skip"
   );
   const bundleListingEnabled = useFeatureFlag("bundleListing");
   const [msgOpen, setMsgOpen] = useState(false);

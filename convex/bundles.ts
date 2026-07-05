@@ -583,9 +583,14 @@ export const getEligibleAdsForBundle = query({
  * individually-available items.
  */
 export const getPublicBundle = query({
-  args: { bundleId: v.id("saleBundles") },
+  // v.string(), not v.id(): the arg comes straight from the /bundle/:id URL, so a
+  // malformed share link must resolve to the friendly null state, not a thrown
+  // ArgumentValidationError that trips the ErrorBoundary.
+  args: { bundleId: v.string() },
   handler: async (ctx, args) => {
-    const bundle = await ctx.db.get(args.bundleId);
+    const bundleId = ctx.db.normalizeId("saleBundles", args.bundleId);
+    if (!bundleId) return null;
+    const bundle = await ctx.db.get(bundleId);
     if (!bundle || bundle.isDeleted || bundle.saleEventId) return null;
     const status = bundleStatus(bundle);
     if (status === "cancelled") return null;

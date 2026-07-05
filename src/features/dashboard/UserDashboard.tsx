@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { Id } from "../../../convex/_generated/dataModel";
 import { AdDetail } from "../ads/AdDetail";
@@ -14,6 +13,20 @@ import { SignOutButton } from "../auth/SignOutButton";
 import { useHeaderSlots } from "../layout/HeaderSlots";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
+import { useUserSync } from "../../context/UserSyncContext";
+import { ReportModal } from "../../components/ReportModal";
+import {
+  useInbox,
+  useTotalUnreadCount,
+  InboxRow,
+  ConversationThread,
+  MessageComposer,
+  ConversationHeader,
+  isSaleThread,
+  getCounterpartName,
+  getItemTitle,
+} from "../messages";
+import type { InboxFilter } from "../messages";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
@@ -34,6 +47,7 @@ import {
   Image as ImageIcon,
   Envelope,
   Package,
+  X,
   Plus,
   Stack
 } from '@phosphor-icons/react';
@@ -45,6 +59,29 @@ import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkelet
 import { ThemeToggle } from "../../components/ThemeToggle";
 
 // Feature flags removed - now using database-driven flags
+
+// Segmented filter options for the unified inbox (chats tab).
+const INBOX_FILTERS: Array<{ id: InboxFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "selling", label: "Selling" },
+  { id: "buying", label: "Buying" },
+];
+
+// Per-filter empty-state copy (from the unified-messaging contract).
+const INBOX_EMPTY_COPY: Record<InboxFilter, { title: string; body: string }> = {
+  all: {
+    title: "No messages yet",
+    body: "Conversations with buyers and sellers will appear here",
+  },
+  selling: {
+    title: "No buyer messages yet",
+    body: "When someone messages you about a flyer, it shows up here",
+  },
+  buying: {
+    title: "Nothing here yet",
+    body: "Message a seller from any flyer to start a conversation",
+  },
+};
 
 function CountUp({ value, reduced }: { value: number; reduced: boolean }) {
   const motionValue = useMotionValue(reduced ? value : 0);
@@ -83,13 +120,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [emailError, setEmailError] = useState<string>("");
   const [selectedAdId, setSelectedAdId] = useState<Id<"ads"> | null>(null);
   const [showMessagesForAd, setShowMessagesForAd] = useState<Id<"ads"> | null>(null);
-  const [selectedChatId, setSelectedChatId] = useState<Id<"chats"> | null>(null);
-  const [expandedChatId, setExpandedChatId] = useState<Id<"chats"> | null>(null);
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
-  const [newMessage, setNewMessage] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState(false);
 
@@ -156,8 +190,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   };
 
   // Use Descope for authentication state
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, isSessionLoading } = useSession();
   const { user: descopeUser } = useUser();
+  const { isUserSynced } = useUserSync();
+  // Standard auth gate for Convex queries/mutations (see CLAUDE.md user-sync race)
+  const authReady = isAuthenticated && !isSessionLoading && isUserSynced;
 
   // Combined query for user data and stats - reduces 2 function calls to 1
   const userWithStats = useQuery(api.descopeAuth.getCurrentUserWithStats);
@@ -180,6 +217,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     activeTab === "ads" ? {} : "skip"
   );
 
+  // ── Unified inbox (chats tab) ─────────────────────────────────────────
+  // URL is the single source of truth for the open conversation + flyer
+  // filter: ?tab=chats&chat=<chatId>&flyer=<adId>. Back/refresh restore it.
+  const chatParam = searchParams.get("chat");
+  const flyerParam = searchParams.get("flyer");
+
+  // Merged selling + buying conversations, sorted desc; auth-gated internally.
+  // enabled gates the two chat queries to the tab that renders them.
+  const inbox = useInbox({
+    flyerId: flyerParam ?? undefined,
+    enabled: activeTab === "chats",
+  });
+
   // Bundles the seller owns — used to tag ad cards that belong to a bundle.
   const myBundles = useQuery(
     api.bundles.getMyBundles,
@@ -194,15 +244,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     return map;
   }, [myBundles]);
 
-  // Only fetch when viewing the chats tab
-  const sellerChats = useQuery(
-    api.posts.getSellerChats,
-    activeTab === "chats" ? {} : "skip"
+  const activeConversation = useMemo(
+    () =>
+      chatParam
+        ? inbox.conversations.find((conversation) => conversation._id === chatParam) ?? null
+        : null,
+    [inbox.conversations, chatParam]
   );
-  const buyerChats = useQuery(
-    api.posts.getBuyerChats,
-    activeTab === "chats" ? {} : "skip"
-  );
+
+  // Total unread across all conversations — sidebar "Messages" badge.
+  const totalUnreadCount = useTotalUnreadCount();
 
   // Only fetch when viewing the saved tab
   const savedAds = useQuery(
@@ -220,16 +271,22 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     user && activeTab === "archived" ? {} : "skip"
   );
 
-  // Get messages for expanded chat
+  // Messages for the open conversation. Gated on the conversation actually
+  // existing in the inbox (not just the raw URL param) so a bogus/foreign
+  // ?chat= id never hits getChatMessages' participant check.
   const chatMessages = useQuery(
     api.messages.getChatMessages,
-    expandedChatId ? { chatId: expandedChatId } : "skip"
+    activeTab === "chats" && authReady && activeConversation
+      ? { chatId: activeConversation._id as Id<"chats"> }
+      : "skip"
   );
 
-  // Get unread counts - only needed for chats tab
+  // Per-ad unread badges render in the "ads" tab (My Flyers), so the query
+  // must run there — it was previously mis-gated on "chats" and always skipped
+  // where its data was displayed.
   const unreadCounts = useQuery(
     api.messages.getUnreadCounts,
-    activeTab === "chats" && userAds ? { adIds: userAds.map(ad => ad._id) } : "skip"
+    activeTab === "ads" && userAds ? { adIds: userAds.map(ad => ad._id) } : "skip"
   );
 
   // Get feature flag for identity verification
@@ -250,17 +307,14 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const verifyIdentity = useMutation(api.users.verifyIdentity);
   const updateEmailNotificationPreference = useMutation(api.users.updateEmailNotificationPreference);
 
-  // Auto-scroll to bottom when messages change
+  // Mark the open conversation as read (covers row taps AND ?chat deep links)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
-
-  // Mark chat as read when expanded
-  useEffect(() => {
-    if (expandedChatId) {
-      void markAsRead({ chatId: expandedChatId });
+    if (activeTab === "chats" && chatParam && authReady) {
+      markAsRead({ chatId: chatParam as Id<"chats"> }).catch(() => {
+        // Invalid/foreign chat ids in the URL simply don't get marked read.
+      });
     }
-  }, [expandedChatId, markAsRead]);
+  }, [activeTab, chatParam, authReady, markAsRead]);
 
   // Initialize profile form data when user data is loaded
   useEffect(() => {
@@ -322,8 +376,11 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // Redirect invalid tabs on mobile (archived needs sidebar nav for batch actions)
   useEffect(() => {
     if (isMobile && activeTab === 'archived') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirecting away from a tab not valid on mobile
-      setActiveTab('ads');
+      // Only push the URL — the "sync activeTab with URL" effect above is the
+      // single writer of activeTab. Also calling setActiveTab here raced it
+      // exactly like the sales-tab bounce documented above (searchParams
+      // updates one tick behind direct state → the two effects ping-pong
+      // until "Maximum update depth exceeded").
       setSearchParams({ tab: 'ads' }, { replace: true });
     }
   }, [isMobile, activeTab, setSearchParams]);
@@ -476,40 +533,31 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !expandedChatId) return;
-
-    try {
-      await sendMessage({
-        chatId: expandedChatId,
-        content: newMessage.trim(),
-      });
-      setNewMessage("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send message");
-    }
-  };
-
-  const handleChatClick = (chatId: Id<"chats">) => {
-    if (expandedChatId === chatId) {
-      setExpandedChatId(null);
-    } else {
-      setExpandedChatId(chatId);
-    }
-  };
-
-  const handleViewFlyer = (adId: Id<"ads">, ad?: unknown) => {
-    void navigate(`/ad/${adId}`, ad ? { state: { initialAd: ad } } : undefined);
-    // Mark as read when viewing flyer
-    if (expandedChatId) {
-      void markAsRead({ chatId: expandedChatId });
-    }
+  /**
+   * Single writer for the chats-tab URL state. Preserves tab=chats and only
+   * touches the keys passed (null clears a key). replace:true so back/refresh
+   * restore the inbox state without polluting history on every selection.
+   */
+  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "chats");
+    const setOrDelete = (key: string, value: string | null | undefined) => {
+      if (value === undefined) return; // key not passed — leave untouched
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+    setOrDelete("chat", next.chat);
+    setOrDelete("flyer", next.flyer);
+    setSearchParams(params, { replace: true });
   };
 
   const handleArchiveChat = async (chatId: Id<"chats">) => {
     try {
       await archiveChat({ chatId });
+      // Archiving the open conversation closes its thread pane.
+      if (chatId === chatParam) {
+        updateChatParams({ chat: null });
+      }
       toast.success("Chat archived successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to archive chat");
@@ -588,6 +636,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       }
     }
   };
+
+  // ── Unified inbox derived state (shared helpers — same derivations as InboxRow) ──
+  const activeIsSale = activeConversation ? isSaleThread(activeConversation) : false;
+  const counterpartName = activeConversation
+    ? getCounterpartName(activeConversation, activeConversation.role)
+    : "Deleted User";
+  // Title for the removable "?flyer=" filter chip — taken from any matching
+  // conversation's ad (the deep link comes from a context that has chats).
+  const flyerFilterTitle = flyerParam
+    ? inbox.conversations.find((conversation) => conversation.adId === flyerParam)?.ad?.title ?? "this flyer"
+    : null;
 
   // ── Persistent Layout header ─────────────────────────────────────────────
   // Registered before the early returns below (hooks rules). Config is rebuilt
@@ -784,7 +843,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       id: "chats",
                       label: "Messages",
                       icon: ChatText,
-                      badge: buyerChats ? buyerChats.reduce((total: number, chat: any) => total + (chat.unreadCount || 0), 0) : 0
+                      badge: totalUnreadCount
                     },
                     { id: "saved", label: "Saved Flyers", icon: BookmarkSimple },
                     ...(movingSaleModeEnabled
@@ -1076,184 +1135,141 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
               {activeTab === "chats" && (
                 <section ref={chatsContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="My messages">
-                  <header className="mb-6">
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Inbox</span>
-                    <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">My Messages</h2>
-                    <p className="text-[15px] leading-relaxed text-foreground/75 mt-1 max-w-prose">Conversations for flyers you're interested in</p>
-                  </header>
+                  {/* Header + filters — on <lg the open thread replaces the list, so hide these */}
+                  <div className={activeConversation ? "hidden lg:block" : ""}>
+                    <header className="mb-4">
+                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Inbox</span>
+                      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Messages</h2>
+                      <p className="text-[15px] leading-relaxed text-foreground/75 mt-1 max-w-prose">All your conversations — selling and buying</p>
+                    </header>
 
-                  <div className="space-y-3">
-                    {buyerChats === undefined ? (
-                      // Loading state - show skeletons
-                      <>
-                        <ChatItemSkeleton />
-                        <ChatItemSkeleton />
-                      </>
-                    ) : buyerChats.length === 0 ? (
-                      // Empty state
-                      <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
-                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No messages yet</h3>
-                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Start a conversation by messaging sellers on flyers you're interested in</p>
+                    <div className="flex flex-wrap items-center gap-2 mb-5">
+                      <div role="tablist" aria-label="Filter conversations" className="inline-flex items-center gap-1 rounded-full bg-muted/50 ring-1 ring-border p-1">
+                        {INBOX_FILTERS.map((option) => {
+                          const isActiveFilter = inbox.filter === option.id;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              role="tab"
+                              aria-selected={isActiveFilter}
+                              onClick={() => inbox.setFilter(option.id)}
+                              className={`relative h-8 px-4 rounded-full text-sm font-medium transition-colors active:scale-[0.98] ${isActiveFilter ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                              {isActiveFilter && (
+                                <motion.span
+                                  layoutId="inbox-filter-pill"
+                                  aria-hidden="true"
+                                  transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
+                                  className="absolute inset-0 rounded-full bg-card shadow-sm ring-1 ring-border/70"
+                                />
+                              )}
+                              <span className="relative z-10">{option.label}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                    ) : (
-                      // Loaded state - show chats
-                      buyerChats.map((chat: any) => (
-                        <article key={chat._id} className="ring-1 ring-border/70 rounded-2xl overflow-hidden bg-card hover:ring-foreground/15 transition-all">
-                          {/* Chat Header */}
-                          <div
-                            onClick={() => handleChatClick(chat._id)}
-                            className="p-4 sm:p-5 hover:bg-muted/30 transition-colors cursor-pointer"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-4 flex-1 min-w-0">
-                                {chat.ad?.images?.[0] ? (
-                                  <ImageDisplay
-                                    imageRef={chat.ad.images[0]}
-                                    alt={chat.ad.title}
-                                    className="w-16 h-16 object-cover rounded-xl ring-1 ring-border/60 flex-shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60 flex-shrink-0">
-                                    <ImageIcon className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-3 mb-2">
-                                    <div className="min-w-0">
-                                      <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 truncate">
-                                        {chat.ad?.title || (chat.sale ? `🏠 ${chat.sale.title}` : "Deleted Flyer")}
-                                      </h3>
-                                      {!chat.ad?.isActive && chat.ad && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 bg-destructive/10 text-destructive text-xs font-medium rounded-full ring-1 ring-destructive/20 mb-1">
-                                          Flyer Inactive
-                                        </span>
-                                      )}
-                                      <p className="text-sm text-muted-foreground mb-1">
-                                        Seller: {getDisplayName(chat.seller)}
-                                      </p>
-                                      {chat.seller && (
-                                        <StarRating
-                                          rating={chat.seller.averageRating || 0}
-                                          count={chat.seller.ratingCount || 0}
-                                          size="sm"
-                                          showCount={false}
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      {chat.ad && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewFlyer(chat.ad!._id, chat.ad);
-                                          }}
-                                          className="text-primary hover:underline text-sm font-semibold"
-                                        >
-                                          View Flyer
-                                        </button>
-                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          void handleArchiveChat(chat._id);
-                                        }}
-                                        className="inline-flex items-center h-8 px-3 rounded-full bg-muted/40 ring-1 ring-border text-muted-foreground text-sm font-medium hover:bg-muted/70 hover:text-foreground hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                                      >
-                                        Archive
-                                      </button>
-                                      {chat.unreadCount > 0 && (
-                                        <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-[11px] font-semibold tabular-nums bg-primary text-primary-foreground">
-                                          {chat.unreadCount}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {chat.latestMessage && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                                      "{chat.latestMessage.content}"
-                                    </p>
-                                  )}
-                                  <div className="flex items-center justify-between mt-2 gap-3">
-                                    <p className="text-xs text-muted-foreground tabular-nums">
-                                      {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true })}
-                                    </p>
-                                    <div className="font-display text-lg font-semibold tabular-nums text-primary">
-                                      {formatPriceWithCurrency(chat.ad?.price || 0)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+
+                      {flyerParam && (
+                        <button
+                          type="button"
+                          onClick={() => updateChatParams({ flyer: null })}
+                          aria-label={`Remove flyer filter: ${flyerFilterTitle}`}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary/[0.08] ring-1 ring-primary/30 text-primary text-sm font-medium hover:bg-primary/[0.14] hover:ring-primary/50 active:scale-[0.98] transition-all max-w-full"
+                        >
+                          <span className="truncate">Filtering: {flyerFilterTitle}</span>
+                          <X className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="lg:grid lg:grid-cols-3 lg:gap-6">
+                    {/* Conversation list — 1/3 on lg+, replaced by the thread below lg */}
+                    <div className={`lg:col-span-1 ${activeConversation ? "hidden lg:block" : ""}`}>
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={inbox.filter}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: reduced ? 0 : 0.15 }}
+                        >
+                          {inbox.isLoading ? (
+                            <div className="space-y-3">
+                              <ChatItemSkeleton />
+                              <ChatItemSkeleton />
                             </div>
-                          </div>
-
-                          {/* Expanded Chat Messages */}
-                          {expandedChatId === chat._id && (
-                            <div className="border-t border-border/70">
-                              {/* Messages */}
-                              <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-muted/30" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
-                                {(chatMessages || []).map((message) => (
-                                  <div
-                                    key={message._id}
-                                    className={`flex ${message.senderId === user._id ? 'justify-end' : 'justify-start'
-                                      }`}
-                                  >
-                                    <div
-                                      className={`max-w-xs px-3.5 py-2 rounded-2xl shadow-sm ${message.senderId === user._id
-                                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                                        : 'bg-card text-foreground ring-1 ring-border/60 rounded-tl-sm'
-                                        }`}
-                                    >
-                                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                                      <p
-                                        className={`text-[11px] mt-1 tabular-nums ${message.senderId === user._id
-                                          ? 'text-primary-foreground/75'
-                                          : 'text-muted-foreground'
-                                          }`}
-                                      >
-                                        {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                                <div ref={messagesEndRef} />
-                              </div>
-
-                              {/* Message Input */}
-                              <form onSubmit={(e) => { void handleSendMessage(e); }} className="p-4 bg-card border-t border-border/70">
-                                <label htmlFor={`chat-input-${chat._id}`} className="sr-only">Type your message</label>
-                                <div className="flex gap-2">
-                                  <input
-                                    id={`chat-input-${chat._id}`}
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Type your message..."
-                                    className="flex-1 h-11 px-4 bg-muted/50 ring-1 ring-transparent rounded-full focus:ring-ring focus:bg-card focus:outline-none text-foreground placeholder:text-muted-foreground/70 transition-all"
-                                    disabled={chat.ad ? !chat.ad.isActive : !chat.sale}
-                                  />
-                                  <button
-                                    type="submit"
-                                    disabled={!newMessage.trim() || (chat.ad ? !chat.ad.isActive : !chat.sale)}
-                                    aria-label="Send message"
-                                    className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                  >
-                                    Send
-                                  </button>
-                                </div>
-                                {chat.ad && !chat.ad.isActive && (
-                                  <p className="text-xs text-destructive mt-2">
-                                    Cannot send messages - flyer is inactive or deleted
-                                  </p>
-                                )}
-                              </form>
+                          ) : inbox.conversations.length === 0 ? (
+                            <div className="text-center py-16">
+                              <div className="flex justify-center mb-4"><ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
+                              <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">{INBOX_EMPTY_COPY[inbox.filter].title}</h3>
+                              <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">{INBOX_EMPTY_COPY[inbox.filter].body}</p>
+                            </div>
+                          ) : (
+                            <div
+                              className="ring-1 ring-border/70 rounded-2xl overflow-hidden divide-y divide-border/60 bg-card lg:max-h-[calc(100vh-320px)] lg:overflow-y-auto"
+                              style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
+                            >
+                              {inbox.conversations.map((conversation, index) => (
+                                <InboxRow
+                                  key={conversation._id}
+                                  chat={conversation}
+                                  role={conversation.role}
+                                  index={index}
+                                  isActive={conversation._id === chatParam}
+                                  onOpen={(chatId) => updateChatParams({ chat: chatId })}
+                                  onArchive={(chatId) => { void handleArchiveChat(chatId as Id<"chats">); }}
+                                />
+                              ))}
                             </div>
                           )}
-                        </article>
-                      ))
-                    )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Thread pane — 2/3 on lg+, full width below lg when open */}
+                    <div className={`lg:col-span-2 ${activeConversation ? "" : "hidden lg:block"}`}>
+                      {activeConversation ? (
+                        <div className="flex flex-col h-[calc(100dvh-300px)] min-h-[360px] lg:h-[calc(100vh-320px)] lg:min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card overflow-hidden">
+                          <ConversationHeader
+                            image={activeConversation.ad?.images?.[0]}
+                            title={getItemTitle(activeConversation)}
+                            subtitle={`${activeConversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
+                            price={activeConversation.ad?.price}
+                            onBack={() => updateChatParams({ chat: null })}
+                            viewItemLabel={activeIsSale ? "View sale" : "View flyer"}
+                            onViewItem={
+                              activeConversation.ad && activeConversation.adId
+                                ? () => { void navigate(`/ad/${activeConversation.adId}`); }
+                                : activeIsSale && activeConversation.sale?.slug
+                                  ? () => { void navigate(`/sale/${activeConversation.sale?.slug}`); }
+                                  : undefined
+                            }
+                            onReport={() => setShowReportModal(true)}
+                          />
+                          <ConversationThread
+                            messages={chatMessages ?? []}
+                            currentUserId={String(user._id)}
+                          />
+                          <MessageComposer
+                            onSend={async (content) => {
+                              await sendMessage({ chatId: activeConversation._id as Id<"chats">, content });
+                            }}
+                            disabled={activeIsSale ? !activeConversation.sale : !activeConversation.ad?.isActive}
+                            disabledReason={activeIsSale ? "This sale is no longer available" : "This flyer is no longer active"}
+                          />
+                        </div>
+                      ) : (
+                        <div className="hidden lg:flex items-center justify-center h-full min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card">
+                          <div className="text-center p-8 max-w-prose">
+                            <div className="flex justify-center mb-4"><ChatText className="w-12 h-12 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
+                            <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">Select a conversation</h3>
+                            <p className="text-[15px] leading-relaxed text-foreground/70">Choose a conversation from the list to start messaging</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </section>
               )}
@@ -1528,6 +1544,17 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           </div>
         </div>
       </div>
+
+      {/* Report open conversation (unified inbox thread pane) */}
+      {activeConversation && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportType="chat"
+          reportedEntityId={activeConversation._id}
+          reportedEntityName={`Conversation with ${counterpartName}`}
+        />
+      )}
 
       {/* Delete Flyer Confirmation Modal */}
       {manageBundleId && (

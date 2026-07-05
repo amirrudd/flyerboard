@@ -13,6 +13,7 @@ import { internal } from "../_generated/api";
 import { components } from "../_generated/api";
 import { Resend } from "@convex-dev/resend";
 import type { Id } from "../_generated/dataModel";
+import { chatDeepLink, INBOX_PATH } from "./queries";
 
 // Initialize Resend client
 export const resend: Resend = new Resend(components.resend, {
@@ -22,14 +23,16 @@ export const resend: Resend = new Resend(components.resend, {
 
 /**
  * Internal action to notify a user about a new message via email
- * Called by the sendMessage mutation
+ * Called by the sendMessage / sendSaleMessage mutations.
+ * Exactly one of adId / saleEventId should be provided (item-chat vs sale thread).
  */
 export const notifyMessageReceived = internalAction({
   args: {
     recipientId: v.id("users"),
     senderId: v.id("users"),
     chatId: v.id("chats"),
-    adId: v.id("ads"),
+    adId: v.optional(v.id("ads")),
+    saleEventId: v.optional(v.id("saleEvents")),
     messageContent: v.string(),
   },
   handler: async (ctx, args) => {
@@ -49,19 +52,20 @@ export const notifyMessageReceived = internalAction({
       userId: args.senderId,
     });
 
-    // Get ad info for context
-    const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
-      adId: args.adId,
-    });
-
-    if (!ad) {
-      console.log("Ad not found, skipping email notification");
-      return { success: false, reason: "ad_not_found" };
+    // Item-vs-sale title + deep link resolved in one shared place.
+    const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
+    const context = await ctx.runQuery(
+      internal.notifications.queries.getChatNotificationContext,
+      { chatId: args.chatId, adId: args.adId, saleEventId: args.saleEventId }
+    );
+    if (!context) {
+      console.log("No notification context (missing ad/sale), skipping email notification");
+      return { success: false, reason: "no_context" };
     }
+    const itemTitle = context.title;
 
     const senderName = sender?.name || "Someone";
-    const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
-    const chatUrl = `${appUrl}/messages/${args.chatId}`;
+    const chatUrl = `${appUrl}${context.urlPath}`;
 
     // Build HTML email
     const htmlBody = `
@@ -79,10 +83,10 @@ export const notifyMessageReceived = internalAction({
       <strong>${senderName}</strong> sent you a message about:
     </p>
     <p style="margin: 0; font-size: 18px; font-weight: 600; color: #0066cc;">
-      "${ad.title}"
+      "${itemTitle}"
     </p>
   </div>
-  
+
   <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
     <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Message:</p>
     <p style="margin: 0; font-size: 15px; color: #1f2937; white-space: pre-wrap;">${args.messageContent}</p>
@@ -111,7 +115,7 @@ export const notifyMessageReceived = internalAction({
     const textBody = `
 New Message from ${senderName}
 
-About: "${ad.title}"
+About: "${itemTitle}"
 
 Message:
 ${args.messageContent}
@@ -128,7 +132,7 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
       await resend.sendEmail(ctx, {
         from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
         to: recipient.email,
-        subject: `💬 ${senderName} sent you a message about "${ad.title}"`,
+        subject: `💬 ${senderName} sent you a message about "${itemTitle}"`,
         html: htmlBody,
         text: textBody,
         // Add List-Unsubscribe header for Gmail compliance
@@ -202,14 +206,26 @@ export const sendBatchedNotifications = internalAction({
           const sender = await ctx.runQuery(internal.users.getUser, {
             userId: notification.senderId,
           });
-          const ad = await ctx.runQuery(internal.notifications.queries.getAdTitleQuery, {
-            adId: notification.adId,
-          });
+
+          // Item-vs-sale title + deep link resolved in one shared place.
+          // Unlike the immediate senders we don't skip on a missing ad/sale
+          // (the queued message still deserves delivery) — fall back to a
+          // generic label and the inbox deep link.
+          const context = await ctx.runQuery(
+            internal.notifications.queries.getChatNotificationContext,
+            {
+              chatId: notification.chatId,
+              adId: notification.adId,
+              saleEventId: notification.saleEventId,
+            }
+          );
+          const itemTitle = context?.title ?? "your listing";
+          const chatUrlPath = context?.urlPath ?? chatDeepLink(notification.chatId);
 
           const senderName = sender?.name || "Someone";
-          const chatUrl = `${appUrl}/messages/${notification.chatId}`;
+          const chatUrl = `${appUrl}${chatUrlPath}`;
 
-          subject = `💬 ${senderName} sent you a message about "${ad?.title}"`;
+          subject = `💬 ${senderName} sent you a message about "${itemTitle}"`;
           htmlBody = `
 <!DOCTYPE html>
 <html>
@@ -224,7 +240,7 @@ export const sendBatchedNotifications = internalAction({
       <strong>${senderName}</strong> sent you a message about:
     </p>
     <p style="margin: 0; font-size: 18px; font-weight: 600; color: #0066cc;">
-      "${ad?.title}"
+      "${itemTitle}"
     </p>
   </div>
   
@@ -255,7 +271,7 @@ export const sendBatchedNotifications = internalAction({
           textBody = `
 New Message from ${senderName}
 
-About: "${ad?.title}"
+About: "${itemTitle}"
 
 Message:
 ${notification.messageContent}
@@ -269,7 +285,8 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
         } else {
           // Multiple messages - use summary format
           subject = `💬 You have ${messageCount} new message${messageCount > 1 ? 's' : ''}`;
-          const messagesUrl = `${appUrl}/messages`;
+          // /messages doesn't exist as a route either — the Messages inbox lives on the dashboard.
+          const messagesUrl = `${appUrl}${INBOX_PATH}`;
 
           htmlBody = `
 <!DOCTYPE html>

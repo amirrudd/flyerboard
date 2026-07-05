@@ -1,6 +1,15 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-07-02
+**Last Updated**: 2026-07-05
+
+## Shared messaging component library (2026-07-05)
+`src/features/messages/` is the ONE chat/inbox implementation — `ConversationThread` (protected scroll pattern: outer `flex-1 min-h-0 overflow-y-auto` + inner `min-h-full justify-end`, auto-scroll, touch props), `MessageBubble`, `MessageComposer` (Enter sends / Shift+Enter newline — the app-wide rule now), `ConversationHeader`, `InboxRow`, `RoleChip`, `UnreadBadge`, `useInbox(options: {flyerId?, initialFilter?, enabled?})`. Consumers: UserDashboard chats tab (unified inbox), AdMessages (per-ad seller view), AdDetail (buyer panel + mobile sheet), BottomNav (UnreadBadge). Do NOT hand-roll new chat UI or a second composer — extend this library. Its tests own the protected chat behaviors formerly documented only in `ADMESSAGES_BEHAVIOR.md`.
+- **Convex mock gotcha for tests**: `api.module.fn` is an `anyApi` Proxy — property access mints a fresh object each time, so identity comparison in `useQuery` mocks fails across renders. Key mocks on `(fn as any)[Symbol.for("functionName")]` (e.g. `"adDetail:getAdById"`), never on object identity or call order.
+- **jsdom**: `ConversationThread` calls `scrollIntoView` — consumer tests must stub `Element.prototype.scrollIntoView`.
+- **BottomSheet nesting**: BottomSheet's content div already scrolls (`flex-1 overflow-y-auto overscroll-contain`); nesting ConversationThread directly double-scrolls. Wrap it in `flex flex-col min-h-0 max-h-[50dvh]` with the composer as a sibling.
+
+## Motion helpers in useMotionPrefs (2026-07-05)
+`src/hooks/useMotionPrefs.ts` gained `bubbleIn(delay?)` (chat bubble enter: fade + 8px rise, 180ms ease-out, 120ms ease-in exit), `listStagger(index, cap=12, step=0.04)` (list entrances, 40ms/item stagger capped at 12), and `scalePop()` (badge pop 0.8→1; re-key the element to replay on value change). All collapse under `prefers-reduced-motion`, animate transform/opacity only, exits shorter than enters. This hook remains the ONLY sanctioned framer-motion entry point — extend it rather than writing raw variants; `layoutId` pill animations (inbox filter) must set `duration: 0` when `reduced`.
 
 ## `position: fixed` inside `<main>` needs a portal (2026-07-01)
 `Layout.tsx`'s `<main>` (`mobile-scroll-container` class, `index.css`) sets `contain: layout style paint` for scroll performance. Per spec, `contain: layout`/`paint` makes an element a **containing block for `position: fixed` descendants** — any plain `fixed` div nested inside `<main>` (which every routed page renders into) pins to `<main>`'s full scrollable content height, not the viewport. Symptom: a "sticky" bottom bar drifts into the middle of the page as the user scrolls, instead of staying pinned to the screen edge.

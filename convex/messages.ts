@@ -3,6 +3,7 @@ import { query, mutation } from "./_generated/server";
 import { getDescopeUserId } from "./lib/auth";
 import { internal } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
+import { countUnreadForChat } from "./lib/unread";
 
 export const getAdChats = query({
   args: { adId: v.id("ads") },
@@ -33,17 +34,7 @@ export const getAdChats = query({
           .first();
 
         // Count unread messages for seller
-        const unreadCount = await ctx.db
-          .query("messages")
-          .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) =>
-            q.and(
-              q.neq(q.field("senderId"), userId),
-              q.gt(q.field("timestamp"), chat.lastReadBySeller ?? 0)
-            )
-          )
-          .collect()
-          .then(messages => messages.length);
+        const unreadCount = await countUnreadForChat(ctx, chat, userId, "seller");
 
         return {
           ...chat,
@@ -135,9 +126,10 @@ export const sendMessage = mutation({
       lastMessageAt: timestamp,
     });
 
-    // Send push notification to recipient (if enabled). Item-chat only — sale-thread
-    // notifications aren't wired yet (no single ad to reference).
-    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true' && chat.adId) {
+    // Send push notification to recipient (if enabled). Covers both item-chats
+    // (chat.adId set) and Moving Sale threads (chat.saleEventId set) — exactly
+    // one of the two is set per chat.
+    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true' && (chat.adId || chat.saleEventId)) {
       const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
       // Schedule push notification
@@ -149,12 +141,14 @@ export const sendMessage = mutation({
           senderId: userId,
           chatId: args.chatId,
           adId: chat.adId,
+          saleEventId: chat.saleEventId,
         }
       );
     }
 
-    // Queue email notification for batching (if feature is enabled). Item-chat only.
-    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true' && chat.adId) {
+    // Queue email notification for batching (if feature is enabled). Covers both
+    // item-chats and Moving Sale threads.
+    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true' && (chat.adId || chat.saleEventId)) {
       const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
 
       // Queue notification instead of sending immediately
@@ -165,6 +159,7 @@ export const sendMessage = mutation({
           senderId: userId,
           chatId: args.chatId,
           adId: chat.adId,
+          saleEventId: chat.saleEventId,
           messageContent: args.content,
         }
       );
@@ -204,6 +199,42 @@ export const markChatAsRead = mutation({
   },
 });
 
+/**
+ * Total unread message count across every chat the user participates in
+ * (as seller or buyer), excluding chats archived for that role. Feeds the
+ * always-mounted nav badge, so it must never throw — returns 0 when
+ * unauthenticated.
+ */
+export const getTotalUnreadCount = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      return 0;
+    }
+
+    const sellerChats = await ctx.db
+      .query("chats")
+      .withIndex("by_seller", (q) => q.eq("sellerId", userId))
+      .filter((q) => q.neq(q.field("archivedBySeller"), true))
+      .collect();
+
+    const buyerChats = await ctx.db
+      .query("chats")
+      .withIndex("by_buyer", (q) => q.eq("buyerId", userId))
+      .filter((q) => q.neq(q.field("archivedByBuyer"), true))
+      .collect();
+
+    const counts = await Promise.all([
+      ...sellerChats.map((chat) => countUnreadForChat(ctx, chat, userId, "seller")),
+      ...buyerChats.map((chat) => countUnreadForChat(ctx, chat, userId, "buyer")),
+    ]);
+
+    return counts.reduce((sum, count) => sum + count, 0);
+  },
+});
+
 export const getUnreadCounts = query({
   args: { adIds: v.array(v.id("ads")) },
   handler: async (ctx, args) => {
@@ -225,23 +256,10 @@ export const getUnreadCounts = query({
         .withIndex("by_ad", (q) => q.eq("adId", adId))
         .collect();
 
-      let totalUnread = 0;
-      for (const chat of chats) {
-        const unreadMessages = await ctx.db
-          .query("messages")
-          .withIndex("by_chat", (q) => q.eq("chatId", chat._id))
-          .filter((q) =>
-            q.and(
-              q.neq(q.field("senderId"), userId),
-              q.gt(q.field("timestamp"), chat.lastReadBySeller ?? 0)
-            )
-          )
-          .collect();
-
-        totalUnread += unreadMessages.length;
-      }
-
-      unreadCounts[adId] = totalUnread;
+      const counts = await Promise.all(
+        chats.map((chat) => countUnreadForChat(ctx, chat, userId, "seller"))
+      );
+      unreadCounts[adId] = counts.reduce((sum, count) => sum + count, 0);
     }
 
     return unreadCounts;

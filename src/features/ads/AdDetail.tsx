@@ -3,7 +3,7 @@ import { useHeaderSlots, type HeaderSlotsConfig } from "../layout/HeaderSlots";
 import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
@@ -15,11 +15,12 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, CaretLeft, ShareNetwork, BookmarkSimple, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PaperPlane, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
+import { Flag, CaretLeft, ShareNetwork, BookmarkSimple, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
-import { ChatMessages } from "../../components/ui/ChatMessages";
+import { ConversationThread, MessageComposer } from "../messages";
+import type { ThreadMessage } from "../messages";
 
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { LocationMap } from "../../components/ui/LocationMap";
@@ -46,7 +47,6 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showChat, setShowChat] = useState(false);
   const [showMobileChatSheet, setShowMobileChatSheet] = useState(false);
   const [showMobileSellerSheet, setShowMobileSellerSheet] = useState(false);
-  const [messageText, setMessageText] = useState("");
   const [chatId, setChatId] = useState<Id<"chats"> | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -55,7 +55,6 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const [showReviewListModal, setShowReviewListModal] = useState(false);
   const [avatarImageError, setAvatarImageError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const chatInputRef = useRef<HTMLInputElement>(null);
   const [showMessageNotificationModal, setShowMessageNotificationModal] = useState(false);
   const [showLikeNotificationModal, setShowLikeNotificationModal] = useState(false);
 
@@ -77,6 +76,10 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     api.adDetail.getChatMessages,
     chatId ? { chatId } : "skip"
   );
+
+  // adDetail.getChatMessages spreads the raw message doc, so rows already
+  // carry the real `senderId` ConversationThread keys on.
+  const threadMessages: ThreadMessage[] = messages || [];
 
   const saveAd = useMutation(api.adDetail.saveAd);
   const sendFirstMessage = useMutation(api.adDetail.sendFirstMessage);
@@ -161,24 +164,21 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
     setShowChat(true);
   };
 
-  const handleSendMessage = async () => {
-    if (!messageText.trim()) return;
+  // MessageComposer contract: onSend clears the draft on success and toasts
+  // on a thrown error, so this just needs to route to the right mutation
+  // based on whether a chat already exists (routes to sendFirstMessage vs
+  // sendMessage) and let errors propagate.
+  const handleSendMessage = async (content: string) => {
+    if (!chatId) {
+      // First message - create chat and send message atomically
+      const result = await sendFirstMessage({ adId, content });
+      setChatId(result.chatId);
 
-    try {
-      if (!chatId) {
-        // First message - create chat and send message atomically
-        const result = await sendFirstMessage({ adId, content: messageText.trim() });
-        setChatId(result.chatId);
-
-        // Show notification modal after first message
-        setShowMessageNotificationModal(true);
-      } else {
-        // Subsequent messages
-        await sendMessage({ chatId, content: messageText.trim() });
-      }
-      setMessageText("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send message");
+      // Show notification modal after first message
+      setShowMessageNotificationModal(true);
+    } else {
+      // Subsequent messages
+      await sendMessage({ chatId, content });
     }
   };
 
@@ -762,8 +762,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
               {/* Chat Section - Desktop only */}
               {showChat && (
-                <div className="bg-card rounded-2xl shadow-card hidden lg:block ring-1 ring-border/70">
-                  <div className="p-4 border-b border-border">
+                <div className="bg-card rounded-2xl shadow-card hidden lg:flex lg:flex-col ring-1 ring-border/70 overflow-hidden">
+                  <div className="p-4 border-b border-border shrink-0">
                     <div className="flex items-center justify-between">
                       <h3 className="kicker">Chat with Seller</h3>
                       <button
@@ -775,31 +775,18 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     </div>
                   </div>
 
-
-                  <ChatMessages messages={messages || []} />
-
-
-                  <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-border' : ''}`}>
-                    <div className="flex gap-2">
-                      <input
-                        ref={chatInputRef}
-                        type="text"
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) => { if (e.key === 'Enter') void handleSendMessage(); }}
-                        placeholder="Type your message..."
-                        className="flex-1 h-10 px-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
-                      />
-                      <button
-                        onClick={() => { void handleSendMessage(); }}
-                        disabled={!messageText.trim()}
-                        aria-label="Send message"
-                        className="bg-primary text-primary-foreground w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25"
-                      >
-                        <PaperPlane className="w-4 h-4" weight="bold" />
-                      </button>
-                    </div>
+                  <div className="flex flex-col min-h-0 max-h-64">
+                    <ConversationThread
+                      messages={threadMessages}
+                      currentUserId={user?._id ?? ""}
+                      className="p-4"
+                    />
                   </div>
+
+                  <MessageComposer
+                    onSend={handleSendMessage}
+                    placeholder="Type your message..."
+                  />
                 </div>
               )}
 
@@ -950,41 +937,27 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
         onClose={() => setShowMobileChatSheet(false)}
         title="Chat with Seller"
       >
-        <ChatMessages messages={messages || []} />
-
-        <div className={`p-4 ${messages && messages.length > 0 ? 'border-t border-border' : ''}`}>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  void handleSendMessage();
-                  // Create chat if needed and show notification
-                  if (!chatId) {
-                    setShowChat(true);
-                  }
-                }
-              }}
-              placeholder="Type your message..."
-              className="flex-1 h-11 px-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
-            />
-            <button
-              onClick={() => {
-                void handleSendMessage();
-                if (!chatId) {
-                  setShowChat(true);
-                }
-              }}
-              disabled={!messageText.trim()}
-              aria-label="Send message"
-              className="bg-primary text-primary-foreground w-11 h-11 flex items-center justify-center rounded-full hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/25 flex-shrink-0"
-            >
-              <PaperPlane className="w-4 h-4" weight="bold" />
-            </button>
-          </div>
+        <div className="flex flex-col min-h-0 max-h-[50dvh]">
+          <ConversationThread
+            messages={threadMessages}
+            currentUserId={user?._id ?? ""}
+            className="p-4"
+          />
         </div>
+
+        <MessageComposer
+          onSend={async (content) => {
+            const wasNewChat = !chatId;
+            await handleSendMessage(content);
+            // Create chat if needed — mirrors the previous behavior of
+            // revealing the desktop chat section state after the first
+            // message is sent from the mobile sheet.
+            if (wasNewChat) {
+              setShowChat(true);
+            }
+          }}
+          placeholder="Type your message..."
+        />
       </BottomSheet>
 
       {/* Report Modal */}

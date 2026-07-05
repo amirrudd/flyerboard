@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { UserDashboard } from './UserDashboard';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
+import { getFunctionName } from 'convex/server';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 const mockNavigate = vi.fn();
@@ -28,6 +29,11 @@ vi.mock('convex/react', () => ({
     useAction: vi.fn(),
 }));
 
+// UserDashboard (and useInbox) gate queries on user sync
+vi.mock('../../context/UserSyncContext', () => ({
+    useUserSync: () => ({ isUserSynced: true }),
+}));
+
 // Mock child components
 vi.mock('../layout/Header', () => ({
     Header: () => <div>Header</div>,
@@ -38,6 +44,75 @@ vi.mock('../ads/AdDetail', () => ({
 vi.mock('../ads/AdMessages', () => ({
     AdMessages: () => <div>AdMessages</div>,
 }));
+
+// ── Query/mutation mocks keyed by Convex function name ─────────────────────
+// The dashboard's useQuery call order changed with the unified inbox, so
+// positional mockReturnValueOnce chains are too brittle. Dispatch on
+// getFunctionName(queryRef) instead; "skip" always returns undefined
+// (matching real convex behavior), which is what makes the unread-badge
+// gating regression test meaningful.
+const defaultUser = { _id: 'u1', name: 'Test User', email: 'test@test.com' };
+const defaultStats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
+
+function mockQueries(overrides: Record<string, unknown> = {}) {
+    const data: Record<string, unknown> = {
+        'flag:movingSaleMode': true,
+        'flag:identityVerification': false,
+        'descopeAuth:getCurrentUserWithStats': { user: defaultUser, stats: defaultStats },
+        'posts:getUserAds': [],
+        'posts:getSellerChats': [],
+        'posts:getBuyerChats': [],
+        'adDetail:getSavedAds': [],
+        'saleEvents:getSavedSaleEvents': [],
+        'messages:getArchivedChats': [],
+        'messages:getChatMessages': [],
+        'messages:getUnreadCounts': {},
+        'messages:getTotalUnreadCount': 0,
+        ...overrides,
+    };
+    vi.mocked(useQuery).mockImplementation(((query: any, args?: any) => {
+        if (args === 'skip') return undefined;
+        const name = getFunctionName(query);
+        if (name === 'featureFlags:getFeatureFlag') return data[`flag:${args?.key}`];
+        return data[name];
+    }) as any);
+}
+
+let mutationSpies: Record<string, ReturnType<typeof vi.fn>>;
+function installMutationSpies() {
+    mutationSpies = {};
+    vi.mocked(useMutation).mockImplementation(((ref: any) => {
+        const name = getFunctionName(ref);
+        if (!mutationSpies[name]) {
+            mutationSpies[name] = vi.fn().mockResolvedValue(undefined);
+        }
+        return mutationSpies[name];
+    }) as any);
+}
+
+// Inbox fixtures: one selling-side chat (newer) + one buying-side chat (older)
+const sellerChat = {
+    _id: 'chat-sell',
+    adId: 'ad-1',
+    buyerId: 'buyer-9',
+    sellerId: 'u1',
+    lastMessageAt: 2000,
+    unreadCount: 2,
+    latestMessage: { content: 'Is the bike available?', timestamp: 2000 },
+    ad: { _id: 'ad-1', title: 'Blue Bike', price: 50, images: [], isActive: true },
+    buyer: { _id: 'buyer-9', name: 'Bella Buyer' },
+};
+const buyerChat = {
+    _id: 'chat-buy',
+    adId: 'ad-2',
+    buyerId: 'u1',
+    sellerId: 'seller-7',
+    lastMessageAt: 1000,
+    unreadCount: 0,
+    latestMessage: { content: 'Still for sale?', timestamp: 1000 },
+    ad: { _id: 'ad-2', title: 'Red Couch', price: 200, images: [], isActive: true },
+    seller: { _id: 'seller-7', name: 'Sam Seller' },
+};
 
 describe('UserDashboard', () => {
     const mockOnBack = vi.fn();
@@ -58,8 +133,9 @@ describe('UserDashboard', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        installMutationSpies();
         // Default to authenticated for most tests
-        mockUseSession.mockReturnValue({ isAuthenticated: true });
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
         mockUseUser.mockReturnValue({
             user: {
                 name: 'Descope User',
@@ -67,10 +143,12 @@ describe('UserDashboard', () => {
                 picture: 'https://example.com/pic.jpg'
             }
         });
+        mockQueries();
     });
 
     it('should show sign in message when user is not logged in', () => {
-        mockUseSession.mockReturnValue({ isAuthenticated: false });
+        mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: false });
+        mockQueries({ 'descopeAuth:getCurrentUserWithStats': undefined });
 
         renderDashboard();
 
@@ -78,67 +156,15 @@ describe('UserDashboard', () => {
     });
 
     it('should render dashboard tabs when user is logged in', () => {
-        mockUseSession.mockReturnValue({ isAuthenticated: true });
-
-        // Order: getCurrentUserWithStats, getUserAds, sellerChats(skip), buyerChats(skip), savedAds(skip), archivedChats(skip), chatMessages(skip), unreadCounts(skip)
-        vi.mocked(useQuery)
-            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
-            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
-            .mockReturnValueOnce({  // getCurrentUserWithStats (combined)
-                user: { _id: 'user1', name: 'Test User' },
-                stats: { totalAds: 0, totalViews: 0 }
-            })
-            .mockReturnValueOnce([]) // getUserAds (ads tab is active by default)
-            .mockReturnValueOnce(undefined) // getMyBundles (skipped - flag off)
-            .mockReturnValueOnce(undefined) // sellerChats (skipped - not chats tab)
-            .mockReturnValueOnce(undefined) // buyerChats (skipped - not chats tab)
-            .mockReturnValueOnce(undefined) // savedAds (skipped - not saved tab)
-            .mockReturnValueOnce(undefined) // savedSales (skipped - not saved tab)
-            .mockReturnValueOnce(undefined) // archivedChats (skipped)
-            .mockReturnValueOnce(undefined) // chatMessages (skipped)
-            .mockReturnValueOnce(undefined); // unreadCounts (skipped)
-
         renderDashboard();
 
         expect(screen.getAllByText('My Flyers')[0]).toBeInTheDocument();
-        expect(screen.getByText('Messages')).toBeInTheDocument();
+        expect(screen.getAllByText('Messages')[0]).toBeInTheDocument();
         expect(screen.getAllByText('Saved Flyers')[0]).toBeInTheDocument();
         expect(screen.getByText('Profile')).toBeInTheDocument();
     });
 
     it('should show "No ads yet" when user has no ads', async () => {
-        mockUseSession.mockReturnValue({ isAuthenticated: true });
-
-        const userWithStats = {
-            user: { _id: 'user1', name: 'Test User', email: 'test@test.com' },
-            stats: { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 }
-        };
-
-        // Instead of a global counter, use a function that returns data for the expected queries
-        // and skips others based on the query object's structure if available, or just a fixed sequence
-        // that is long enough to cover multiple renders (9 queries * 3 renders = 27)
-        const mockReturns: any[] = [];
-        for (let i = 0; i < 5; i++) { // Mock 5 render cycles
-            mockReturns.push(true);          // getFeatureFlag: movingSaleMode
-            mockReturns.push(false);         // getFeatureFlag: bundleListing
-            mockReturns.push(userWithStats); // getCurrentUserWithStats
-            mockReturns.push([]);            // getUserAds
-            mockReturns.push(undefined);     // getMyBundles
-            mockReturns.push(undefined);     // sellerChats
-            mockReturns.push(undefined);     // buyerChats
-            mockReturns.push(undefined);     // savedAds
-            mockReturns.push(undefined);     // savedSales
-            mockReturns.push(undefined);     // archivedChats
-            mockReturns.push(undefined);     // chatMessages
-            mockReturns.push(undefined);     // unreadCounts
-            mockReturns.push(undefined);     // getFeatureFlag
-        }
-
-        let callIdx = 0;
-        vi.mocked(useQuery).mockImplementation(() => {
-            return mockReturns[callIdx++];
-        });
-
         renderDashboard();
 
         await waitFor(() => {
@@ -148,26 +174,6 @@ describe('UserDashboard', () => {
     });
 
     it('should call onPostAd when button is clicked', () => {
-        mockUseSession.mockReturnValue({ isAuthenticated: true });
-
-        // Order: getCurrentUserWithStats, getUserAds, then skipped queries
-        vi.mocked(useQuery)
-            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
-            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
-            .mockReturnValueOnce({  // getCurrentUserWithStats
-                user: { _id: 'user1', name: 'Test User' },
-                stats: { totalAds: 0, totalViews: 0 }
-            })
-            .mockReturnValueOnce([]) // getUserAds
-            .mockReturnValueOnce(undefined) // getMyBundles (skipped)
-            .mockReturnValueOnce(undefined) // sellerChats (skipped)
-            .mockReturnValueOnce(undefined) // buyerChats (skipped)
-            .mockReturnValueOnce(undefined) // savedAds (skipped)
-            .mockReturnValueOnce(undefined) // savedSales (skipped)
-            .mockReturnValueOnce(undefined) // archivedChats (skipped)
-            .mockReturnValueOnce(undefined) // chatMessages (skipped)
-            .mockReturnValueOnce(undefined); // unreadCounts (skipped)
-
         renderDashboard();
 
         const postButton = screen.getByText('Pin Next Flyer');
@@ -177,46 +183,16 @@ describe('UserDashboard', () => {
     });
 
     it('should redirect to ads tab when accessing invalid tabs on mobile', async () => {
-        mockUseSession.mockReturnValue({ isAuthenticated: true });
-
-        // Mock window.matchMedia to simulate mobile viewport
-        Object.defineProperty(window, 'matchMedia', {
+        // Simulate a mobile viewport (useDeviceInfo reads window.innerWidth)
+        const originalInnerWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', {
             writable: true,
-            value: vi.fn().mockImplementation(query => ({
-                matches: query === '(max-width: 768px)', // Mobile viewport
-                media: query,
-                onchange: null,
-                addListener: vi.fn(),
-                removeListener: vi.fn(),
-                addEventListener: vi.fn(),
-                removeEventListener: vi.fn(),
-                dispatchEvent: vi.fn(),
-            })),
+            configurable: true,
+            value: 500,
         });
 
-        const userWithStats = {
-            user: { _id: 'user1', name: 'Test User', email: 'test@test.com' },
-            stats: { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 }
-        };
-
-        // Order: getCurrentUserWithStats, getUserAds, then skipped queries
-        vi.mocked(useQuery)
-            .mockReturnValueOnce(true) // getFeatureFlag: movingSaleMode
-            .mockReturnValueOnce(false) // getFeatureFlag: bundleListing
-            .mockReturnValueOnce(userWithStats)  // getCurrentUserWithStats
-            .mockReturnValueOnce([])    // getUserAds (will be fetched after redirect to ads tab)
-            .mockReturnValueOnce(undefined) // getMyBundles (skipped)
-            .mockReturnValueOnce(undefined) // sellerChats (skipped)
-            .mockReturnValueOnce(undefined) // buyerChats (skipped)
-            .mockReturnValueOnce(undefined) // savedAds (skipped)
-            .mockReturnValueOnce(undefined) // savedSales (skipped)
-            .mockReturnValueOnce(undefined) // archivedChats (skipped)
-            .mockReturnValueOnce(undefined) // chatMessages (skipped)
-            .mockReturnValueOnce(undefined) // unreadCounts (skipped)
-            .mockReturnValue(undefined);
-
         // Render with archived tab in URL
-        const { container } = render(
+        render(
             <MemoryRouter initialEntries={['/dashboard?tab=archived']}>
                 <UserDashboard
                     onBack={mockOnBack}
@@ -226,29 +202,213 @@ describe('UserDashboard', () => {
             </MemoryRouter>
         );
 
-        // Should redirect to ads tab on mobile
+        // Should redirect to ads tab on mobile (archived tab is desktop-only)
         await waitFor(() => {
-            const url = new URL(window.location.href);
-            expect(url.searchParams.get('tab')).not.toBe('archived');
+            expect(screen.queryByText('Archived Messages')).not.toBeInTheDocument();
         }, { timeout: 1000 });
+
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: originalInnerWidth,
+        });
+    });
+
+    it('renders per-ad unread badges on the My Flyers tab (getUnreadCounts gating fix)', () => {
+        mockQueries({
+            'posts:getUserAds': [
+                { _id: 'ad-1', title: 'Blue Bike', price: 50, images: [], views: 5, isActive: true },
+            ],
+            'messages:getUnreadCounts': { 'ad-1': 3 },
+            'messages:getTotalUnreadCount': 0,
+        });
+
+        renderDashboard();
+
+        // Badge only renders if getUnreadCounts runs on the "ads" tab — it was
+        // previously gated on activeTab === "chats" and always skipped here.
+        expect(screen.getByText('3')).toBeInTheDocument();
+    });
+
+    it('shows the sidebar Messages badge from getTotalUnreadCount', () => {
+        mockQueries({ 'messages:getTotalUnreadCount': 7 });
+
+        renderDashboard();
+
+        expect(screen.getByText('7')).toBeInTheDocument();
     });
 });
 
-// Helper: build a cycling useQuery mock that handles multiple re-renders.
-// Slot order matches UserDashboard's hook call order:
-//   1. getFeatureFlag (movingSaleMode)
-//   2. getFeatureFlag (bundleListing)
-//   3. getCurrentUserWithStats
-//   4. getUserAds
-//   5. getMyBundles (skipped)
-//   6-13. skipped queries (all undefined)
-function makeCyclingQueryMock(flagValue: boolean | undefined) {
-    const user = { _id: 'u1', name: 'Test User', email: 'test@test.com' };
-    const stats = { totalAds: 0, totalViews: 0, averageRating: 0, ratingCount: 0 };
-    const sequence = [flagValue, false, { user, stats }, [], ...Array(9).fill(undefined)];
-    let i = 0;
-    vi.mocked(useQuery).mockImplementation(() => sequence[i++ % sequence.length]);
-}
+describe('Unified inbox (chats tab)', () => {
+    const mockOnBack = vi.fn();
+    const mockOnPostAd = vi.fn();
+    const mockOnEditAd = vi.fn();
+
+    const renderAt = (path: string) =>
+        render(
+            <MemoryRouter initialEntries={[path]}>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        installMutationSpies();
+        // jsdom doesn't implement scrollIntoView (ConversationThread auto-scroll)
+        Element.prototype.scrollIntoView = vi.fn();
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockUseUser.mockReturnValue({ user: { name: 'Test', email: 'test@test.com', picture: '' } });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+        });
+    });
+
+    it('renders both selling and buying conversations sorted by recency', () => {
+        renderAt('/dashboard?tab=chats');
+
+        const rows = screen.getAllByRole('button', { name: /^Conversation with/ });
+        expect(rows).toHaveLength(2);
+        expect(rows[0]).toHaveAccessibleName('Conversation with Bella Buyer'); // newer (selling)
+        expect(rows[1]).toHaveAccessibleName('Conversation with Sam Seller'); // older (buying)
+    });
+
+    it('filters the list when switching between All / Selling / Buying', async () => {
+        renderAt('/dashboard?tab=chats');
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Selling' }));
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: 'Conversation with Sam Seller' })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Buying' }));
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Conversation with Sam Seller' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('tab', { name: 'All' }));
+        await waitFor(() => {
+            expect(screen.getAllByRole('button', { name: /^Conversation with/ })).toHaveLength(2);
+        });
+    });
+
+    it('shows the per-filter empty state copy', async () => {
+        mockQueries({ 'posts:getSellerChats': [], 'posts:getBuyerChats': [] });
+        renderAt('/dashboard?tab=chats');
+
+        expect(screen.getByText('No messages yet')).toBeInTheDocument();
+        expect(screen.getByText('Conversations with buyers and sellers will appear here')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Selling' }));
+        await waitFor(() => {
+            expect(screen.getByText('No buyer messages yet')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Buying' }));
+        await waitFor(() => {
+            expect(screen.getByText('Nothing here yet')).toBeInTheDocument();
+        });
+    });
+
+    it('opens the conversation thread from a ?chat deep link and marks it read', async () => {
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+            'messages:getChatMessages': [
+                { _id: 'm1', content: 'Is the bike available?', timestamp: 2000, senderId: 'buyer-9' },
+            ],
+        });
+
+        renderAt('/dashboard?tab=chats&chat=chat-sell');
+
+        const thread = screen.getByTestId('conversation-thread');
+        expect(thread).toBeInTheDocument();
+        // Item context strip shows the flyer
+        expect(screen.getByRole('heading', { name: 'Blue Bike' })).toBeInTheDocument();
+        // Thread renders the message (the InboxRow snippet shows it too, so scope)
+        expect(within(thread).getByText('Is the bike available?')).toBeInTheDocument();
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:markChatAsRead']).toHaveBeenCalledWith({ chatId: 'chat-sell' });
+        });
+    });
+
+    it('sends via the shared composer with the open chat id', async () => {
+        renderAt('/dashboard?tab=chats&chat=chat-sell');
+
+        fireEvent.change(screen.getByPlaceholderText('Type your message...'), {
+            target: { value: 'Yes, still here!' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:sendMessage']).toHaveBeenCalledWith({
+                chatId: 'chat-sell',
+                content: 'Yes, still here!',
+            });
+        });
+    });
+
+    it('disables the composer when the flyer is inactive', () => {
+        mockQueries({
+            'posts:getSellerChats': [
+                { ...sellerChat, ad: { ...sellerChat.ad, isActive: false } },
+            ],
+            'posts:getBuyerChats': [],
+        });
+
+        renderAt('/dashboard?tab=chats&chat=chat-sell');
+
+        expect(screen.getByPlaceholderText('Type your message...')).toBeDisabled();
+        expect(screen.getByText('This flyer is no longer active')).toBeInTheDocument();
+    });
+
+    it('pre-filters by flyer via ?flyer deep link and shows a removable chip', async () => {
+        renderAt('/dashboard?tab=chats&flyer=ad-1');
+
+        // Only the ad-1 conversation is listed
+        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Conversation with Sam Seller' })).not.toBeInTheDocument();
+
+        // Removable chip labelled with the flyer title
+        const chip = screen.getByRole('button', { name: 'Remove flyer filter: Blue Bike' });
+        expect(chip).toHaveTextContent('Filtering: Blue Bike');
+
+        fireEvent.click(chip);
+        await waitFor(() => {
+            expect(screen.getAllByRole('button', { name: /^Conversation with/ })).toHaveLength(2);
+        });
+    });
+
+    it('updates the URL when opening and closing a conversation', async () => {
+        renderAt('/dashboard?tab=chats');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Bella Buyer' }));
+
+        // Thread pane opens (URL now carries ?chat=…)
+        await waitFor(() => {
+            expect(screen.getByTestId('conversation-thread')).toBeInTheDocument();
+        });
+
+        // Back returns to the list-only state
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        await waitFor(() => {
+            expect(screen.queryByTestId('conversation-thread')).not.toBeInTheDocument();
+        });
+    });
+
+    it('archives a conversation from the inbox row', async () => {
+        renderAt('/dashboard?tab=chats');
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Archive' })[0]);
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:archiveChat']).toHaveBeenCalledWith({ chatId: 'chat-sell' });
+        });
+    });
+});
 
 describe('Moving Sale banner', () => {
     const mockOnBack = vi.fn();
@@ -257,12 +417,13 @@ describe('Moving Sale banner', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        installMutationSpies();
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
         mockUseUser.mockReturnValue({ user: { name: 'Test', email: 'test@test.com', picture: '' } });
     });
 
     it('renders the Moving house banner when movingSaleMode is enabled', () => {
-        makeCyclingQueryMock(true);
+        mockQueries({ 'flag:movingSaleMode': true });
 
         render(
             <MemoryRouter>
@@ -274,7 +435,7 @@ describe('Moving Sale banner', () => {
     });
 
     it('hides the Moving house banner when movingSaleMode is disabled', () => {
-        makeCyclingQueryMock(false);
+        mockQueries({ 'flag:movingSaleMode': false });
 
         render(
             <MemoryRouter>
@@ -286,7 +447,7 @@ describe('Moving Sale banner', () => {
     });
 
     it('hides the Moving house banner while the feature flag is loading', () => {
-        makeCyclingQueryMock(undefined);
+        mockQueries({ 'flag:movingSaleMode': undefined });
 
         render(
             <MemoryRouter>
@@ -298,7 +459,7 @@ describe('Moving Sale banner', () => {
     });
 
     it('navigates to /sell/moving-sale when the banner is clicked', () => {
-        makeCyclingQueryMock(true);
+        mockQueries({ 'flag:movingSaleMode': true });
 
         render(
             <MemoryRouter>

@@ -1,9 +1,44 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AdMessages } from './AdMessages';
 import { useQuery, useMutation } from 'convex/react';
 import { useSession } from '@descope/react-sdk';
 import { useUserSync } from '../../context/UserSyncContext';
+import { api } from '../../../convex/_generated/api';
+
+/**
+ * `api.<module>.<fn>` is an `anyApi` Proxy — every property access mints a
+ * brand-new Proxy object, so `fn === api.adDetail.getAdById` is never true
+ * across two separate accesses. Convex stamps a stable dotted path onto each
+ * reference via a well-known symbol; read that instead of using `===`.
+ */
+const FUNCTION_NAME = Symbol.for('functionName');
+const apiPath = (fn: unknown): unknown => (fn as any)?.[FUNCTION_NAME];
+
+/**
+ * Builds a stable useQuery mock keyed by API function path (rather than call
+ * order) so it survives re-renders triggered by user interaction — unlike a
+ * `mockReturnValueOnce` chain, which only covers the first render and
+ * silently returns undefined on the second (e.g. after clicking a row).
+ */
+function mockQueriesByApi(entries: {
+    getAdById?: unknown;
+    getAdChats?: unknown;
+    getChatMessages?: unknown;
+}) {
+    const getAdByIdPath = apiPath(api.adDetail.getAdById);
+    const getAdChatsPath = apiPath(api.messages.getAdChats);
+    const getChatMessagesPath = apiPath(api.messages.getChatMessages);
+
+    (useQuery as any).mockImplementation((fn: unknown, args: unknown) => {
+        if (args === 'skip') return undefined;
+        const path = apiPath(fn);
+        if (path === getAdByIdPath) return entries.getAdById;
+        if (path === getAdChatsPath) return entries.getAdChats;
+        if (path === getChatMessagesPath) return entries.getChatMessages;
+        return undefined;
+    });
+}
 
 // Mock dependencies
 vi.mock('convex/react');
@@ -78,6 +113,10 @@ describe('AdMessages', () => {
 
         (useMutation as any).mockReturnValue(vi.fn());
 
+        // ConversationThread auto-scrolls on open/new message; jsdom doesn't
+        // implement scrollIntoView (see ConversationThread.test.tsx).
+        Element.prototype.scrollIntoView = vi.fn();
+
         // Mock window.matchMedia for mobile detection
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
@@ -98,6 +137,12 @@ describe('AdMessages', () => {
         vi.restoreAllMocks();
     });
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Protected: auth/sync gating. This container still owns the gating
+    // logic (the shared useInbox hook is NOT used here — AdMessages queries
+    // messages.getAdChats/getChatMessages directly), so these tests stay
+    // against AdMessages itself. See ADMESSAGES_BEHAVIOR.md.
+    // ─────────────────────────────────────────────────────────────────────
     describe('Authentication and User Sync', () => {
         it('should not query chats when user is not authenticated', () => {
             (useSession as any).mockReturnValue({
@@ -185,118 +230,17 @@ describe('AdMessages', () => {
         });
     });
 
-    describe('Message Display and Scroll Behavior', () => {
-        beforeEach(() => {
-            // Setup authenticated state
-            (useSession as any).mockReturnValue({
-                isAuthenticated: true,
-                isSessionLoading: false,
-            });
-
-            (useUserSync as any).mockReturnValue({
-                isUserSynced: true,
-            });
-        });
-
-        it('should render messages in correct order (oldest to newest)', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
-
-            (useQuery as any).mockImplementation(mockUseQuery);
-
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
-
-            // Click on the first chat to select it
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
-
-            // Wait for messages to render
-            void waitFor(() => {
-                const messageElements = container.querySelectorAll('.text-sm.whitespace-pre-wrap');
-                expect(messageElements[0]).toHaveTextContent('First message');
-                expect(messageElements[1]).toHaveTextContent('Second message');
-            });
-        });
-
-        it('should have correct CSS classes for bottom alignment with scroll', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
-
-            (useQuery as any).mockImplementation(mockUseQuery);
-
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
-
-            // Click on chat to show messages
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
-
-            void waitFor(() => {
-                // Check outer container has overflow-y-auto for scrolling
-                const scrollContainer = container.querySelector('.overflow-y-auto');
-                expect(scrollContainer).toBeInTheDocument();
-                expect(scrollContainer).toHaveClass('flex-1', 'min-h-0', 'overflow-y-auto');
-
-                // Check inner wrapper has justify-end for bottom alignment
-                const messageWrapper = container.querySelector('.min-h-full.justify-end');
-                expect(messageWrapper).toBeInTheDocument();
-                expect(messageWrapper).toHaveClass('flex', 'flex-col', 'space-y-4', 'min-h-full', 'justify-end');
-            });
-        });
-
-        it('should have scrollIntoView ref at the end of messages', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
-
-            (useQuery as any).mockImplementation(mockUseQuery);
-
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
-
-            // Click on chat
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
-
-            void waitFor(() => {
-                // The ref div should be the last child of the message wrapper
-                const messageWrapper = container.querySelector('.min-h-full.justify-end');
-                const lastChild = messageWrapper?.lastElementChild;
-
-                // It should be an empty div (the ref)
-                expect(lastChild?.tagName).toBe('DIV');
-                expect(lastChild?.textContent).toBe('');
-            });
-        });
-
-        it('should maintain touch-action and overscroll-behavior for mobile scroll', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
-
-            (useQuery as any).mockImplementation(mockUseQuery);
-
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
-
-            // Click on chat
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
-
-            void waitFor(() => {
-                const scrollContainer = container.querySelector('.overflow-y-auto');
-                const style = scrollContainer?.getAttribute('style');
-
-                expect(style).toContain('touch-action: pan-y');
-                expect(style).toContain('overscroll-behavior: contain');
-            });
-        });
-    });
-
-    describe('Message Alignment', () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // Integration coverage. Message ordering, the protected scroll pattern,
+    // touch-scroll styles, and bubble alignment now live in
+    // src/features/messages/ConversationThread.test.tsx (shared component
+    // owns that behavior). These tests instead assert that AdMessages wires
+    // the shared components together correctly: the conversation list
+    // renders via InboxRow, selecting a row opens a thread with a composer,
+    // and the report button (previously unreachable dead code) now opens
+    // the modal.
+    // ─────────────────────────────────────────────────────────────────────
+    describe('Conversation list and thread integration', () => {
         beforeEach(() => {
             (useSession as any).mockReturnValue({
                 isAuthenticated: true,
@@ -308,54 +252,91 @@ describe('AdMessages', () => {
             });
         });
 
-        it('should align seller messages to the right', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
+        it('renders the conversation list via InboxRow with buyer name, snippet, and unread count', () => {
+            mockQueriesByApi({ getAdById: mockAd, getAdChats: mockChats });
 
-            (useQuery as any).mockImplementation(mockUseQuery);
+            render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
 
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
+            // InboxRow renders the buyer as the row's primary label and the
+            // latest-message snippet.
+            expect(screen.getByText('Test Buyer')).toBeInTheDocument();
+            expect(screen.getByText('Hello')).toBeInTheDocument();
+            // aria-label comes from InboxRow's row semantics.
+            expect(
+                screen.getByRole('button', { name: 'Conversation with Test Buyer' })
+            ).toBeInTheDocument();
+        });
 
-            // Click on chat
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
+        it('opens a thread with ConversationHeader + ConversationThread + MessageComposer when a row is selected', async () => {
+            mockQueriesByApi({ getAdById: mockAd, getAdChats: mockChats, getChatMessages: mockMessages });
 
-            void waitFor(() => {
-                const messageContainers = container.querySelectorAll('.flex.justify-end, .flex.justify-start');
+            render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
 
-                // First message (from buyer) should be left-aligned
-                expect(messageContainers[0]).toHaveClass('justify-start');
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Conversation with Test Buyer' })
+            );
 
-                // Second message (from seller) should be right-aligned
-                expect(messageContainers[1]).toHaveClass('justify-end');
+            // ConversationHeader: buyer name as title.
+            expect(
+                screen.getByRole('heading', { name: 'Test Buyer' })
+            ).toBeInTheDocument();
+
+            // ConversationThread renders both messages as bubbles.
+            const bubbles = await screen.findAllByTestId('message-bubble');
+            expect(bubbles).toHaveLength(2);
+            expect(bubbles[0]).toHaveTextContent('First message');
+            expect(bubbles[1]).toHaveTextContent('Second message');
+
+            // MessageComposer is present (Enter-to-send unification).
+            expect(screen.getByLabelText('Type your message')).toBeInTheDocument();
+            expect(
+                screen.getByRole('button', { name: 'Send message' })
+            ).toBeInTheDocument();
+        });
+
+        it('sends a message via the composer using messages.sendMessage', async () => {
+            // AdMessages calls useMutation twice (sendMessage, markChatAsRead);
+            // both resolve to the same stub here since only call args matter.
+            const sendMessageMock = vi.fn().mockResolvedValue(undefined);
+            (useMutation as any).mockReturnValue(sendMessageMock);
+
+            mockQueriesByApi({ getAdById: mockAd, getAdChats: mockChats, getChatMessages: mockMessages });
+
+            render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Conversation with Test Buyer' })
+            );
+
+            const textarea = screen.getByLabelText('Type your message');
+            fireEvent.change(textarea, { target: { value: 'Is it still available?' } });
+            fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+
+            await waitFor(() => {
+                expect(sendMessageMock).toHaveBeenCalledWith({
+                    chatId: 'chat-1',
+                    content: 'Is it still available?',
+                });
             });
         });
 
-        it('should apply correct background colors to messages', () => {
-            const mockUseQuery = vi.fn()
-                .mockReturnValueOnce(mockAd)
-                .mockReturnValueOnce(mockChats)
-                .mockReturnValueOnce(mockMessages);
+        it('opens the report modal from the conversation header report button (previously unreachable)', async () => {
+            mockQueriesByApi({ getAdById: mockAd, getAdChats: mockChats, getChatMessages: mockMessages });
 
-            (useQuery as any).mockImplementation(mockUseQuery);
+            render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
 
-            const { container } = render(<AdMessages adId={mockAdId} onBack={mockOnBack} />);
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Conversation with Test Buyer' })
+            );
 
-            // Click on chat
-            const chatButton = screen.getByText('Test Buyer');
-            chatButton.click();
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Report conversation' })
+            );
 
-            void waitFor(() => {
-                const messageBubbles = container.querySelectorAll('.rounded-lg');
-
-                // Buyer message should have white background with border
-                expect(messageBubbles[0]).toHaveClass('bg-white', 'border', 'border-neutral-200');
-
-                // Seller message should have primary background
-                expect(messageBubbles[1]).toHaveClass('bg-primary-50');
-            });
+            // ReportModal renders the reported entity name once open.
+            expect(
+                await screen.findByText('Conversation with Test Buyer')
+            ).toBeInTheDocument();
         });
     });
 

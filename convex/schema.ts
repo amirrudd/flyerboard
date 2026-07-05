@@ -151,7 +151,11 @@ const applicationTables = {
   pendingEmailNotifications: defineTable({
     recipientId: v.id("users"),
     chatId: v.id("chats"),
-    adId: v.id("ads"),
+    // Exactly one of adId / saleEventId is set (item-chat vs sale-thread notification).
+    // adId made optional (was required) to support sale-thread notifications — existing
+    // rows all have adId set, so this widening is additive/backward-compatible.
+    adId: v.optional(v.id("ads")),
+    saleEventId: v.optional(v.id("saleEvents")),
     senderId: v.id("users"),
     messageContent: v.string(),
     createdAt: v.number(),

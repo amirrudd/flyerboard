@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { expect, test, describe } from "vitest";
+import { expect, test, describe, beforeEach, afterEach } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -199,5 +199,76 @@ describe("getSaleThread", () => {
     expect(res!.messages[0].content).toBe("Hello there");
     expect(res!.messages[0].mine).toBe(true);
     expect(res!.messages[0].referencedAdIds).toEqual([itemIds[0]]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// sendSaleMessage — notification scheduling
+// ──────────────────────────────────────────────────────────────────────────
+describe("sendSaleMessage notifications", () => {
+  const originalPush = process.env.ENABLE_PUSH_NOTIFICATIONS;
+  const originalEmail = process.env.ENABLE_EMAIL_NOTIFICATIONS;
+
+  beforeEach(() => {
+    process.env.ENABLE_PUSH_NOTIFICATIONS = "true";
+    process.env.ENABLE_EMAIL_NOTIFICATIONS = "true";
+  });
+
+  afterEach(() => {
+    process.env.ENABLE_PUSH_NOTIFICATIONS = originalPush;
+    process.env.ENABLE_EMAIL_NOTIFICATIONS = originalEmail;
+  });
+
+  test("schedules a push notification and queues an email for the seller", async () => {
+    const { t, asBuyer, saleId, sellerId } = await seedPublishedSale();
+
+    const { chatId } = await asBuyer.mutation(api.saleChats.sendSaleMessage, {
+      saleEventId: saleId,
+      content: "Can I get the chair?",
+    });
+
+    const scheduled = await t.run((ctx) =>
+      (ctx.db as any).system.query("_scheduled_functions").collect() as Promise<any[]>
+    );
+    const pushJob = scheduled.find(
+      (j: any) =>
+        j.name.includes("notifyMessageReceived") &&
+        j.name.includes("pushNotifications")
+    );
+    expect(pushJob).toBeDefined();
+    expect(pushJob!.args[0].recipientId).toBe(sellerId);
+    expect(pushJob!.args[0].saleEventId).toBe(saleId);
+
+    const pending = await t.run((ctx) =>
+      ctx.db.query("pendingEmailNotifications").collect()
+    );
+    expect(pending).toHaveLength(1);
+    expect(pending[0].recipientId).toBe(sellerId);
+    expect(pending[0].saleEventId).toBe(saleId);
+    expect(pending[0].chatId).toBe(chatId);
+    expect(pending[0].adId).toBeUndefined();
+  });
+
+  test("does not schedule notifications when the feature flags are off", async () => {
+    process.env.ENABLE_PUSH_NOTIFICATIONS = "false";
+    process.env.ENABLE_EMAIL_NOTIFICATIONS = "false";
+    const { t, asBuyer, saleId } = await seedPublishedSale();
+
+    await asBuyer.mutation(api.saleChats.sendSaleMessage, {
+      saleEventId: saleId,
+      content: "Can I get the chair?",
+    });
+
+    const scheduled = await t.run((ctx) =>
+      (ctx.db as any).system.query("_scheduled_functions").collect() as Promise<any[]>
+    );
+    expect(
+      scheduled.find((j: any) => j.name.includes("notifyMessageReceived"))
+    ).toBeUndefined();
+
+    const pending = await t.run((ctx) =>
+      ctx.db.query("pendingEmailNotifications").collect()
+    );
+    expect(pending).toHaveLength(0);
   });
 });

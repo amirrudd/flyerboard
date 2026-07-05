@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
+import { internal } from "./_generated/api";
 
 /**
  * Sale-level messaging (v2).
@@ -84,6 +85,38 @@ export const sendSaleMessage = mutation({
       referencedAdIds: chips,
     });
     await ctx.db.patch(chatId, { lastMessageAt: now });
+
+    // Buyer is always the sender here (sellers can't message their own sale),
+    // so the recipient is always the seller.
+    const recipientId = sale.userId;
+
+    // Send push notification to the seller (if enabled).
+    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true') {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notifications.pushNotifications.notifyMessageReceived,
+        {
+          recipientId,
+          senderId: userId,
+          chatId,
+          saleEventId: args.saleEventId,
+        }
+      );
+    }
+
+    // Queue email notification for batching (if feature is enabled).
+    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
+      await ctx.runMutation(
+        internal.notifications.pendingEmailNotifications.queueEmailNotification,
+        {
+          recipientId,
+          senderId: userId,
+          chatId,
+          saleEventId: args.saleEventId,
+          messageContent: content,
+        }
+      );
+    }
 
     return { chatId, success: true };
   },

@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-07-02 (added Bundle Listing)
+**Last Updated**: 2026-07-05 (added Messaging; Bundle Listing added 2026-07-02)
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 
@@ -17,6 +17,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 | **Bundle Listing** | `features/bundles.md` | `features/moving-sale.md` (shares `saleBundles`), `infrastructure/database.md` |
 | **Blog / SEO / GEO content** | `features/blog.md` | `frontend/routing-navigation.md`, `../../docs/guides/blog-content-guideline.md` |
 | **Image Upload** | `features/image-upload.md` | `infrastructure/storage.md` |
+| **Messaging/Chat** | `features/messaging.md` | `infrastructure/database.md`, `features/notifications.md` |
 | **Notifications** | `features/notifications.md` | `infrastructure/database.md` |
 | **Admin Features** | `features/admin.md` | `infrastructure/database.md` |
 | **PWA/Offline** | `features/pwa.md` | `frontend/ui-patterns.md` |
@@ -38,6 +39,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 │   ├── authentication.md        # Descope integration, auth patterns
 │   ├── blog.md                  # File-based blog, SEO/GEO, llms.txt + sitemap
 │   ├── image-upload.md          # Adaptive compression, upload UX
+│   ├── messaging.md             # Item+sale chat: surfaces, queries, known gaps
 │   ├── notifications.md         # Email (Resend) + Push (Web Push)
 │   └── pwa.md                   # Progressive Web App features
 │

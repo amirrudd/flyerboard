@@ -1,0 +1,74 @@
+# Messaging / Chat
+
+**Last Updated**: 2026-07-05
+
+Map of the item + sale messaging system as it exists in code, plus known UX/functional gaps found in the 2026-07-05 UX audit. The unified inbox shipped 2026-07-05 (dashboard chats tab + shared `src/features/messages/` library); AdDetail and AdMessages render through the same components.
+
+## Data model
+
+- `chats` table: one row per (ad, buyer) or (saleEvent, buyer). Exactly one of `adId` / `saleEventId` is set (enforced in mutations, not the validator — see `convex/saleChats.ts` header comment).
+- `messages` table: `chatId`, `senderId`, `content`, `timestamp`. Read state is per-role timestamps on the chat (`lastReadBySeller` / `lastReadByBuyer`), not per-message.
+- Archive is per-role flags (`archivedByBuyer` / `archivedBySeller`).
+- `pendingEmailNotifications` table: `adId` is now **optional** (was required) and there's a new optional `saleEventId` — exactly one is set, mirroring `chats`. Existing rows are unaffected (all have `adId`); this was an additive/backward-compatible schema widening, not a migration.
+
+## Backend (`convex/messages.ts`, `convex/posts.ts`, `convex/saleChats.ts`)
+
+| Function | Purpose | Notes |
+|---|---|---|
+| `messages.getAdChats` | Seller: all chats for ONE ad | Ownership-checked; does NOT filter archived |
+| `messages.getChatMessages` | Thread messages, asc | Participant-checked; no pagination (`collect()`) |
+| `messages.sendMessage` | Send in existing chat | Rate-limited 60/min; push+email notifications now fire for **both item-chats and sale threads** (gate changed from `chat.adId` to `chat.adId \|\| chat.saleEventId`) |
+| `messages.getUnreadCounts` | Seller per-ad unread map | N+1 (loops ads→chats→messages); OK at current scale |
+| `messages.getTotalUnreadCount` | **NEW.** Total unread across ALL chats where user is seller or buyer (sums both roles), excluding chats archived for that role | args `{}`, returns `v.number()`. Never throws — returns `0` when unauthenticated. Feeds the always-mounted nav badge. See "New unread badge query" below. |
+| `posts.getSellerChats` | ALL chats where user is seller (items + sales) | Still queried in UserDashboard but not yet rendered (frontend work, not in this backend pass). **Now sorted by `lastMessageAt` desc** server-side (previously index/creation order) and **now returns `latestMessage`** (newest message doc or `null`, same pattern as `getAdChats`) — the dashboard rendered `chat.latestMessage` but the field was never returned, so snippets silently never displayed |
+| `posts.getBuyerChats` | ALL chats where user is buyer | Powers the dashboard "Messages" tab. **Now sorted by `lastMessageAt` desc** server-side (was the last known gap vs. `getArchivedChats`, which was already sorted) and **now returns `latestMessage`** (see above) |
+| `messages.getArchivedChats` | Buyer-archived only (`by_buyer_archived`) | Seller-archived chats are unreachable (no UI archives as seller either) |
+| `messages.deleteArchivedChats` | Buyer hard-deletes chat + all messages | **Destroys the seller's copy too** — one-sided delete affects both parties |
+| `adDetail.sendFirstMessage` | Buyer: create chat + first message atomically | Chat only created on first send — no empty chats. Good pattern |
+| `saleChats.sendSaleMessage` / `getSaleThread` | Sale-level thread (one per buyer per sale), item chips via `referencedAdIds` | Buyer-side only. **Now schedules push + queues email to the seller** on send (previously sent nothing) |
+
+## Unified messaging backend (2026-07-05, backend-only pass)
+
+Backend groundwork for the unified inbox (frontend not yet built):
+
+- **Sort order + snippet**: `posts.getSellerChats` / `posts.getBuyerChats` sort by `lastMessageAt` desc before returning — same pattern as `getArchivedChats` — and each chat now includes `latestMessage` (newest message doc via `by_chat` desc `.first()`, or `null` for empty chats). Existing fields (`ad`, `sale`, `buyer`/`seller`, `unreadCount`) unchanged.
+- **New unread badge query**: `messages.getTotalUnreadCount` — args `{}`, returns `v.number()`. Sums unread messages across every chat where the user is seller (`by_seller` index, excludes `archivedBySeller`, counts messages with `senderId !== userId` and `timestamp > lastReadBySeller ?? 0`) plus every chat where they're buyer (mirror via `by_buyer`/`lastReadByBuyer`/`archivedByBuyer`). Returns `0` (never throws) when unauthenticated so it's safe to mount unconditionally in nav chrome.
+- **Sale-thread notifications wired up**: previously `messages.sendMessage` only sent push/email when `chat.adId` was set (item-chats), and `saleChats.sendSaleMessage` sent nothing at all — sale-thread messages were a notification black hole (see gap #2 below, now fixed at the backend layer). Changes:
+  - `notifications/pushNotifications.notifyMessageReceived`: `adId` is now optional, new optional `saleEventId` arg. Branches on which is set — item-chat fetches ad title via `getAdTitleQuery`; sale thread fetches title+slug via new `notifications/queries.getSaleTitleQuery` and links to `/sale/<slug>` if the sale has a slug, else `/dashboard?tab=chats&chat=<chatId>`.
+  - **Deep-link gotcha (fixed 2026-07-05)**: item-chat notifications historically linked to `/messages/<chatId>` and the batched summary email to `/messages` — **neither route exists in App.tsx** (they 404'd since the notification system shipped). All item-chat deep links (push + both email senders) now use the canonical `/dashboard?tab=chats&chat=<chatId>`, and the multi-message summary email links to `/dashboard?tab=chats`. If you add notification URLs anywhere, use those dashboard deep links — never `/messages/...`.
+  - `notifications/pendingEmailNotifications.queueEmailNotification`: same optional `adId`/`saleEventId` widening. Backing schema change: `pendingEmailNotifications.adId` optional + new optional `saleEventId` (see Data model above).
+  - `notifications/emailNotifications.notifyMessageReceived` (immediate, currently unused by `sendMessage` — batching is the live path) and `sendBatchedNotifications` (the actual cron-driven sender) both updated with the same adId/saleEventId branch, same deep-link rule.
+  - `messages.sendMessage`: notification gate changed from `chat.adId` to `chat.adId || chat.saleEventId`; passes through whichever is set. **Item-chat behavior is unchanged byte-for-byte** (same title lookup, same `/messages/<chatId>` URL) — only the gate widened.
+  - `saleChats.sendSaleMessage`: now schedules `pushNotifications.notifyMessageReceived` and calls `pendingEmailNotifications.queueEmailNotification` (recipient = seller, since sellers can't message their own sale — buyer is always the sender) after inserting the message, gated on the same `ENABLE_PUSH_NOTIFICATIONS`/`ENABLE_EMAIL_NOTIFICATIONS` env flags as item-chats.
+- (Frontend shipped later the same day — see "Frontend surfaces" #3 and `frontend/ui-patterns.md` "Shared messaging component library".)
+- **Test coverage**: `convex/messages.test.ts` (new) covers `getTotalUnreadCount` (seller-only, buyer-only, combined, archived-excluded, own-messages-excluded, unauthenticated) and `sendMessage` notification scheduling for both item-chat and sale-thread chats. `convex/posts.test.ts` (new) covers sort order for both queries plus unauthenticated → `[]`. `convex/saleChats.test.ts` gained a `sendSaleMessage notifications` describe block. Pattern for asserting scheduler calls in `convex-test`: system tables need `(ctx.db as any).system.query("_scheduled_functions").collect()` — **not** `ctx.db.query(...)`, which throws `"System tables can only be accessed from db.system.query()"`. Cast through `any` since the generated `DataModel` type doesn't expose `.system` on the public `db`.
+
+## Frontend surfaces (4 distinct chat UIs, all styled/behaving differently)
+
+1. **`src/features/ads/AdDetail.tsx`** — buyer composes on ad page. Auto-opens chat panel for any signed-in non-owner (`handleStartChat` effect ~line 357). Desktop: embedded sidebar panel + `ChatMessages` component; mobile: bottom sheet. Enter sends.
+2. **`src/features/ads/AdMessages.tsx`** — seller's per-ad inbox (master-detail: conversation list + thread). Reached ONLY from Dashboard → My Flyers → per-ad "Messages" button (`showMessagesForAd`). Cmd/Ctrl+Enter sends (textarea). Protected behaviors doc: `ADMESSAGES_BEHAVIOR.md`. Contains a `ReportModal` that is **unreachable** — nothing ever sets `showReportModal(true)`.
+3. **`src/features/dashboard/UserDashboard.tsx` "chats" tab** — **unified inbox (rebuilt 2026-07-05)**: `useInbox()` merges selling + buying + sale threads, segmented All/Selling/Buying filter (framer-motion `layoutId` pill, AnimatePresence crossfade), `InboxRow` list, thread pane = `ConversationHeader` + `ConversationThread` + `MessageComposer` (master-detail on lg+, thread replaces list below lg). **URL is the single source of truth for inbox state**: `?tab=chats&chat=<chatId>&flyer=<adId>` — the open thread and flyer filter live only in searchParams (no mirrored local state; `updateChatParams()` is the single writer, `replace: true`). `markChatAsRead` fires from an effect keyed on the `chat` param, so deep links mark read too. Report flag opens `ReportModal` (`reportType="chat"`). Composer disabled when `chat.ad && !chat.ad.isActive` ("This flyer is no longer active") or sale thread with missing sale. Bottom nav "Messages" (`/dashboard?tab=chats`) lands here.
+4. **`src/features/movingSale/SaleMessageModal.tsx`** — buyer composes to a sale from the public sale page.
+
+## Known gaps (confirmed 2026-07-05 audit — fix before calling messaging done)
+
+1. ~~No seller inbox across ads~~ **Fixed 2026-07-05**: UserDashboard chats tab is now the unified inbox rendering `getSellerChats` + `getBuyerChats` via `useInbox` (see Frontend surfaces #3).
+2. ~~Moving-sale seller messages are a black hole~~ **Fixed 2026-07-05**: `sendSaleMessage` schedules push + queues email to the seller, AND sale threads now render for sellers in the unified inbox (`getSellerChats` includes them; `InboxRow` shows a Sale chip + "View sale" link).
+3. ~~Seller unread badges never render~~ **Fixed 2026-07-05**: `getUnreadCounts` is now gated `activeTab === "ads"` (where the per-ad badges actually render). Regression test in `UserDashboard.test.tsx` ("getUnreadCounts gating fix").
+4. ~~No global unread indicator~~ **Fixed 2026-07-05**: `BottomNav.tsx` shows an `UnreadBadge` on the Messages item and the dashboard sidebar "Messages" badge uses the same `messages.getTotalUnreadCount` (both auth-gated; badge hidden at 0/signed out). NOTE: BottomNav's badge hooks must stay ABOVE its early `/blog` return (hooks rule).
+5. ~~Buyer/seller chat lists unsorted by recency~~ **Fixed 2026-07-05**: both `getSellerChats` and `getBuyerChats` now sort by `lastMessageAt` desc server-side, matching `getArchivedChats`.
+6. `deleteArchivedChats` hard-delete destroys both parties' history. Not addressed in this pass — out of scope for the unified-inbox backend work.
+
+## Unified inbox frontend gotchas (2026-07-05 integration pass)
+
+- **Mobile-archived redirect ping-pong (real bug, fixed)**: the "redirect archived tab on mobile" effect in UserDashboard used to call BOTH `setActiveTab('ads')` and `setSearchParams({tab:'ads'})` — the exact two-effect ping-pong documented for the sales-tab bounce (searchParams updates one tick behind state → infinite loop → OOM/max-update-depth). It was latent because the old test mocked `matchMedia`, but `useDeviceInfo` reads `window.innerWidth`, so `isMobile` was never true in tests. Fixed to single-writer (URL only); to simulate mobile in jsdom set `window.innerWidth` via `Object.defineProperty`, not matchMedia.
+- **`useInbox` takes `enabled`** (added right after the integration pass): UserDashboard passes `enabled: activeTab === "chats"` so the two chat queries skip on other tabs. Keep that gate when adding call sites that aren't always visible.
+- **`useInbox` only exposes the filtered list**: if the open `?chat=` conversation is excluded by the current role filter (desktop master-detail + filter switch), the thread pane falls back to the "Select a conversation" placeholder until the filter includes it again. The URL param is kept, so switching back to All restores the thread.
+- **Test pattern — name-based convex mocks**: UserDashboard's useQuery call order changed, so positional `mockReturnValueOnce` chains were replaced with dispatch on `getFunctionName(queryRef)` (from `convex/server`; works on generated `api.*` proxies) + `args === 'skip' → undefined`. That skip behavior is what makes gating regressions testable. Mutations use the same pattern to get per-function spies. See `UserDashboard.test.tsx` `mockQueries()`/`installMutationSpies()`.
+
+## Patterns to preserve
+
+- Chat created lazily on first message (`sendFirstMessage`) — never pre-create empty chats.
+- All queries gate on `isAuthenticated && !isSessionLoading && isUserSynced` (user-sync race — see `ADMESSAGES_BEHAVIOR.md`).
+- Read-marking = `markChatAsRead` on open/expand; role-aware timestamp.
+- Scroll pattern: `justify-end` on inner wrapper (NOT the scroll container), `messagesEndRef` + `scrollIntoView`; `touchAction: 'pan-y'` + `overscrollBehavior: 'contain'` for mobile.

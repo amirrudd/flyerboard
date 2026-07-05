@@ -124,17 +124,25 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   // (which write fresh params) implicitly close it.
   const selectedAdId = searchParams.get("ad") as Id<"ads"> | null;
   const showMessagesForAd = searchParams.get("messages") as Id<"ads"> | null;
-  const updateInlineViewParams = (next: { ad?: string | null; messages?: string | null }) => {
+  // Single writer for URL-encoded view state. For each key in `updates`, a
+  // string sets it, null clears it, undefined leaves it untouched; `force`
+  // keys are always set. replace:true so back/refresh restore the encoded
+  // state without polluting history on every selection.
+  const updateSearchParams = (
+    updates: Record<string, string | null | undefined>,
+    force?: Record<string, string>,
+  ) => {
     const params = new URLSearchParams(searchParams);
-    const setOrDelete = (key: string, value: string | null | undefined) => {
-      if (value === undefined) return; // key not passed — leave untouched
+    if (force) for (const [k, v] of Object.entries(force)) params.set(k, v);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue; // leave untouched
       if (value) params.set(key, value);
       else params.delete(key);
-    };
-    setOrDelete("ad", next.ad);
-    setOrDelete("messages", next.messages);
+    }
     setSearchParams(params, { replace: true });
   };
+  const updateInlineViewParams = (next: { ad?: string | null; messages?: string | null }) =>
+    updateSearchParams(next);
   const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
   const [showReportModal, setShowReportModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -552,18 +560,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
    * touches the keys passed (null clears a key). replace:true so back/refresh
    * restore the inbox state without polluting history on every selection.
    */
-  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", "chats");
-    const setOrDelete = (key: string, value: string | null | undefined) => {
-      if (value === undefined) return; // key not passed — leave untouched
-      if (value) params.set(key, value);
-      else params.delete(key);
-    };
-    setOrDelete("chat", next.chat);
-    setOrDelete("flyer", next.flyer);
-    setSearchParams(params, { replace: true });
-  };
+  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) =>
+    updateSearchParams(next, { tab: "chats" });
 
   const handleArchiveChat = async (chatId: Id<"chats">) => {
     try {

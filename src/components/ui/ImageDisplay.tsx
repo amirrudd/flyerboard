@@ -103,7 +103,10 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
   // aspect ratio without cropping the subject. Requires a positioned parent.
   if (backdrop) {
     return (
-      <div className="absolute inset-0 overflow-hidden" onClick={onClick}>
+      // `isolate` keeps the z-[1] image wrapper scoped to this box — without it
+      // the image escapes into the card's stacking context and paints over
+      // sibling overlays (e.g. the grid's "New"/"Trade" badges).
+      <div className="absolute inset-0 overflow-hidden isolate" onClick={onClick}>
         <img
           src={displaySrc}
           alt=""

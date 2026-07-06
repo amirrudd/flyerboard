@@ -56,9 +56,18 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const [newAdIds, setNewAdIds] = useState<Set<string>>(new Set());
     // Initialize to 5 minutes ago to catch recent ads when page loads.
     // The lazy `useState` initializer runs once at mount (keeping render pure),
-    // and seeds the mutable ref used for tracking the last refresh time.
+    // and seeds the per-filter refresh watermarks below.
     const [initialRefreshTimestamp] = useState(() => Date.now() - 5 * 60 * 1000);
-    const lastRefreshTimestamp = useRef<number>(initialRefreshTimestamp);
+    // Ads fetched via refreshAds that the frozen paginated query (bounded by
+    // maxCreationTime at mount) can never return. Keyed by filter cacheKey and
+    // merged ahead of the query results wherever the display list is rebuilt —
+    // otherwise a later refresh or query re-emit rebuilds the list from the raw
+    // results and silently drops previously merged new ads.
+    const freshAdsRef = useRef<Map<string, Doc<"ads">[]>>(new Map());
+    // Per-filter "fetched up to" watermark for getLatestAds. Per-key (not
+    // global) so a refresh under one filter doesn't advance the watermark past
+    // ads another filter's view hasn't merged yet.
+    const lastRefreshTimestamps = useRef<Map<string, number>>(new Map());
 
     // Generate cache key from current filters
     const cacheKey = useMemo(() => {
@@ -110,7 +119,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 categoryId: selectedCategory ?? undefined,
                 search: searchQuery || undefined,
                 location: selectedLocation || undefined,
-                sinceTimestamp: lastRefreshTimestamp.current,
+                sinceTimestamp: lastRefreshTimestamps.current.get(cacheKey) ?? initialRefreshTimestamp,
                 limit: 50,
             });
 
@@ -118,40 +127,55 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 return;
             }
 
-            // Get current ad IDs
-            const currentAdIds = new Set((ads || []).map(ad => ad._id));
+            const fresh = freshAdsRef.current.get(cacheKey) ?? [];
 
-            // Find truly new ads (not in current list)
-            const newAds = latestAds.filter(ad => !currentAdIds.has(ad._id));
+            // Find truly new ads (not already merged, not in the query results)
+            const knownAdIds = new Set([...fresh, ...(ads || [])].map(ad => ad._id));
+            const newAds = latestAds.filter(ad => !knownAdIds.has(ad._id));
 
             if (newAds.length > 0) {
                 // Mark these as new for highlighting
                 setNewAdIds(new Set(newAds.map(ad => ad._id)));
 
-                // Merge new ads at the beginning
-                const mergedAds = [...newAds, ...(ads || [])];
+                // Accumulate — earlier fresh ads must survive later refreshes,
+                // since the paginated query will never return them.
+                const updatedFresh = [...newAds, ...fresh];
+                freshAdsRef.current.set(cacheKey, updatedFresh);
+
+                // Merge fresh ads at the beginning of the query results
+                const mergedAds = [
+                    ...updatedFresh,
+                    ...(ads || []).filter(ad => !updatedFresh.some(f => f._id === ad._id)),
+                ];
                 setCachedAds(mergedAds);
                 adsCache.current.set(cacheKey, mergedAds);
 
-                // Update last refresh timestamp
-                lastRefreshTimestamp.current = Date.now();
+                // Advance this filter's refresh watermark
+                lastRefreshTimestamps.current.set(cacheKey, Date.now());
             }
         } catch (error) {
             console.error('Failed to refresh ads:', error);
         }
-    }, [convex, selectedCategory, searchQuery, selectedLocation, ads, cacheKey]);
+    }, [convex, selectedCategory, searchQuery, selectedLocation, ads, cacheKey, initialRefreshTimestamp]);
 
     // Clear new ad IDs (called after animation or user interaction)
     const clearNewAdIds = useCallback(() => {
         setNewAdIds(new Set());
     }, []);
 
-    // Update cache when new ads are loaded
+    // Update cache when new ads are loaded. Fresh ads merged via refreshAds
+    // are prepended here too — the paginated query can't see them (created
+    // after its frozen maxCreationTime), so rebuilding from `ads` alone would
+    // drop them whenever the query re-emits.
     useEffect(() => {
         if (ads && ads.length > 0) {
-            adsCache.current.set(cacheKey, ads);
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- populating the client-side cache from the paginated Convex query results
-            setCachedAds(ads);
+            const fresh = freshAdsRef.current.get(cacheKey) ?? [];
+            const mergedAds = [
+                ...fresh,
+                ...ads.filter(ad => !fresh.some(f => f._id === ad._id)),
+            ];
+            adsCache.current.set(cacheKey, mergedAds);
+            setCachedAds(mergedAds);
         }
     }, [ads, cacheKey]);
 

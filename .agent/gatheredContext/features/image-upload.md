@@ -1,6 +1,6 @@
 # Image Upload & Compression
 
-**Last Updated**: 2025-12-25
+**Last Updated**: 2026-07-06
 
 ## Overview
 FlyerBoard uses adaptive, non-blocking image compression to optimize upload times while preserving image resolution and quality for all viewers.
@@ -232,3 +232,6 @@ for (const state of states) {
 - [ ] Batch optimization for multiple images
 - [ ] Responsive image generation (multiple sizes)
 - [ ] Client-side image editing (crop, rotate)
+
+## Upload progress values must be rounded at the set site (2026-07-06)
+`PostAd` renders `progressPercent` raw inside the `CircularProgress` spinner. The per-image progress math (`baseProgress + (percent / 100) * (span / files.length)`) yields long floats (e.g. `56.09823490830948`) that briefly overflowed the spinner in prod. Both `setProgressPercent` call sites now wrap the expression in `Math.round(...)` — keep any future progress-state writes integer-valued rather than rounding in JSX, so every consumer of the state stays clean.

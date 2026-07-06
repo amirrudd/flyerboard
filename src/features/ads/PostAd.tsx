@@ -283,7 +283,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
               compressedFiles[i],
               async () => uploadUrl,
               async () => null,
-              (percent) => setProgressPercent(baseProgress + (percent / 100) * (40 / compressedFiles.length))
+              (percent) => setProgressPercent(Math.round(baseProgress + (percent / 100) * (40 / compressedFiles.length)))
             );
 
             newImageKeys.push(key);
@@ -343,7 +343,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
               compressedFiles[i],
               async () => uploadUrl,
               async () => null, // No metadata sync needed
-              (percent) => setProgressPercent(baseProgress + (percent / 100) * (60 / compressedFiles.length))
+              (percent) => setProgressPercent(Math.round(baseProgress + (percent / 100) * (60 / compressedFiles.length)))
             );
 
             uploadedRefs.push(key);

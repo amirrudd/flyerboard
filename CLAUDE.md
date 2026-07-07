@@ -107,13 +107,14 @@ For human-facing architecture context (the *why*), cross-reference `docs/archite
 ### `.agent/rules/`
 - `global-guideline.md` (always-on cross-platform), `web-app-guideline.md` (web only), `kmp-native-app-guideline.md` (mobile only). The image-quality rule in `global-guideline.md` is stale — see Storage section.
 
-### `.agent/skills/` (8 skills with executable scripts)
+### `.agent/skills/` (9 skills with executable scripts)
 - `convex-utility/` — mutation/query templates enforcing auth + soft-delete + ownership patterns.
 - `r2-storage-manager/` — CORS-safe presigned URL patterns; `scripts/check-env.sh` to verify R2 env vars. (A `list-bucket.mjs` was once listed here but doesn't exist — to list the bucket, use the AWS SDK inline; see `.agent/workflows/debug-vercel-deployments.md`.)
 - `responsive-ui-auditor/` — `scripts/audit-responsive.sh <file>` flags `100vh`, fixed widths, missing `md:` prefixes.
 - `visual-consistency-auditor/` — `scripts/audit-design-system.sh <file>` flags hardcoded hex/pixel values. Design tokens: brand primary `#dc3626` (the `bg-primary` DEFAULT / `--primary`; `#ef4444` survives only as the lighter `primary-500` shade), neutrals `#242428` / `#71717a` / `#dbdbe4`, fonts `Plus Jakarta Sans` (body) + `Fraunces` (headings, via `font-display`), lucide icons at 16/20/24px. NOTE: the skill's own `SKILL.md` still lists `#ef4444` — treat this line as the source of truth.
 - `test-stress-tester/` — `scripts/run-repeatedly.sh <test-file> <iterations>` for hunting flakes.
 - `pwa-mobile-optimization-manager/`, `mobile-ux-optimizer/`, `kmp-ui-bridge/` (web↔Compose translation table).
+- `blog-writer/` — house voice + plain-language (Grade 6–8) guardrails + SEO/GEO topic-selection for `src/content/blog/` posts. `scripts/audit-readability.mjs <post.md>` scores Flesch reading ease and flags long sentences, passive voice, and jargon. Contract lives in `docs/guides/blog-content-guideline.md` (that guideline wins on any conflict).
 
 ### `.agent/workflows/` (procedures)
 - `verify-changed-files.md` — pre-completion checklist.

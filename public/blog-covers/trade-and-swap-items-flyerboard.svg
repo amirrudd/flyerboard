@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Trading and swapping items">
+  <rect width="1200" height="675" fill="#F7F6F3"/>
+  <circle cx="930" cy="470" r="235" fill="#FCE7D1"/>
+  <g fill="none" stroke="#2F3437" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-10 585 354)">
+    <rect x="420" y="270" width="150" height="120" rx="18"/>
+    <rect x="650" y="270" width="150" height="120" rx="18"/>
+    <path d="M580 300 H648 M636 288 L650 300 L636 312"/>
+    <path d="M640 360 H572 M584 348 L570 360 L584 372"/>
+  </g>
+  <text x="80" y="104" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2F3437">FlyerBoard</text>
+  <text x="80" y="598" font-family="'SF Mono', ui-monospace, monospace" font-size="22" letter-spacing="5" fill="#787774">SELLING</text>
+  <line x1="80" y1="620" x2="210" y2="620" stroke="#E0DED8" stroke-width="2"/>
+</svg>

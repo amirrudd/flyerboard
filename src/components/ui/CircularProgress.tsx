@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { resolvePrimaryColor } from '@/lib/cssColor';
 
 interface CircularProgressProps {
     progress: number; // 0-100
@@ -21,10 +22,9 @@ export function CircularProgress({
 }: CircularProgressProps) {
     // Compute colors from CSS variables if not provided
     const computedStyle = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
-    const primaryHsl = computedStyle?.getPropertyValue('--primary').trim();
     const mutedHsl = computedStyle?.getPropertyValue('--muted').trim();
 
-    const progressColor = color || (primaryHsl ? `hsl(${primaryHsl})` : '#9e1b1e');
+    const progressColor = color || resolvePrimaryColor();
     const bgColor = backgroundColor || (mutedHsl ? `hsl(${mutedHsl})` : '#e5e7eb');
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;

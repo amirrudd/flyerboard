@@ -88,7 +88,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             categoryId: selectedCategory ?? undefined,
             search: searchQuery || undefined,
             location: selectedLocation || undefined,
-            maxCreationTime: initialLoadTimestamp,
+            maxSortTime: initialLoadTimestamp,
         },
         { initialNumItems: 30 }
     );

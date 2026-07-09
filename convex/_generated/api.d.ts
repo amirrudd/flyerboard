@@ -11,6 +11,7 @@
 import type * as adDetail from "../adDetail.js";
 import type * as admin from "../admin.js";
 import type * as ads from "../ads.js";
+import type * as appSettings from "../appSettings.js";
 import type * as auth from "../auth.js";
 import type * as bundleChats from "../bundleChats.js";
 import type * as bundles from "../bundles.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   adDetail: typeof adDetail;
   admin: typeof admin;
   ads: typeof ads;
+  appSettings: typeof appSettings;
   auth: typeof auth;
   bundleChats: typeof bundleChats;
   bundles: typeof bundles;

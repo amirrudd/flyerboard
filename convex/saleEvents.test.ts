@@ -340,6 +340,7 @@ describe("setBundles", () => {
         userId: (await ctx.db.query("users").first())!._id,
         isActive: true,
         views: 0,
+        bumpedAt: Date.now(),
       })
     );
     const created = await asUser.mutation(api.saleEvents.setBundles, {
@@ -597,6 +598,7 @@ describe("getSaleBannerForAd", () => {
         userId,
         isActive: true,
         views: 0,
+        bumpedAt: Date.now(),
       })
     );
     expect(

@@ -47,6 +47,7 @@ async function insertAd(
       userId: opts.userId,
       isActive: true,
       views: 0,
+      bumpedAt: Date.now(),
       ...(opts.isSold !== undefined ? { isSold: opts.isSold } : {}),
     })
   );

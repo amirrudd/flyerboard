@@ -1,6 +1,36 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-05-09
+**Last Updated**: 2026-07-09
+
+## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
+
+- **`ads.bumpedAt` is THE feed sort key, and it is REQUIRED (`v.number()`).** The feed
+  (`convex/ads.ts` `getAds` + `getLatestAds`, non-search branches) orders by `bumpedAt`
+  desc via the `by_bumped_at` and `by_category_and_bumped_at` indexes — NOT
+  `_creationTime`. `_creationTime` is now display-only ("Posted X ago"). A boost
+  (`convex/posts.ts` `boostAd`) re-stamps `bumpedAt = Date.now()`, lifting the ad to top.
+  - `getAds` arg is `maxSortTime` (renamed from `maxCreationTime`) — a `bumpedAt` upper
+    bound. Category branches apply the `bumpedAt` bound in the **post-filter** (the
+    composite index leads with `categoryId`, so it can't range on `bumpedAt` in the index).
+  - **Every `insert("ads")` MUST set `bumpedAt`** (schema validation now fails loudly
+    otherwise) — this includes test helpers doing direct `ctx.db.insert("ads", …)`.
+  - Two-deploy rollout: PROD must deploy Phase 1A (optional field + backfill) and run
+    `migrations:backfillBumpedAt` to zero-undefined BEFORE the Phase 1B required-field +
+    query-switch deploy, or old rows fail validation / sink to the feed bottom.
+- **`appSettings` table** = admin-tunable NUMERIC config (mirrors `featureFlags`, which
+  is booleans-only). `{ key, value, description }` + `by_key`. `convex/appSettings.ts`:
+  public `getSetting(key)` (clamped on read for known boost keys, returns `number|null`),
+  admin-gated `getAllSettings`/`updateSetting` (rejects out-of-range, `logAdminAction`).
+  Keys: `boostCooldownDays` (default 7, 1–30), `boostDailyCap` (default 3, 1–20). Shared
+  constants/clamps live in `convex/lib/boost.ts` (frontend-safe — NO server imports).
+  Seed via `migrations:seedAppSettings`. Client reads via `src/hooks/useAppSetting.ts`.
+- **Runtime-configurable rate limit**: `checkRateLimitDynamic(ctx, userId, op, max, windowMs)`
+  in `convex/lib/rateLimit.ts` takes max/window at call time (reuses the same
+  `ratelimit:${userId}:${op}` uploads-table storage). `boostAd` uses it with the
+  admin-configured cap (clamped ≤ 20 = the static `RATE_LIMITS.boostAd` backstop ceiling),
+  so ONE rate-limit row per boost enforces both. Convex transactional rollback means only
+  SUCCESSFUL boosts consume budget. Don't ALSO call `checkRateLimit` for the same op —
+  that double-inserts. Feature flag `boostToTop` gates `boostAd` server-side (fail closed).
 
 ## Schema Overview
 

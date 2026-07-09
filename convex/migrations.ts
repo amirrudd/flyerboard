@@ -420,6 +420,11 @@ export const seedFeatureFlags = internalMutation({
         description: "Bundle Listing — group a few standalone ads at a discount. Gates the dashboard 'Bundle ads' button, the ad-detail bundle banner, and feed bundle cards. Disabling hides every entry point (safety kill switch), it does not delete existing bundles.",
         enabled: true,
       },
+      {
+        key: "boostToTop",
+        description: "Boost ('push to top') — lets an ad's owner re-stamp its feed position back to the top after a cooldown. Gates the dashboard + ad-detail Boost CTAs and is re-checked server-side in the boostAd mutation (fail closed). Ships DISABLED — flip when ready.",
+        enabled: false,
+      },
     ];
 
     const results = {
@@ -444,6 +449,56 @@ export const seedFeatureFlags = internalMutation({
     return {
       success: true,
       message: `Created ${results.created.length} flags, ${results.existing.length} already existed`,
+      results,
+    };
+  },
+});
+
+/**
+ * Seed default numeric app settings (Boost cooldown + daily cap).
+ * Idempotent — only creates keys that don't already exist; never overwrites an
+ * admin-tuned value. Mirrors seedFeatureFlags.
+ *
+ * Usage: npx convex run migrations:seedAppSettings
+ */
+export const seedAppSettings = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const defaultSettings = [
+      {
+        key: "boostCooldownDays",
+        value: 7,
+        description: "Days an ad's owner must wait between boosts (since listing or last boost). Admin-tunable 1–30. Drives the client countdown and the server cooldown check.",
+      },
+      {
+        key: "boostDailyCap",
+        value: 3,
+        description: "Max boosts one user may perform per rolling 24h window (anti-flooding). Admin-tunable 1–20; hard backstop ceiling is 20.",
+      },
+    ];
+
+    const results = {
+      created: [] as string[],
+      existing: [] as string[],
+    };
+
+    for (const setting of defaultSettings) {
+      const existing = await ctx.db
+        .query("appSettings")
+        .withIndex("by_key", (q) => q.eq("key", setting.key))
+        .first();
+
+      if (existing) {
+        results.existing.push(setting.key);
+      } else {
+        await ctx.db.insert("appSettings", setting);
+        results.created.push(setting.key);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Created ${results.created.length} settings, ${results.existing.length} already existed`,
       results,
     };
   },

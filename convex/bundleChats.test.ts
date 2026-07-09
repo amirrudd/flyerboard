@@ -55,6 +55,7 @@ async function seedBundle() {
         userId: sellerId,
         isActive: true,
         views: 0,
+        bumpedAt: Date.now(),
       })
     );
   const a = await insertAd("Sofa", 350);

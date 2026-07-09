@@ -53,6 +53,7 @@ async function seedAd(
       userId: sellerId,
       isActive: true,
       views: 0,
+      bumpedAt: Date.now(),
     })
   );
 }

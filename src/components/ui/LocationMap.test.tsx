@@ -2,41 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { LocationMap } from './LocationMap';
 
-// Mock google.maps API
-(global as any).google = {
-    maps: {
-        Circle: vi.fn().mockImplementation(function () {
-            return {
-                setMap: vi.fn(),
-                setCenter: vi.fn(),
-                setRadius: vi.fn(),
-            };
-        }),
-    },
-} as any;
-
-// Mock the @vis.gl/react-google-maps module
-const mockMap = {
-    setCenter: vi.fn(),
-    setZoom: vi.fn(),
-};
-
-vi.mock('@vis.gl/react-google-maps', () => ({
-    APIProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="api-provider">{children}</div>,
-    Map: ({ children }: { children: React.ReactNode }) => <div data-testid="google-map">{children}</div>,
-    useMap: () => mockMap, // Return the map object itself
+// Mock react-leaflet — the real components need a DOM map instance that jsdom can't provide.
+vi.mock('react-leaflet', () => ({
+    MapContainer: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid="leaflet-map">{children}</div>
+    ),
+    TileLayer: () => <div data-testid="tile-layer" />,
+    Circle: () => <div data-testid="location-circle" />,
 }));
+
+// Leaflet's CSS import is a no-op under Vitest, but stub it to be safe.
+vi.mock('leaflet/dist/leaflet.css', () => ({}));
 
 // Mock fetch for Nominatim API
 global.fetch = vi.fn();
 
 describe('LocationMap', () => {
-    const mockEnv = import.meta.env;
-
     beforeEach(() => {
         vi.clearAllMocks();
-        // Set up mock API key
-        import.meta.env.VITE_GOOGLE_MAPS_API_KEY = 'test-api-key';
     });
 
     it('should show loading state initially', () => {
@@ -64,14 +47,11 @@ describe('LocationMap', () => {
         render(<LocationMap location="Sydney, CBD" />);
 
         await waitFor(() => {
-            expect(screen.getByTestId('api-provider')).toBeInTheDocument();
+            expect(screen.getByTestId('leaflet-map')).toBeInTheDocument();
         });
 
-        expect(screen.getByTestId('google-map')).toBeInTheDocument();
-        // Verify Circle was created
-        await waitFor(() => {
-            expect((global as any).google.maps.Circle).toHaveBeenCalled();
-        });
+        expect(screen.getByTestId('tile-layer')).toBeInTheDocument();
+        expect(screen.getByTestId('location-circle')).toBeInTheDocument();
     });
 
     it('should show error state when geocoding fails', async () => {
@@ -98,14 +78,6 @@ describe('LocationMap', () => {
         await waitFor(() => {
             expect(screen.getByText('Unable to load map for this location')).toBeInTheDocument();
         });
-    });
-
-    it('should show configuration error when API key is missing', () => {
-        import.meta.env.VITE_GOOGLE_MAPS_API_KEY = '';
-
-        render(<LocationMap location="Sydney, CBD" />);
-
-        expect(screen.getByText('Map configuration missing')).toBeInTheDocument();
     });
 
     it('should call Nominatim API with correct parameters', async () => {

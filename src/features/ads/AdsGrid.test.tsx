@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AdsGrid } from './AdsGrid';
+import { boostArrivalKey } from '../../context/freshAdsMerge';
 import { Id } from '../../../convex/_generated/dataModel';
 
 // Mock ImageDisplay component
@@ -491,7 +492,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                boostedAdKeys={new Set(['adBoosted:90000'])}
+                boostedAdKeys={new Set([boostArrivalKey(oldButBoosted)])}
             />
         );
         expect(screen.getByTestId('boost-ring-pulse')).toBeInTheDocument();

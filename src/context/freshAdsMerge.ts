@@ -24,6 +24,17 @@ export interface SortableAd {
 }
 
 /**
+ * The one place the boost-arrival key is formatted. A boosted ad's identity in
+ * the pin-drop/ring-pulse set is `_id` + its current `bumpedAt`, so a *later*
+ * boost re-keys (and re-animates) while plain re-renders don't. Formatting this
+ * in more than one place (the merge in MarketplaceContext, the render in
+ * AdsGrid) risks the two drifting and silently never matching.
+ */
+export function boostArrivalKey(ad: Pick<SortableAd, "_id" | "bumpedAt">): string {
+  return `${ad._id}:${ad.bumpedAt}`;
+}
+
+/**
  * Classify a `getLatestAds` result set against everything the session already
  * holds (fresh rail + paginated query results):
  *

@@ -67,11 +67,8 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
   // Current time as reactive state (Date.now() in the render body is impure and
   // banned by react-hooks/purity). Seeded lazily, refreshed each minute so the
   // "Boost in Xd/Xh" label rolls over on its own — pattern from useCountdown.ts.
+  // The interval is gated below to run ONLY while this ad is in cooldown.
   const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
 
   // Loading guard only: `bumpedAt` is a required field on loaded ads (never fall
   // back for a present ad). While `ad` is undefined, state is "ineligible" anyway.
@@ -90,6 +87,18 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
   else if (remaining > 0) state = "cooldown";
   else state = "eligible";
 
+  // Only tick while a countdown is actually shown. The final tick that drives
+  // `remaining` to <=0 flips `state` to "eligible", which tears the interval
+  // down — so a card transitions cooldown→eligible on its own, then stops
+  // paying for a per-minute timer for the rest of its life (one hook instance
+  // per dashboard card, so an always-on interval was N idle timers).
+  const inCooldown = state === "cooldown";
+  useEffect(() => {
+    if (!inCooldown) return;
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, [inCooldown]);
+
   let cooldownLabel = "";
   let cooldownAria = "";
   if (remaining > 0) {
@@ -104,6 +113,10 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
     }
   }
 
+  // Success-launch animation payload (ring/arrow props for render, `lift` for the
+  // card control). Computed once in the render body and shared with the callback.
+  const fx = boostLaunch();
+
   const confirmBoost = useCallback(async () => {
     if (!ad || isBoosting) return; // double-tap guard
     setBoosting(true);
@@ -112,7 +125,6 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
       // Success ONLY past this point — never celebrate a rejected boost.
       setConfirmOpen(false);
       setLocalBumpedAt(Date.now());
-      const fx = boostLaunch();
       void cardControls.start(fx.lift);
       setRingKey((k) => k + 1);
       if (!reduced) {
@@ -128,9 +140,7 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
     } finally {
       setBoosting(false);
     }
-  }, [ad, boostAd, boostLaunch, cardControls, isBoosting, reduced, refreshAds]);
-
-  const fx = boostLaunch();
+  }, [ad, boostAd, cardControls, fx, isBoosting, reduced, refreshAds]);
 
   return {
     state,

@@ -9,6 +9,7 @@ import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
+import { boostArrivalKey } from "../../context/freshAdsMerge";
 
 interface Ad {
   _id: Id<"ads">;
@@ -115,8 +116,12 @@ export const AdsGrid = memo(function AdsGrid({
   // ONLY (mobile ships without it: cards reflow instantly, only the arriving
   // card animates). Widen only after a throttled mid-tier profile shows no
   // jank. Skipped under prefers-reduced-motion (layout animations aren't
-  // covered by useReducedMotion automatically).
-  const animateLayout = !isMobile && !reduced;
+  // covered by useReducedMotion automatically). Also gated on an active
+  // arrival window: both sets clear ~5s after arrivals, so steady-state
+  // scrolling pays zero layout-measurement cost while keeping the slide for
+  // both boost and brand-new arrivals.
+  const animateLayout =
+    !isMobile && !reduced && (boostedAdKeys.size > 0 || newAdIds.size > 0);
 
   // Merge ads + Sale cards + Bundle cards into one date-sorted feed (newest
   // first). Ads sort on `bumpedAt` (Boost, Phase 2) — the mutable feed sort
@@ -350,7 +355,7 @@ export const AdsGrid = memo(function AdsGrid({
             // `${_id}:${bumpedAt}`, so a boost replacement remounts it — the
             // pin-drop entrance plays exactly once per boost (a second boost
             // days later re-keys and re-animates; plain re-renders don't).
-            const boostKey = `${ad._id}:${ad.bumpedAt}`;
+            const boostKey = boostArrivalKey(ad);
             const isBoostArrival = boostedAdKeys.has(boostKey);
 
             return (

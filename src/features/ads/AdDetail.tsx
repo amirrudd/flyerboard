@@ -94,6 +94,8 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   // tolerates an undefined ad and only activates once the doc + ownership resolve.
   const boostEnabled = useFeatureFlag("boostToTop");
   const boost = useBoostAction((ad ?? initialAd) as BoostableAd | undefined);
+  // Single source of truth for "render Boost UI" — mirrors MyAdCard's `showBoost`.
+  const showBoost = boostEnabled && boost.state !== "ineligible";
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
@@ -808,7 +810,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   {user && displayAd.userId === user._id ? (
                     // Owner: Boost is the primary action; Edit demoted to secondary.
                     <>
-                      {boostEnabled && boost.state !== "ineligible" && (
+                      {showBoost && (
                         <div className="relative">
                           <button
                             type="button"
@@ -873,7 +875,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       </div>
 
       {/* Owner Boost confirm modal (shared shell; primary confirm, not destructive) */}
-      {boostEnabled && boost.state !== "ineligible" && (
+      {showBoost && (
         <BoostConfirmModal
           open={boost.isConfirmOpen}
           cooldownDays={boost.cooldownDays}
@@ -886,7 +888,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       {/* Mobile owner Boost FAB — Quick Actions is hidden sm:block, so without this a
           mobile owner has no way to boost from the detail page. Sits at the same
           bottom offset as the buyer's Message FAB (bottom-nav gotcha). */}
-      {user && displayAd.userId === user._id && boostEnabled && boost.state !== "ineligible" && createPortal(
+      {user && displayAd.userId === user._id && showBoost && createPortal(
         <div className="lg:hidden">
           <div className="fixed right-4 z-40" style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}>
             <motion.button

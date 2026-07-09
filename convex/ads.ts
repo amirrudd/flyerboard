@@ -92,9 +92,12 @@ export const getAds = query({
         q = ctx.db
           .query("ads")
           // Category branch also orders by bumpedAt (Phase 1B) via the composite
-          // index; the bumpedAt upper bound is applied in the post-filter below
-          // (the index leads with categoryId, so it can't range on bumpedAt here).
-          .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId!))
+          // [categoryId, bumpedAt] index. The index supports .eq on the leading
+          // categoryId AND a range on the trailing bumpedAt, so the upper bound
+          // is pushed into the index range here (no post-filter needed).
+          .withIndex("by_category_and_bumped_at", (q) =>
+            q.eq("categoryId", args.categoryId!).lte("bumpedAt", args.maxSortTime || Date.now())
+          )
           .order("desc");
       }
 
@@ -103,10 +106,7 @@ export const getAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
-            q.neq(q.field("isSold"), true),
-            args.maxSortTime && args.categoryId
-              ? q.lte(q.field("bumpedAt"), args.maxSortTime)
-              : true
+            q.neq(q.field("isSold"), true)
           )
         )
         .paginate(args.paginationOpts);
@@ -275,9 +275,12 @@ export const getLatestAds = query({
         q = ctx.db
           .query("ads")
           // Category branch also orders by bumpedAt (Phase 1B) via the composite
-          // index; the bumpedAt lower bound is applied in the post-filter below
-          // (the index leads with categoryId, so it can't range on bumpedAt here).
-          .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId!))
+          // [categoryId, bumpedAt] index. The index supports .eq on the leading
+          // categoryId AND a range on the trailing bumpedAt, so the lower bound
+          // is pushed into the index range here (no post-filter needed).
+          .withIndex("by_category_and_bumped_at", (q) =>
+            q.eq("categoryId", args.categoryId!).gt("bumpedAt", args.sinceTimestamp)
+          )
           .order("desc");
       }
 
@@ -286,10 +289,7 @@ export const getLatestAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
-            q.neq(q.field("isSold"), true),
-            args.categoryId
-              ? q.gt(q.field("bumpedAt"), args.sinceTimestamp)
-              : true
+            q.neq(q.field("isSold"), true)
           )
         )
         .take(limit);

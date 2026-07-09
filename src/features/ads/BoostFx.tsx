@@ -35,11 +35,9 @@ export function BoostRingOverlay({ ringKey, ringProps }: { ringKey: number; ring
 export function BoostArrowFloat({
   show,
   arrowProps,
-  size = 20,
 }: {
   show: boolean;
   arrowProps: RingProps;
-  size?: number;
 }) {
   return (
     <AnimatePresence>
@@ -54,7 +52,7 @@ export function BoostArrowFloat({
           exit={{ opacity: 0 }}
           transition={arrowProps.transition}
         >
-          <ArrowUp size={size} weight="bold" />
+          <ArrowUp size={20} weight="bold" />
         </motion.span>
       )}
     </AnimatePresence>

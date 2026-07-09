@@ -4,7 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
-import { classifyLatestAds, mergeFreshRail, mergeAheadOfQuery, nextWatermark } from "./freshAdsMerge";
+import { classifyLatestAds, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey } from "./freshAdsMerge";
 
 interface Category {
     _id: Id<"categories">;
@@ -178,7 +178,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 if (boosted.length > 0) {
                     // Boost arrivals get the pin-drop entrance instead of the
                     // badge — keyed on `${_id}:${bumpedAt}` (one-shot per boost).
-                    setBoostedAdKeys(new Set(boosted.map(ad => `${ad._id}:${ad.bumpedAt}`)));
+                    setBoostedAdKeys(new Set(boosted.map(boostArrivalKey)));
                 }
 
                 // Accumulate — earlier fresh ads must survive later refreshes,

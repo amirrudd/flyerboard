@@ -24,6 +24,11 @@ vi.mock('sonner', () => ({
     },
 }));
 
+// AdDetail's owner Boost CTA (useBoostAction) reads the marketplace refresh seam.
+vi.mock('../../context/MarketplaceContext', () => ({
+    useMarketplace: () => ({ refreshAds: vi.fn() }),
+}));
+
 // AdDetail no longer renders <Header> itself — it registers slots on the
 // persistent Layout header (see HeaderSlots.tsx). Tests render it inside
 // HeaderSlotsHarness, which displays the registered slots.

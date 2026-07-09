@@ -138,5 +138,40 @@ export function useMotionPrefs() {
     } as const;
   }
 
-  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop, boostPinDrop, boostRingPulse };
+  /**
+   * Boost success "launch" sequence (Boost feature, Jul 2026 — the owner's payoff
+   * moment on the dashboard/detail card). Returns three coordinated parts:
+   *
+   *   - `lift`: pass to an imperative `controls.start(...)`. Full motion is a TWEEN
+   *     keyframe `y: [0,-10,0]` (a spring on a keyframe array can undershoot the
+   *     return, so this is deliberately a tween reusing EASE). Under
+   *     prefers-reduced-motion it collapses to a brief opacity confirmation only
+   *     (no lift, no float) — the sole cue reduced-motion users get.
+   *   - `ring`: the SAME opacity-overlay technique as `boostRingPulse` (never an
+   *     animated border/box-shadow). Render on a sibling
+   *     `absolute inset-0 rounded-2xl ring-2 ring-primary` div, remounted per boost.
+   *   - `arrow`: a lucide/phosphor ArrowUp on a `motion.span` that floats up and
+   *     fades (`y: -4 → -24`, opacity `1 → 0`, 0.5s) inside AnimatePresence; add
+   *     `will-change: transform` at the call site. Suppressed under reduced motion.
+   *
+   * Total sequence stays under ~1s so it never feels like it blocks the UI.
+   */
+  function boostLaunch() {
+    const lift = reduced
+      ? { opacity: [1, 0.6, 1], transition: { duration: 0.3, ease: EASE } }
+      : { y: [0, -10, 0], transition: { duration: 0.5, ease: EASE, times: [0, 0.4, 1] } };
+    const ring = {
+      initial: { opacity: reduced ? 0 : 0.6 },
+      animate: { opacity: 0 },
+      transition: { duration: reduced ? 0 : 0.6, ease: EASE },
+    };
+    const arrow = {
+      initial: { opacity: reduced ? 0 : 1, y: reduced ? -24 : -4 },
+      animate: { opacity: 0, y: -24 },
+      transition: { duration: reduced ? 0 : 0.5, ease: EASE },
+    };
+    return { lift, ring, arrow };
+  }
+
+  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop, boostPinDrop, boostRingPulse, boostLaunch };
 }

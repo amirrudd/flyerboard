@@ -66,4 +66,43 @@ describe('useMotionPrefs — boost helpers (Boost, Phase 2)', () => {
             expect(props.transition).toMatchObject({ duration: 0 });
         });
     });
+
+    describe('boostLaunch (Phase 3 success sequence)', () => {
+        it('lifts the card with a tween keyframe (never a spring on the return)', () => {
+            const { result } = renderHook(() => useMotionPrefs());
+            const { lift } = result.current.boostLaunch();
+
+            expect(lift).toMatchObject({
+                y: [0, -10, 0],
+                transition: { duration: 0.5, times: [0, 0.4, 1] },
+            });
+            // Binding UX spec: a tween, not a spring (a spring on a keyframe array can undershoot the return).
+            expect((lift as { transition: { type?: string } }).transition).not.toHaveProperty('type');
+        });
+
+        it('floats the ArrowUp up-and-out over 0.5s and pulses the ring via opacity', () => {
+            const { result } = renderHook(() => useMotionPrefs());
+            const { arrow, ring } = result.current.boostLaunch();
+
+            expect(arrow.initial).toMatchObject({ opacity: 1, y: -4 });
+            expect(arrow.animate).toMatchObject({ opacity: 0, y: -24 });
+            expect(arrow.transition).toMatchObject({ duration: 0.5 });
+            // Ring is opacity-only (no border/box-shadow animation).
+            expect(ring.initial).toEqual({ opacity: 0.6 });
+            expect(ring.animate).toEqual({ opacity: 0 });
+        });
+
+        it('degrades to a brief opacity confirmation only under reduced motion (no lift, no float)', () => {
+            mocks.reduced = true;
+            const { result } = renderHook(() => useMotionPrefs());
+            const { lift, arrow, ring } = result.current.boostLaunch();
+
+            // Lift becomes a brief opacity blip — no vertical movement.
+            expect(lift).not.toHaveProperty('y');
+            expect(lift).toMatchObject({ opacity: [1, 0.6, 1] });
+            // Float and ring pulse are both suppressed (start invisible).
+            expect(arrow.initial).toMatchObject({ opacity: 0 });
+            expect(ring.initial).toEqual({ opacity: 0 });
+        });
+    });
 });

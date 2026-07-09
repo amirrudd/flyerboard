@@ -110,7 +110,6 @@ Add these to **Vercel Dashboard → Settings → Environment Variables**:
 # Frontend variables (VITE_* prefix - embedded at build time)
 VITE_CONVEX_URL=https://resilient-pheasant-112.convex.cloud
 VITE_DESCOPE_PROJECT_ID=P363bEaEDNeBq3fLWpNjbiUvuloU
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyC-GecPLxuF3-SJiYzyorDjNyDf5jh24gM
 ```
 
 **❌ Do NOT add to Vercel:**

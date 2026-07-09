@@ -323,3 +323,28 @@ is free, paid add-ons sit on distribution/visibility (AI, QR/PDF, search pin).
 size" is the cleaner upsell than "more than 2" — but only if real usage data shows
 demand for larger bundles. `BUNDLE_MAX_ITEMS` in `convex/bundles.ts` is the single
 constant to change.
+
+## Location map — Leaflet + CARTO Positron over Google Maps (2026-07-09)
+
+**Decision**: the ad LOCATION preview renders with `react-leaflet` + free CARTO
+Positron raster tiles (`src/components/ui/LocationMap.tsx`), not Google Maps.
+Geocoding stays on Nominatim (OpenStreetMap), unchanged.
+
+**Why**: Google Maps Platform requires a linked billing account even for the free
+tier — without one it renders a greyed-out "For development purposes only" watermark,
+which is exactly what shipped. CARTO basemaps need no API key and no billing, are
+free for our volume with attribution, and Positron's minimal styling suits an
+*approximate* 1km-radius privacy preview better than Google's fully-detailed map.
+
+**Rejected**:
+- *Add Google billing + a spend cap* — reintroduces a card on file and per-load cost
+  ($7/1k maploads beyond the free tier) for a feature that only draws a circle.
+- *Stadia "Alidade Smooth" / Jawg.Light* — better-looking, but both are non-commercial
+  on their free tiers, so production (a commercial marketplace) needs a paid plan +
+  key. CARTO Positron/Voyager get ~95% of that designed-minimal look for $0.
+
+**Consequences**: `VITE_GOOGLE_MAPS_API_KEY` is no longer read anywhere — delete it
+from Vercel and `.env.local`, and revoke the key in Google Cloud (it was previously
+committed in a migration doc). The active basemap is a one-line swap via the
+`TILE_STYLES` map in `LocationMap.tsx` (positron / voyager / positronNoLabels /
+darkMatter / osm) — all free and commercial-OK.

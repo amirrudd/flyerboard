@@ -47,6 +47,8 @@ not just add ESLint.** This was masking 40 real errors (now fixed — see below)
   and React 19's global `JSX` was polluted by `@descope/react-sdk`'s widget augmentation).
 - `src/components/ui/LocationMap.tsx`: added `@types/google.maps` dev dep +
   `/// <reference types="google.maps" />` in `src/vite-env.d.ts`.
+  **(Reverted Jul 2026:** LocationMap migrated to Leaflet + CARTO tiles; the
+  `google.maps` types and reference were removed. This baseline note is historical.)
 - `src/features/ads/PostAd.test.tsx`: added a typed `makeAd()` factory returning full `Doc<"ads">`;
   `src/components/ui/LocationMap.test.tsx`: cast `global.google` mock as `any` (matches file style).
 

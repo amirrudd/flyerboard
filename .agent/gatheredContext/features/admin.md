@@ -1,6 +1,6 @@
 # Admin Patterns & Dashboard
 
-**Last Updated**: 2025-12-20
+**Last Updated**: 2026-07-09
 
 ## Overview
 
@@ -193,6 +193,20 @@ Main admin interface with tab navigation.
 - View full conversation history
 - Read-only access (admins cannot send messages)
 - Display buyer/seller/ad information
+
+### SettingsTab (numeric app config)
+**File**: `src/features/admin/SettingsTab.tsx` (added Jul 2026, Boost feature)
+
+The numeric sibling of `FeatureFlagsTab`: `featureFlags` stores booleans, `appSettings` stores numbers. Backs the two admin-tunable Boost knobs (`boostCooldownDays` default 7, `boostDailyCap` default 3). Backend: `convex/appSettings.ts` (admin-gated `getAllSettings` + `updateSetting`, public `getSetting`); bounds/defaults/keys live in `convex/lib/boost.ts` and are **imported by the component** (never hardcode 1/30/1/20 — the client bound must track the server clamp).
+
+Patterns worth reusing for future numeric settings:
+- **Draft map, no useEffect sync**: `drafts: Record<key,string>` holds a value only while mid-edit; the displayed value is `drafts[key] ?? String(serverValue)`. After a successful save, `delete drafts[key]` so the input falls back to the (now reactive/updated) server value. Avoids stale-state useEffect syncing.
+- **Dual validation**: client disables Save + shows `text-destructive` helper (`Enter {min}–{max} {unit}`) when out of range OR unchanged; server (`updateSetting`) *rejects* (throws) out-of-range via `isBoostSettingInRange` rather than silently clamping — the admin gets loud feedback. Reads still clamp (`clampBoostSetting`) as defense-in-depth.
+- **Graceful un-seeded state**: if a known key is absent from `getAllSettings`, render the field from its code default with Save disabled + a "run `npx convex run migrations:seedAppSettings`" hint (mirrors FeatureFlagsTab's seed hint). Seed: `migrations:seedAppSettings` (idempotent, never overwrites a tuned value).
+- Icon: phosphor `Sliders` (repo convention — NOT lucide; enforced by `src/test/phosphor-migration.test.ts`).
+- Tests: `src/features/admin/SettingsTab.test.tsx` mock `convex/react` (`useQuery`/`useMutation`) + `sonner` inline — the established pattern from `AdminDashboardPage.test.tsx` (no per-tab test existed before this).
+
+**Wiring a new admin tab = 4 edits in `AdminDashboard.tsx`**: (1) icon import, (2) `activeTab` state union, (3) `tabs` array (append last), (4) render switch. Same shape as the Feature Flags tab.
 
 ## Routing
 

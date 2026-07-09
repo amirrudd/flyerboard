@@ -101,5 +101,42 @@ export function useMotionPrefs() {
     } as const;
   }
 
-  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop };
+  /**
+   * Boost feed-arrival "pin drop" (Boost feature, Jul 2026): the card drops
+   * onto the board from slightly above, slightly oversized, and settles with a
+   * ~4% spring overshoot "thunk" — a flyer being pinned to the board. These are
+   * the codebase's FIRST springs (everything else here is a tween); deliberate,
+   * per the UX-refined Boost spec. No rotate — it reads as misalignment on a
+   * rectangular grid card. Key the card on `${ad._id}:${ad.bumpedAt}` so a
+   * later boost re-animates but plain re-renders don't. Under
+   * prefers-reduced-motion: a plain 0.2s opacity fade only.
+   */
+  function boostPinDrop() {
+    return {
+      initial: { opacity: 0, y: reduced ? 0 : -14, scale: reduced ? 1 : 1.06 },
+      animate: { opacity: 1, y: 0, scale: 1 },
+      transition: reduced
+        ? ({ duration: 0.2, ease: EASE } as const)
+        : ({ type: "spring", stiffness: 260, damping: 22, mass: 0.9 } as const),
+    } as const;
+  }
+
+  /**
+   * Boost arrival ring pulse: an opacity-animated overlay (0.6 → 0 over ~1.2s)
+   * on a sibling `absolute inset-0 ring-2 ring-primary pointer-events-none`
+   * div — the transient "look here" cue that replaces the New badge boosted
+   * ads deliberately don't get. Compositor-only by design: NEVER animate
+   * border or box-shadow for this (borders shift layout; animated box-shadow
+   * janks a 30-card mount). Under prefers-reduced-motion the pulse is skipped
+   * entirely (starts and stays at opacity 0).
+   */
+  function boostRingPulse() {
+    return {
+      initial: { opacity: reduced ? 0 : 0.6 },
+      animate: { opacity: 0 },
+      transition: { duration: reduced ? 0 : 1.2, ease: EASE },
+    } as const;
+  }
+
+  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop, boostPinDrop, boostRingPulse };
 }

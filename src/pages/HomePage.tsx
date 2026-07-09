@@ -41,6 +41,8 @@ export function HomePage() {
     refreshAds,
     newAdIds,
     clearNewAdIds,
+    boostedAdKeys,
+    clearBoostedAdKeys,
   } = useMarketplace();
 
   // Price-range filter only. We deliberately never re-sort: the feed is always
@@ -177,6 +179,17 @@ export function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [newAdIds, clearNewAdIds]);
+
+  // Clear boost-arrival keys after 5 seconds (pin-drop + ring pulse have long
+  // finished by then) so a later grid remount doesn't replay the animation.
+  useEffect(() => {
+    if (boostedAdKeys.size > 0) {
+      const timer = setTimeout(() => {
+        clearBoostedAdKeys();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [boostedAdKeys, clearBoostedAdKeys]);
 
   // Preserve scroll position across bottom-nav tab switches.
   // On mobile <main> is the scroll container; on desktop adsFeedRef is — pick
@@ -333,6 +346,7 @@ export function HomePage() {
               isLoading={status === "LoadingFirstPage"}
               isLoadingMore={status === "LoadingMore"}
               newAdIds={newAdIds}
+              boostedAdKeys={boostedAdKeys}
               saleCards={activeSales}
               onSaleClick={handleSaleClick}
               bundleCards={bundleCards}

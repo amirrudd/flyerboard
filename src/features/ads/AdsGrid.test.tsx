@@ -27,6 +27,7 @@ const mockAds = [
         userId: 'user1' as Id<'users'>,
         isActive: true,
         views: 10,
+        bumpedAt: 99000,
     },
     {
         _id: 'ad2' as Id<'ads'>,
@@ -39,6 +40,7 @@ const mockAds = [
         userId: 'user2' as Id<'users'>,
         isActive: true,
         views: 50,
+        bumpedAt: 98000,
     },
 ];
 
@@ -132,6 +134,7 @@ describe('AdsGrid', () => {
                 userId: 'user1' as Id<'users'>,
                 isActive: true,
                 views: 5,
+                bumpedAt: 97000,
             },
             {
                 _id: 'ad2' as Id<'ads'>,
@@ -144,6 +147,7 @@ describe('AdsGrid', () => {
                 userId: 'user2' as Id<'users'>,
                 isActive: true,
                 views: 10,
+                bumpedAt: 96000,
             },
         ];
 
@@ -177,6 +181,7 @@ describe('AdsGrid', () => {
             userId: 'user1' as Id<'users'>,
             isActive: true,
             views: 20,
+            bumpedAt: 95000,
         }];
 
         render(
@@ -207,6 +212,7 @@ describe('AdsGrid', () => {
             userId: 'user1' as Id<'users'>,
             isActive: true,
             views: 30,
+            bumpedAt: 94000,
         }];
 
         render(
@@ -236,6 +242,7 @@ describe('AdsGrid', () => {
             userId: 'user1' as Id<'users'>,
             isActive: true,
             views: 15,
+            bumpedAt: 93000,
         }];
 
         render(
@@ -267,6 +274,7 @@ describe('AdsGrid', () => {
             userId: 'user1' as Id<'users'>,
             isActive: true,
             views: 8,
+            bumpedAt: 92000,
             // No listingType field
         }];
 
@@ -303,6 +311,7 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
         userId: 'user1' as Id<'users'>,
         isActive: true,
         views: 4,
+        bumpedAt: 91000,
         saleEventId: 'sale1' as Id<'saleEvents'>,
     };
 
@@ -421,5 +430,102 @@ describe('AdsGrid - bundle listing feed', () => {
         );
         fireEvent.click(screen.getByText('Kitchen Starter Bundle'));
         expect(onBundleClick).toHaveBeenCalledWith(bundleCard);
+    });
+});
+
+// ============================================================================
+// BOOST (Phase 2) — feed sorts on bumpedAt; boost arrivals get the pin-drop
+// ring pulse and deliberately NO "New" badge.
+// ============================================================================
+
+describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
+    const baseAd = {
+        description: 'desc',
+        listingType: 'sale' as const,
+        location: 'Sydney',
+        categoryId: 'cat1' as Id<'categories'>,
+        images: ['img.jpg'],
+        userId: 'user1' as Id<'users'>,
+        isActive: true,
+    };
+    const oldButBoosted = {
+        ...baseAd,
+        _id: 'adBoosted' as Id<'ads'>,
+        _creationTime: 1000, // ancient listing…
+        bumpedAt: 90000,     // …boosted to the top
+        title: 'Boosted Couch',
+        price: 50,
+        views: 300,
+    };
+    const newerUnboosted = {
+        ...baseAd,
+        _id: 'adNewer' as Id<'ads'>,
+        _creationTime: 80000,
+        bumpedAt: 80000,
+        title: 'Newer Lamp',
+        price: 20,
+        views: 2,
+    };
+
+    it('sorts the feed by bumpedAt, not creation time (boosted ad leads)', () => {
+        render(
+            <AdsGrid
+                ads={[newerUnboosted, oldButBoosted]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+        const titles = screen
+            .getAllByRole('heading', { level: 2 })
+            .map((h) => h.textContent);
+        expect(titles).toEqual(['Boosted Couch', 'Newer Lamp']);
+    });
+
+    it('renders the ring pulse for a boost arrival keyed `${_id}:${bumpedAt}`, with no "New" badge', () => {
+        render(
+            <AdsGrid
+                ads={[oldButBoosted, newerUnboosted]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                boostedAdKeys={new Set(['adBoosted:90000'])}
+            />
+        );
+        expect(screen.getByTestId('boost-ring-pulse')).toBeInTheDocument();
+        // Boosted ads are NOT new — the badge would contradict the detail
+        // page's honest "Posted X ago".
+        expect(screen.queryByText('New')).not.toBeInTheDocument();
+    });
+
+    it('does not render the ring pulse for a stale key (older bumpedAt generation)', () => {
+        render(
+            <AdsGrid
+                ads={[oldButBoosted]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                boostedAdKeys={new Set(['adBoosted:1000'])}
+            />
+        );
+        expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();
+    });
+
+    it('renders no ring pulse when there are no boost arrivals; brand-new ads keep the "New" badge', () => {
+        render(
+            <AdsGrid
+                ads={[oldButBoosted, newerUnboosted]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                newAdIds={new Set(['adNewer'])}
+            />
+        );
+        expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();
+        expect(screen.getByText('New')).toBeInTheDocument();
     });
 });

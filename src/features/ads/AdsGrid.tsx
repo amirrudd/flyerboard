@@ -3,15 +3,18 @@ import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { MagnifyingGlass, Repeat, House, Package } from '@phosphor-icons/react';
 import { memo, useCallback, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, LayoutGroup } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
+import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
 
 interface Ad {
   _id: Id<"ads">;
   _creationTime?: number;
+  /** Mutable feed sort key (Boost) — required since Phase 1B; no fallback. */
+  bumpedAt: number;
   title: string;
   description: string;
   listingType?: "sale" | "exchange" | "both";
@@ -76,6 +79,12 @@ interface AdsGridProps {
   isLoading?: boolean;
   isLoadingMore?: boolean;
   newAdIds?: Set<string>;
+  /**
+   * Boost arrivals from the fresh-rail merge, keyed `${_id}:${bumpedAt}`.
+   * Matching cards mount with the pin-drop entrance + ring pulse (and no
+   * "New" badge — boosted ads aren't new).
+   */
+  boostedAdKeys?: Set<string>;
   /** Whole-Sale cards, interleaved into the same date-sorted grid. */
   saleCards?: SaleFeedCard[];
   onSaleClick?: (slug: string) => void;
@@ -93,20 +102,30 @@ export const AdsGrid = memo(function AdsGrid({
   isLoading = false,
   isLoadingMore = false,
   newAdIds = new Set(),
+  boostedAdKeys = new Set(),
   saleCards = [],
   onSaleClick,
   bundleCards = [],
   onBundleClick,
 }: AdsGridProps) {
-  const { staggerCard } = useMotionPrefs();
+  const { staggerCard, boostPinDrop, boostRingPulse, reduced } = useMotionPrefs();
+  const { isMobile } = useDeviceInfo();
+
+  // Boost arrival: other cards slide down via framer-motion `layout` — DESKTOP
+  // ONLY (mobile ships without it: cards reflow instantly, only the arriving
+  // card animates). Widen only after a throttled mid-tier profile shows no
+  // jank. Skipped under prefers-reduced-motion (layout animations aren't
+  // covered by useReducedMotion automatically).
+  const animateLayout = !isMobile && !reduced;
 
   // Merge ads + Sale cards + Bundle cards into one date-sorted feed (newest
-  // first). The sort rule is unchanged — Sale/Bundle cards simply slot in at
-  // their own creation date.
+  // first). Ads sort on `bumpedAt` (Boost, Phase 2) — the mutable feed sort
+  // key, required since Phase 1B, no fallback — so a boosted ad rises to the
+  // top; Sale/Bundle cards still slot in at their own creation date.
   const feed = useMemo<FeedEntry[]>(() => {
     const adEntries: FeedEntry[] = (ads ?? []).map((ad) => ({
       kind: "ad",
-      sortKey: ad._creationTime ?? 0,
+      sortKey: ad.bumpedAt,
       ad,
     }));
     const saleEntries: FeedEntry[] = saleCards.map((sale) => ({
@@ -201,6 +220,7 @@ export const AdsGrid = memo(function AdsGrid({
           ))}
         </div>
       ) : (
+        <LayoutGroup>
         <div className={`listings-grid ${gridClasses}`}>
           {feed.map((entry, index) => {
             // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
@@ -209,6 +229,7 @@ export const AdsGrid = memo(function AdsGrid({
               return (
                 <motion.article
                   key={`sale-${sale._id}`}
+                  layout={animateLayout}
                   onClick={() => onSaleClick?.(sale.slug)}
                   role="button"
                   tabIndex={0}
@@ -264,6 +285,7 @@ export const AdsGrid = memo(function AdsGrid({
               return (
                 <motion.article
                   key={`bundle-${bundle._id}`}
+                  layout={animateLayout}
                   onClick={() => onBundleClick?.(bundle)}
                   role="button"
                   tabIndex={0}
@@ -324,10 +346,17 @@ export const AdsGrid = memo(function AdsGrid({
             const isNew = newAdIds.has(ad._id);
             const isPriority = index < 6;
             const isExchange = ad.listingType === "exchange";
+            // Boost arrival (one-shot per boost event): the card is keyed on
+            // `${_id}:${bumpedAt}`, so a boost replacement remounts it — the
+            // pin-drop entrance plays exactly once per boost (a second boost
+            // days later re-keys and re-animates; plain re-renders don't).
+            const boostKey = `${ad._id}:${ad.bumpedAt}`;
+            const isBoostArrival = boostedAdKeys.has(boostKey);
 
             return (
               <motion.article
-                key={ad._id}
+                key={boostKey}
+                layout={animateLayout}
                 onClick={() => handleAdClick(ad)}
                 role="button"
                 tabIndex={0}
@@ -338,7 +367,7 @@ export const AdsGrid = memo(function AdsGrid({
                   }
                 }}
                 onMouseMove={handleSpotlightMove}
-                {...staggerCard(index)}
+                {...(isBoostArrival ? boostPinDrop() : staggerCard(index))}
                 className={`spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
                   isNew
                     ? 'ring-primary/40'
@@ -418,6 +447,21 @@ export const AdsGrid = memo(function AdsGrid({
                     </span>
                   </div>
                 </div>
+
+                {/* Boost ring pulse — opacity-only overlay (never animated
+                    border/box-shadow: borders shift layout, box-shadow janks).
+                    Last positioned child so it paints above the card content
+                    without z-index (a past prod bug was a badge z-index leak).
+                    ring-inset because the article is overflow-hidden — an
+                    outset ring would be clipped entirely. */}
+                {isBoostArrival && (
+                  <motion.div
+                    aria-hidden
+                    data-testid="boost-ring-pulse"
+                    className="absolute inset-0 rounded-xl ring-2 ring-inset ring-primary pointer-events-none"
+                    {...boostRingPulse()}
+                  />
+                )}
               </motion.article>
             );
           })}
@@ -428,6 +472,7 @@ export const AdsGrid = memo(function AdsGrid({
             ))
           )}
         </div>
+        </LayoutGroup>
       )}
 
       {!isLoading && ads && ads.length === 0 && (

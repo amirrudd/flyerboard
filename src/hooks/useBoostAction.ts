@@ -73,7 +73,9 @@ export function useBoostAction(ad: BoostableAd | null | undefined) {
     return () => window.clearInterval(id);
   }, []);
 
-  const baseBumpedAt = ad?.bumpedAt ?? now;
+  // Loading guard only: `bumpedAt` is a required field on loaded ads (never fall
+  // back for a present ad). While `ad` is undefined, state is "ineligible" anyway.
+  const baseBumpedAt = ad ? ad.bumpedAt : now;
   const effectiveBumpedAt =
     localBumpedAt != null ? Math.max(baseBumpedAt, localBumpedAt) : baseBumpedAt;
 

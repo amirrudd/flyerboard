@@ -54,7 +54,9 @@
   isActive: boolean;
   isDeleted?: boolean;           // Soft delete flag
   views: number;
-  _creationTime: number;
+  bumpedAt: number;              // REQUIRED — the feed sort key (see Boost section above)
+  boostCount?: number;           // total boosts; future-pricing seam
+  _creationTime: number;         // display-only ("Posted X ago") — NOT the feed order
 }
 ```
 
@@ -165,6 +167,7 @@ if (ad.userId !== userId) {
 await ctx.db.patch(args.adId, {
   isDeleted: true,
   isActive: false,
+  deletedAt: Date.now(), // REQUIRED at every soft-delete site — drives the image-cleanup cron
 });
 ```
 
@@ -172,6 +175,11 @@ await ctx.db.patch(args.adId, {
 - Allows restoration
 - Preserves data integrity (foreign keys)
 - Enables cleanup jobs later
+
+**Future restore mutation (none exists today)**: it must clear `deletedAt` AND decide
+what to do with `bumpedAt` — restoring an old ad without touching `bumpedAt` quietly
+buries it; re-stamping `bumpedAt` is a free boost that bypasses the cooldown. Make that
+choice explicitly (and consider the boost cooldown) when a restore path is added.
 
 ### Rate Limiting
 **Pattern**: Prevent abuse by limiting request frequency per user

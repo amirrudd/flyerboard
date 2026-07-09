@@ -110,7 +110,7 @@ Environment variables are split between **frontend** (Vite/React) and **backend*
 These are embedded into the React app at build time and accessible via `import.meta.env`:
 - `VITE_CONVEX_URL` - Convex deployment URL
 - `VITE_DESCOPE_PROJECT_ID` - Descope project ID for AuthProvider
-- `VITE_GOOGLE_MAPS_API_KEY` - Google Maps API key
+- ~~`VITE_GOOGLE_MAPS_API_KEY`~~ - **REMOVED (Jul 2026)**. The LOCATION map was migrated off Google Maps (which forces a billing account even on the free tier) to **Leaflet + CARTO Positron** raster tiles (free, no key/billing, commercial-OK w/ attribution) in `src/components/ui/LocationMap.tsx`. Geocoding still uses Nominatim (unchanged). Tile style is a one-line swap via the `TILE_STYLES` const (positron/voyager/positronNoLabels/darkMatter/osm). This var is no longer read anywhere — safe to delete from Vercel + `.env.local`.
 
 **Where to set:**
 - **Vercel Production**: Add to Vercel Dashboard → Settings → Environment Variables

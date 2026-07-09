@@ -87,7 +87,10 @@ export const getAds = query({
       if (args.categoryId) {
         q = ctx.db
           .query("ads")
-          .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+          // Category branch still orders by _creationTime (behavior unchanged in
+          // Phase 1A); only the index name changed with the schema. The bumpedAt
+          // sort switch lands in Phase 1B.
+          .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId!))
           .order("desc");
       }
 
@@ -265,7 +268,10 @@ export const getLatestAds = query({
       if (args.categoryId) {
         q = ctx.db
           .query("ads")
-          .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+          // Category branch still orders by _creationTime (behavior unchanged in
+          // Phase 1A); only the index name changed with the schema. The bumpedAt
+          // sort switch lands in Phase 1B.
+          .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId!))
           .order("desc");
       }
 

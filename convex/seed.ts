@@ -241,6 +241,8 @@ export const seedMovingSale = internalMutation({
         saleEventId,
         condition: item.condition,
         views: Math.floor(Math.random() * 40),
+        bumpedAt: Date.now(), // Boost feed sort key.
+        boostCount: 0,
       });
       idByTitle.set(item.title, adId);
     }
@@ -354,6 +356,8 @@ export const seedBundleAds = internalMutation({
         isActive: true,
         isSold: false,
         views: 0,
+        bumpedAt: Date.now(), // Boost feed sort key.
+        boostCount: 0,
       });
       createdIds.push(id);
     }

@@ -93,7 +93,7 @@ export const getAllFlyers = query({
         if (args.categoryId) {
             flyersQuery = ctx.db
                 .query("ads")
-                .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!));
+                .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId!));
         } else {
             flyersQuery = ctx.db.query("ads");
         }

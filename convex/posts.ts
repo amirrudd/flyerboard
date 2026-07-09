@@ -73,6 +73,8 @@ export const createAd = mutation({
       userId,
       isActive: true,
       views: 0,
+      bumpedAt: Date.now(), // Boost feed sort key — initialized to creation time.
+      boostCount: 0,
     });
 
     logOperation("Flyer created", { adId, userId, categoryId: args.categoryId, listingType });

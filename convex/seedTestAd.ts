@@ -51,6 +51,8 @@ export const seedTallImageAd = internalMutation({
       isActive: true,
       isDeleted: false,
       views: 0,
+      bumpedAt: Date.now(), // Boost feed sort key.
+      boostCount: 0,
     });
   },
 });

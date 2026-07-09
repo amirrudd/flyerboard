@@ -37,8 +37,17 @@ const applicationTables = {
 
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
+
+    // Boost ("push to top"): mutable feed sort key. Initialized to creation time
+    // at every insert site and on backfill; a boost re-stamps it to Date.now().
+    // Optional is temporary while legacy rows are backfilled (Phase 1A) — Phase 1B
+    // tightens it to v.number() once no undefined rows remain. `_creationTime`
+    // stays the honest "Posted X ago" display value; `bumpedAt` drives feed order.
+    bumpedAt: v.optional(v.number()),   // epoch ms — the feed sort key (see convex/lib/boost.ts)
+    boostCount: v.optional(v.number()), // total boosts; future-pricing seam ("first free, then paid")
   })
-    .index("by_category", ["categoryId"])
+    .index("by_category_and_bumped_at", ["categoryId", "bumpedAt"])
+    .index("by_bumped_at", ["bumpedAt"])
     .index("by_location", ["location"])
     .index("by_active", ["isActive"])
     .index("by_user", ["userId"])

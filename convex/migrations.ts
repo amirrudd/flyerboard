@@ -498,9 +498,62 @@ export const backfillSaleBundles = internalMutation({
 });
 
 /**
+ * Backfill `bumpedAt` on ads that predate the Boost feature (Phase 1A).
+ *
+ * `bumpedAt` is the mutable feed sort key (see `convex/lib/boost.ts` +
+ * `schema.ts`). Legacy rows have it undefined; this stamps
+ * `bumpedAt = _creationTime` so each ad's feed position is unchanged when Phase 1B
+ * switches the feed sort from `_creationTime` to `bumpedAt`.
+ *
+ * Idempotent — only touches rows where `bumpedAt === undefined`, so re-running is
+ * safe. Batched with a cap (per `imageCleanup.ts`): each run processes up to
+ * `batchSize` rows NEWEST-FIRST (`.order("desc")` = by `_creationTime` desc).
+ * Newest-first is load-bearing: mid-run, already-backfilled values rank above
+ * still-undefined rows under the future sort, so the visible top of the feed stays
+ * correct throughout (oldest-first would surface old ads on page 1 mid-migration).
+ * Re-run until `remaining === 0` (`done === true`).
+ *
+ * Usage: npx convex run migrations:backfillBumpedAt
+ */
+export const backfillBumpedAt = internalMutation({
+  args: { batchSize: v.optional(v.number()) },
+  returns: v.object({
+    processed: v.number(),
+    remaining: v.number(),
+    done: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const batchSize = args.batchSize ?? 200;
+
+    // Newest-first scan (default index is by _creationTime), filtering to rows that
+    // still need backfilling.
+    const pending = await ctx.db
+      .query("ads")
+      .order("desc")
+      .filter((q) => q.eq(q.field("bumpedAt"), undefined))
+      .take(batchSize);
+
+    for (const ad of pending) {
+      await ctx.db.patch(ad._id, { bumpedAt: ad._creationTime });
+    }
+
+    // Best-effort remaining count (bounded scan) so repeated runs can be watched
+    // trending to zero; `done` is the precise "nothing left to backfill" signal.
+    const REMAINING_SCAN_CAP = 10000;
+    const stillPending = await ctx.db
+      .query("ads")
+      .filter((q) => q.eq(q.field("bumpedAt"), undefined))
+      .take(REMAINING_SCAN_CAP);
+    const remaining = stillPending.length;
+
+    return { processed: pending.length, remaining, done: remaining === 0 };
+  },
+});
+
+/**
  * Rename feature flag key from userSelfVerification to identityVerification
  * Run this once to update existing database
- * 
+ *
  * Usage: npx convex run migrations:renameFeatureFlag
  */
 export const renameFeatureFlag = internalMutation({

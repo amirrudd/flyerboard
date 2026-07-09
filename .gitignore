@@ -30,3 +30,6 @@ dist-ssr
 /playwright/.cache/
 # Playwright auth fixtures (storageState) — never commit
 e2e/.auth/
+
+# Test coverage output
+coverage/

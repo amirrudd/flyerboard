@@ -2,13 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { LocationMap } from './LocationMap';
 
-// Mock react-leaflet — the real components need a DOM map instance that jsdom can't provide.
+// Mock react-leaflet — the real components need a DOM map instance jsdom can't provide.
+// Forward the load-bearing props (tile url/attribution, circle color) onto the DOM so
+// tests can assert the migration's actual config, not just "a div rendered".
 vi.mock('react-leaflet', () => ({
     MapContainer: ({ children }: { children: React.ReactNode }) => (
         <div data-testid="leaflet-map">{children}</div>
     ),
-    TileLayer: () => <div data-testid="tile-layer" />,
-    Circle: () => <div data-testid="location-circle" />,
+    TileLayer: ({ url, attribution }: { url: string; attribution: string }) => (
+        <div data-testid="tile-layer" data-url={url} data-attribution={attribution} />
+    ),
+    Circle: ({ pathOptions }: { pathOptions?: { color?: string } }) => (
+        <div data-testid="location-circle" data-color={pathOptions?.color} />
+    ),
 }));
 
 // Leaflet's CSS import is a no-op under Vitest, but stub it to be safe.
@@ -50,8 +56,12 @@ describe('LocationMap', () => {
             expect(screen.getByTestId('leaflet-map')).toBeInTheDocument();
         });
 
-        expect(screen.getByTestId('tile-layer')).toBeInTheDocument();
-        expect(screen.getByTestId('location-circle')).toBeInTheDocument();
+        // Assert the migration's actual config reaches the map, not just that it rendered:
+        // the CARTO Positron tile URL, its required attribution, and a brand-colored circle.
+        const tile = screen.getByTestId('tile-layer');
+        expect(tile.getAttribute('data-url')).toContain('basemaps.cartocdn.com/light_all');
+        expect(tile.getAttribute('data-attribution')).toContain('CARTO');
+        expect(screen.getByTestId('location-circle').getAttribute('data-color')).toBeTruthy();
     });
 
     it('should show error state when geocoding fails', async () => {

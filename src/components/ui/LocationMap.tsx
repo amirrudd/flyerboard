@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Circle } from 'react-leaflet';
 import { MapPin } from '@phosphor-icons/react';
+import { resolvePrimaryColor } from '@/lib/cssColor';
 import 'leaflet/dist/leaflet.css';
 
 interface LocationMapProps {
@@ -13,32 +14,32 @@ interface Coordinates {
     lng: number;
 }
 
+// CARTO basemaps share one attribution (OpenStreetMap data + CARTO tiles), required
+// by CARTO's usage terms and kept on the TileLayer.
+const CARTO_ATTRIBUTION =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
 // Basemap tile styles (all free, no API key). Swap TILE_STYLE below to change the look.
-// CARTO usage requires the attribution string kept on the TileLayer.
 const TILE_STYLES = {
     // Warm, muted, low-clutter — designed feel. Recommended default.
     voyager: {
         url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: CARTO_ATTRIBUTION,
     },
     // Near-monochrome light grey, faint labels — very minimal.
     positron: {
         url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: CARTO_ATTRIBUTION,
     },
     // Same as positron but no text labels — cleanest, the circle dominates.
     positronNoLabels: {
         url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-        attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: CARTO_ATTRIBUTION,
     },
     // Dark charcoal minimal.
     darkMatter: {
         url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: CARTO_ATTRIBUTION,
     },
     // Fully detailed original OpenStreetMap tiles.
     osm: {
@@ -50,22 +51,11 @@ const TILE_STYLES = {
 
 const TILE_STYLE = TILE_STYLES.positron;
 
-// Resolve the brand primary color from the CSS variable, with a safe fallback.
-function usePrimaryColor(): string {
-    return useMemo(() => {
-        if (typeof document === 'undefined') return '#9e1b1e';
-        const primaryHsl = getComputedStyle(document.documentElement)
-            .getPropertyValue('--primary')
-            .trim();
-        return primaryHsl ? `hsl(${primaryHsl})` : '#9e1b1e';
-    }, []);
-}
-
 export function LocationMap({ location, className = '' }: LocationMapProps) {
     const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const primaryColor = usePrimaryColor();
+    const primaryColor = useMemo(() => resolvePrimaryColor(), []);
 
     useEffect(() => {
         const geocodeLocation = async () => {

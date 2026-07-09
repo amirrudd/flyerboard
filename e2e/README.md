@@ -44,6 +44,16 @@ Categories are treated as stable chrome: they're a fixed seeded list
 (`convex/categories.ts` + the Hobbies migration), not user-generated data. If a
 category is ever renamed, regenerate baselines.
 
+**Known residual data-sensitivity (observed 2026-07-09, Boost Phase 6):** the
+mask paints over the grid *element*, so the mask's own boundary still tracks
+feed length — with a dataset much larger/smaller than the baseline's, unmasked
+slivers at the grid's right/bottom edges shift and the Mobile Chrome snapshots
+exceed `maxDiffPixels`. Desktop passed, mobile failed, purely from data volume
+(e.g. after `sampleData:clearAndCreateSampleData`, which also *regenerates
+categories* — violating the "categories are stable chrome" assumption above).
+Run this suite against the standard dev dataset the baselines were captured
+from; don't regenerate baselines from a synthetic dataset.
+
 ## Snapshot platforms
 
 Baselines are per-platform (`-darwin`, `-linux`). Locally you generate darwin

@@ -29,7 +29,7 @@ This isn't bookkeeping — it's how the project compounds knowledge across sessi
 
 ## Project
 
-FlyerBoard is a classified marketplace web app (ads = "flyers"). The repo also contains a Kotlin Multiplatform mobile app (`mobile/`) and `mobile-api/` — these are out of scope for the web guideline. The web app lives in `src/` and uses Convex for backend, Descope for auth, and Cloudflare R2 for image storage. Convex deployment: `doting-dogfish-130`.
+FlyerBoard is a classified marketplace web app (ads = "flyers"). The repo also contains a Kotlin Multiplatform mobile app (`mobile/`) and `mobile-api/` — these are out of scope for the web guideline. The web app lives in `src/` and uses Convex for backend, Descope for auth, and Cloudflare R2 for image storage. Convex deployments: **prod** `resilient-pheasant-112` (what Vercel `main` builds deploy to; run prod migrations here), **dev** `doting-dogfish-130` (local `convex dev`). Don't run prod migrations against the dev deployment — the prod dashboard is https://dashboard.convex.dev/t/amir-rudd/flyerboard/resilient-pheasant-112.
 
 ## Commands
 

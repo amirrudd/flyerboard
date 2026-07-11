@@ -41,3 +41,48 @@ export function getItemTitle(chat: InboxChat): string {
     (isSaleThread(chat) ? "Moving Sale" : isBundleThread(chat) ? "Bundle" : "Deleted Flyer")
   );
 }
+
+/** Facts the thread header/composer needs, per thread kind. Pure — returns an
+ * href rather than a navigate closure so every surface (page, dashboard,
+ * future two-pane) derives identical behavior from one place.
+ *
+ * Flyer threads: a sold/inactive flyer keeps the composer ENABLED (arranging
+ * pickup on a sold item is a real flow) and shows a "No longer available"
+ * pill with a non-tappable context strip; only a fully deleted flyer
+ * disables sending. */
+export interface ThreadMeta {
+  viewItemLabel: string;
+  viewItemHref?: string;
+  composerDisabled: boolean;
+  composerDisabledReason: string;
+  statusLabel?: string;
+}
+
+export function getThreadMeta(chat: InboxChat): ThreadMeta {
+  if (isSaleThread(chat) || isBundleThread(chat)) {
+    const sale = isSaleThread(chat);
+    const item = sale ? chat.sale : chat.bundle;
+    const noun = sale ? "sale" : "bundle";
+    return {
+      viewItemLabel: `View ${noun}`,
+      viewItemHref: sale
+        ? chat.sale?.slug
+          ? `/sale/${chat.sale.slug}`
+          : undefined
+        : chat.bundle
+          ? `/bundle/${chat.bundle._id}`
+          : undefined,
+      composerDisabled: !item,
+      composerDisabledReason: `This ${noun} is no longer available`,
+      statusLabel: item ? undefined : "No longer available",
+    };
+  }
+  const adAvailable = Boolean(chat.ad && chat.ad.isActive !== false);
+  return {
+    viewItemLabel: "View flyer",
+    viewItemHref: adAvailable && chat.adId ? `/ad/${chat.adId}` : undefined,
+    composerDisabled: !chat.ad,
+    composerDisabledReason: "This flyer is no longer active",
+    statusLabel: adAvailable ? undefined : "No longer available",
+  };
+}

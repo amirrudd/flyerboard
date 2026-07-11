@@ -13,6 +13,12 @@ export interface ConversationHeaderProps {
   /** Label for the view action — "View flyer" (default) or "View sale". */
   viewItemLabel?: string;
   onReport?: () => void;
+  /**
+   * Small muted pill next to the title (e.g. "No longer available" on a
+   * sold/inactive flyer). Purely informational — callers keep the composer
+   * enabled or disabled independently.
+   */
+  statusLabel?: string;
 }
 
 /**
@@ -29,7 +35,20 @@ export function ConversationHeader({
   onViewItem,
   viewItemLabel = "View flyer",
   onReport,
+  statusLabel,
 }: ConversationHeaderProps) {
+  // Descriptive name for the title heading, e.g.
+  // "About: Blue Bike, $50, No longer available". Lives on the heading, NOT
+  // the <header>: renaming the header would rename the region containing the
+  // Back/Report buttons for assistive tech.
+  const stripLabel = [
+    `About: ${title}`,
+    price !== undefined ? formatPrice(price) : null,
+    statusLabel ?? null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <header className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border/70 bg-card">
       {onBack && (
@@ -56,9 +75,19 @@ export function ConversationHeader({
       )}
 
       <div className="flex-1 min-w-0">
-        <h2 className="font-display text-base font-semibold tracking-tight text-foreground truncate">
-          {title}
-        </h2>
+        <div className="flex items-center gap-2 min-w-0">
+          <h2
+            aria-label={stripLabel}
+            className="font-display text-base font-semibold tracking-tight text-foreground truncate"
+          >
+            {title}
+          </h2>
+          {statusLabel && (
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-muted ring-1 ring-border/60 text-[11px] font-medium text-muted-foreground">
+              {statusLabel}
+            </span>
+          )}
+        </div>
         {(price !== undefined || subtitle) && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
             {price !== undefined && (

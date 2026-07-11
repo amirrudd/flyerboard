@@ -34,7 +34,10 @@ export {
   getCounterpart,
   getCounterpartName,
   getItemTitle,
+  getThreadMeta,
 } from "./helpers";
+export type { ThreadMeta } from "./helpers";
+
 export type { UseInboxOptions, UseInboxResult } from "./useInbox";
 
 export type {

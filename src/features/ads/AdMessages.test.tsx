@@ -276,9 +276,10 @@ describe('AdMessages', () => {
                 screen.getByRole('button', { name: 'Conversation with Test Buyer' })
             );
 
-            // ConversationHeader: buyer name as title.
+            // ConversationHeader: buyer name as title. The heading carries
+            // the descriptive "About: ..." aria-label (Phase 5 a11y).
             expect(
-                screen.getByRole('heading', { name: 'Test Buyer' })
+                screen.getByRole('heading', { name: 'About: Test Buyer' })
             ).toBeInTheDocument();
 
             // ConversationThread renders both messages as bubbles.

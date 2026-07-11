@@ -173,5 +173,19 @@ export function useMotionPrefs() {
     return { lift, ring, arrow };
   }
 
-  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop, boostPinDrop, boostRingPulse, boostLaunch };
+  /**
+   * Full-screen panel slide-over (e.g. inbox → thread on mobile): fade +
+   * 24px slide from the right, 200ms ease-out. Entrance only — no consumer
+   * wraps it in AnimatePresence, so it carries no exit variant. Collapses
+   * to no-motion under prefers-reduced-motion.
+   */
+  function slideOver() {
+    return {
+      initial: { opacity: 0, x: reduced ? 0 : 24 },
+      animate: { opacity: 1, x: 0 },
+      transition: { duration: reduced ? 0 : 0.2, ease: EASE },
+    } as const;
+  }
+
+  return { reduced, fadeUp, whileInView, staggerCard, slideStep, bubbleIn, listStagger, scalePop, slideOver, boostPinDrop, boostRingPulse, boostLaunch };
 }

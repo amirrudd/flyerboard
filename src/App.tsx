@@ -16,6 +16,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 const AdDetailPage = lazy(() => import("./pages/AdDetailPage"));
 const PostAdPage = lazy(() => import("./pages/PostAdPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const CommunityGuidelinesPage = lazy(() => import("./pages/CommunityGuidelinesPage"));
@@ -97,6 +98,15 @@ export default function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <DashboardPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                } />
+                {/* Dedicated messages destination — inbox (/messages) and
+                    conversation thread (/messages/:chatId) share one route */}
+                <Route path="/messages/:chatId?" element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <MessagesPage />
                     </Suspense>
                   </ErrorBoundary>
                 } />

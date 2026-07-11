@@ -24,6 +24,16 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
         return null;
     }
 
+    // The full-screen conversation view (/messages/:chatId) supplies its own
+    // chrome on mobile — no bottom nav there. The /messages inbox and its
+    // /messages/archived sub-view are top-level destinations and keep it.
+    const messagesSubPath = location.pathname.startsWith("/messages/")
+        ? location.pathname.slice("/messages/".length)
+        : "";
+    if (messagesSubPath && messagesSubPath !== "archived") {
+        return null;
+    }
+
     const isActive = (path: string) => {
         if (path.startsWith('/dashboard')) {
             const currentParams = new URLSearchParams(location.search);
@@ -100,12 +110,12 @@ export const BottomNav = memo(function BottomNav({ setShowAuthModal }: BottomNav
                 </button>
 
                 <button
-                    onClick={() => handleAuthGuard("/dashboard?tab=chats")}
-                    className={navItemClass(isActive("/dashboard?tab=chats"))}
+                    onClick={() => handleAuthGuard("/messages")}
+                    className={navItemClass(isActive("/messages"))}
                 >
-                    {isActive("/dashboard?tab=chats") && <ActiveDot />}
+                    {isActive("/messages") && <ActiveDot />}
                     <span className="relative">
-                        <ChatText size={22} weight={isActive("/dashboard?tab=chats") ? "bold" : "regular"} />
+                        <ChatText size={22} weight={isActive("/messages") ? "bold" : "regular"} />
                         <UnreadBadge
                             count={totalUnread}
                             className="absolute -top-1.5 -right-3 shadow-sm"

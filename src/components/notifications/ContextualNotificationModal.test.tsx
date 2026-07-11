@@ -52,9 +52,8 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Stay Updated on Your Flyer')).toBeInTheDocument();
-            expect(screen.getByText('Get notified when someone makes an enquiry about your flyer')).toBeInTheDocument();
-            expect(screen.getByText('📬')).toBeInTheDocument();
+            expect(screen.getByText('Stay updated on your flyer')).toBeInTheDocument();
+            expect(screen.getByText('Get notified when someone makes an enquiry about your flyer.')).toBeInTheDocument();
         });
 
         it('should display send-message context messaging', () => {
@@ -66,9 +65,8 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Never Miss a Reply')).toBeInTheDocument();
-            expect(screen.getByText('Get notified when the seller replies to your message')).toBeInTheDocument();
-            expect(screen.getByText('💬')).toBeInTheDocument();
+            expect(screen.getByText('Never miss a reply')).toBeInTheDocument();
+            expect(screen.getByText('Get notified when the seller replies to your message.')).toBeInTheDocument();
         });
 
         it('should display like-flyer context messaging', () => {
@@ -80,9 +78,8 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Track Your Saved Flyers')).toBeInTheDocument();
-            expect(screen.getByText('Get notified about price drops and status updates for saved flyers')).toBeInTheDocument();
-            expect(screen.getByText('❤️')).toBeInTheDocument();
+            expect(screen.getByText('Track your saved flyers')).toBeInTheDocument();
+            expect(screen.getByText('Get notified about price drops and status updates for saved flyers.')).toBeInTheDocument();
         });
     });
 
@@ -96,7 +93,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
 
         it('should not render when notifications are not supported', () => {
@@ -118,7 +115,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
 
         it('should not render when permission is already granted', () => {
@@ -140,7 +137,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
 
         it('should not render when context has been dismissed', () => {
@@ -154,7 +151,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
 
         it('should render when all conditions are met', () => {
@@ -166,7 +163,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Stay Updated on Your Flyer')).toBeInTheDocument();
+            expect(screen.getByText('Stay updated on your flyer')).toBeInTheDocument();
         });
     });
 
@@ -197,7 +194,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Never Miss a Reply')).toBeInTheDocument();
+            expect(screen.getByText('Never miss a reply')).toBeInTheDocument();
         });
 
         it('should not show modal again after dismissal for same context', () => {
@@ -211,7 +208,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
 
             // Reopen should still not show
             rerender(
@@ -230,7 +227,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
     });
 
@@ -246,7 +243,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            const enableButton = screen.getByText('Enable Notifications');
+            const enableButton = screen.getByText('Enable notifications');
             fireEvent.click(enableButton);
 
             await waitFor(() => {
@@ -266,7 +263,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            const enableButton = screen.getByText('Enable Notifications');
+            const enableButton = screen.getByText('Enable notifications');
             fireEvent.click(enableButton);
 
             await waitFor(() => {
@@ -343,11 +340,11 @@ describe('ContextualNotificationModal', () => {
             );
 
             // Check for backdrop
-            const backdrop = screen.getByText('Stay Updated on Your Flyer').closest('.fixed');
+            const backdrop = screen.getByText('Stay updated on your flyer').closest('.fixed');
             expect(backdrop).toHaveClass('bg-black/50', 'backdrop-blur-sm', 'z-[100]');
 
             // Check for modal content
-            const modal = screen.getByText('Stay Updated on Your Flyer').closest('.bg-card');
+            const modal = screen.getByText('Stay updated on your flyer').closest('.bg-card');
             expect(modal).toHaveClass('rounded-xl', 'shadow-2xl', 'animate-scale-in');
         });
 
@@ -360,7 +357,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Enable Notifications')).toBeInTheDocument();
+            expect(screen.getByText('Enable notifications')).toBeInTheDocument();
             expect(screen.getByText('Not now')).toBeInTheDocument();
             expect(screen.getByLabelText('Close notification prompt')).toBeInTheDocument();
         });
@@ -376,7 +373,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Stay Updated on Your Flyer')).toBeInTheDocument();
+            expect(screen.getByText('Stay updated on your flyer')).toBeInTheDocument();
 
             rerender(
                 <ContextualNotificationModal
@@ -386,7 +383,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
 
             rerender(
                 <ContextualNotificationModal
@@ -396,7 +393,7 @@ describe('ContextualNotificationModal', () => {
                 />
             );
 
-            expect(screen.getByText('Stay Updated on Your Flyer')).toBeInTheDocument();
+            expect(screen.getByText('Stay updated on your flyer')).toBeInTheDocument();
         });
 
         it('should handle permission denied state', () => {
@@ -419,7 +416,7 @@ describe('ContextualNotificationModal', () => {
             );
 
             // Should not show modal when permission is denied
-            expect(screen.queryByText('Stay Updated on Your Flyer')).not.toBeInTheDocument();
+            expect(screen.queryByText('Stay updated on your flyer')).not.toBeInTheDocument();
         });
     });
 });

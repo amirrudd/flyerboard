@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MessageBubble } from './MessageBubble';
 
 describe('MessageBubble', () => {
@@ -65,5 +65,44 @@ describe('MessageBubble', () => {
         const timestamp = screen.getByText(/minutes ago/);
         expect(timestamp.className).toContain('tabular-nums');
         expect(timestamp.className).toContain('text-[11px]');
+    });
+
+    it('pending: dims the bubble and shows the clock/Sending state instead of a time', () => {
+        render(<MessageBubble content="On my way" timestamp={Date.now()} isOwn={true} pending />);
+
+        const bubble = screen.getByTestId('message-bubble').firstElementChild as HTMLElement;
+        expect(bubble.className).toContain('opacity-60');
+        expect(screen.getByText('Sending')).toBeInTheDocument();
+        expect(screen.queryByText(/ago/)).not.toBeInTheDocument();
+    });
+
+    it('failed: offers "Not sent — tap to retry" and calls onRetry on click', () => {
+        const onRetry = vi.fn();
+        render(
+            <MessageBubble content="Lost one" timestamp={Date.now()} isOwn={true} failed onRetry={onRetry} />
+        );
+
+        // Content is preserved in the failed bubble.
+        expect(screen.getByText('Lost one')).toBeInTheDocument();
+        expect(screen.getByText('Not sent — tap to retry')).toBeInTheDocument();
+        // Failed bubbles are not dimmed — they're actionable.
+        const bubble = screen.getByRole('button', { name: /Not sent — tap to retry/ });
+        expect(bubble.className).not.toContain('opacity-60');
+
+        fireEvent.click(bubble);
+        expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it('failed: retries from the keyboard (Enter and Space)', () => {
+        const onRetry = vi.fn();
+        render(
+            <MessageBubble content="Again" timestamp={Date.now()} isOwn={true} failed onRetry={onRetry} />
+        );
+
+        const bubble = screen.getByRole('button', { name: /Not sent — tap to retry/ });
+        expect(bubble).toHaveAttribute('tabindex', '0');
+        fireEvent.keyDown(bubble, { key: 'Enter' });
+        fireEvent.keyDown(bubble, { key: ' ' });
+        expect(onRetry).toHaveBeenCalledTimes(2);
     });
 });

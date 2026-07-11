@@ -31,6 +31,8 @@ import type { InboxFilter } from "../messages";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { notificationService } from "../../services/notifications";
 import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
@@ -47,6 +49,7 @@ import {
   MapPin,
   Image as ImageIcon,
   Envelope,
+  BellRinging,
   Package,
   X,
   Plus,
@@ -124,6 +127,106 @@ function CountUp({ value, reduced }: { value: number; reduced: boolean }) {
   }, [value, reduced]);
 
   return <motion.span>{rounded}</motion.span>;
+}
+
+function ToggleSwitch({ checked, disabled, ariaLabel, className = "", onChange }: {
+  checked: boolean;
+  disabled?: boolean;
+  ariaLabel: string;
+  className?: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className={`relative inline-flex items-center cursor-pointer flex-shrink-0 ${className}`} aria-label={ariaLabel}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <div className="w-11 h-6 rounded-full peer bg-muted ring-1 ring-border peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 peer-focus:ring-offset-background peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:ring-1 after:ring-border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:ring-primary">
+      </div>
+    </label>
+  );
+}
+
+// Own component so usePushNotifications' mount work (service-worker/pushManager
+// lookups) only runs when the profile tab actually renders the card.
+function BrowserNotificationsCard() {
+  const { isSupported, permission, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotifications();
+
+  if (!isSupported) return null;
+
+  const handleEnable = async () => {
+    const ok = await subscribe();
+    if (ok) {
+      toast.success("Browser notifications enabled");
+    } else if (notificationService.getPermissionStatus() === "denied") {
+      // Read the live permission: the hook's state updates async
+      toast.error("Notifications are blocked in your browser settings");
+    } else {
+      toast.error("Couldn't enable browser notifications");
+    }
+  };
+
+  const handleDisable = async () => {
+    const ok = await unsubscribe();
+    if (ok) toast.success("Browser notifications disabled");
+    else toast.error("Couldn't disable browser notifications");
+  };
+
+  return (
+    <div className="relative overflow-hidden bg-muted/40 ring-1 ring-border/60 p-5 rounded-2xl">
+      {permission !== "denied" && !isSubscribed && (
+        <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary/[0.07] blur-2xl" />
+      )}
+      <div className="relative flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex items-start gap-3.5 flex-1 min-w-0">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+            <BellRinging size={20} weight="light" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-display text-base font-semibold tracking-tight text-foreground mb-1">
+              Browser notifications
+            </h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {permission === "denied"
+                ? "Blocked for this site. Allow notifications in your browser settings to get message alerts on this device."
+                : isSubscribed
+                  ? "You'll get an alert on this device the moment a new message arrives."
+                  : "Get an alert on this device the moment someone messages you — even when FlyerBoard is closed."}
+            </p>
+          </div>
+        </div>
+        {permission === "denied" ? (
+          <span className="inline-flex items-center self-start h-7 px-3 rounded-full bg-muted ring-1 ring-border text-xs font-medium text-muted-foreground flex-shrink-0">
+            Blocked in browser
+          </span>
+        ) : isSubscribed ? (
+          <ToggleSwitch
+            checked={isSubscribed}
+            disabled={isLoading}
+            ariaLabel="Toggle browser notifications"
+            className="self-start sm:mt-1"
+            onChange={() => { void handleDisable(); }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => { void handleEnable(); }}
+            disabled={isLoading}
+            className="group inline-flex items-center self-start gap-2.5 h-10 pl-5 pr-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-[0.97] active:translate-y-0 active:shadow-sm disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex-shrink-0"
+          >
+            {isLoading ? "Enabling…" : "Enable"}
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-110 group-hover:bg-white/30">
+              <BellRinging size={13} weight="bold" className="motion-safe:animate-bell-ring" />
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 interface UserDashboardProps {
@@ -1538,6 +1641,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
                   <div className="border-t border-border/70 pt-6 mb-8">
                     <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-4">Notifications</h3>
+                    <div className="space-y-3">
                     {user.email && (
                       <div className="bg-muted/40 ring-1 ring-border/60 p-5 rounded-2xl">
                         <div className="flex items-start justify-between gap-4">
@@ -1549,19 +1653,16 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               Receive email notifications at {user.email} when you get a new message
                             </p>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0" aria-label="Toggle email notifications">
-                            <input
-                              type="checkbox"
-                              checked={user.emailNotificationsEnabled || false}
-                              onChange={(e) => { void handleToggleEmailNotifications(e.target.checked); }}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 rounded-full peer bg-muted ring-1 ring-border peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 peer-focus:ring-offset-background peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:ring-1 after:ring-border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:ring-primary">
-                            </div>
-                          </label>
+                          <ToggleSwitch
+                            checked={user.emailNotificationsEnabled || false}
+                            ariaLabel="Toggle email notifications"
+                            onChange={(checked) => { void handleToggleEmailNotifications(checked); }}
+                          />
                         </div>
                       </div>
                     )}
+                    <BrowserNotificationsCard />
+                    </div>
                   </div>
 
                   <div className="border-t border-border/70 pt-6">

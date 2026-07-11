@@ -46,7 +46,9 @@ export function usePushNotifications() {
         setIsLoading(true);
         try {
             const granted = await notificationService.requestPermission();
-            setPermission(granted ? 'granted' : 'denied');
+            // Read the real status back: a dismissed prompt stays 'default',
+            // not 'denied' — coercing it to 'denied' hides enable UIs until reload.
+            setPermission(notificationService.getPermissionStatus());
             return granted;
         } finally {
             setIsLoading(false);

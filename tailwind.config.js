@@ -116,8 +116,17 @@ module.exports = {
       animation: {
         "fade-in": "fadeIn 0.5s ease-out forwards",
         "slide-up": "slideUp 0.5s ease-out forwards",
+        "bell-ring": "bellRing 2.8s cubic-bezier(0.32, 0.72, 0, 1) infinite",
       },
       keyframes: {
+        bellRing: {
+          "0%, 40%, 100%": { transform: "rotate(0deg)" },
+          "5%": { transform: "rotate(16deg)" },
+          "12%": { transform: "rotate(-13deg)" },
+          "19%": { transform: "rotate(9deg)" },
+          "26%": { transform: "rotate(-6deg)" },
+          "33%": { transform: "rotate(3deg)" },
+        },
         fadeIn: {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },

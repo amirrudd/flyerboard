@@ -15,13 +15,27 @@ import {
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { PageLoader } from "../components/PageLoader";
+import { ReportModal } from "../components/ReportModal";
 import { ChatItemSkeleton } from "../components/ui/DashboardSkeleton";
 import { useUserSync } from "../context/UserSyncContext";
+import { SignOutButton } from "../features/auth/SignOutButton";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
-import { InboxRow, getItemTitle, useInbox } from "../features/messages";
+import {
+    ConversationHeader,
+    ConversationThread,
+    InboxRow,
+    MessageComposer,
+    getCounterpartName,
+    getItemTitle,
+    getThreadMeta,
+    useInbox,
+} from "../features/messages";
 import type { InboxChat, InboxFilter } from "../features/messages";
+
+const NO_MESSAGES: never[] = [];
 
 // Segmented filter options for the unified inbox (ported from the dashboard
 // chats tab — same ids the shared `useInbox` filter expects).
@@ -40,11 +54,12 @@ const INBOX_FILTERS: Array<{ id: InboxFilter; label: string }> = [
  * `DashboardPage.tsx`. An optional `?flyer=<adId>` query filters the inbox to
  * conversations about one flyer and is preserved across the redirect.
  *
- * The inbox is assembled entirely from `src/features/messages/` (the ONE
- * sanctioned chat implementation). The thread route is a Phase 3 placeholder.
+ * The inbox and the conversation thread are assembled entirely from
+ * `src/features/messages/` (the ONE sanctioned chat implementation).
  */
 export function MessagesPage() {
     const navigate = useNavigate();
+    const goHome = () => { void navigate('/'); };
     const { isAuthenticated, isSessionLoading } = useSession();
     const { chatId } = useParams<{ chatId: string }>();
     const { isMobile } = useDeviceInfo();
@@ -56,10 +71,38 @@ export function MessagesPage() {
 
     // On the full-screen conversation route (<md) the thread supplies its own
     // header (Phase 3) — hide the persistent shell header via the `hidden`
-    // slot, the same mechanism the dashboard uses for AdMessages. The inbox
-    // route keeps the normal header. Registering `{}` keeps the default
-    // header (hook must be called unconditionally — hooks rules).
-    useHeaderSlots(isThread && isMobile ? { hidden: true } : {});
+    // slot, the same mechanism the dashboard uses for AdMessages. Everywhere
+    // else mirror the dashboard's app bar: back, title, theme + sign out —
+    // no search/location chrome.
+    // (Hook must be called unconditionally — hooks rules.)
+    useHeaderSlots(
+        isThread && isMobile
+            ? { hidden: true }
+            : {
+                  leftNode: (
+                      <button
+                          type="button"
+                          onClick={goHome}
+                          aria-label="Back"
+                          className="inline-flex items-center gap-2 h-10 px-3 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-[0.98] transition-all"
+                      >
+                          <CaretLeft className="w-5 h-5" />
+                          <span className="hidden md:inline text-sm font-medium">back</span>
+                      </button>
+                  ),
+                  centerNode: (
+                      <span className="font-display text-xl font-semibold tracking-tight text-foreground">
+                          {isMobile ? "Messages" : "FlyerBoard"}
+                      </span>
+                  ),
+                  rightNode: (
+                      <div className="flex items-center gap-3">
+                          <ThemeToggle />
+                          <SignOutButton onSignOut={goHome} iconOnly={isMobile} />
+                      </div>
+                  ),
+              }
+    );
 
     // Route guard — same pattern as DashboardPage: PageLoader while the
     // session resolves, redirect home when unauthenticated.
@@ -78,15 +121,7 @@ export function MessagesPage() {
     }
 
     if (isThread) {
-        // Phase 3 builds the full-screen conversation here.
-        return (
-            <div className="container-padding mx-auto w-full max-w-2xl py-6 pb-bottom-nav">
-                <h1 className="font-display text-2xl font-semibold text-foreground">Messages</h1>
-                <p className="mt-2 text-sm text-muted-foreground">
-                    This conversation view is under construction.
-                </p>
-            </div>
-        );
+        return <ThreadView chatId={chatId} />;
     }
 
     return <InboxView />;
@@ -571,6 +606,203 @@ function ArchivedView() {
                 </div>,
                 document.body
             )}
+        </div>
+    );
+}
+
+/**
+ * Full-screen conversation at `/messages/:chatId`.
+ *
+ * Mobile (<md): rendered through a body portal (`fixed inset-0` column) — the
+ * shell `<main>` has `contain: paint`, so `position: fixed` inside it would be
+ * contained; the portal escapes it (same pattern as AdMessages). BottomNav and
+ * the persistent header are both hidden on this route, so the column owns the
+ * whole viewport: `pt-safe` header, `pb-safe` composer, no static
+ * viewport-height units anywhere (inset-0/dvh only).
+ *
+ * Desktop (≥md): the same column centered in the normal page flow — Phase 4
+ * replaces this with the two-pane master–detail layout.
+ */
+function ThreadView({ chatId }: { chatId: string }) {
+    const navigate = useNavigate();
+    const { isMobile } = useDeviceInfo();
+    const [showReportModal, setShowReportModal] = useState(false);
+
+    // Canonical auth+sync gate (same as useInbox) for this view's own query.
+    const { isAuthenticated, isSessionLoading } = useSession();
+    const { isUserSynced } = useUserSync();
+    const authReady = isAuthenticated && !isSessionLoading && isUserSynced;
+
+    // Conversation metadata comes from the same merged inbox the list uses —
+    // the same derivation the dashboard chats tab used for ?chat=.
+    const inbox = useInbox();
+    const inboxConversation = useMemo(
+        () =>
+            inbox.conversations.find((entry) => entry._id === chatId) ?? null,
+        [inbox.conversations, chatId]
+    );
+
+    // Archived chats are excluded from getSellerChats/getBuyerChats, so an
+    // archived row (or a deep link to one) would dead-end on "not found" —
+    // fall back to the buyer-side archived list for the lookup. Subscribed
+    // only when the inbox has loaded and come up empty for this id.
+    const archivedChatsRaw = useQuery(
+        api.messages.getArchivedChats,
+        authReady && !inbox.isLoading && !inboxConversation ? {} : "skip"
+    );
+    const conversation = useMemo(() => {
+        if (inboxConversation) return inboxConversation;
+        const archived = (archivedChatsRaw ?? []).find((chat) => chat._id === chatId);
+        // Same normalization as ArchivedView: buyer-archived only, no badge.
+        return archived ? { ...archived, unreadCount: 0, role: "buying" as const } : null;
+    }, [inboxConversation, archivedChatsRaw, chatId]);
+
+    // Still resolving while the inbox loads, or while the archived fallback
+    // for an id missing from the inbox hasn't answered yet.
+    const isResolving =
+        inbox.isLoading ||
+        (!inboxConversation && authReady && archivedChatsRaw === undefined);
+
+    // Messages are gated on the conversation actually existing in the inbox
+    // (not just the raw URL param) so a bogus/foreign :chatId never hits
+    // getChatMessages' participant check — a throwing useQuery would surface
+    // via the route ErrorBoundary, and the in-page "Conversation not found"
+    // state below is the intended UX instead (established pattern from the
+    // dashboard chats tab).
+    const messages = useQuery(
+        api.messages.getChatMessages,
+        conversation ? { chatId: conversation._id as Id<"chats"> } : "skip"
+    );
+
+    // All thread kinds (flyer/sale/bundle) send through messages.sendMessage —
+    // the mutation participant-checks against the shared `chats` row, exactly
+    // as the dashboard chats tab did.
+    const sendMessage = useMutation(api.messages.sendMessage);
+    const markAsRead = useMutation(api.messages.markChatAsRead);
+
+    // Mark the conversation read on entry, on thread change, and whenever a
+    // new message arrives while the thread is open (keyed on the newest
+    // visible timestamp — markChatAsRead only patches lastReadBy*, which
+    // never feeds these deps, so no loop). Gated on the conversation being
+    // FOUND: a foreign or malformed id must never touch read state.
+    const conversationId = conversation?._id;
+    const latestMessageTimestamp = messages?.length
+        ? messages[messages.length - 1].timestamp
+        : 0;
+    useEffect(() => {
+        if (conversationId) {
+            markAsRead({ chatId: conversationId as Id<"chats"> }).catch(() => {
+                // Read-state failures are non-fatal; the badge just persists.
+            });
+        }
+    }, [conversationId, latestMessageTimestamp, markAsRead]);
+
+    if (isResolving) {
+        return (
+            <div className="flex items-center justify-center py-24" role="status" aria-live="polite">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4" aria-hidden="true"></div>
+                    <p className="text-muted-foreground font-medium">Loading conversation...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!conversation) {
+        // Foreign, malformed, or archived-away ids land here — an in-page
+        // state, never the route ErrorBoundary.
+        return (
+            <div className="container-padding mx-auto w-full max-w-2xl py-16 text-center">
+                <div className="flex justify-center mb-4">
+                    <ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" />
+                </div>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground mb-2">Conversation not found</h1>
+                <p className="text-[15px] text-muted-foreground max-w-prose mx-auto mb-6">
+                    This conversation may have been deleted, or the link is invalid.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => { void navigate("/messages"); }}
+                    className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all"
+                >
+                    Back to messages
+                </button>
+            </div>
+        );
+    }
+
+    const meta = getThreadMeta(conversation);
+    const counterpartName = getCounterpartName(conversation, conversation.role);
+    // The role tag tells us which side of the chat we are — no extra
+    // current-user query needed for bubble alignment.
+    const currentUserId =
+        conversation.role === "selling"
+            ? conversation.sellerId
+            : conversation.buyerId;
+
+    const threadColumn = (
+        <>
+            <ConversationHeader
+                image={conversation.ad?.images?.[0]}
+                title={getItemTitle(conversation)}
+                subtitle={`${conversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
+                price={conversation.ad?.price}
+                statusLabel={meta.statusLabel}
+                onBack={() => { void navigate("/messages"); }}
+                viewItemLabel={meta.viewItemLabel}
+                onViewItem={meta.viewItemHref ? () => { void navigate(meta.viewItemHref as string); } : undefined}
+                onReport={() => setShowReportModal(true)}
+            />
+            <ConversationThread
+                messages={messages ?? NO_MESSAGES}
+                currentUserId={currentUserId}
+            />
+            {/* pb-safe keeps the composer above the iOS home indicator. */}
+            <div className="pb-safe bg-card shrink-0">
+                <MessageComposer
+                    onSend={async (content) => {
+                        // Failures (incl. rate-limit rejections) keep the draft
+                        // and surface as a toast inside MessageComposer.
+                        await sendMessage({
+                            chatId: conversation._id as Id<"chats">,
+                            content,
+                        });
+                    }}
+                    disabled={meta.composerDisabled}
+                    disabledReason={meta.composerDisabledReason}
+                />
+            </div>
+            <ReportModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                reportType="chat"
+                reportedEntityId={conversation._id}
+                reportedEntityName={`Conversation with ${counterpartName}`}
+            />
+        </>
+    );
+
+    // Mobile: body portal (escapes <main>'s `contain: paint`), full-viewport
+    // column. BottomNav is hidden on this route, so bottom-0 is correct.
+    if (isMobile && typeof document !== "undefined") {
+        return createPortal(
+            <div
+                className="fixed inset-0 z-40 bg-card flex flex-col pt-safe"
+            >
+                {threadColumn}
+            </div>,
+            document.body
+        );
+    }
+
+    // Desktop (Phase 3 placeholder): same column centered in the page flow.
+    return (
+        <div className="container-padding mx-auto w-full max-w-2xl py-6">
+            <div
+                className="flex flex-col h-[calc(100dvh-11rem)] min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card shadow-card overflow-hidden"
+            >
+                {threadColumn}
+            </div>
         </div>
     );
 }

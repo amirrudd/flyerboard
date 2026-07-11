@@ -29,7 +29,9 @@ export function MessageBubble({ content, timestamp, isOwn }: MessageBubbleProps)
             : "bg-muted/60 ring-1 ring-border/60 text-foreground rounded-tl-sm"
         }`}
       >
-        <p className="text-sm whitespace-pre-wrap leading-relaxed">{content}</p>
+        {/* [overflow-wrap:anywhere] so unbroken strings (long URLs) wrap instead
+            of forcing horizontal scroll on narrow viewports. */}
+        <p className="text-sm whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere]">{content}</p>
         <p
           className={`text-[11px] mt-1 tabular-nums ${
             isOwn ? "text-primary-foreground/75" : "text-muted-foreground"

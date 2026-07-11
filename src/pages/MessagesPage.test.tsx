@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { getFunctionName } from 'convex/server';
 import { MessagesPage } from './MessagesPage';
@@ -39,6 +39,13 @@ vi.mock('../components/ui/ImageDisplay', () => ({
     ImageDisplay: ({ alt }: { alt: string }) => <img alt={alt} />,
 }));
 
+// ReportModal has its own convex wiring — only its open/closed contract
+// matters to this page.
+vi.mock('../components/ReportModal', () => ({
+    ReportModal: ({ isOpen }: { isOpen: boolean }) =>
+        isOpen ? <div data-testid="report-modal" /> : null,
+}));
+
 const mockToast = { success: vi.fn(), error: vi.fn() };
 vi.mock('sonner', () => ({
     toast: {
@@ -53,6 +60,7 @@ function mockQueries(overrides: Record<string, unknown> = {}) {
         'posts:getSellerChats': [],
         'posts:getBuyerChats': [],
         'messages:getArchivedChats': [],
+        'messages:getChatMessages': [],
         ...overrides,
     };
     vi.mocked(useQuery).mockImplementation(((query: any, args?: any) => {
@@ -210,13 +218,12 @@ describe('MessagesPage - Route Guard', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('renders the thread route placeholder when authenticated', () => {
+    it('renders the thread route when authenticated (not-found for an unknown id)', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
 
         renderAt('/messages/chat123?flyer=ad42');
 
-        expect(screen.getByRole('heading', { name: 'Messages' })).toBeInTheDocument();
-        expect(screen.getByText(/conversation view is under construction/)).toBeInTheDocument();
+        expect(screen.getByText('Conversation not found')).toBeInTheDocument();
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 });
@@ -528,5 +535,245 @@ describe('MessagesPage - archived view', () => {
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(mutationSpies['messages:deleteArchivedChats']).not.toHaveBeenCalled();
+    });
+});
+
+// ── Conversation thread (/messages/:chatId) ─────────────────────────────────
+
+// Sale + bundle thread fixtures (buyer side — u1 is the buyer).
+const saleChat = {
+    _id: 'chat-sale',
+    saleEventId: 'sale-1',
+    buyerId: 'u1',
+    sellerId: 'seller-5',
+    lastMessageAt: 900,
+    unreadCount: 0,
+    sale: { _id: 'sale-1', title: 'Garage Sale', slug: 'garage-sale' },
+    seller: { _id: 'seller-5', name: 'Sally Sale' },
+};
+const bundleChat = {
+    _id: 'chat-bundle',
+    bundleId: 'bundle-1',
+    buyerId: 'u1',
+    sellerId: 'seller-6',
+    lastMessageAt: 800,
+    unreadCount: 0,
+    bundle: { _id: 'bundle-1', label: 'Furniture Bundle' },
+    seller: { _id: 'seller-6', name: 'Bo Bundle' },
+};
+
+// Two-party message fixture for chat-sell (u1 is the seller).
+const chatSellMessages = [
+    { _id: 'm1', content: 'Is the bike available?', timestamp: 1000, senderId: 'buyer-9' },
+    { _id: 'm2', content: 'Yes, still here', timestamp: 2000, senderId: 'u1' },
+];
+
+describe('MessagesPage - conversation thread', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat, saleChat, bundleChat],
+            'messages:getChatMessages': chatSellMessages,
+        });
+    });
+
+    it('renders the messages with own/other alignment from the viewer role', () => {
+        renderAt('/messages/chat-sell');
+
+        expect(screen.getByText('Is the bike available?')).toBeInTheDocument();
+        expect(screen.getByText('Yes, still here')).toBeInTheDocument();
+
+        // u1 is the seller in chat-sell: buyer's message left, own right.
+        const bubbles = screen.getAllByTestId('message-bubble');
+        expect(bubbles[0].className).toContain('justify-start');
+        expect(bubbles[1].className).toContain('justify-end');
+    });
+
+    it('shows the item context strip with a tappable View flyer action', () => {
+        renderAt('/messages/chat-sell');
+
+        expect(screen.getByText('Blue Bike')).toBeInTheDocument();
+        expect(screen.getByText('Buyer: Bella Buyer')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'View flyer' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/ad/ad-1');
+    });
+
+    it('marks the conversation as read on mount (deep-link entry)', async () => {
+        renderAt('/messages/chat-sell');
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:markChatAsRead']).toHaveBeenCalledWith({
+                chatId: 'chat-sell',
+            });
+        });
+    });
+
+    it('marks the new conversation as read when the open thread changes', async () => {
+        const headerSlots = new HeaderSlotsStore();
+        render(
+            <HeaderSlotsContext.Provider value={headerSlots}>
+                <MemoryRouter initialEntries={['/messages/chat-sell']}>
+                    <Routes>
+                        <Route
+                            path="/messages/:chatId"
+                            element={
+                                <>
+                                    <MessagesPage />
+                                    <Link to="/messages/chat-buy">Switch thread</Link>
+                                </>
+                            }
+                        />
+                    </Routes>
+                </MemoryRouter>
+            </HeaderSlotsContext.Provider>
+        );
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:markChatAsRead']).toHaveBeenCalledWith({
+                chatId: 'chat-sell',
+            });
+        });
+
+        fireEvent.click(screen.getByText('Switch thread'));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:markChatAsRead']).toHaveBeenCalledWith({
+                chatId: 'chat-buy',
+            });
+        });
+    });
+
+    it('back button navigates explicitly to /messages (never history.back)', () => {
+        renderAt('/messages/chat-sell');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/messages');
+    });
+
+    it('sends a flyer-thread message through messages.sendMessage', async () => {
+        renderAt('/messages/chat-sell');
+
+        fireEvent.change(screen.getByLabelText('Type your message'), {
+            target: { value: 'Sure, come by at 5' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:sendMessage']).toHaveBeenCalledWith({
+                chatId: 'chat-sell',
+                content: 'Sure, come by at 5',
+            });
+        });
+    });
+
+    it('shows a loading state (not "not found") while the inbox is resolving', () => {
+        mockQueries({
+            'posts:getSellerChats': undefined,
+            'posts:getBuyerChats': undefined,
+        });
+
+        renderAt('/messages/chat-sell');
+
+        expect(screen.getByText('Loading conversation...')).toBeInTheDocument();
+        expect(screen.queryByText('Conversation not found')).not.toBeInTheDocument();
+    });
+});
+
+describe('MessagesPage - thread not-found state', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+        });
+    });
+
+    it('renders an in-page not-found state for a foreign or malformed id', () => {
+        renderAt('/messages/not-a-real-chat-id');
+
+        expect(screen.getByText('Conversation not found')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back to messages' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/messages');
+    });
+
+    it('never subscribes to getChatMessages for a chat that is not in the inbox', () => {
+        renderAt('/messages/not-a-real-chat-id');
+
+        const liveMessageQueries = vi
+            .mocked(useQuery)
+            .mock.calls.filter(
+                ([query, args]) =>
+                    getFunctionName(query as never) === 'messages:getChatMessages' &&
+                    args !== 'skip'
+            );
+        expect(liveMessageQueries).toHaveLength(0);
+    });
+});
+
+describe('MessagesPage - thread kinds and availability', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+    });
+
+    it('sale thread: View sale navigates to the sale route and sends via messages.sendMessage', async () => {
+        mockQueries({ 'posts:getBuyerChats': [saleChat] });
+
+        renderAt('/messages/chat-sale');
+
+        expect(screen.getByText('Garage Sale')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'View sale' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/sale/garage-sale');
+
+        fireEvent.change(screen.getByLabelText('Type your message'), {
+            target: { value: 'Is the couch still there?' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+        await waitFor(() => {
+            expect(mutationSpies['messages:sendMessage']).toHaveBeenCalledWith({
+                chatId: 'chat-sale',
+                content: 'Is the couch still there?',
+            });
+        });
+    });
+
+    it('bundle thread: View bundle navigates to the bundle route', () => {
+        mockQueries({ 'posts:getBuyerChats': [bundleChat] });
+
+        renderAt('/messages/chat-bundle');
+
+        expect(screen.getByText('Furniture Bundle')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'View bundle' }));
+        expect(mockNavigate).toHaveBeenCalledWith('/bundle/bundle-1');
+    });
+
+    it('sold/inactive flyer: shows the No longer available pill, strip not tappable, composer still enabled', () => {
+        const soldChat = {
+            ...sellerChat,
+            _id: 'chat-sold',
+            ad: { ...sellerChat.ad, isActive: false },
+        };
+        mockQueries({ 'posts:getSellerChats': [soldChat] });
+
+        renderAt('/messages/chat-sold');
+
+        expect(screen.getByText('No longer available')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'View flyer' })).not.toBeInTheDocument();
+        // Arranging pickup on a sold item is a real flow — sending stays open.
+        expect(screen.getByLabelText('Type your message')).not.toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
+    });
+
+    it('deleted flyer: disables the composer with the dashboard reason copy', () => {
+        const deletedAdChat = { ...sellerChat, _id: 'chat-del', ad: null };
+        mockQueries({ 'posts:getSellerChats': [deletedAdChat] });
+
+        renderAt('/messages/chat-del');
+
+        expect(screen.getByLabelText('Type your message')).toBeDisabled();
+        expect(screen.getByText('This flyer is no longer active')).toBeInTheDocument();
     });
 });

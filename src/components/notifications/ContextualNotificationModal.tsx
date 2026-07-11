@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from '@phosphor-icons/react';
+import { X, Tray, ChatCircleDots, Heart, type Icon } from '@phosphor-icons/react';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 export type NotificationContext = 'post-flyer' | 'send-message' | 'like-flyer';
@@ -16,21 +16,21 @@ interface ContextualNotificationModalProps {
     onClose: () => void;
 }
 
-const CONTEXT_CONFIG = {
+const CONTEXT_CONFIG: Record<NotificationContext, { title: string; message: string; icon: Icon }> = {
     'post-flyer': {
-        title: 'Stay Updated on Your Flyer',
-        message: 'Get notified when someone makes an enquiry about your flyer',
-        icon: '📬',
+        title: 'Stay updated on your flyer',
+        message: 'Get notified when someone makes an enquiry about your flyer.',
+        icon: Tray,
     },
     'send-message': {
-        title: 'Never Miss a Reply',
-        message: 'Get notified when the seller replies to your message',
-        icon: '💬',
+        title: 'Never miss a reply',
+        message: 'Get notified when the seller replies to your message.',
+        icon: ChatCircleDots,
     },
     'like-flyer': {
-        title: 'Track Your Saved Flyers',
-        message: 'Get notified about price drops and status updates for saved flyers',
-        icon: '❤️',
+        title: 'Track your saved flyers',
+        message: 'Get notified about price drops and status updates for saved flyers.',
+        icon: Heart,
     },
 };
 
@@ -81,9 +81,20 @@ export function ContextualNotificationModal({
         onClose();
     };
 
+    useEffect(() => {
+        if (!shouldShow) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleDismiss();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    });
+
     if (!shouldShow) {
         return null;
     }
+
+    const IconGlyph = config.icon;
 
     const modal = (
         <div
@@ -92,12 +103,15 @@ export function ContextualNotificationModal({
             aria-modal="true"
             aria-labelledby={`notification-modal-title-${context}`}
             aria-describedby={`notification-modal-desc-${context}`}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) handleDismiss();
+            }}
         >
             <section className="bg-card rounded-xl shadow-2xl ring-1 ring-border/70 p-6 sm:p-7 max-w-md w-full animate-scale-in">
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-2xl ring-1 ring-primary/15" aria-hidden="true">
-                            {config.icon}
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center ring-1 ring-primary/15" aria-hidden="true">
+                            <IconGlyph className="w-6 h-6 text-primary" weight="duotone" />
                         </div>
                     </div>
 
@@ -116,20 +130,21 @@ export function ContextualNotificationModal({
                             {config.message}
                         </p>
 
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                             <button
                                 type="button"
+                                autoFocus
                                 onClick={() => { void handleEnable(); }}
                                 disabled={isLoading}
-                                className="flex-1 h-11 px-4 bg-primary text-primary-foreground text-sm font-semibold rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                className="w-full sm:flex-1 h-11 px-4 bg-primary text-primary-foreground text-sm font-semibold whitespace-nowrap rounded-full hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                 aria-label="Enable push notifications"
                             >
-                                {isLoading ? 'Enabling...' : 'Enable Notifications'}
+                                {isLoading ? 'Enabling...' : 'Enable notifications'}
                             </button>
                             <button
                                 type="button"
                                 onClick={handleDismiss}
-                                className="h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border text-sm font-medium rounded-full hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
+                                className="w-full sm:w-auto h-11 px-4 bg-muted/40 text-foreground ring-1 ring-border text-sm font-medium whitespace-nowrap rounded-full hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
                                 aria-label="Dismiss notification prompt"
                             >
                                 Not now

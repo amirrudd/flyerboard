@@ -1,6 +1,6 @@
 # Notifications (Email & Push)
 
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-07-11
 
 > **For architecture overview**: See `docs/architecture/notifications-architecture.md` (if exists)
 
@@ -304,7 +304,17 @@ await ctx.scheduler.runAfter(0, internal.notifications.pushNotifications.notifyM
 - Provides: `subscribe()`, `unsubscribe()`, `isSubscribed`, `permission`
 - Integrates with Convex mutations
 
-**UI:** `src/components/notifications/ContextualNotificationModal.tsx`
+**UI (dashboard settings, added 2026-07-11):** `src/features/dashboard/UserDashboard.tsx` — Profile tab → Notifications section has a "Browser notifications" card next to the email card. It renders from `usePushNotifications()` with three states:
+- unsupported (`!isSupported`, e.g. jsdom / old Safari) → card hidden entirely
+- `permission === "denied"` → explanatory copy + "Blocked in browser" pill, **no button** (a re-prompt is impossible once denied; don't add one)
+- otherwise not subscribed → "Enable" pill button calling `subscribe()`; subscribed → toggle (same markup as the email toggle) calling `unsubscribe()`
+Gotcha: after a failed `subscribe()` the hook's `permission` state updates async, so the toast handler reads `Notification.permission` directly to distinguish "user denied" from "subscribe failed". Tests mock the whole `usePushNotifications` module (see `UserDashboard.test.tsx` "Browser notifications card") because jsdom lacks serviceWorker/PushManager.
+
+Gotcha (fixed 2026-07-11, user-reported): a **dismissed** permission prompt (X / click-away) resolves ungranted but leaves `Notification.permission === 'default'`. The hook used to coerce that to `'denied'` (`setPermission(granted ? 'granted' : 'denied')`), which falsely flipped enable UIs into the blocked state until reload. `usePushNotifications.requestPermission` now re-reads `notificationService.getPermissionStatus()` after the prompt. Regression test: `src/hooks/usePushNotifications.test.ts`. Never derive permission from the boolean grant result.
+
+The Enable button's bell uses the `animate-bell-ring` utility (`bellRing` keyframes in `tailwind.config.js`, rotate-only, ~1s swing then rest, infinite) — gate it with `motion-safe:` wherever reused.
+
+**UI (contextual):** `src/components/notifications/ContextualNotificationModal.tsx`
 - Shows contextual permission requests at key moments:
   - After posting a new flyer
   - When sending first message to seller

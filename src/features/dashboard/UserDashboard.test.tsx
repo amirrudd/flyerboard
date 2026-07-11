@@ -34,6 +34,21 @@ vi.mock('../../context/UserSyncContext', () => ({
     useUserSync: () => ({ isUserSynced: true }),
 }));
 
+// Browser push notifications — default mirrors jsdom (unsupported) so existing
+// tests are unaffected; the push-card describe overrides pushState per test.
+let pushState: any = {
+    isSupported: false,
+    permission: 'default',
+    isSubscribed: false,
+    isLoading: false,
+    requestPermission: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+};
+vi.mock('../../hooks/usePushNotifications', () => ({
+    usePushNotifications: () => pushState,
+}));
+
 // Mock child components
 vi.mock('../layout/Header', () => ({
     Header: () => <div>Header</div>,
@@ -469,5 +484,59 @@ describe('Moving Sale banner', () => {
 
         fireEvent.click(screen.getByText('Moving house? Run a moving sale'));
         expect(mockNavigate).toHaveBeenCalledWith('/sell/moving-sale');
+    });
+});
+
+describe('Browser notifications card (profile tab)', () => {
+    const renderProfile = () =>
+        render(
+            <MemoryRouter initialEntries={['/dashboard?tab=profile']}>
+                <UserDashboard onBack={vi.fn()} onPostAd={vi.fn()} onEditAd={vi.fn()} />
+            </MemoryRouter>
+        );
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        installMutationSpies();
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockUseUser.mockReturnValue({ user: { name: 'Test', email: 'test@test.com', picture: '' } });
+        mockQueries();
+        pushState = {
+            isSupported: true,
+            permission: 'default',
+            isSubscribed: false,
+            isLoading: false,
+            requestPermission: vi.fn(),
+            subscribe: vi.fn().mockResolvedValue(true),
+            unsubscribe: vi.fn().mockResolvedValue(true),
+        };
+    });
+
+    it('hides the card when push is unsupported', () => {
+        pushState.isSupported = false;
+        renderProfile();
+        expect(screen.queryByText('Browser notifications')).not.toBeInTheDocument();
+    });
+
+    it('shows an Enable button that subscribes when tapped', async () => {
+        renderProfile();
+        expect(screen.getByText('Browser notifications')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /enable/i }));
+        await waitFor(() => expect(pushState.subscribe).toHaveBeenCalled());
+    });
+
+    it('shows the blocked state instead of a button when permission is denied', () => {
+        pushState.permission = 'denied';
+        renderProfile();
+        expect(screen.getByText('Blocked in browser')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /enable/i })).not.toBeInTheDocument();
+    });
+
+    it('shows a disable toggle when already subscribed', () => {
+        pushState.permission = 'granted';
+        pushState.isSubscribed = true;
+        renderProfile();
+        expect(screen.getByLabelText('Toggle browser notifications')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /enable/i })).not.toBeInTheDocument();
     });
 });

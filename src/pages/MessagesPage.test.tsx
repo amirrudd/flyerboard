@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
+import { getFunctionName } from 'convex/server';
 import { MessagesPage } from './MessagesPage';
 import { HeaderSlotsContext, HeaderSlotsStore } from '../features/layout/HeaderSlots';
 
@@ -17,6 +19,110 @@ vi.mock('react-router-dom', async () => {
         useNavigate: () => mockNavigate,
     };
 });
+
+// Mock convex hooks — dispatch on function name (getFunctionName), the same
+// convention as UserDashboard.test.tsx. "skip" always returns undefined.
+vi.mock('convex/react', () => ({
+    useQuery: vi.fn(),
+    useMutation: vi.fn(() => vi.fn()),
+}));
+
+// useInbox / the archived view gate queries on user sync. Overridable per
+// test so the authenticated-but-not-yet-synced window can be simulated.
+const mockUseUserSync = vi.fn();
+vi.mock('../context/UserSyncContext', () => ({
+    useUserSync: () => mockUseUserSync(),
+}));
+
+// ImageDisplay hits convex useQuery internally — stub it out (as InboxRow.test does).
+vi.mock('../components/ui/ImageDisplay', () => ({
+    ImageDisplay: ({ alt }: { alt: string }) => <img alt={alt} />,
+}));
+
+const mockToast = { success: vi.fn(), error: vi.fn() };
+vi.mock('sonner', () => ({
+    toast: {
+        success: (...args: unknown[]) => mockToast.success(...args),
+        error: (...args: unknown[]) => mockToast.error(...args),
+    },
+}));
+
+// ── Query/mutation mocks keyed by Convex function name ─────────────────────
+function mockQueries(overrides: Record<string, unknown> = {}) {
+    const data: Record<string, unknown> = {
+        'posts:getSellerChats': [],
+        'posts:getBuyerChats': [],
+        'messages:getArchivedChats': [],
+        ...overrides,
+    };
+    vi.mocked(useQuery).mockImplementation(((query: any, args?: any) => {
+        if (args === 'skip') return undefined;
+        return data[getFunctionName(query)];
+    }) as any);
+}
+
+// Spies are typed promise-returning (mutations return promises) so tests can
+// install pending/rejected implementations without fighting the void type.
+type MutationSpy = ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
+let mutationSpies: Record<string, MutationSpy>;
+function installMutationSpies() {
+    mutationSpies = {};
+    vi.mocked(useMutation).mockImplementation(((ref: any) => {
+        const name = getFunctionName(ref);
+        if (!mutationSpies[name]) {
+            mutationSpies[name] = vi
+                .fn<(...args: unknown[]) => Promise<unknown>>()
+                .mockResolvedValue(undefined);
+        }
+        return mutationSpies[name];
+    }) as any);
+}
+
+// Inbox fixtures: one selling-side chat (newer) + one buying-side chat (older)
+const sellerChat = {
+    _id: 'chat-sell',
+    adId: 'ad-1',
+    buyerId: 'buyer-9',
+    sellerId: 'u1',
+    lastMessageAt: 2000,
+    unreadCount: 2,
+    latestMessage: { content: 'Is the bike available?', timestamp: 2000 },
+    ad: { _id: 'ad-1', title: 'Blue Bike', price: 50, images: [], isActive: true },
+    buyer: { _id: 'buyer-9', name: 'Bella Buyer' },
+};
+const buyerChat = {
+    _id: 'chat-buy',
+    adId: 'ad-2',
+    buyerId: 'u1',
+    sellerId: 'seller-7',
+    lastMessageAt: 1000,
+    unreadCount: 0,
+    latestMessage: { content: 'Still for sale?', timestamp: 1000 },
+    ad: { _id: 'ad-2', title: 'Red Couch', price: 200, images: [], isActive: true },
+    seller: { _id: 'seller-7', name: 'Sam Seller' },
+};
+
+// Archived fixtures — backend shape has no unreadCount (buyer-side rows).
+const archivedChat1 = {
+    _id: 'chat-arch-1',
+    adId: 'ad-9',
+    buyerId: 'u1',
+    sellerId: 'seller-2',
+    lastMessageAt: 1500,
+    latestMessage: { content: 'Thanks anyway', timestamp: 1500 },
+    ad: { _id: 'ad-9', title: 'Old Lamp', price: 20, images: [], isActive: true },
+    seller: { _id: 'seller-2', name: 'Sally Seller' },
+};
+const archivedChat2 = {
+    _id: 'chat-arch-2',
+    adId: 'ad-10',
+    buyerId: 'u1',
+    sellerId: 'seller-3',
+    lastMessageAt: 1200,
+    latestMessage: { content: 'Sold, sorry', timestamp: 1200 },
+    ad: { _id: 'ad-10', title: 'Desk Chair', price: 45, images: [], isActive: true },
+    seller: { _id: 'seller-3', name: 'Steve Seller' },
+};
 
 // useDeviceInfo reads window.innerWidth (mobile is < 768) — same simulation
 // approach as UserDashboard.test.tsx (NOT matchMedia).
@@ -49,15 +155,33 @@ const renderAt = (url: string) => {
     return { ...utils, headerSlots };
 };
 
+beforeEach(() => {
+    vi.clearAllMocks();
+    installMutationSpies();
+    mockQueries();
+    mockUseUserSync.mockReturnValue({ isUserSynced: true });
+    // framer-motion's useReducedMotion needs matchMedia; jsdom lacks it.
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+});
+
+afterEach(() => {
+    setInnerWidth(originalInnerWidth);
+});
+
 describe('MessagesPage - Route Guard', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
-    afterEach(() => {
-        setInnerWidth(originalInnerWidth);
-    });
-
     it('shows PageLoader and does not navigate while session is loading', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: true });
 
@@ -86,25 +210,20 @@ describe('MessagesPage - Route Guard', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('renders the thread route with the ?flyer= filter notice when authenticated', () => {
+    it('renders the thread route placeholder when authenticated', () => {
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
 
         renderAt('/messages/chat123?flyer=ad42');
 
         expect(screen.getByRole('heading', { name: 'Messages' })).toBeInTheDocument();
-        expect(screen.getByText(/Showing chats about one flyer\./)).toBeInTheDocument();
+        expect(screen.getByText(/conversation view is under construction/)).toBeInTheDocument();
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 });
 
 describe('MessagesPage - persistent header visibility', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
-    });
-
-    afterEach(() => {
-        setInnerWidth(originalInnerWidth);
     });
 
     it('hides the header on a thread route at mobile width', () => {
@@ -137,5 +256,277 @@ describe('MessagesPage - persistent header visibility', () => {
         const { headerSlots } = renderAt('/messages/archived');
 
         expect(headerSlots.getSnapshot()?.hidden).not.toBe(true);
+    });
+});
+
+describe('MessagesPage - inbox states', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+    });
+
+    it('shows 6 loading skeletons while the inbox queries resolve', () => {
+        mockQueries({
+            'posts:getSellerChats': undefined,
+            'posts:getBuyerChats': undefined,
+        });
+
+        renderAt('/messages');
+
+        const status = screen.getByRole('status', { name: 'Loading conversations' });
+        expect(status.children).toHaveLength(6);
+    });
+
+    it('shows the true-empty state with a Browse flyers CTA linking home', () => {
+        renderAt('/messages');
+
+        expect(screen.getByText('No messages yet')).toBeInTheDocument();
+        expect(
+            screen.getByText('Conversations with buyers and sellers will appear here')
+        ).toBeInTheDocument();
+        const cta = screen.getByRole('link', { name: 'Browse flyers' });
+        expect(cta).toHaveAttribute('href', '/');
+    });
+
+    it('shows the filtered-empty variant when a role filter has no conversations', () => {
+        mockQueries({ 'posts:getBuyerChats': [buyerChat] });
+
+        renderAt('/messages');
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Selling' }));
+
+        expect(screen.getByText('No selling conversations yet.')).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: 'Browse flyers' })).not.toBeInTheDocument();
+    });
+
+    it('renders conversation rows and navigates to the thread on tap', () => {
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+        });
+
+        renderAt('/messages');
+
+        const row = screen.getByRole('button', { name: 'Conversation with Bella Buyer' });
+        expect(screen.getByRole('button', { name: 'Conversation with Sam Seller' })).toBeInTheDocument();
+
+        fireEvent.click(row);
+        expect(mockNavigate).toHaveBeenCalledWith('/messages/chat-sell');
+    });
+
+    it('shows loading skeletons, not the empty state, while authenticated but not yet synced', () => {
+        // Pre-sync window: queries are skipped, so both lists are undefined.
+        mockUseUserSync.mockReturnValue({ isUserSynced: false });
+
+        renderAt('/messages');
+
+        expect(
+            screen.getByRole('status', { name: 'Loading conversations' })
+        ).toBeInTheDocument();
+        expect(screen.queryByText('No messages yet')).not.toBeInTheDocument();
+    });
+
+    it('shows the Archive action on buying rows only (archived view is buyer-only)', () => {
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+        });
+
+        renderAt('/messages');
+
+        const sellingRow = screen.getByRole('button', { name: 'Conversation with Bella Buyer' });
+        const buyingRow = screen.getByRole('button', { name: 'Conversation with Sam Seller' });
+        expect(within(sellingRow).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+        expect(within(buyingRow).getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+    });
+
+    it('archives a buying conversation from the row Archive action', async () => {
+        mockQueries({ 'posts:getBuyerChats': [buyerChat] });
+
+        renderAt('/messages');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:archiveChat']).toHaveBeenCalledWith({
+                chatId: 'chat-buy',
+            });
+        });
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('keeps the row and shows an error toast when archiving fails', async () => {
+        mockQueries({ 'posts:getBuyerChats': [buyerChat] });
+
+        renderAt('/messages');
+        mutationSpies['messages:archiveChat'].mockRejectedValue(new Error('Network down'));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+
+        await waitFor(() => {
+            expect(mockToast.error).toHaveBeenCalledWith('Network down');
+        });
+        expect(
+            screen.getByRole('button', { name: 'Conversation with Sam Seller' })
+        ).toBeInTheDocument();
+    });
+
+    it('opens the overflow menu with an Archived link to /messages/archived', () => {
+        renderAt('/messages');
+
+        const trigger = screen.getByRole('button', { name: 'More options' });
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+        fireEvent.click(trigger);
+
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        const item = screen.getByRole('menuitem', { name: 'Archived' });
+        expect(item).toHaveAttribute('href', '/messages/archived');
+    });
+});
+
+describe('MessagesPage - ?flyer= filter chip', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+        });
+    });
+
+    it('shows the chip with the matching conversation title and narrows the list', () => {
+        renderAt('/messages?flyer=ad-1');
+
+        expect(screen.getByText('Showing chats about: Blue Bike')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Conversation with Sam Seller' })).not.toBeInTheDocument();
+    });
+
+    it('shows a flyer-specific empty state (no Browse CTA) when nothing matches ?flyer=', () => {
+        renderAt('/messages?flyer=ad-404');
+
+        expect(screen.getByText('No conversations about this flyer yet.')).toBeInTheDocument();
+        // The dismiss chip stays visible so the filter can be cleared.
+        expect(
+            screen.getByRole('button', { name: 'Stop showing chats about this flyer' })
+        ).toBeInTheDocument();
+        expect(screen.queryByText('No messages yet')).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: 'Browse flyers' })).not.toBeInTheDocument();
+    });
+
+    it('dismissing the chip clears the filter and restores the full list', () => {
+        renderAt('/messages?flyer=ad-1');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Stop showing chats about Blue Bike' })
+        );
+
+        expect(screen.queryByText(/Showing chats about:/)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Conversation with Sam Seller' })).toBeInTheDocument();
+    });
+});
+
+describe('MessagesPage - archived view', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({ 'messages:getArchivedChats': [archivedChat1, archivedChat2] });
+    });
+
+    it('renders archived rows with Unarchive actions and a back link', () => {
+        renderAt('/messages/archived');
+
+        expect(screen.getByRole('heading', { name: 'Archived Messages' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /Back to Messages/ })).toHaveAttribute('href', '/messages');
+        expect(screen.getByRole('button', { name: 'Conversation with Sally Seller' })).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'Unarchive' })).toHaveLength(2);
+    });
+
+    it('shows the empty state when nothing is archived', () => {
+        mockQueries({ 'messages:getArchivedChats': [] });
+
+        renderAt('/messages/archived');
+
+        expect(screen.getByText('No archived messages')).toBeInTheDocument();
+    });
+
+    it('unarchives a chat from the row action', async () => {
+        renderAt('/messages/archived');
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Unarchive' })[0]);
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:unarchiveChat']).toHaveBeenCalledWith({
+                chatId: 'chat-arch-1',
+            });
+        });
+    });
+
+    it('gates bulk delete behind a confirm dialog that spells out the two-sided hard delete', async () => {
+        renderAt('/messages/archived');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Selected (2)' }));
+
+        // The confirm dialog is the gate — nothing deleted yet.
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText(/both you/i)).toBeInTheDocument();
+        expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument();
+        expect(mutationSpies['messages:deleteArchivedChats']).not.toHaveBeenCalled();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Delete for both sides' }));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:deleteArchivedChats']).toHaveBeenCalledWith({
+                chatIds: ['chat-arch-1', 'chat-arch-2'],
+            });
+        });
+    });
+
+    it('closes the confirm dialog on Escape without deleting', () => {
+        renderAt('/messages/archived');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Selected (2)' }));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(mutationSpies['messages:deleteArchivedChats']).not.toHaveBeenCalled();
+    });
+
+    it('ignores Escape and backdrop clicks and disables Cancel while the delete is in flight', async () => {
+        renderAt('/messages/archived');
+
+        // Simulate a pending mutation the test controls.
+        let resolveDelete!: () => void;
+        mutationSpies['messages:deleteArchivedChats'].mockImplementation(
+            () => new Promise<void>((resolve) => { resolveDelete = resolve; })
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Selected (2)' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete for both sides' }));
+
+        // Delete in flight: the dialog must not be dismissible.
+        fireEvent.keyDown(document, { key: 'Escape' });
+        fireEvent.click(screen.getByRole('dialog'));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+        resolveDelete();
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+    });
+
+    it('cancelling the confirm dialog deletes nothing', () => {
+        renderAt('/messages/archived');
+
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Select conversation about Old Lamp' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Selected (1)' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(mutationSpies['messages:deleteArchivedChats']).not.toHaveBeenCalled();
     });
 });

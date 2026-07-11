@@ -17,6 +17,10 @@ export interface InboxRowProps {
   isActive?: boolean;
   /** Position in the list — drives the 40ms entrance stagger. */
   index?: number;
+  /** Extra classes on the row root (e.g. a list-context min-height). */
+  className?: string;
+  /** Copy for the row action button — "Archive" (default) or "Unarchive". */
+  archiveLabel?: string;
 }
 
 /**
@@ -34,6 +38,8 @@ export function InboxRow({
   onArchive,
   isActive = false,
   index = 0,
+  className,
+  archiveLabel = "Archive",
 }: InboxRowProps) {
   const { listStagger } = useMotionPrefs();
 
@@ -61,7 +67,7 @@ export function InboxRow({
       {...listStagger(index)}
       className={`relative w-full text-left px-4 py-3.5 sm:px-5 sm:py-4 cursor-pointer transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
         isActive ? "bg-muted/50" : "hover:bg-muted/40"
-      }`}
+      }${className ? ` ${className}` : ""}`}
     >
       {isActive && (
         <span
@@ -128,7 +134,7 @@ export function InboxRow({
                 }}
                 className="inline-flex items-center h-8 px-3 rounded-full bg-muted/40 ring-1 ring-border text-muted-foreground text-sm font-medium hover:bg-muted/70 hover:text-foreground hover:ring-foreground/15 active:scale-[0.98] transition-all"
               >
-                Archive
+                {archiveLabel}
               </button>
             )}
           </div>

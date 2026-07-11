@@ -97,9 +97,14 @@ export function useInbox(options: UseInboxOptions = {}): UseInboxResult {
     [merged, filter, flyerId]
   );
 
+  // Loading covers the whole pre-data window: session resolving, the
+  // authenticated-but-not-yet-synced gap (queries are skipped then, but the
+  // inbox must NOT read as empty), and the queries themselves resolving.
   const isLoading =
-    isSessionLoading ||
-    (ready && (sellerChats === undefined || buyerChats === undefined));
+    enabled &&
+    (isSessionLoading ||
+      (isAuthenticated && !isUserSynced) ||
+      (ready && (sellerChats === undefined || buyerChats === undefined)));
 
   return { conversations, filter, setFilter, isLoading };
 }

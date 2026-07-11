@@ -28,7 +28,6 @@ function waitForPath(page: import('@playwright/test').Page, path: string) {
 test('signed-out /messages redirects home', async ({ page }) => {
     await page.goto('/messages');
     await waitForPath(page, '/');
-    expect(new URL(page.url()).pathname).toBe('/');
 });
 
 test('signed-out /messages/:chatId redirects home', async ({ page }) => {

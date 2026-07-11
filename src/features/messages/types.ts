@@ -83,6 +83,4 @@ export interface ThreadMessage {
   pending?: boolean;
   /** Client-only optimistic-send state: rejected — bubble offers retry. */
   failed?: boolean;
-  /** Re-sends a failed message (only meaningful with `failed`). */
-  onRetry?: () => void;
 }

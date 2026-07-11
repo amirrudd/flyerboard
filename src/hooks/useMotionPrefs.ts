@@ -175,19 +175,14 @@ export function useMotionPrefs() {
 
   /**
    * Full-screen panel slide-over (e.g. inbox → thread on mobile): fade +
-   * 24px slide from the right, 200ms ease-out. Exit (when used inside
-   * AnimatePresence) reverses back out to the right with a shorter ease-in.
-   * Collapses to no-motion under prefers-reduced-motion.
+   * 24px slide from the right, 200ms ease-out. Entrance only — no consumer
+   * wraps it in AnimatePresence, so it carries no exit variant. Collapses
+   * to no-motion under prefers-reduced-motion.
    */
   function slideOver() {
     return {
       initial: { opacity: 0, x: reduced ? 0 : 24 },
       animate: { opacity: 1, x: 0 },
-      exit: {
-        opacity: 0,
-        x: reduced ? 0 : 24,
-        transition: { duration: reduced ? 0 : 0.15, ease: EASE_IN },
-      },
       transition: { duration: reduced ? 0 : 0.2, ease: EASE },
     } as const;
   }

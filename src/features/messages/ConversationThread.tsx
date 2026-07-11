@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown } from "@phosphor-icons/react";
 import { MessageBubble } from "./MessageBubble";
 import { getDaySeparatorLabel, isSameLocalDay } from "./daySeparators";
@@ -10,6 +10,8 @@ const NEAR_BOTTOM_PX = 120;
 export interface ConversationThreadProps {
   messages: ThreadMessage[];
   currentUserId: string;
+  /** Re-sends a failed optimistic message, addressed by its rendered id. */
+  onRetryMessage?: (messageId: string) => void;
   /** Extra classes for the OUTER scroll container (padding overrides etc.). */
   className?: string;
 }
@@ -35,9 +37,10 @@ export interface ConversationThreadProps {
  *
  * See src/features/ads/ADMESSAGES_BEHAVIOR.md before changing any of this.
  */
-export function ConversationThread({
+export const ConversationThread = memo(function ConversationThread({
   messages,
   currentUserId,
+  onRetryMessage,
   className = "",
 }: ConversationThreadProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,11 +48,15 @@ export function ConversationThread({
   // Read inside the new-message effect, written by the scroll handler.
   // Starts true so the initial load pins to the bottom.
   const nearBottomRef = useRef(true);
-  const prevRef = useRef<{ lastId: string | null } | null>(null);
+  // Newest message id from the PREVIOUS render (`undefined` = first run,
+  // `null` = previous render had no messages).
+  const prevRef = useRef<string | null | undefined>(undefined);
   const [showNewMessagePill, setShowNewMessagePill] = useState(false);
-  // Session count of incoming messages — rendering it into the polite live
-  // region is what changes the text and triggers the announcement.
-  const [incomingCount, setIncomingCount] = useState(0);
+  // Polite live region announcing incoming messages — written imperatively
+  // (textContent) from the new-message effect so an announcement never
+  // costs an extra render.
+  const liveRegionRef = useRef<HTMLDivElement>(null);
+  const incomingCountRef = useRef(0);
 
   // Defensive chronological sort — backends already return ascending order,
   // but the ordering is a protected behavior so we never trust the caller.
@@ -89,15 +96,19 @@ export function ConversationThread({
     ordered.length > 0 ? ordered[ordered.length - 1].senderId : null;
   useEffect(() => {
     const prev = prevRef.current;
-    prevRef.current = { lastId };
+    prevRef.current = lastId;
     if (lastId === null) return;
 
-    // prev.lastId === null covers the empty-thread → first-message case,
-    // which pins to the bottom like the initial load.
+    // prev === undefined is the first run (initial load); prev === null
+    // covers the empty-thread → first-message case — both pin to the bottom.
     const isNewMessage =
-      prev !== null && prev.lastId !== null && lastId !== prev.lastId;
+      prev !== undefined && prev !== null && lastId !== prev;
     if (isNewMessage && lastSenderId !== currentUserId) {
-      setIncomingCount((count) => count + 1);
+      incomingCountRef.current += 1;
+      const count = incomingCountRef.current;
+      if (liveRegionRef.current) {
+        liveRegionRef.current.textContent = `${count} new ${count === 1 ? "message" : "messages"} received`;
+      }
       if (!nearBottomRef.current) {
         setShowNewMessagePill(true);
         return;
@@ -162,7 +173,11 @@ export function ConversationThread({
                 isOwn={message.senderId === currentUserId}
                 pending={message.pending}
                 failed={message.failed}
-                onRetry={message.onRetry}
+                onRetry={
+                  message.failed && onRetryMessage
+                    ? () => onRetryMessage(message._id)
+                    : undefined
+                }
               />
             </Fragment>
           );
@@ -187,11 +202,9 @@ export function ConversationThread({
       )}
 
       {/* Polite announcement of incoming messages for screen readers —
-          content-free by design (the bubble itself carries the content). */}
-      <div aria-live="polite" className="sr-only">
-        {incomingCount > 0 &&
-          `${incomingCount} new ${incomingCount === 1 ? "message" : "messages"} received`}
-      </div>
+          content-free by design (the bubble itself carries the content).
+          Written imperatively from the new-message effect. */}
+      <div ref={liveRegionRef} aria-live="polite" className="sr-only" />
     </div>
   );
-}
+});

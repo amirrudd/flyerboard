@@ -101,15 +101,9 @@ export default function App() {
                     </Suspense>
                   </ErrorBoundary>
                 } />
-                {/* Dedicated messages destination — inbox and conversation thread */}
-                <Route path="/messages" element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<PageLoader />}>
-                      <MessagesPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                } />
-                <Route path="/messages/:chatId" element={
+                {/* Dedicated messages destination — inbox (/messages) and
+                    conversation thread (/messages/:chatId) share one route */}
+                <Route path="/messages/:chatId?" element={
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <MessagesPage />

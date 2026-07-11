@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
@@ -34,15 +34,6 @@ import {
     useInbox,
 } from "../features/messages";
 import type { InboxChat, InboxFilter, ThreadMessage } from "../features/messages";
-
-const NO_MESSAGES: never[] = [];
-
-/**
- * Focus restoration (a11y): on mobile the full-screen thread replaces the
- * inbox wholesale, so the originating row is tracked at module scope and
- * re-focused the next time the inbox mounts with its rows rendered.
- */
-let lastOpenedChatId: string | null = null;
 
 /** An optimistic outgoing message, keyed by a client-generated UUID. */
 interface PendingMessage {
@@ -84,6 +75,12 @@ export function MessagesPage() {
     const { isAuthenticated, isSessionLoading } = useSession();
     const { chatId } = useParams<{ chatId: string }>();
     const { isMobile } = useDeviceInfo();
+
+    // Focus restoration (a11y): on mobile the full-screen thread replaces the
+    // inbox wholesale, so the originating row is tracked here (page-owned —
+    // it dies with the page, so a later visit can never see a stale id) and
+    // re-focused the next time the inbox renders its rows.
+    const lastOpenedChatRef = useRef<string | null>(null);
 
     // `/messages/archived` matches the `:chatId` route but is an inbox
     // sub-view, not a conversation thread — it keeps the normal header and
@@ -133,12 +130,6 @@ export function MessagesPage() {
         }
     }, [isAuthenticated, isSessionLoading, navigate]);
 
-    // Leaving /messages* entirely discards any pending focus-restore target —
-    // a stale id must never steal focus on a much later inbox visit. (The
-    // page stays mounted across inbox <-> thread navigation, so the in-flow
-    // restore still works.)
-    useEffect(() => () => { lastOpenedChatId = null; }, []);
-
     if (isSessionLoading || !isAuthenticated) {
         return <PageLoader />;
     }
@@ -149,7 +140,11 @@ export function MessagesPage() {
 
     // Mobile (<md): full-screen swaps — inbox page or portal thread.
     if (isMobile) {
-        return isThread ? <ThreadView key={chatId} chatId={chatId} /> : <InboxView />;
+        return isThread ? (
+            <ThreadView key={chatId} chatId={chatId} />
+        ) : (
+            <InboxView lastOpenedChatRef={lastOpenedChatRef} />
+        );
     }
 
     // Desktop (≥md): two-pane master–detail. The URL (:chatId) is the single
@@ -163,7 +158,11 @@ export function MessagesPage() {
                     aria-label="Conversations"
                     className="min-h-0 border-r border-border/70"
                 >
-                    <InboxView pane activeChatId={isThread ? chatId : undefined} />
+                    <InboxView
+                        pane
+                        activeChatId={isThread ? chatId : undefined}
+                        lastOpenedChatRef={lastOpenedChatRef}
+                    />
                 </aside>
                 <div className="min-h-0 min-w-0 flex flex-col">
                     {isThread ? (
@@ -261,9 +260,12 @@ function OverflowMenu() {
 function InboxView({
     pane = false,
     activeChatId,
+    lastOpenedChatRef,
 }: {
     pane?: boolean;
     activeChatId?: string;
+    /** Page-owned focus-restore target: the row that opened the last thread. */
+    lastOpenedChatRef: RefObject<string | null>;
 }) {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -277,25 +279,27 @@ function InboxView({
     // the thread unmounted this whole view). Waits for rows to render.
     const inboxLoading = inbox.isLoading;
     useEffect(() => {
-        if (inboxLoading || !lastOpenedChatId) return;
+        if (inboxLoading || !lastOpenedChatRef.current) return;
         const row = document.querySelector<HTMLElement>(
-            `[data-chat-id="${lastOpenedChatId}"]`
+            `[data-chat-id="${lastOpenedChatRef.current}"]`
         );
         row?.focus();
         // One shot either way: a row missing from this list (filtered out,
         // archived, deleted) must not ambush a later inbox visit.
-        lastOpenedChatId = null;
-    }, [inboxLoading]);
+        lastOpenedChatRef.current = null;
+    }, [inboxLoading, lastOpenedChatRef]);
 
     // Title for the removable "?flyer=" chip — taken from any matching
     // conversation (the deep link comes from a context that has chats).
+    const flyerMatch = flyerParam
+        ? inbox.conversations.find(
+              (conversation) => conversation.adId === flyerParam
+          )
+        : undefined;
     const flyerFilterTitle = flyerParam
-        ? (() => {
-            const match = inbox.conversations.find(
-                (conversation) => conversation.adId === flyerParam
-            );
-            return match ? getItemTitle(match) : "this flyer";
-        })()
+        ? flyerMatch
+            ? getItemTitle(flyerMatch)
+            : "this flyer"
         : null;
 
     // Single URL writer for this page's params: dismissing the chip clears
@@ -305,6 +309,18 @@ function InboxView({
         next.delete("flyer");
         setSearchParams(next, { replace: true });
     };
+
+    // One empty-state container; only the copy (and the Browse CTA on the
+    // true-empty inbox) varies by context.
+    const emptyState: { title?: string; body: string; cta?: boolean } = flyerParam
+        ? { body: "No conversations about this flyer yet." }
+        : inbox.filter === "all"
+          ? {
+                title: "No messages yet",
+                body: "Conversations with buyers and sellers will appear here",
+                cta: true,
+            }
+          : { body: `No ${inbox.filter} conversations yet.` };
 
     const handleArchive = async (chatId: string) => {
         try {
@@ -389,41 +405,25 @@ function InboxView({
                     ))}
                 </div>
             ) : inbox.conversations.length === 0 ? (
-                flyerParam ? (
-                    <div className="text-center py-16">
-                        <div className="flex justify-center mb-4">
-                            <ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" />
-                        </div>
-                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">
-                            No conversations about this flyer yet.
-                        </p>
+                <div className="text-center py-16">
+                    <div className="flex justify-center mb-4">
+                        <ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" />
                     </div>
-                ) : inbox.filter === "all" ? (
-                    <div className="text-center py-16">
-                        <div className="flex justify-center mb-4">
-                            <ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" />
-                        </div>
-                        <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No messages yet</h2>
-                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto mb-6">
-                            Conversations with buyers and sellers will appear here
-                        </p>
+                    {emptyState.title && (
+                        <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">{emptyState.title}</h2>
+                    )}
+                    <p className={`text-[15px] text-muted-foreground max-w-prose mx-auto${emptyState.cta ? " mb-6" : ""}`}>
+                        {emptyState.body}
+                    </p>
+                    {emptyState.cta && (
                         <Link
                             to="/"
                             className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all"
                         >
                             Browse flyers
                         </Link>
-                    </div>
-                ) : (
-                    <div className="text-center py-16">
-                        <div className="flex justify-center mb-4">
-                            <ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" />
-                        </div>
-                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">
-                            No {inbox.filter} conversations yet.
-                        </p>
-                    </div>
-                )
+                    )}
+                </div>
             ) : (
                 <div className="ring-1 ring-border/70 rounded-2xl overflow-hidden divide-y divide-border/70 bg-card">
                     {inbox.conversations.map((conversation, index) => (
@@ -435,7 +435,7 @@ function InboxView({
                             isActive={conversation._id === activeChatId}
                             className="min-h-[4.5rem]"
                             onOpen={(chatId) => {
-                                lastOpenedChatId = chatId;
+                                lastOpenedChatRef.current = chatId;
                                 void navigate(flyerParam ? `/messages/${chatId}?flyer=${encodeURIComponent(flyerParam)}` : `/messages/${chatId}`);
                             }}
                             // Archive is buyer-only: the archived view only
@@ -746,7 +746,9 @@ function ThreadView({ chatId }: { chatId: string }) {
     const [isOffline, setIsOffline] = useState(false);
     useEffect(() => {
         // Down: latch "offline" only after the debounce window. Back up:
-        // clear on the next tick (0ms) — effectively immediate.
+        // clear on the next tick (0ms) — effectively immediate. (The 0ms
+        // timer isn't collapsible to a sync setState: the strict
+        // react-hooks/set-state-in-effect lint forbids it.)
         const timer = window.setTimeout(
             () => setIsOffline(socketDown),
             socketDown ? OFFLINE_DEBOUNCE_MS : 0
@@ -806,22 +808,38 @@ function ThreadView({ chatId }: { chatId: string }) {
     const sendMessage = useMutation(api.messages.sendMessage);
     const markAsRead = useMutation(api.messages.markChatAsRead);
 
+    // The role tag tells us which side of the chat we are — no extra
+    // current-user query needed for bubble alignment. Empty while the
+    // conversation is still resolving (nothing renders bubbles then).
+    const currentUserId = conversation
+        ? conversation.role === "selling"
+            ? conversation.sellerId
+            : conversation.buyerId
+        : "";
+
     // Mark the conversation read on entry, on thread change, and whenever a
-    // new message arrives while the thread is open (keyed on the newest
-    // visible timestamp — markChatAsRead only patches lastReadBy*, which
-    // never feeds these deps, so no loop). Gated on the conversation being
-    // FOUND: a foreign or malformed id must never touch read state.
+    // COUNTERPART message arrives while the thread is open. Keyed on the
+    // newest counterpart timestamp — unread only ever counts the other
+    // party's messages (convex/lib/unread.ts), so an own send must not fire
+    // a redundant round-trip. (markChatAsRead only patches lastReadBy*,
+    // which never feeds these deps, so no loop.) Gated on the conversation
+    // being FOUND: a foreign or malformed id must never touch read state.
     const conversationId = conversation?._id;
-    const latestMessageTimestamp = messages?.length
-        ? messages[messages.length - 1].timestamp
-        : 0;
+    const latestCounterpartTimestamp =
+        messages?.reduce(
+            (latest, message) =>
+                message.senderId !== currentUserId && message.timestamp > latest
+                    ? message.timestamp
+                    : latest,
+            0
+        ) ?? 0;
     useEffect(() => {
         if (conversationId) {
             markAsRead({ chatId: conversationId as Id<"chats"> }).catch(() => {
                 // Read-state failures are non-fatal; the badge just persists.
             });
         }
-    }, [conversationId, latestMessageTimestamp, markAsRead]);
+    }, [conversationId, latestCounterpartTimestamp, markAsRead]);
 
     // A11y: on the mobile full-screen thread, move focus to the header's
     // back button once the conversation has rendered (inbox → thread and
@@ -866,32 +884,25 @@ function ThreadView({ chatId }: { chatId: string }) {
         [sendMessage]
     );
 
-    // The role tag tells us which side of the chat we are — no extra
-    // current-user query needed for bubble alignment. Empty while the
-    // conversation is still resolving (nothing renders bubbles then).
-    const currentUserId = conversation
-        ? conversation.role === "selling"
-            ? conversation.sellerId
-            : conversation.buyerId
-        : "";
-
-    // Retry a failed optimistic send. Guarded: bail unless the entry still
-    // exists AND is still failed — a stale closure (double-tap, memoized
+    // Retry a failed optimistic send, addressed by the pending bubble's
+    // rendered id (`pending-<clientId>`). Guarded: bail unless the entry
+    // still exists AND is still failed — a stale tap (double-tap, memoized
     // bubble) must never double-fire the mutation.
     const retrySend = useCallback(
-        (pending: PendingMessage) => {
+        (messageId: string) => {
+            const clientId = messageId.replace(/^pending-/, "");
             const entry = pendingMessages.find(
-                (candidate) => candidate.clientId === pending.clientId
+                (candidate) => candidate.clientId === clientId
             );
             if (!entry || !entry.failed || !conversationId) return;
             setPendingMessages((previous) =>
                 previous.map((candidate) =>
-                    candidate.clientId === pending.clientId
+                    candidate.clientId === clientId
                         ? { ...candidate, failed: false, timestamp: Date.now() }
                         : candidate
                 )
             );
-            dispatchSend(pending.clientId, pending.content, conversationId as Id<"chats">);
+            dispatchSend(clientId, entry.content, conversationId as Id<"chats">);
         },
         [pendingMessages, conversationId, dispatchSend]
     );
@@ -902,7 +913,7 @@ function ThreadView({ chatId }: { chatId: string }) {
     // (belt-and-braces with its newest-id-keyed auto-scroll).
     const threadMessages: ThreadMessage[] = useMemo(
         () => [
-            ...(messages ?? NO_MESSAGES),
+            ...(messages ?? []),
             ...pendingMessages.map((pending) => ({
                 _id: `pending-${pending.clientId}`,
                 content: pending.content,
@@ -910,10 +921,9 @@ function ThreadView({ chatId }: { chatId: string }) {
                 senderId: currentUserId,
                 pending: !pending.failed,
                 failed: pending.failed,
-                onRetry: pending.failed ? () => retrySend(pending) : undefined,
             })),
         ],
-        [messages, pendingMessages, currentUserId, retrySend]
+        [messages, pendingMessages, currentUserId]
     );
 
     if (isResolving) {
@@ -980,6 +990,7 @@ function ThreadView({ chatId }: { chatId: string }) {
             <ConversationThread
                 messages={threadMessages}
                 currentUserId={currentUserId}
+                onRetryMessage={retrySend}
             />
             {isOffline && (
                 <div
@@ -1018,7 +1029,7 @@ function ThreadView({ chatId }: { chatId: string }) {
     // slideOver() gives the inbox → thread swap its ~200ms slide-in (motion
     // helpers only ever come from useMotionPrefs — collapses under
     // prefers-reduced-motion).
-    if (isMobile && typeof document !== "undefined") {
+    if (isMobile) {
         return createPortal(
             <motion.div
                 ref={portalColumnRef}

@@ -5,7 +5,7 @@ description: Routing and navigation structure
 
 # Routing & Navigation
 
-**Last Updated**: 2026-07-05
+**Last Updated**: 2026-07-11
 
 ## Routes (React Router v7)
 - **/**: HomePage (Flyers grid)
@@ -13,7 +13,10 @@ description: Routing and navigation structure
 - **/post**: PostAdPage (Create new listing)
 - **/edit/:id**: EditAdPage (Edit existing listing)
 - **/dashboard**: DashboardPage (User flyers, favorites, settings)
-- **/messages**: MessagesPage (User conversations)
+- **/messages**: MessagesPage — unified inbox (real since 2026-07-11, PR #289; this entry was stale/aspirational before that)
+- **/messages/archived**: MessagesPage — archived sub-view (matches `:chatId` but is NOT a thread: keeps BottomNav + header)
+- **/messages/:chatId**: MessagesPage — full-screen conversation (BottomNav + persistent header hidden on <md)
+- Legacy `/dashboard?tab=chats[&chat=X][&flyer=Y]` permanently redirects to the routes above (shim in DashboardPage + `src/lib/legacyChatsRedirect.ts`)
 - **/admin**: AdminDashboard (Admin-only, user/flyer management)
 - **/terms**: TermsPage
 - **/community-guidelines**: CommunityGuidelinesPage

@@ -2,13 +2,14 @@ import { internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
- * Canonical in-app deep links for message notifications. There is no
- * /messages/... route in the app — every notification must land on the
- * unified inbox. These helpers are the only place that rule lives.
+ * Canonical in-app deep links for message notifications. /messages is the
+ * dedicated Messages destination (mobile chat redesign, 2026-07); the legacy
+ * /dashboard?tab=chats[&chat=] URLs still resolve via a permanent redirect
+ * shim in DashboardPage. These helpers are the only place this rule lives.
  */
-export const INBOX_PATH = "/dashboard?tab=chats";
+export const INBOX_PATH = "/messages";
 export function chatDeepLink(chatId: string): string {
-    return `${INBOX_PATH}&chat=${chatId}`;
+    return `${INBOX_PATH}/${chatId}`;
 }
 
 /**

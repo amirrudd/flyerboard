@@ -120,11 +120,42 @@ export function MessagesPage() {
         return <ArchivedView />;
     }
 
-    if (isThread) {
-        return <ThreadView chatId={chatId} />;
+    // Mobile (<md): full-screen swaps — inbox page or portal thread.
+    if (isMobile) {
+        return isThread ? <ThreadView key={chatId} chatId={chatId} /> : <InboxView />;
     }
 
-    return <InboxView />;
+    // Desktop (≥md): two-pane master–detail. The URL (:chatId) is the single
+    // source of truth for the selection — a row tap navigates, no ?chat=
+    // params. Height is dvh-derived flex (dynamic viewport minus the 57px
+    // sticky header + page padding), never static viewport units.
+    return (
+        <div className="container-padding mx-auto w-full max-w-6xl py-6">
+            <div className="grid grid-cols-[24rem_1fr] h-[calc(100dvh-8rem)] min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card shadow-card overflow-hidden">
+                <aside
+                    aria-label="Conversations"
+                    className="min-h-0 border-r border-border/70"
+                >
+                    <InboxView pane activeChatId={isThread ? chatId : undefined} />
+                </aside>
+                <div className="min-h-0 min-w-0 flex flex-col">
+                    {isThread ? (
+                        <ThreadView key={chatId} chatId={chatId} />
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="text-center p-8 max-w-prose">
+                                <div className="flex justify-center mb-4">
+                                    <ChatText className="w-12 h-12 text-muted-foreground/30" weight="light" aria-hidden="true" />
+                                </div>
+                                <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">Select a conversation</h2>
+                                <p className="text-[15px] leading-relaxed text-foreground/70">Choose a conversation from the list to start messaging</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -192,10 +223,21 @@ function OverflowMenu() {
 /**
  * The unified inbox at `/messages`: page header + overflow menu, All/Selling/
  * Buying filter pills (ported from the dashboard chats tab), optional
- * `?flyer=` chip, and the conversation list. Scrolling happens in Layout's
- * `<main>` — no nested scroller here (mobile body is scroll-locked).
+ * `?flyer=` chip, and the conversation list.
+ *
+ * Two render contexts:
+ * - Page (mobile default): scrolling happens in Layout's `<main>` — no
+ *   nested scroller (mobile body is scroll-locked).
+ * - `pane` (desktop two-pane left column): fills its parent and owns its own
+ *   list scroll; `activeChatId` highlights the open thread's row.
  */
-function InboxView() {
+function InboxView({
+    pane = false,
+    activeChatId,
+}: {
+    pane?: boolean;
+    activeChatId?: string;
+}) {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const flyerParam = searchParams.get("flyer");
@@ -235,7 +277,13 @@ function InboxView() {
     };
 
     return (
-        <div className="container-padding mx-auto w-full max-w-2xl py-6 pb-bottom-nav">
+        <div
+            className={
+                pane
+                    ? "flex h-full min-h-0 flex-col p-4"
+                    : "container-padding mx-auto w-full max-w-2xl py-6 pb-bottom-nav"
+            }
+        >
             <div className="flex items-center justify-between gap-3">
                 <h1 className="font-display text-2xl font-semibold text-foreground">Messages</h1>
                 <OverflowMenu />
@@ -286,6 +334,9 @@ function InboxView() {
                 )}
             </div>
 
+            {/* In pane mode the list scrolls inside the column (the page has
+                no scroller of its own on desktop two-pane). */}
+            <div className={pane ? "flex-1 min-h-0 overflow-y-auto" : undefined}>
             {inbox.isLoading ? (
                 <div
                     role="status"
@@ -340,8 +391,9 @@ function InboxView() {
                             chat={conversation}
                             role={conversation.role}
                             index={index}
+                            isActive={conversation._id === activeChatId}
                             className="min-h-[4.5rem]"
-                            onOpen={(chatId) => { void navigate(`/messages/${chatId}`); }}
+                            onOpen={(chatId) => { void navigate(flyerParam ? `/messages/${chatId}?flyer=${encodeURIComponent(flyerParam)}` : `/messages/${chatId}`); }}
                             // Archive is buyer-only: the archived view only
                             // surfaces buyer-archived chats, so a chat archived
                             // from a selling row would have no recovery UI.
@@ -354,6 +406,7 @@ function InboxView() {
                     ))}
                 </div>
             )}
+            </div>
         </div>
     );
 }
@@ -620,11 +673,14 @@ function ArchivedView() {
  * whole viewport: `pt-safe` header, `pb-safe` composer, no static
  * viewport-height units anywhere (inset-0/dvh only).
  *
- * Desktop (≥md): the same column centered in the normal page flow — Phase 4
- * replaces this with the two-pane master–detail layout.
+ * Desktop (≥md): rendered as the right pane of the two-pane master–detail
+ * layout owned by MessagesPage — no portal, fills the parent column.
  */
 function ThreadView({ chatId }: { chatId: string }) {
     const navigate = useNavigate();
+    // Preserve an active ?flyer= inbox filter across the open/back round trip.
+    const [searchParams] = useSearchParams();
+    const flyerParam = searchParams.get("flyer");
     const { isMobile } = useDeviceInfo();
     const [showReportModal, setShowReportModal] = useState(false);
 
@@ -748,7 +804,7 @@ function ThreadView({ chatId }: { chatId: string }) {
                 subtitle={`${conversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
                 price={conversation.ad?.price}
                 statusLabel={meta.statusLabel}
-                onBack={() => { void navigate("/messages"); }}
+                onBack={() => { void navigate(flyerParam ? `/messages?flyer=${encodeURIComponent(flyerParam)}` : "/messages"); }}
                 viewItemLabel={meta.viewItemLabel}
                 onViewItem={meta.viewItemHref ? () => { void navigate(meta.viewItemHref as string); } : undefined}
                 onReport={() => setShowReportModal(true)}
@@ -795,16 +851,8 @@ function ThreadView({ chatId }: { chatId: string }) {
         );
     }
 
-    // Desktop (Phase 3 placeholder): same column centered in the page flow.
-    return (
-        <div className="container-padding mx-auto w-full max-w-2xl py-6">
-            <div
-                className="flex flex-col h-[calc(100dvh-11rem)] min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card shadow-card overflow-hidden"
-            >
-                {threadColumn}
-            </div>
-        </div>
-    );
+    // Desktop: fills the two-pane right column (parent owns height/borders).
+    return <div className="flex flex-col h-full min-h-0">{threadColumn}</div>;
 }
 
 export default MessagesPage;

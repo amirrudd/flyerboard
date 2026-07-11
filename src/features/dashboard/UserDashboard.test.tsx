@@ -111,30 +111,6 @@ function installMutationSpies() {
     }) as any);
 }
 
-// Inbox fixtures: one selling-side chat (newer) + one buying-side chat (older)
-const sellerChat = {
-    _id: 'chat-sell',
-    adId: 'ad-1',
-    buyerId: 'buyer-9',
-    sellerId: 'u1',
-    lastMessageAt: 2000,
-    unreadCount: 2,
-    latestMessage: { content: 'Is the bike available?', timestamp: 2000 },
-    ad: { _id: 'ad-1', title: 'Blue Bike', price: 50, images: [], isActive: true },
-    buyer: { _id: 'buyer-9', name: 'Bella Buyer' },
-};
-const buyerChat = {
-    _id: 'chat-buy',
-    adId: 'ad-2',
-    buyerId: 'u1',
-    sellerId: 'seller-7',
-    lastMessageAt: 1000,
-    unreadCount: 0,
-    latestMessage: { content: 'Still for sale?', timestamp: 1000 },
-    ad: { _id: 'ad-2', title: 'Red Couch', price: 200, images: [], isActive: true },
-    seller: { _id: 'seller-7', name: 'Sam Seller' },
-};
-
 describe('UserDashboard', () => {
     const mockOnBack = vi.fn();
     const mockOnPostAd = vi.fn();
@@ -203,16 +179,8 @@ describe('UserDashboard', () => {
         expect(mockOnPostAd).toHaveBeenCalled();
     });
 
-    it('should redirect to ads tab when accessing invalid tabs on mobile', async () => {
-        // Simulate a mobile viewport (useDeviceInfo reads window.innerWidth)
-        const originalInnerWidth = window.innerWidth;
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: 500,
-        });
-
-        // Render with archived tab in URL
+    it('falls back to My Flyers for retired ?tab values (chats/archived moved to /messages)', async () => {
+        // Render with the retired archived tab in the URL
         render(
             <MemoryRouter initialEntries={['/dashboard?tab=archived']}>
                 <UserDashboard
@@ -223,16 +191,47 @@ describe('UserDashboard', () => {
             </MemoryRouter>
         );
 
-        // Should redirect to ads tab on mobile (archived tab is desktop-only)
+        // Unknown/retired tabs are sanitized to "ads"
         await waitFor(() => {
-            expect(screen.queryByText('Archived Messages')).not.toBeInTheDocument();
+            expect(screen.getByText('No Flyers Yet')).toBeInTheDocument();
         }, { timeout: 1000 });
+        expect(screen.queryByText('Archived Messages')).not.toBeInTheDocument();
+    });
 
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: originalInnerWidth,
+    it('sidebar Messages entry navigates to /messages (with the unread badge)', () => {
+        mockQueries({ 'messages:getTotalUnreadCount': 3 });
+
+        renderDashboard();
+
+        const nav = screen.getByRole('navigation', { name: 'Dashboard sections' });
+        fireEvent.click(within(nav).getByRole('button', { name: /Messages/ }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/messages');
+    });
+
+    it('per-ad Messages button navigates to the flyer-filtered /messages inbox', () => {
+        mockQueries({
+            'posts:getUserAds': [
+                { _id: 'ad-1', title: 'Blue Bike', price: 50, images: [], views: 5, isActive: true },
+            ],
         });
+
+        renderDashboard();
+
+        const card = screen.getByText('Blue Bike').closest('article')!;
+        fireEvent.click(within(card).getByRole('button', { name: 'Messages' }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/messages?flyer=ad-1');
+    });
+
+    it('keeps the legacy ?messages=<adId> deep link rendering AdMessages', () => {
+        render(
+            <MemoryRouter initialEntries={['/dashboard?messages=ad-1']}>
+                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('AdMessages')).toBeInTheDocument();
     });
 
     it('renders per-ad unread badges on the My Flyers tab (getUnreadCounts gating fix)', () => {
@@ -297,177 +296,6 @@ describe('UserDashboard', () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Boost to top' }));
         await waitFor(() => expect(mutationSpies['posts:boostAd']).toHaveBeenCalledWith({ adId: 'ad-1' }));
         await waitFor(() => expect(mockRefreshAds).toHaveBeenCalledWith(true));
-    });
-});
-
-describe('Unified inbox (chats tab)', () => {
-    const mockOnBack = vi.fn();
-    const mockOnPostAd = vi.fn();
-    const mockOnEditAd = vi.fn();
-
-    const renderAt = (path: string) =>
-        render(
-            <MemoryRouter initialEntries={[path]}>
-                <UserDashboard onBack={mockOnBack} onPostAd={mockOnPostAd} onEditAd={mockOnEditAd} />
-            </MemoryRouter>
-        );
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-        installMutationSpies();
-        // jsdom doesn't implement scrollIntoView (ConversationThread auto-scroll)
-        Element.prototype.scrollIntoView = vi.fn();
-        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
-        mockUseUser.mockReturnValue({ user: { name: 'Test', email: 'test@test.com', picture: '' } });
-        mockQueries({
-            'posts:getSellerChats': [sellerChat],
-            'posts:getBuyerChats': [buyerChat],
-        });
-    });
-
-    it('renders both selling and buying conversations sorted by recency', () => {
-        renderAt('/dashboard?tab=chats');
-
-        const rows = screen.getAllByRole('button', { name: /^Conversation with/ });
-        expect(rows).toHaveLength(2);
-        expect(rows[0]).toHaveAccessibleName('Conversation with Bella Buyer'); // newer (selling)
-        expect(rows[1]).toHaveAccessibleName('Conversation with Sam Seller'); // older (buying)
-    });
-
-    it('filters the list when switching between All / Selling / Buying', async () => {
-        renderAt('/dashboard?tab=chats');
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Selling' }));
-        await waitFor(() => {
-            expect(screen.queryByRole('button', { name: 'Conversation with Sam Seller' })).not.toBeInTheDocument();
-        });
-        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Buying' }));
-        await waitFor(() => {
-            expect(screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })).not.toBeInTheDocument();
-        });
-        expect(screen.getByRole('button', { name: 'Conversation with Sam Seller' })).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('tab', { name: 'All' }));
-        await waitFor(() => {
-            expect(screen.getAllByRole('button', { name: /^Conversation with/ })).toHaveLength(2);
-        });
-    });
-
-    it('shows the per-filter empty state copy', async () => {
-        mockQueries({ 'posts:getSellerChats': [], 'posts:getBuyerChats': [] });
-        renderAt('/dashboard?tab=chats');
-
-        expect(screen.getByText('No messages yet')).toBeInTheDocument();
-        expect(screen.getByText('Conversations with buyers and sellers will appear here')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Selling' }));
-        await waitFor(() => {
-            expect(screen.getByText('No buyer messages yet')).toBeInTheDocument();
-        });
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Buying' }));
-        await waitFor(() => {
-            expect(screen.getByText('Nothing here yet')).toBeInTheDocument();
-        });
-    });
-
-    it('opens the conversation thread from a ?chat deep link and marks it read', async () => {
-        mockQueries({
-            'posts:getSellerChats': [sellerChat],
-            'posts:getBuyerChats': [buyerChat],
-            'messages:getChatMessages': [
-                { _id: 'm1', content: 'Is the bike available?', timestamp: 2000, senderId: 'buyer-9' },
-            ],
-        });
-
-        renderAt('/dashboard?tab=chats&chat=chat-sell');
-
-        const thread = screen.getByTestId('conversation-thread');
-        expect(thread).toBeInTheDocument();
-        // Item context strip shows the flyer
-        expect(screen.getByRole('heading', { name: 'Blue Bike' })).toBeInTheDocument();
-        // Thread renders the message (the InboxRow snippet shows it too, so scope)
-        expect(within(thread).getByText('Is the bike available?')).toBeInTheDocument();
-
-        await waitFor(() => {
-            expect(mutationSpies['messages:markChatAsRead']).toHaveBeenCalledWith({ chatId: 'chat-sell' });
-        });
-    });
-
-    it('sends via the shared composer with the open chat id', async () => {
-        renderAt('/dashboard?tab=chats&chat=chat-sell');
-
-        fireEvent.change(screen.getByPlaceholderText('Type your message...'), {
-            target: { value: 'Yes, still here!' },
-        });
-        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
-
-        await waitFor(() => {
-            expect(mutationSpies['messages:sendMessage']).toHaveBeenCalledWith({
-                chatId: 'chat-sell',
-                content: 'Yes, still here!',
-            });
-        });
-    });
-
-    it('disables the composer when the flyer is inactive', () => {
-        mockQueries({
-            'posts:getSellerChats': [
-                { ...sellerChat, ad: { ...sellerChat.ad, isActive: false } },
-            ],
-            'posts:getBuyerChats': [],
-        });
-
-        renderAt('/dashboard?tab=chats&chat=chat-sell');
-
-        expect(screen.getByPlaceholderText('Type your message...')).toBeDisabled();
-        expect(screen.getByText('This flyer is no longer active')).toBeInTheDocument();
-    });
-
-    it('pre-filters by flyer via ?flyer deep link and shows a removable chip', async () => {
-        renderAt('/dashboard?tab=chats&flyer=ad-1');
-
-        // Only the ad-1 conversation is listed
-        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Conversation with Sam Seller' })).not.toBeInTheDocument();
-
-        // Removable chip labelled with the flyer title
-        const chip = screen.getByRole('button', { name: 'Remove flyer filter: Blue Bike' });
-        expect(chip).toHaveTextContent('Filtering: Blue Bike');
-
-        fireEvent.click(chip);
-        await waitFor(() => {
-            expect(screen.getAllByRole('button', { name: /^Conversation with/ })).toHaveLength(2);
-        });
-    });
-
-    it('updates the URL when opening and closing a conversation', async () => {
-        renderAt('/dashboard?tab=chats');
-
-        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Bella Buyer' }));
-
-        // Thread pane opens (URL now carries ?chat=…)
-        await waitFor(() => {
-            expect(screen.getByTestId('conversation-thread')).toBeInTheDocument();
-        });
-
-        // Back returns to the list-only state
-        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-        await waitFor(() => {
-            expect(screen.queryByTestId('conversation-thread')).not.toBeInTheDocument();
-        });
-    });
-
-    it('archives a conversation from the inbox row', async () => {
-        renderAt('/dashboard?tab=chats');
-
-        fireEvent.click(screen.getAllByRole('button', { name: 'Archive' })[0]);
-
-        await waitFor(() => {
-            expect(mutationSpies['messages:archiveChat']).toHaveBeenCalledWith({ chatId: 'chat-sell' });
-        });
     });
 });
 

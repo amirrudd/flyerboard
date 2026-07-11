@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
@@ -13,21 +13,7 @@ import { SignOutButton } from "../auth/SignOutButton";
 import { useHeaderSlots } from "../layout/HeaderSlots";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSession, useUser } from "@descope/react-sdk";
-import { useUserSync } from "../../context/UserSyncContext";
-import { ReportModal } from "../../components/ReportModal";
-import {
-  useInbox,
-  useTotalUnreadCount,
-  InboxRow,
-  ConversationThread,
-  MessageComposer,
-  ConversationHeader,
-  isSaleThread,
-  isBundleThread,
-  getCounterpartName,
-  getItemTitle,
-} from "../messages";
-import type { InboxFilter } from "../messages";
+import { useTotalUnreadCount } from "../messages";
 import { getDisplayName, getInitials } from "../../lib/displayName";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
@@ -42,7 +28,6 @@ import {
   SquaresFour,
   ChatText,
   BookmarkSimple,
-  Archive,
   User,
   CaretLeft,
   PencilSimple,
@@ -54,7 +39,6 @@ import {
   Envelope,
   BellRinging,
   Package,
-  X,
   Plus,
   Stack,
   ArrowUp
@@ -63,33 +47,19 @@ import { MovingSalesTab } from "./MovingSalesTab";
 import { BundlesTab } from "./BundlesTab";
 import { BundleManageModal } from "../bundles/BundleManageModal";
 import { StarRating } from "../../components/ui/StarRating";
-import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton, ChatItemSkeleton } from "../../components/ui/DashboardSkeleton";
+import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
 
 // Feature flags removed - now using database-driven flags
 
-// Segmented filter options for the unified inbox (chats tab).
-const INBOX_FILTERS: Array<{ id: InboxFilter; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "selling", label: "Selling" },
-  { id: "buying", label: "Buying" },
-];
-
-// Per-filter empty-state copy (from the unified-messaging contract).
-const INBOX_EMPTY_COPY: Record<InboxFilter, { title: string; body: string }> = {
-  all: {
-    title: "No messages yet",
-    body: "Conversations with buyers and sellers will appear here",
-  },
-  selling: {
-    title: "No buyer messages yet",
-    body: "When someone messages you about a flyer, it shows up here",
-  },
-  buying: {
-    title: "Nothing here yet",
-    body: "Message a seller from any flyer to start a conversation",
-  },
-};
+// Tabs that still live on the dashboard. Chats/archived moved to /messages
+// (mobile chat redesign) — unknown or legacy ?tab values fall back to "ads".
+const DASHBOARD_TABS = ["ads", "saved", "sales", "bundles", "profile"] as const;
+type DashboardTab = (typeof DASHBOARD_TABS)[number];
+const parseDashboardTab = (value: string | null): DashboardTab | null =>
+  value && (DASHBOARD_TABS as readonly string[]).includes(value)
+    ? (value as DashboardTab)
+    : null;
 
 /** One row in the Saved tab's Sales/Bundles groups — identical shell, per-kind tint. */
 function SavedGroupRow({
@@ -445,10 +415,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const navigate = useNavigate();
   const { whileInView, reduced } = useMotionPrefs();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived" | null;
+  const tabParam = parseDashboardTab(searchParams.get("tab"));
   const { isMobile } = useDeviceInfo();
 
-  const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived">(tabParam || "ads");
+  const [activeTab, setActiveTab] = useState<DashboardTab>(tabParam || "ads");
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const bundleModeEnabled = useFeatureFlag("bundleListing");
   const boostEnabled = useFeatureFlag("boostToTop");
@@ -458,8 +428,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [profileData, setProfileData] = useState({ name: "", email: "" });
   const [nameError, setNameError] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
-  // Inline drill-in views are URL-encoded (mirrors the chats tab's ?chat=
-  // pattern): ?ad=<id> renders AdDetail, ?messages=<id> renders AdMessages.
+  // Inline drill-in views are URL-encoded: ?ad=<id> renders AdDetail,
+  // ?messages=<id> renders AdMessages (legacy deep links only — the My
+  // Flyers button now navigates to /messages?flyer=<adId>).
   // URL as source of truth means refresh restores the view and tab switches
   // (which write fresh params) implicitly close it.
   const selectedAdId = searchParams.get("ad") as Id<"ads"> | null;
@@ -483,8 +454,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   };
   const updateInlineViewParams = (next: { ad?: string | null; messages?: string | null }) =>
     updateSearchParams(next);
-  const [selectedArchivedChats, setSelectedArchivedChats] = useState<Set<Id<"chats">>>(new Set());
-  const [showReportModal, setShowReportModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
@@ -492,10 +461,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Refs for tab content sections (for mobile auto-scroll)
   const adsContentRef = useRef<HTMLDivElement>(null);
-  const chatsContentRef = useRef<HTMLDivElement>(null);
   const savedContentRef = useRef<HTMLDivElement>(null);
   const profileContentRef = useRef<HTMLDivElement>(null);
-  const archivedContentRef = useRef<HTMLDivElement>(null);
 
   // Track whether we should scroll to content (only on manual sidebar clicks)
   const [shouldScrollToContent, setShouldScrollToContent] = useState(false);
@@ -553,11 +520,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   };
 
   // Use Descope for authentication state
-  const { isAuthenticated, isSessionLoading } = useSession();
+  const { isAuthenticated } = useSession();
   const { user: descopeUser } = useUser();
-  const { isUserSynced } = useUserSync();
-  // Standard auth gate for Convex queries/mutations (see CLAUDE.md user-sync race)
-  const authReady = isAuthenticated && !isSessionLoading && isUserSynced;
 
   // Combined query for user data and stats - reduces 2 function calls to 1
   const userWithStats = useQuery(api.descopeAuth.getCurrentUserWithStats);
@@ -580,19 +544,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     activeTab === "ads" ? {} : "skip"
   );
 
-  // ── Unified inbox (chats tab) ─────────────────────────────────────────
-  // URL is the single source of truth for the open conversation + flyer
-  // filter: ?tab=chats&chat=<chatId>&flyer=<adId>. Back/refresh restore it.
-  const chatParam = searchParams.get("chat");
-  const flyerParam = searchParams.get("flyer");
-
-  // Merged selling + buying conversations, sorted desc; auth-gated internally.
-  // enabled gates the two chat queries to the tab that renders them.
-  const inbox = useInbox({
-    flyerId: flyerParam ?? undefined,
-    enabled: activeTab === "chats",
-  });
-
   // Bundles the seller owns — used to tag ad cards that belong to a bundle.
   const myBundles = useQuery(
     api.bundles.getMyBundles,
@@ -606,14 +557,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
     return map;
   }, [myBundles]);
-
-  const activeConversation = useMemo(
-    () =>
-      chatParam
-        ? inbox.conversations.find((conversation) => conversation._id === chatParam) ?? null
-        : null,
-    [inbox.conversations, chatParam]
-  );
 
   // Total unread across all conversations — sidebar "Messages" badge.
   const totalUnreadCount = useTotalUnreadCount();
@@ -630,22 +573,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const savedBundles = useQuery(
     api.bundles.getSavedBundles,
     activeTab === "saved" && bundleModeEnabled ? {} : "skip"
-  );
-
-  // Only fetch when viewing the archived tab
-  const archivedChats = useQuery(
-    api.messages.getArchivedChats,
-    user && activeTab === "archived" ? {} : "skip"
-  );
-
-  // Messages for the open conversation. Gated on the conversation actually
-  // existing in the inbox (not just the raw URL param) so a bogus/foreign
-  // ?chat= id never hits getChatMessages' participant check.
-  const chatMessages = useQuery(
-    api.messages.getChatMessages,
-    activeTab === "chats" && authReady && activeConversation
-      ? { chatId: activeConversation._id as Id<"chats"> }
-      : "skip"
   );
 
   // Per-ad unread badges render in the "ads" tab (My Flyers), so the query
@@ -667,21 +594,8 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const generateProfileUploadUrl = useAction(api.upload_urls.generateProfileUploadUrl);
   const updateProfile = useMutation(api.users.updateProfile);
   const deleteAccount = useMutation(api.users.deleteAccount);
-  const sendMessage = useMutation(api.messages.sendMessage);
-  const markAsRead = useMutation(api.messages.markChatAsRead);
-  const archiveChat = useMutation(api.messages.archiveChat);
-  const deleteArchivedChats = useMutation(api.messages.deleteArchivedChats);
   const verifyIdentity = useMutation(api.users.verifyIdentity);
   const updateEmailNotificationPreference = useMutation(api.users.updateEmailNotificationPreference);
-
-  // Mark the open conversation as read (covers row taps AND ?chat deep links)
-  useEffect(() => {
-    if (activeTab === "chats" && chatParam && authReady) {
-      markAsRead({ chatId: chatParam as Id<"chats"> }).catch(() => {
-        // Invalid/foreign chat ids in the URL simply don't get marked read.
-      });
-    }
-  }, [activeTab, chatParam, authReady, markAsRead]);
 
   // Initialize profile form data when user data is loaded
   useEffect(() => {
@@ -696,7 +610,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
   // Sync activeTab with URL search params (for bottom nav navigation)
   useEffect(() => {
-    const tabParam = searchParams.get("tab") as "ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived" | null;
+    const tabParam = parseDashboardTab(searchParams.get("tab"));
     if (tabParam && tabParam !== activeTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing active tab from URL search params (bottom-nav navigation)
       setActiveTab(tabParam);
@@ -739,19 +653,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   }, []);
 
-  // Redirect invalid tabs on mobile (archived needs sidebar nav for batch actions)
-  useEffect(() => {
-    if (isMobile && activeTab === 'archived') {
-      // Only push the URL — the "sync activeTab with URL" effect above is the
-      // single writer of activeTab. Also calling setActiveTab here raced it
-      // exactly like the sales-tab bounce documented above (searchParams
-      // updates one tick behind direct state → the two effects ping-pong
-      // until "Maximum update depth exceeded").
-      setSearchParams({ tab: 'ads' }, { replace: true });
-    }
-  }, [isMobile, activeTab, setSearchParams]);
-
-
   // Handle scroll behavior based on intent
   useEffect(() => {
     // Priority 1: Back button scroll to top
@@ -768,14 +669,12 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       const timer = setTimeout(() => {
         const refMap = {
           ads: adsContentRef,
-          chats: chatsContentRef,
           saved: savedContentRef,
           // MovingSalesTab / BundlesTab manage their own scroll; reuse the ads
           // ref (null when those tabs are active, so the chain below no-ops).
           sales: adsContentRef,
           bundles: adsContentRef,
           profile: profileContentRef,
-          archived: archivedContentRef,
         };
 
         const targetRef = refMap[activeTab];
@@ -899,57 +798,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     }
   };
 
-  /**
-   * Single writer for the chats-tab URL state. Preserves tab=chats and only
-   * touches the keys passed (null clears a key). replace:true so back/refresh
-   * restore the inbox state without polluting history on every selection.
-   */
-  const updateChatParams = (next: { chat?: string | null; flyer?: string | null }) =>
-    updateSearchParams(next, { tab: "chats" });
-
-  const handleArchiveChat = async (chatId: Id<"chats">) => {
-    try {
-      await archiveChat({ chatId });
-      // Archiving the open conversation closes its thread pane.
-      if (chatId === chatParam) {
-        updateChatParams({ chat: null });
-      }
-      toast.success("Chat archived successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to archive chat");
-    }
-  };
-
-  const handleDeleteArchivedChats = async () => {
-    if (selectedArchivedChats.size === 0) return;
-
-    try {
-      await deleteArchivedChats({ chatIds: Array.from(selectedArchivedChats) });
-      toast.success("Selected chats deleted successfully");
-      setSelectedArchivedChats(new Set());
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete chats");
-    }
-  };
-
-  const handleSelectArchivedChat = (chatId: Id<"chats">) => {
-    const newSelected = new Set(selectedArchivedChats);
-    if (newSelected.has(chatId)) {
-      newSelected.delete(chatId);
-    } else {
-      newSelected.add(chatId);
-    }
-    setSelectedArchivedChats(newSelected);
-  };
-
-  const handleSelectAllArchivedChats = () => {
-    if (selectedArchivedChats.size === (archivedChats || []).length) {
-      setSelectedArchivedChats(new Set());
-    } else {
-      setSelectedArchivedChats(new Set((archivedChats || []).map(chat => chat._id)));
-    }
-  };
-
   const handleProfileImageClick = () => {
     profileImageInputRef.current?.click();
   };
@@ -992,49 +840,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       }
     }
   };
-
-  // ── Unified inbox derived state (shared helpers — same derivations as InboxRow) ──
-  const activeIsSale = activeConversation ? isSaleThread(activeConversation) : false;
-  const activeIsBundle = activeConversation ? isBundleThread(activeConversation) : false;
-  // Per-kind facts for the thread pane (header label/route, composer availability)
-  // derived ONCE — extend here when a new thread kind appears, not in the JSX.
-  const threadMeta = !activeConversation
-    ? null
-    : activeIsSale
-      ? {
-          viewItemLabel: "View sale",
-          onViewItem: activeConversation.sale?.slug
-            ? () => { void navigate(`/sale/${activeConversation.sale?.slug}`); }
-            : undefined,
-          composerDisabled: !activeConversation.sale,
-          composerDisabledReason: "This sale is no longer available",
-        }
-      : activeIsBundle
-        ? {
-            viewItemLabel: "View bundle",
-            onViewItem: activeConversation.bundle
-              ? () => { void navigate(`/bundle/${activeConversation.bundle?._id}`); }
-              : undefined,
-            composerDisabled: !activeConversation.bundle,
-            composerDisabledReason: "This bundle is no longer available",
-          }
-        : {
-            viewItemLabel: "View flyer",
-            onViewItem:
-              activeConversation.ad && activeConversation.adId
-                ? () => { void navigate(`/ad/${activeConversation.adId}`); }
-                : undefined,
-            composerDisabled: !activeConversation.ad?.isActive,
-            composerDisabledReason: "This flyer is no longer active",
-          };
-  const counterpartName = activeConversation
-    ? getCounterpartName(activeConversation, activeConversation.role)
-    : "Deleted User";
-  // Title for the removable "?flyer=" filter chip — taken from any matching
-  // conversation's ad (the deep link comes from a context that has chats).
-  const flyerFilterTitle = flyerParam
-    ? inbox.conversations.find((conversation) => conversation.adId === flyerParam)?.ad?.title ?? "this flyer"
-    : null;
 
   // ── Persistent Layout header ─────────────────────────────────────────────
   // Registered before the early returns below (hooks rules). Config is rebuilt
@@ -1227,11 +1032,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                 <ul className="space-y-1">
                   {[
                     { id: "ads", label: "My Flyers", icon: SquaresFour },
+                    // Messages moved to its own destination (/messages) — this
+                    // entry is the pointer for dashboard-habituated users, and
+                    // it keeps the live unread badge.
                     {
-                      id: "chats",
+                      id: "messages-link",
                       label: "Messages",
                       icon: ChatText,
-                      badge: totalUnreadCount
+                      badge: totalUnreadCount,
+                      href: "/messages",
                     },
                     { id: "saved", label: "Saved Flyers", icon: BookmarkSimple },
                     ...(movingSaleModeEnabled
@@ -1240,16 +1049,19 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ...(bundleModeEnabled
                       ? [{ id: "bundles", label: "Bundles", icon: Stack }]
                       : []),
-                    { id: "archived", label: "Archived", icon: Archive },
                     { id: "profile", label: "Profile", icon: User },
-                  ].map((tab) => {
-                    const isActive = activeTab === tab.id;
+                  ].map((tab: { id: string; label: string; icon: typeof SquaresFour; badge?: number; href?: string }) => {
+                    const isActive = !tab.href && activeTab === tab.id;
                     return (
                       <li key={tab.id}>
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveTab(tab.id as any);
+                            if (tab.href) {
+                              void navigate(tab.href);
+                              return;
+                            }
+                            setActiveTab(tab.id as DashboardTab);
                             setSearchParams({ tab: tab.id }, { replace: true });
                             // Trigger scroll when clicking sidebar menu
                             setShouldScrollToContent(true);
@@ -1392,147 +1204,13 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           bundleInfo={bundleByAdId.get(ad._id)}
                           unreadCount={unreadCounts?.[ad._id] ?? 0}
                           onEdit={onEditAd}
-                          onOpenMessages={(adId) => updateInlineViewParams({ messages: adId })}
+                          onOpenMessages={(adId) => void navigate(`/messages?flyer=${adId}`)}
                           onToggleStatus={(adId) => void handleToggleStatus(adId)}
                           onManageBundle={(bundleId) => setManageBundleId(bundleId)}
                           onAddToBundle={(adId) => void navigate(`/sell/bundle?preselect=${adId}`)}
                         />
                       ))
                     )}
-                  </div>
-                </section>
-              )}
-              {activeTab === "chats" && (
-                <section ref={chatsContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="My messages">
-                  {/* Header + filters — on <lg the open thread replaces the list, so hide these */}
-                  <div className={activeConversation ? "hidden lg:block" : ""}>
-                    <header className="mb-4">
-                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Inbox</span>
-                      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Messages</h2>
-                      <p className="text-[15px] leading-relaxed text-foreground/75 mt-1 max-w-prose">All your conversations — selling and buying</p>
-                    </header>
-
-                    <div className="flex flex-wrap items-center gap-2 mb-5">
-                      <div role="tablist" aria-label="Filter conversations" className="inline-flex items-center gap-1 rounded-full bg-muted/50 ring-1 ring-border p-1">
-                        {INBOX_FILTERS.map((option) => {
-                          const isActiveFilter = inbox.filter === option.id;
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              role="tab"
-                              aria-selected={isActiveFilter}
-                              onClick={() => inbox.setFilter(option.id)}
-                              className={`relative h-8 px-4 rounded-full text-sm font-medium transition-colors active:scale-[0.98] ${isActiveFilter ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                            >
-                              {isActiveFilter && (
-                                <motion.span
-                                  layoutId="inbox-filter-pill"
-                                  aria-hidden="true"
-                                  transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
-                                  className="absolute inset-0 rounded-full bg-card shadow-sm ring-1 ring-border/70"
-                                />
-                              )}
-                              <span className="relative z-10">{option.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {flyerParam && (
-                        <button
-                          type="button"
-                          onClick={() => updateChatParams({ flyer: null })}
-                          aria-label={`Remove flyer filter: ${flyerFilterTitle}`}
-                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary/[0.08] ring-1 ring-primary/30 text-primary text-sm font-medium hover:bg-primary/[0.14] hover:ring-primary/50 active:scale-[0.98] transition-all max-w-full"
-                        >
-                          <span className="truncate">Filtering: {flyerFilterTitle}</span>
-                          <X className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="lg:grid lg:grid-cols-3 lg:gap-6">
-                    {/* Conversation list — 1/3 on lg+, replaced by the thread below lg */}
-                    <div className={`lg:col-span-1 ${activeConversation ? "hidden lg:block" : ""}`}>
-                      <AnimatePresence mode="wait" initial={false}>
-                        <motion.div
-                          key={inbox.filter}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: reduced ? 0 : 0.15 }}
-                        >
-                          {inbox.isLoading ? (
-                            <div className="space-y-3">
-                              <ChatItemSkeleton />
-                              <ChatItemSkeleton />
-                            </div>
-                          ) : inbox.conversations.length === 0 ? (
-                            <div className="text-center py-16">
-                              <div className="flex justify-center mb-4"><ChatText className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
-                              <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">{INBOX_EMPTY_COPY[inbox.filter].title}</h3>
-                              <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">{INBOX_EMPTY_COPY[inbox.filter].body}</p>
-                            </div>
-                          ) : (
-                            <div
-                              className="ring-1 ring-border/70 rounded-2xl overflow-hidden divide-y divide-border/60 bg-card lg:max-h-[calc(100vh-320px)] lg:overflow-y-auto"
-                              style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
-                            >
-                              {inbox.conversations.map((conversation, index) => (
-                                <InboxRow
-                                  key={conversation._id}
-                                  chat={conversation}
-                                  role={conversation.role}
-                                  index={index}
-                                  isActive={conversation._id === chatParam}
-                                  onOpen={(chatId) => updateChatParams({ chat: chatId })}
-                                  onArchive={(chatId) => { void handleArchiveChat(chatId as Id<"chats">); }}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Thread pane — 2/3 on lg+, full width below lg when open */}
-                    <div className={`lg:col-span-2 ${activeConversation ? "" : "hidden lg:block"}`}>
-                      {activeConversation ? (
-                        <div className="flex flex-col h-[calc(100dvh-300px)] min-h-[360px] lg:h-[calc(100vh-320px)] lg:min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card overflow-hidden">
-                          <ConversationHeader
-                            image={activeConversation.ad?.images?.[0]}
-                            title={getItemTitle(activeConversation)}
-                            subtitle={`${activeConversation.role === "selling" ? "Buyer" : "Seller"}: ${counterpartName}`}
-                            price={activeConversation.ad?.price}
-                            onBack={() => updateChatParams({ chat: null })}
-                            viewItemLabel={threadMeta!.viewItemLabel}
-                            onViewItem={threadMeta!.onViewItem}
-                            onReport={() => setShowReportModal(true)}
-                          />
-                          <ConversationThread
-                            messages={chatMessages ?? []}
-                            currentUserId={String(user._id)}
-                          />
-                          <MessageComposer
-                            onSend={async (content) => {
-                              await sendMessage({ chatId: activeConversation._id as Id<"chats">, content });
-                            }}
-                            disabled={threadMeta!.composerDisabled}
-                            disabledReason={threadMeta!.composerDisabledReason}
-                          />
-                        </div>
-                      ) : (
-                        <div className="hidden lg:flex items-center justify-center h-full min-h-[420px] ring-1 ring-border/70 rounded-2xl bg-card">
-                          <div className="text-center p-8 max-w-prose">
-                            <div className="flex justify-center mb-4"><ChatText className="w-12 h-12 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
-                            <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">Select a conversation</h3>
-                            <p className="text-[15px] leading-relaxed text-foreground/70">Choose a conversation from the list to start messaging</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </section>
               )}
@@ -1768,64 +1446,10 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                   </div>
                 </section>
               )}
-
-              {activeTab === "archived" && (
-                <section ref={archivedContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="Archived messages">
-                  <header className="flex items-center justify-between gap-3 mb-6">
-                    <div>
-                      <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Storage</span>
-                      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Archived Messages</h2>
-                    </div>
-                    {(archivedChats || []).length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllArchivedChats}
-                          className="inline-flex items-center h-9 px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                        >
-                          {selectedArchivedChats.size === (archivedChats || []).length ? 'Deselect All' : 'Select All'}
-                        </button>
-                        {selectedArchivedChats.size > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => { void handleDeleteArchivedChats(); }}
-                            className="inline-flex items-center h-9 px-3.5 rounded-full bg-destructive/10 ring-1 ring-destructive/30 text-destructive text-sm font-semibold hover:bg-destructive/20 active:scale-[0.98] transition-all"
-                          >
-                            Delete Selected ({selectedArchivedChats.size})
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </header>
-
-                  <div className="space-y-3">
-                    {(archivedChats || []).length === 0 ? (
-                      <div className="text-center py-16">
-                        <div className="flex justify-center mb-4"><Archive className="w-16 h-16 text-muted-foreground/30" weight="light" aria-hidden="true" /></div>
-                        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-2">No archived messages</h3>
-                        <p className="text-[15px] text-muted-foreground max-w-prose mx-auto">Archived conversations will appear here</p>
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground">Archived chats will be displayed here</div>
-                    )}
-                  </div>
-                </section>
-              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Report open conversation (unified inbox thread pane) */}
-      {activeConversation && (
-        <ReportModal
-          isOpen={showReportModal}
-          onClose={() => setShowReportModal(false)}
-          reportType="chat"
-          reportedEntityId={activeConversation._id}
-          reportedEntityName={`Conversation with ${counterpartName}`}
-        />
-      )}
 
       {/* Delete Flyer Confirmation Modal */}
       {manageBundleId && (

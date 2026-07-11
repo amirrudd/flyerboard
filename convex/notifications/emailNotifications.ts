@@ -287,7 +287,7 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
         } else {
           // Multiple messages - use summary format
           subject = `💬 You have ${messageCount} new message${messageCount > 1 ? 's' : ''}`;
-          // /messages doesn't exist as a route either — the Messages inbox lives on the dashboard.
+          // Summary emails land on the unified inbox at /messages.
           const messagesUrl = `${appUrl}${INBOX_PATH}`;
 
           htmlBody = `

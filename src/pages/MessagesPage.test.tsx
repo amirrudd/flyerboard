@@ -570,6 +570,10 @@ const chatSellMessages = [
 
 describe('MessagesPage - conversation thread', () => {
     beforeEach(() => {
+        // Mobile: the thread renders alone (full-screen portal). Desktop
+        // two-pane duplicates list snippets next to bubbles — covered by the
+        // dedicated two-pane describe below.
+        setInnerWidth(390);
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
         mockQueries({
             'posts:getSellerChats': [sellerChat],
@@ -684,6 +688,7 @@ describe('MessagesPage - conversation thread', () => {
 
 describe('MessagesPage - thread not-found state', () => {
     beforeEach(() => {
+        setInnerWidth(390);
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
         mockQueries({
             'posts:getSellerChats': [sellerChat],
@@ -716,6 +721,7 @@ describe('MessagesPage - thread not-found state', () => {
 
 describe('MessagesPage - thread kinds and availability', () => {
     beforeEach(() => {
+        setInnerWidth(390);
         mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
     });
 
@@ -775,5 +781,62 @@ describe('MessagesPage - thread kinds and availability', () => {
 
         expect(screen.getByLabelText('Type your message')).toBeDisabled();
         expect(screen.getByText('This flyer is no longer active')).toBeInTheDocument();
+    });
+});
+
+describe('MessagesPage - desktop two-pane (≥md)', () => {
+    beforeEach(() => {
+        setInnerWidth(1280);
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+            'messages:getChatMessages': chatSellMessages,
+        });
+    });
+
+    it('shows the list next to a "Select a conversation" empty pane on /messages', () => {
+        renderAt('/messages');
+
+        expect(screen.getByRole('complementary', { name: 'Conversations' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Conversation with Bella Buyer' })).toBeInTheDocument();
+        expect(screen.getByText('Select a conversation')).toBeInTheDocument();
+        expect(screen.queryByTestId('conversation-thread')).not.toBeInTheDocument();
+    });
+
+    it('renders the open thread in the right pane with the active row highlighted', () => {
+        renderAt('/messages/chat-sell');
+
+        // Thread pane renders in normal flow (no full-screen portal wrapper).
+        expect(screen.getByTestId('conversation-thread')).toBeInTheDocument();
+        expect(screen.queryByText('Select a conversation')).not.toBeInTheDocument();
+
+        // The open thread's row is highlighted via aria-current.
+        expect(
+            screen.getByRole('button', { name: 'Conversation with Bella Buyer' })
+        ).toHaveAttribute('aria-current', 'true');
+        expect(
+            screen.getByRole('button', { name: 'Conversation with Sam Seller' })
+        ).not.toHaveAttribute('aria-current');
+    });
+
+    it('selecting another row navigates to its /messages/:chatId URL (no ?chat= params)', () => {
+        renderAt('/messages/chat-sell');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Sam Seller' }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/messages/chat-buy');
+    });
+
+    it('keeps the inbox list interactive alongside the thread (filters still work)', () => {
+        renderAt('/messages/chat-sell');
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Buying' }));
+
+        // The selling row leaves the list; the thread (URL-driven) stays open.
+        expect(
+            screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })
+        ).not.toBeInTheDocument();
+        expect(screen.getByTestId('conversation-thread')).toBeInTheDocument();
     });
 });

@@ -11,6 +11,9 @@
  */
 export function getLegacyChatsRedirect(search: string): string | null {
     const params = new URLSearchParams(search);
+    // The archived tab was a real dashboard destination until the /messages
+    // redesign — old bookmarks land on the archived sub-view.
+    if (params.get("tab") === "archived") return "/messages/archived";
     if (params.get("tab") !== "chats") return null;
     const chat = params.get("chat");
     const flyer = params.get("flyer");

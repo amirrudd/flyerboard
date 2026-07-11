@@ -395,3 +395,29 @@ anti-flooding control.
 **Pricing seam**: v1 is free ("It's free" is load-bearing modal copy — the Terms mention
 paid boost, so users hesitate). `boostCount` is written on every boost so "first free,
 then paid" is a follow-up, not a migration.
+
+## Messages — dedicated `/messages` route over a dashboard overlay (2026-07-11, PR #289)
+
+**Decision**: replace the dashboard-embedded chats tab with a dedicated responsive
+`/messages` route — full-screen inbox and full-screen thread on mobile, two-pane
+master–detail on desktop — retarget the BottomNav Messages item to it, and turn
+`/dashboard?tab=chats[&chat=][&flyer=]` into a permanent redirect shim.
+
+**Why this option** (over "full-screen overlay inside dashboard" or "bottom-nav only"):
+1. It is the universal marketplace IA (FB Marketplace, Gumtree, Depop, Vinted,
+   Carousell, eBay): Messages is a destination, never a dashboard sub-tab.
+2. The expensive parts already existed: BottomNav with `UnreadBadge` +
+   `useTotalUnreadCount`, a complete shared chat library in `src/features/messages/`,
+   and URL-encoded chat state. The build was mostly assembly + extraction, not new UI.
+3. The overlay option leaves the inbox squeezed under dashboard chrome (the founder's
+   exact complaint) and deepens the 1,729-line `UserDashboard.tsx` god-component —
+   the extraction instead took it to ~1,354 lines.
+4. `/messages/:chatId` is a real URL — better for push/email deep links, browser
+   back, and PWA cold starts than `?tab=chats&chat=` query state.
+
+**Consequences**: notification link builders emit `/messages/<chatId>`
+(`convex/notifications/queries.ts`); legacy `?tab=chats` links resolve forever via
+the `DashboardPage` shim (`src/lib/legacyChatsRedirect.ts`); `AdMessages` survives
+only for legacy `?messages=<adId>` deep links pending retirement. e2e coverage is
+signed-out-only (Descope SMS OTP can't be automated) — authed chat flows are covered
+by unit tests until an auth harness is feasible.

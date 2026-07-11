@@ -5,18 +5,29 @@ description: Feature modules and component map
 
 # Features Map
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-11
 
 ## src/features/ads
 - **AdsGrid**: Main grid display of flyers with infinite scroll.
 - **AdDetail**: Single flyer view with images, map, seller info.
 - **PostAd**: Form to create new listings with direct R2 image upload.
-- **AdMessages**: Chat interface for a flyer.
+- **AdMessages**: LEGACY per-ad seller chat — reached only via `/dashboard?messages=<adId>` deep links; pending removal when that path retires (Phase 6 confirmation, 2026-07-11).
+
+## src/features/messages (shared chat library — the ONE chat implementation)
+- **Components**: `ConversationThread` (protected scroll + day separators + "New message" pill), `MessageBubble`, `MessageComposer`, `ConversationHeader`, `InboxRow`, `RoleChip`, `UnreadBadge`.
+- **Hooks/helpers**: `useInbox`, `useTotalUnreadCount`, `getThreadMeta`, `daySeparators.ts`, role/counterpart helpers, `InboxChat`/`ThreadMessage` types.
+- Consumers: MessagesPage, AdMessages (legacy), AdDetail buyer panel, BottomNav badge.
+
+## src/pages/MessagesPage.tsx (mobile chat redesign, PR #289)
+- **Routes**: `/messages` (inbox: All/Selling/Buying pills, `?flyer=` chip), `/messages/archived` (unarchive + bulk delete), `/messages/:chatId` (thread).
+- **Views**: mobile = full-screen inbox → full-screen thread (body portal, shell header + BottomNav hidden); desktop ≥md = two-pane master–detail (`grid-cols-[24rem_1fr]`). Selection state is the URL only.
+- Legacy `/dashboard?tab=chats[&chat=][&flyer=]` redirects here via the DashboardPage shim (`src/lib/legacyChatsRedirect.ts`). Notification deep links target `/messages/<chatId>`.
 
 ## src/features/dashboard
-- **UserDashboard**: User's personal area. Tabs for:
-  - My Listings (manage active/inactive flyers)
+- **UserDashboard**: User's personal area (chats/archived tabs removed 2026-07-11 → `/messages`). Tabs for:
+  - My Listings (manage active/inactive flyers; per-ad "Messages" → `/messages?flyer=<adId>`)
   - Favorites (saved flyers)
+  - Sales / Bundles
   - Profile (stats, verification, profile image upload)
   - Settings (notification preferences)
 

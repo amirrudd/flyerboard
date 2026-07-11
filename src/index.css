@@ -83,7 +83,10 @@
     --accent: 24 8% 14%;
     --accent-foreground: 30 15% 95%;
 
-    --destructive: 0 62.8% 30.6%;
+    /* Mirrors the light-mode red: the stock 30.6%-lightness dark value was a
+       button-background tone — as `text-destructive` on dark surfaces it was
+       unreadable (34 call sites). Same-token bg/text pairing as light mode. */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 30 15% 96%;
 
     --border: 24 8% 18%;

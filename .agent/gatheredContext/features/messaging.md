@@ -18,6 +18,15 @@ Map of the item + sale messaging system as it exists in code, plus known UX/func
 - **useInbox `isLoading`** covers the pre-sync window (`isAuthenticated && !isUserSynced`) — previously flashed "No messages yet" on every cold load.
 - **Known gaps** (task chips exist): bundle-thread replies send zero push/email (sendMessage gates on `adId || saleEventId` only); `deleteArchivedChats` hard-deletes both sides.
 
+### Phase 5 polish (2026-07-11, commit 070f496) — gotchas that took review rounds
+
+- **Auto-scroll is keyed on the newest message id, NOT the messages array**: `ConversationThread`'s scroll effect derives `lastId`/`lastSenderId` and keys on those — parents rebuild the array every render (ThreadView concats optimistic bubbles), and an array-keyed effect re-ran its fall-through `scrollIntoView` on unrelated re-renders, yanking a scrolled-up reader and defeating the "New message" pill. Regression test: re-render with a fresh array of the SAME messages while scrolled up → no scroll. ThreadView also memoizes `threadMessages` on `[messages, pendingMessages, currentUserId, retrySend]` (belt-and-braces).
+- **Strict react-hooks lints (react compiler era) shape these patterns**: `ref.current = x` during render is an ERROR (`react-hooks/refs`) — derive render-scalars (`lastId`, `lastSenderId`) and put them in deps instead of smuggling the array through a ref. Synchronous `setState` in an effect body is an ERROR (`react-hooks/set-state-in-effect`) — the offline debounce sets state only inside the `setTimeout` callback (2s when down, 0ms when back up).
+- **Offline UX**: `useConvexConnectionState` → offline only when `hasEverConnected && !isWebSocketConnected` AND it persists ~2s (`OFFLINE_DEBOUNCE_MS`) — reconnect blips must not flicker the banner. Composer `disabledReason`: permanent thread-kind reason (deleted flyer) wins over "You're offline".
+- **Focus-restore (`lastOpenedChatId`, module scope in MessagesPage)** is one-shot: cleared after ANY restore attempt (found or not) and on MessagesPage unmount. MessagesPage stays mounted across inbox↔thread navigation (both routes render the same element shape in App.tsx, so React preserves it) — that's why the unmount cleanup doesn't break the in-flow restore; tests simulate real navigation with `<Link>`s because `useNavigate` is mocked.
+- **ConversationHeader's descriptive "About: …" label sits on the title `<h2>`, not the `<header>`** — renaming the header would rename the region containing Back/Report for AT. Heading queries must use the label (`{ name: 'About: Test Buyer' }` in AdMessages.test).
+- **retrySend is guarded**: bails unless the pending entry still exists AND is still failed — memoized bubble closures can be stale, and a stale `onRetry` must never double-fire `sendMessage`.
+
 ## Data model
 
 - `chats` table: one row per (ad, buyer) or (saleEvent, buyer). Exactly one of `adId` / `saleEventId` is set (enforced in mutations, not the validator — see `convex/saleChats.ts` header comment).

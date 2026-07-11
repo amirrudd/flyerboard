@@ -656,7 +656,7 @@ function ArchivedView() {
                 </div>
             )}
 
-            {/* Strong confirm: deleteArchivedChats hard-deletes for BOTH sides. */}
+            {/* Confirm: deleteArchivedChats removes the chat from your inbox only; the other person keeps their copy. */}
             {showDeleteConfirm && createPortal(
                 <div
                     className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
@@ -675,9 +675,8 @@ function ArchivedView() {
                             Delete {selectedCount === 1 ? 'this conversation' : `${selectedCount} conversations`}?
                         </h2>
                         <p className="text-[15px] leading-relaxed text-foreground/75 mb-6 max-w-prose">
-                            This permanently deletes {selectedCount === 1 ? 'the conversation' : 'these conversations'} and
-                            every message inside — for both you <strong>and the other person</strong>. They
-                            lose their copy too, and it cannot be undone.
+                            This removes {selectedCount === 1 ? 'the conversation' : `${selectedCount} conversations`} from
+                            your inbox. <strong>The other person keeps their copy.</strong>
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -696,7 +695,7 @@ function ArchivedView() {
                                 onClick={() => { void handleDeleteSelected(); }}
                                 className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60 transition-all"
                             >
-                                Delete for both sides
+                                Delete from my inbox
                             </button>
                         </div>
                     </div>

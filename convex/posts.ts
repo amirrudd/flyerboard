@@ -391,6 +391,7 @@ export const getSellerChats = query({
       .query("chats")
       .withIndex("by_seller", (q) => q.eq("sellerId", userId))
       .filter((q) => q.neq(q.field("archivedBySeller"), true))
+      .filter((q) => q.neq(q.field("deletedBySeller"), true))
       .collect();
 
     // Get additional info for each chat
@@ -445,6 +446,7 @@ export const getBuyerChats = query({
       .query("chats")
       .withIndex("by_buyer", (q) => q.eq("buyerId", userId))
       .filter((q) => q.neq(q.field("archivedByBuyer"), true))
+      .filter((q) => q.neq(q.field("deletedByBuyer"), true))
       .collect();
 
     // Get additional info for each chat

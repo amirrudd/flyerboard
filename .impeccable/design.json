@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-11T19:30:00+10:00",
+  "title": "Design System: FlyerBoard",
+  "extensions": {
+    "colorMeta": {
+      "brand-red": { "role": "primary", "displayName": "Brand Red", "canonical": "hsl(5 71% 51%)", "tonalRamp": ["#7f1d1d", "#a82318", "#c72a1e", "#dc3626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "warm-ink": { "role": "neutral", "displayName": "Warm Ink", "canonical": "hsl(24 14% 12%)", "tonalRamp": ["#231e1a", "#3f3a35", "#5c554e", "#746a63", "#9a9089", "#c4bcb4", "#e3ddd9", "#faf8f4"] },
+      "warm-cream": { "role": "neutral", "displayName": "Warm Cream", "canonical": "hsl(34 25% 97.5%)", "tonalRamp": ["#231e1a", "#3f3a35", "#5c554e", "#746a63", "#9a9089", "#c4bcb4", "#f1ede9", "#faf8f4"] },
+      "bundle-teal": { "role": "secondary", "displayName": "Bundle Teal", "canonical": "hsl(174 84% 32%)", "tonalRamp": ["#063d37", "#0a5c53", "#0d7d70", "#0d9689", "#14b8a6", "#5eead4", "#99f6e4", "#ccfbf1"] },
+      "destructive-red": { "role": "utility", "displayName": "Destructive Red", "canonical": "hsl(0 84.2% 60.2%)", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Fraunces serif. Hero and page headlines only, with variable-weight hover on hero." },
+      "headline": { "displayName": "Headline", "purpose": "Fraunces serif. Section headings within a page." },
+      "title": { "displayName": "Title", "purpose": "Plus Jakarta Sans. Card titles, listing names, dialog titles." },
+      "body": { "displayName": "Body", "purpose": "Plus Jakarta Sans. Descriptions and prose, 65–75ch." },
+      "label": { "displayName": "Label / Kicker", "purpose": "Plus Jakarta Sans, 11px, 0.14em, uppercase, muted. Eyebrows, chips, pills." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px hsl(12 35% 22% / 0.04), 0 2px 8px -2px hsl(12 35% 22% / 0.05)", "purpose": "Resting state of a listing card — near-flat, warm-tinted." },
+      { "name": "card-hover", "value": "0 4px 10px hsl(12 35% 22% / 0.08), 0 16px 32px -12px hsl(12 35% 22% / 0.18)", "purpose": "Hover lift, paired with translateY(-3px)." },
+      { "name": "soft", "value": "0 4px 20px -2px hsl(12 35% 22% / 0.06)", "purpose": "Diffuse warmth under panels and sheets." },
+      { "name": "glow", "value": "0 0 15px hsl(5 71% 51% / 0.30)", "purpose": "Brand-red halo for emphasis moments only." }
+    ],
+    "motion": [
+      { "name": "ease-listing", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "Listing-card transforms, view transitions, exponential ease-out." },
+      { "name": "ease-weight", "value": "cubic-bezier(0.32, 0.72, 0, 1)", "purpose": "Fraunces variable-weight hover and springy moments." },
+      { "name": "press", "value": "transform: scale(0.98)", "purpose": "Active-press feedback on buttons and cards." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "desktop", "value": "1025px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The workhorse CTA — full pill, brand red, springy press.",
+      "html": "<button class=\"ds-btn-primary\">Post your flyer</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 24px; border: none; border-radius: 9999px; background: #dc3626; color: #fefdfc; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-weight: 600; font-size: 0.9375rem; box-shadow: 0 1px 2px hsl(5 71% 51% / 0.25); transition: background 0.2s, transform 0.2s; } .ds-btn-primary:hover { background: #c72a1e; } .ds-btn-primary:focus-visible { outline: 2px solid #dc3626; outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet alternate action — warm-surface pill with ink text.",
+      "html": "<button class=\"ds-btn-secondary\">Save for later</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; border: none; border-radius: 9999px; background: #f1ede9; color: #231e1a; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-weight: 600; font-size: 0.9375rem; transition: background 0.2s, transform 0.2s; } .ds-btn-secondary:hover { background: #e7e1db; } .ds-btn-secondary:focus-visible { outline: 2px solid #dc3626; outline-offset: 2px; } .ds-btn-secondary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Brand Chip",
+      "kind": "chip",
+      "refersTo": "chip-brand",
+      "description": "Kicker-style brand pill — tinted red fill, uppercase tracked label.",
+      "html": "<span class=\"ds-chip-brand\">Featured</span>",
+      "css": ".ds-chip-brand { display: inline-flex; align-items: center; border-radius: 9999px; background: rgba(220, 54, 38, 0.10); color: #dc3626; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Full-pill search field with brand-red focus ring.",
+      "html": "<input class=\"ds-input-search\" type=\"text\" placeholder=\"Search flyers near you\" />",
+      "css": ".ds-input-search { width: 100%; height: 44px; padding: 0 16px; border: 1px solid #e3ddd9; border-radius: 9999px; background: #fefdfc; color: #231e1a; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.9375rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; } .ds-input-search::placeholder { color: rgba(116, 106, 99, 0.7); } .ds-input-search:focus { border-color: #dc3626; box-shadow: 0 0 0 4px rgba(220, 54, 38, 0.10); }"
+    },
+    {
+      "name": "Listing Card",
+      "kind": "card",
+      "refersTo": "card-listing",
+      "description": "Flat-at-rest listing card that lifts with a warm shadow on hover.",
+      "html": "<article class=\"ds-card-listing\"><div class=\"ds-card-media\"></div><div class=\"ds-card-body\"><span class=\"ds-card-price\">$240</span><h3 class=\"ds-card-title\">Mid-century teak sideboard</h3><p class=\"ds-card-meta\">Brunswick · 2h ago</p></div></article>",
+      "css": ".ds-card-listing { display: block; width: 240px; border-radius: 12px; background: #fefdfc; border: 1px solid #e3ddd9; overflow: hidden; box-shadow: 0 1px 2px hsl(12 35% 22% / 0.04), 0 2px 8px -2px hsl(12 35% 22% / 0.05); transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-card-listing:hover { transform: translateY(-3px); box-shadow: 0 4px 10px hsl(12 35% 22% / 0.08), 0 16px 32px -12px hsl(12 35% 22% / 0.18); } .ds-card-media { height: 150px; background: linear-gradient(135deg, #f1ede9, #e3ddd9); } .ds-card-body { padding: 12px 14px 16px; } .ds-card-price { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 1rem; color: #231e1a; font-variant-numeric: tabular-nums; } .ds-card-title { margin: 2px 0 4px; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-weight: 600; font-size: 0.9375rem; line-height: 1.3; color: #231e1a; } .ds-card-meta { margin: 0; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; color: #746a63; }"
+    },
+    {
+      "name": "Kicker Label",
+      "kind": "custom",
+      "refersTo": "label",
+      "description": "Editorial small-caps eyebrow in muted ink.",
+      "html": "<span class=\"ds-kicker\">Just listed</span>",
+      "css": ".ds-kicker { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #746a63; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warm Noticeboard",
+    "overview": "FlyerBoard is a classifieds marketplace that feels like a friendly neighbourhood board, not a database of listings. The surface is warm paper — a calibrated cream neutral (#FAF8F4) — under an almost-invisible film grain. Against that calm canvas, exactly one voice cuts through: the brand red (#DC3626). Headlines are Fraunces, a variable serif with a magazine's composure; everything else is Plus Jakarta Sans. Trustworthy and human, confident without shouting. It rejects cluttered old-Gumtree greyness, cold corporate-SaaS sterility, and loud discount-retail chaos. Depth is quiet — surfaces sit flat and lift with a warm-tinted shadow only on touch. Mobile-first and one-handed; the feed is the heartbeat, chronological and honest.",
+    "keyCharacteristics": [
+      "Warm cream paper base with a single confident red accent — never a second loud colour.",
+      "Editorial serif (Fraunces) for headlines, humanist sans (Plus Jakarta Sans) for everything else.",
+      "Full-pill, tactile buttons with a springy press; warm-tinted shadows, never pure black.",
+      "Signature texture: subtle film grain, ambient brand glow, cursor-tracked spotlight on cards.",
+      "Flat-by-default depth; motion and shadow appear as a response to state."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "The brand red is the only loud colour on any screen, ≤10% of the surface — CTAs, current selection, and state indicators only, never decoration. Bundle teal is the one exception and lives only inside the Bundle feature.", "section": "colors" },
+      { "name": "The Warm-Black Rule", "body": "No pure #000 and no pure neutral grey. Every black, grey, and shadow carries the warm hue. Cool blue-grey neutrals are forbidden on content surfaces.", "section": "colors" },
+      { "name": "The Serif-Headlines-Only Rule", "body": "Fraunces is for headlines and hero moments only. Buttons, labels, inputs, and dense UI are always Plus Jakarta Sans.", "section": "typography" },
+      { "name": "The Tabular-Numbers Rule", "body": "Prices, counts, and dates use tabular-nums so figures stay aligned.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest; elevation is earned by interaction. If it looks like it's floating before you touch it, the resting shadow is too heavy.", "section": "elevation" },
+      { "name": "The Warm-Shadow Rule", "body": "Every shadow rides the --shadow-color channel, never rgba(0,0,0). A cold black shadow on warm cream reads as a foreign object.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the brand red (#DC3626) as the single loud voice — CTAs, current selection, and state only, on ≤10% of any screen.",
+      "Do set headlines in Fraunces and everything else in Plus Jakarta Sans; lean on the serif/sans contrast for hierarchy.",
+      "Do keep surfaces flat at rest and let warm-tinted shadow appear on hover/focus.",
+      "Do use warm neutrals only — warm-ink text, warm borders, warm shadows on the --shadow-color channel.",
+      "Do give every interactive element its full state set: default, hover, focus-visible ring, active scale-[0.98], disabled, loading (skeletons, not centre-spinners).",
+      "Do use .tabular for prices, counts, and dates.",
+      "Do design mobile-first and one-handed; respect safe-area insets and prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't recreate the cluttered, spammy old-Gumtree feel — no dense grey listing walls, dated chrome, or ad-choked pages.",
+      "Don't drift toward cold corporate SaaS — no enterprise navy, no blue-grey neutrals, no data-tool sterility.",
+      "Don't go loud discount-retail — no screaming SALE badges, no coupon-site chaos, no aggressive upsell.",
+      "Don't introduce a second saturated accent to compete with the red. Bundle teal is the only exception.",
+      "Don't use pure #000, pure neutral grey, or rgba(0,0,0) shadows on content surfaces.",
+      "Don't put Fraunces on buttons, labels, inputs, or table data.",
+      "Don't use a coloured border-left/border-right stripe, gradient text as meaning, or glassmorphism as a default surface.",
+      "Don't ship a card that floats at rest — if it's shadowed before you touch it, the resting elevation is too heavy."
+    ]
+  }
+}

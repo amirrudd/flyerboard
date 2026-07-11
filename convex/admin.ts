@@ -518,16 +518,23 @@ export const toggleUserVerification = mutation({
  */
 export const setAdminUser = internalMutation({
     args: {
-        email: v.string(),
+        email: v.optional(v.string()),
+        // For Descope users with no email set (e.g. local test logins).
+        userId: v.optional(v.id("users")),
     },
     handler: async (ctx, args) => {
-        const users = await ctx.db
-            .query("users")
-            .withIndex("email", (q) => q.eq("email", args.email))
-            .collect();
+        if (!args.email && !args.userId) {
+            throw new Error("Pass email or userId");
+        }
+        const users = args.userId
+            ? [await ctx.db.get(args.userId)].filter((u) => u !== null)
+            : await ctx.db
+                  .query("users")
+                  .withIndex("email", (q) => q.eq("email", args.email!))
+                  .collect();
 
         if (users.length === 0) {
-            throw new Error(`User with email ${args.email} not found`);
+            throw new Error(`User ${args.email ?? args.userId} not found`);
         }
 
         for (const user of users) {

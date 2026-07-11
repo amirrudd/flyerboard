@@ -24,11 +24,15 @@ export const seedTallImageAd = internalMutation({
     ageDays: v.optional(v.number()),
     // Own the ad as this user (defaults to the first user in the table).
     userEmail: v.optional(v.string()),
+    // Or by id — for logged-in Descope users that have no email set.
+    userId: v.optional(v.id("users")),
   },
   returns: v.id("ads"),
   handler: async (ctx, args) => {
     const [user, category] = await Promise.all([
-      args.userEmail
+      args.userId
+        ? ctx.db.get(args.userId)
+        : args.userEmail
         ? ctx.db
             .query("users")
             .withIndex("email", (q) => q.eq("email", args.userEmail!))

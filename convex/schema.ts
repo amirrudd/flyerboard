@@ -289,8 +289,4 @@ export default defineSchema({
     .index("tokenIdentifier", ["tokenIdentifier"])
     .index("by_admin", ["isAdmin"])
     .index("by_active", ["isActive"]),
-  // TEMPORARY (remove in the re-enable PR): schema validation is off so this deploy
-  // can push while pre-Boost `ads` rows still lack the now-required `bumpedAt`. Run
-  // `npx convex run --prod migrations:backfillBumpedAt` to zero, then re-enable.
-  // See convex/schema.ts `bumpedAt` comment for the Phase 1A/1B rollout rule.
-}, { schemaValidation: false });
+});

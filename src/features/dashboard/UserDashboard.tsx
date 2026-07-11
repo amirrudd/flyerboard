@@ -1131,7 +1131,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1">Your listings</span>
                       <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">My Flyers</h2>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col-reverse items-end gap-2 sm:flex-row sm:items-center">
                       {bundleModeEnabled && (
                         <button
                           type="button"
@@ -1145,8 +1145,9 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       <button
                         type="button"
                         onClick={onPostAd}
-                        className="inline-flex items-center justify-center h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
+                        className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
                       >
+                        <Plus size={18} weight="bold" />
                         Pin Next Flyer
                       </button>
                     </div>

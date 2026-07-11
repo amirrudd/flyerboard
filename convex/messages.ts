@@ -218,12 +218,14 @@ export const getTotalUnreadCount = query({
       .query("chats")
       .withIndex("by_seller", (q) => q.eq("sellerId", userId))
       .filter((q) => q.neq(q.field("archivedBySeller"), true))
+      .filter((q) => q.neq(q.field("deletedBySeller"), true))
       .collect();
 
     const buyerChats = await ctx.db
       .query("chats")
       .withIndex("by_buyer", (q) => q.eq("buyerId", userId))
       .filter((q) => q.neq(q.field("archivedByBuyer"), true))
+      .filter((q) => q.neq(q.field("deletedByBuyer"), true))
       .collect();
 
     const counts = await Promise.all([
@@ -345,6 +347,7 @@ export const getArchivedChats = query({
       .withIndex("by_buyer_archived", (q) =>
         q.eq("buyerId", userId).eq("archivedByBuyer", true)
       )
+      .filter((q) => q.neq(q.field("deletedByBuyer"), true))
       .collect();
 
     const chatsWithDetails = await Promise.all(
@@ -377,7 +380,19 @@ export const deleteArchivedChats = mutation({
       const chat = await ctx.db.get(chatId);
       if (!chat) continue;
 
-      if (chat.buyerId === userId && chat.archivedByBuyer) {
+      const iAmBuyer = chat.buyerId === userId;
+      // Auth: caller must be a participant.
+      if (!iAmBuyer && chat.sellerId !== userId) continue;
+
+      // Only archived chats can be deleted (matches the ArchivedView UI gate).
+      const archived = iAmBuyer ? chat.archivedByBuyer : chat.archivedBySeller;
+      if (!archived) continue;
+
+      const otherDeleted = iAmBuyer ? chat.deletedBySeller : chat.deletedByBuyer;
+      if (otherDeleted) {
+        // ponytail: both sides have now deleted — hard-delete inline (no cron).
+        // A chat deleted by only one side lingers hidden from that user until
+        // the other side also deletes; that's intended, not a leak to reap.
         const messages = await ctx.db
           .query("messages")
           .withIndex("by_chat", (q) => q.eq("chatId", chatId))
@@ -387,6 +402,11 @@ export const deleteArchivedChats = mutation({
           await ctx.db.delete(message._id);
         }
         await ctx.db.delete(chatId);
+      } else {
+        await ctx.db.patch(
+          chatId,
+          iAmBuyer ? { deletedByBuyer: true } : { deletedBySeller: true }
+        );
       }
     }
 

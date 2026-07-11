@@ -65,6 +65,8 @@ async function seedChat(
     buyerId: Id<"users">;
     sellerId: Id<"users">;
     lastMessageAt: number;
+    deletedBySeller?: boolean;
+    deletedByBuyer?: boolean;
   }
 ): Promise<Id<"chats">> {
   return t.run((ctx) =>
@@ -73,6 +75,8 @@ async function seedChat(
       buyerId: opts.buyerId,
       sellerId: opts.sellerId,
       lastMessageAt: opts.lastMessageAt,
+      deletedBySeller: opts.deletedBySeller,
+      deletedByBuyer: opts.deletedByBuyer,
     })
   );
 }
@@ -159,6 +163,18 @@ describe("getSellerChats", () => {
     expect(chats).toHaveLength(1);
     expect(chats[0].latestMessage).toBeNull();
   });
+
+  test("excludes a chat the seller has deleted from their inbox", async () => {
+    const t = convexTest(schema, modules);
+    const sellerId = await seedUser(t, "sellerDel", "Seller");
+    const buyerId = await seedUser(t, "buyerDel", "Buyer");
+    const adId = await seedAd(t, sellerId, "Ad Del");
+    await seedChat(t, { adId, buyerId, sellerId, lastMessageAt: Date.now(), deletedBySeller: true });
+
+    const asSeller = t.withIdentity({ subject: "sellerDel" });
+    const chats = await asSeller.query(api.posts.getSellerChats, {});
+    expect(chats).toHaveLength(0);
+  });
 });
 
 describe("getBuyerChats", () => {
@@ -212,5 +228,17 @@ describe("getBuyerChats", () => {
     expect(chats).toHaveLength(1);
     expect(chats[0].latestMessage).not.toBeNull();
     expect(chats[0].latestMessage!.content).toBe("latest reply");
+  });
+
+  test("excludes a chat the buyer has deleted from their inbox", async () => {
+    const t = convexTest(schema, modules);
+    const buyerId = await seedUser(t, "buyerDel2", "Buyer");
+    const sellerId = await seedUser(t, "sellerDel2", "Seller");
+    const adId = await seedAd(t, sellerId, "Ad Del2");
+    await seedChat(t, { adId, buyerId, sellerId, lastMessageAt: Date.now(), deletedByBuyer: true });
+
+    const asBuyer = t.withIdentity({ subject: "buyerDel2" });
+    const chats = await asBuyer.query(api.posts.getBuyerChats, {});
+    expect(chats).toHaveLength(0);
   });
 });

@@ -71,6 +71,8 @@ async function seedChat(
     lastReadByBuyer?: number;
     archivedBySeller?: boolean;
     archivedByBuyer?: boolean;
+    deletedBySeller?: boolean;
+    deletedByBuyer?: boolean;
   }
 ): Promise<Id<"chats">> {
   return t.run((ctx) =>
@@ -84,6 +86,8 @@ async function seedChat(
       lastReadByBuyer: opts.lastReadByBuyer,
       archivedBySeller: opts.archivedBySeller,
       archivedByBuyer: opts.archivedByBuyer,
+      deletedBySeller: opts.deletedBySeller,
+      deletedByBuyer: opts.deletedByBuyer,
     })
   );
 }
@@ -317,5 +321,130 @@ describe("sendMessage notification scheduling", () => {
     expect(pending).toHaveLength(1);
     expect(pending[0].saleEventId).toBe(saleEventId);
     expect(pending[0].adId).toBeUndefined();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// deleteArchivedChats — one-sided delete
+// ──────────────────────────────────────────────────────────────────────────
+describe("deleteArchivedChats", () => {
+  test("throws when unauthenticated", async () => {
+    const t = convexTest(schema, modules);
+    await expect(
+      t.mutation(api.messages.deleteArchivedChats, { chatIds: [] })
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("buyer delete on archived chat soft-hides it, keeps row + messages + seller's copy", async () => {
+    const t = convexTest(schema, modules);
+    const sellerId = await seedUser(t, "d_sel", "Seller");
+    const buyerId = await seedUser(t, "d_buy", "Buyer");
+    const adId = await seedAd(t, sellerId);
+
+    const chatId = await seedChat(t, {
+      adId,
+      buyerId,
+      sellerId,
+      lastMessageAt: Date.now(),
+      archivedByBuyer: true,
+    });
+    await seedMessage(t, chatId, sellerId, Date.now());
+
+    const asBuyer = t.withIdentity({ subject: "d_buy" });
+    await asBuyer.mutation(api.messages.deleteArchivedChats, { chatIds: [chatId] });
+
+    // Row still exists, flag set, messages intact.
+    const chat = await t.run((ctx) => ctx.db.get(chatId));
+    expect(chat).not.toBeNull();
+    expect(chat!.deletedByBuyer).toBe(true);
+    const msgs = await t.run((ctx) =>
+      ctx.db.query("messages").withIndex("by_chat", (q) => q.eq("chatId", chatId)).collect()
+    );
+    expect(msgs).toHaveLength(1);
+
+    // Hidden from the buyer's archived list and buyer chats.
+    const archived = await asBuyer.query(api.messages.getArchivedChats, {});
+    expect(archived).toHaveLength(0);
+    const buyerChats = await asBuyer.query(api.posts.getBuyerChats, {});
+    expect(buyerChats).toHaveLength(0);
+
+    // Still visible to the seller.
+    const asSeller = t.withIdentity({ subject: "d_sel" });
+    const sellerChats = await asSeller.query(api.posts.getSellerChats, {});
+    expect(sellerChats).toHaveLength(1);
+  });
+
+  test("second side's delete hard-removes the chat row and its messages", async () => {
+    const t = convexTest(schema, modules);
+    const sellerId = await seedUser(t, "h_sel", "Seller");
+    const buyerId = await seedUser(t, "h_buy", "Buyer");
+    const adId = await seedAd(t, sellerId);
+
+    // Seller already deleted their side; buyer's side is archived.
+    const chatId = await seedChat(t, {
+      adId,
+      buyerId,
+      sellerId,
+      lastMessageAt: Date.now(),
+      archivedByBuyer: true,
+      deletedBySeller: true,
+    });
+    await seedMessage(t, chatId, sellerId, Date.now());
+
+    const asBuyer = t.withIdentity({ subject: "h_buy" });
+    await asBuyer.mutation(api.messages.deleteArchivedChats, { chatIds: [chatId] });
+
+    const chat = await t.run((ctx) => ctx.db.get(chatId));
+    expect(chat).toBeNull();
+    const msgs = await t.run((ctx) =>
+      ctx.db.query("messages").withIndex("by_chat", (q) => q.eq("chatId", chatId)).collect()
+    );
+    expect(msgs).toHaveLength(0);
+  });
+
+  test("no-op on a non-archived chat", async () => {
+    const t = convexTest(schema, modules);
+    const sellerId = await seedUser(t, "na_sel", "Seller");
+    const buyerId = await seedUser(t, "na_buy", "Buyer");
+    const adId = await seedAd(t, sellerId);
+
+    const chatId = await seedChat(t, {
+      adId,
+      buyerId,
+      sellerId,
+      lastMessageAt: Date.now(),
+      // not archived
+    });
+
+    const asBuyer = t.withIdentity({ subject: "na_buy" });
+    await asBuyer.mutation(api.messages.deleteArchivedChats, { chatIds: [chatId] });
+
+    const chat = await t.run((ctx) => ctx.db.get(chatId));
+    expect(chat).not.toBeNull();
+    expect(chat!.deletedByBuyer).toBeUndefined();
+  });
+
+  test("no-op when caller is not a participant", async () => {
+    const t = convexTest(schema, modules);
+    const sellerId = await seedUser(t, "np_sel", "Seller");
+    const buyerId = await seedUser(t, "np_buy", "Buyer");
+    await seedUser(t, "np_stranger", "Stranger");
+    const adId = await seedAd(t, sellerId);
+
+    const chatId = await seedChat(t, {
+      adId,
+      buyerId,
+      sellerId,
+      lastMessageAt: Date.now(),
+      archivedByBuyer: true,
+    });
+
+    const asStranger = t.withIdentity({ subject: "np_stranger" });
+    await asStranger.mutation(api.messages.deleteArchivedChats, { chatIds: [chatId] });
+
+    const chat = await t.run((ctx) => ctx.db.get(chatId));
+    expect(chat).not.toBeNull();
+    expect(chat!.deletedByBuyer).toBeUndefined();
+    expect(chat!.deletedBySeller).toBeUndefined();
   });
 });

@@ -473,7 +473,7 @@ describe('MessagesPage - archived view', () => {
         });
     });
 
-    it('gates bulk delete behind a confirm dialog that spells out the two-sided hard delete', async () => {
+    it('gates bulk delete behind a confirm dialog that spells out the one-sided delete', async () => {
         renderAt('/messages/archived');
 
         fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
@@ -481,11 +481,11 @@ describe('MessagesPage - archived view', () => {
 
         // The confirm dialog is the gate — nothing deleted yet.
         const dialog = screen.getByRole('dialog');
-        expect(within(dialog).getByText(/both you/i)).toBeInTheDocument();
-        expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument();
+        expect(within(dialog).getByText(/from your inbox/i)).toBeInTheDocument();
+        expect(within(dialog).getByText(/keeps their copy/i)).toBeInTheDocument();
         expect(mutationSpies['messages:deleteArchivedChats']).not.toHaveBeenCalled();
 
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Delete for both sides' }));
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Delete from my inbox' }));
 
         await waitFor(() => {
             expect(mutationSpies['messages:deleteArchivedChats']).toHaveBeenCalledWith({
@@ -518,7 +518,7 @@ describe('MessagesPage - archived view', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Select All' }));
         fireEvent.click(screen.getByRole('button', { name: 'Delete Selected (2)' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Delete for both sides' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Delete from my inbox' }));
 
         // Delete in flight: the dialog must not be dismissible.
         fireEvent.keyDown(document, { key: 'Escape' });

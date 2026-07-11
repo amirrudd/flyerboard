@@ -74,6 +74,9 @@ const applicationTables = {
     lastReadByBuyer: v.optional(v.number()),
     archivedByBuyer: v.optional(v.boolean()),
     archivedBySeller: v.optional(v.boolean()),
+    // One-sided delete: hard-delete only when BOTH sides are true (see messages.deleteArchivedChats).
+    deletedByBuyer: v.optional(v.boolean()),
+    deletedBySeller: v.optional(v.boolean()),
   })
     .index("by_ad_and_buyer", ["adId", "buyerId"])
     .index("by_sale_event_buyer", ["saleEventId", "buyerId"]) // 1 thread per buyer per Sale

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexConnectionState, useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -33,9 +33,30 @@ import {
     getThreadMeta,
     useInbox,
 } from "../features/messages";
-import type { InboxChat, InboxFilter } from "../features/messages";
+import type { InboxChat, InboxFilter, ThreadMessage } from "../features/messages";
 
 const NO_MESSAGES: never[] = [];
+
+/**
+ * Focus restoration (a11y): on mobile the full-screen thread replaces the
+ * inbox wholesale, so the originating row is tracked at module scope and
+ * re-focused the next time the inbox mounts with its rows rendered.
+ */
+let lastOpenedChatId: string | null = null;
+
+/** An optimistic outgoing message, keyed by a client-generated UUID. */
+interface PendingMessage {
+    clientId: string;
+    content: string;
+    timestamp: number;
+    failed: boolean;
+}
+
+const OFFLINE_MESSAGE =
+    "You're offline — messages will update when you reconnect";
+
+/** How long the socket must stay down before the UI surfaces "offline". */
+const OFFLINE_DEBOUNCE_MS = 2000;
 
 // Segmented filter options for the unified inbox (ported from the dashboard
 // chats tab — same ids the shared `useInbox` filter expects).
@@ -111,6 +132,12 @@ export function MessagesPage() {
             void navigate('/', { replace: true });
         }
     }, [isAuthenticated, isSessionLoading, navigate]);
+
+    // Leaving /messages* entirely discards any pending focus-restore target —
+    // a stale id must never steal focus on a much later inbox visit. (The
+    // page stays mounted across inbox <-> thread navigation, so the in-flow
+    // restore still works.)
+    useEffect(() => () => { lastOpenedChatId = null; }, []);
 
     if (isSessionLoading || !isAuthenticated) {
         return <PageLoader />;
@@ -245,6 +272,20 @@ function InboxView({
 
     const inbox = useInbox({ flyerId: flyerParam ?? undefined });
     const archiveChat = useMutation(api.messages.archiveChat);
+
+    // Restore focus to the row that opened the last thread (mobile back —
+    // the thread unmounted this whole view). Waits for rows to render.
+    const inboxLoading = inbox.isLoading;
+    useEffect(() => {
+        if (inboxLoading || !lastOpenedChatId) return;
+        const row = document.querySelector<HTMLElement>(
+            `[data-chat-id="${lastOpenedChatId}"]`
+        );
+        row?.focus();
+        // One shot either way: a row missing from this list (filtered out,
+        // archived, deleted) must not ambush a later inbox visit.
+        lastOpenedChatId = null;
+    }, [inboxLoading]);
 
     // Title for the removable "?flyer=" chip — taken from any matching
     // conversation (the deep link comes from a context that has chats).
@@ -393,7 +434,10 @@ function InboxView({
                             index={index}
                             isActive={conversation._id === activeChatId}
                             className="min-h-[4.5rem]"
-                            onOpen={(chatId) => { void navigate(flyerParam ? `/messages/${chatId}?flyer=${encodeURIComponent(flyerParam)}` : `/messages/${chatId}`); }}
+                            onOpen={(chatId) => {
+                                lastOpenedChatId = chatId;
+                                void navigate(flyerParam ? `/messages/${chatId}?flyer=${encodeURIComponent(flyerParam)}` : `/messages/${chatId}`);
+                            }}
                             // Archive is buyer-only: the archived view only
                             // surfaces buyer-archived chats, so a chat archived
                             // from a selling row would have no recovery UI.
@@ -682,7 +726,33 @@ function ThreadView({ chatId }: { chatId: string }) {
     const [searchParams] = useSearchParams();
     const flyerParam = searchParams.get("flyer");
     const { isMobile } = useDeviceInfo();
+    const { slideOver } = useMotionPrefs();
     const [showReportModal, setShowReportModal] = useState(false);
+    // Mobile portal column — used to focus the back button on entry (a11y).
+    const portalColumnRef = useRef<HTMLDivElement>(null);
+
+    // Optimistic sends: rendered merged into the live thread until the
+    // mutation resolves (removed — the real message arrives via the live
+    // query) or rejects (marked failed, bubble offers retry).
+    const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
+
+    // Convex connection state (reactive hook, convex 1.42). "Offline" only
+    // after the socket has (a) connected once — the initial connect window
+    // must not flash the banner — and (b) stayed down ~2s, so routine
+    // reconnect blips (tab wake, network switch) don't flicker it either.
+    const connection = useConvexConnectionState();
+    const socketDown =
+        connection.hasEverConnected && !connection.isWebSocketConnected;
+    const [isOffline, setIsOffline] = useState(false);
+    useEffect(() => {
+        // Down: latch "offline" only after the debounce window. Back up:
+        // clear on the next tick (0ms) — effectively immediate.
+        const timer = window.setTimeout(
+            () => setIsOffline(socketDown),
+            socketDown ? OFFLINE_DEBOUNCE_MS : 0
+        );
+        return () => window.clearTimeout(timer);
+    }, [socketDown]);
 
     // Canonical auth+sync gate (same as useInbox) for this view's own query.
     const { isAuthenticated, isSessionLoading } = useSession();
@@ -753,6 +823,99 @@ function ThreadView({ chatId }: { chatId: string }) {
         }
     }, [conversationId, latestMessageTimestamp, markAsRead]);
 
+    // A11y: on the mobile full-screen thread, move focus to the header's
+    // back button once the conversation has rendered (inbox → thread and
+    // deep-link entries alike).
+    useEffect(() => {
+        if (!isMobile || !conversationId) return;
+        portalColumnRef.current
+            ?.querySelector<HTMLElement>('button[aria-label="Back"]')
+            ?.focus();
+    }, [isMobile, conversationId]);
+
+    // Fire-and-forget send: the promise deliberately outlives this component
+    // (navigating away must not lose an in-flight send). Resolution removes
+    // the pending bubble — Convex applies the mutation's writes to the live
+    // getChatMessages subscription before resolving, so the real message is
+    // already on screen. Rejection marks the bubble failed (tap to retry)
+    // and toasts; the typed content is never lost.
+    const dispatchSend = useCallback(
+        (clientId: string, content: string, chatId: Id<"chats">) => {
+            sendMessage({ chatId, content }).then(
+                () => {
+                    setPendingMessages((previous) =>
+                        previous.filter((pending) => pending.clientId !== clientId)
+                    );
+                },
+                (error: unknown) => {
+                    setPendingMessages((previous) =>
+                        previous.map((pending) =>
+                            pending.clientId === clientId
+                                ? { ...pending, failed: true }
+                                : pending
+                        )
+                    );
+                    toast.error(
+                        error instanceof Error && error.message
+                            ? error.message
+                            : "Failed to send message"
+                    );
+                }
+            );
+        },
+        [sendMessage]
+    );
+
+    // The role tag tells us which side of the chat we are — no extra
+    // current-user query needed for bubble alignment. Empty while the
+    // conversation is still resolving (nothing renders bubbles then).
+    const currentUserId = conversation
+        ? conversation.role === "selling"
+            ? conversation.sellerId
+            : conversation.buyerId
+        : "";
+
+    // Retry a failed optimistic send. Guarded: bail unless the entry still
+    // exists AND is still failed — a stale closure (double-tap, memoized
+    // bubble) must never double-fire the mutation.
+    const retrySend = useCallback(
+        (pending: PendingMessage) => {
+            const entry = pendingMessages.find(
+                (candidate) => candidate.clientId === pending.clientId
+            );
+            if (!entry || !entry.failed || !conversationId) return;
+            setPendingMessages((previous) =>
+                previous.map((candidate) =>
+                    candidate.clientId === pending.clientId
+                        ? { ...candidate, failed: false, timestamp: Date.now() }
+                        : candidate
+                )
+            );
+            dispatchSend(pending.clientId, pending.content, conversationId as Id<"chats">);
+        },
+        [pendingMessages, conversationId, dispatchSend]
+    );
+
+    // Live messages + optimistic bubbles. ConversationThread sorts by
+    // timestamp, so a plain concat keeps chronology. Memoized so unrelated
+    // re-renders of this view hand ConversationThread a stable array
+    // (belt-and-braces with its newest-id-keyed auto-scroll).
+    const threadMessages: ThreadMessage[] = useMemo(
+        () => [
+            ...(messages ?? NO_MESSAGES),
+            ...pendingMessages.map((pending) => ({
+                _id: `pending-${pending.clientId}`,
+                content: pending.content,
+                timestamp: pending.timestamp,
+                senderId: currentUserId,
+                pending: !pending.failed,
+                failed: pending.failed,
+                onRetry: pending.failed ? () => retrySend(pending) : undefined,
+            })),
+        ],
+        [messages, pendingMessages, currentUserId, retrySend]
+    );
+
     if (isResolving) {
         return (
             <div className="flex items-center justify-center py-24" role="status" aria-live="polite">
@@ -789,12 +952,17 @@ function ThreadView({ chatId }: { chatId: string }) {
 
     const meta = getThreadMeta(conversation);
     const counterpartName = getCounterpartName(conversation, conversation.role);
-    // The role tag tells us which side of the chat we are — no extra
-    // current-user query needed for bubble alignment.
-    const currentUserId =
-        conversation.role === "selling"
-            ? conversation.sellerId
-            : conversation.buyerId;
+
+    const handleSend = async (content: string) => {
+        const clientId = crypto.randomUUID();
+        setPendingMessages((previous) => [
+            ...previous,
+            { clientId, content, timestamp: Date.now(), failed: false },
+        ]);
+        // Resolve immediately: the composer clears its draft right away
+        // (<100ms perceived send) and the mutation continues independently.
+        dispatchSend(clientId, content, conversation._id as Id<"chats">);
+    };
 
     const threadColumn = (
         <>
@@ -810,22 +978,29 @@ function ThreadView({ chatId }: { chatId: string }) {
                 onReport={() => setShowReportModal(true)}
             />
             <ConversationThread
-                messages={messages ?? NO_MESSAGES}
+                messages={threadMessages}
                 currentUserId={currentUserId}
             />
+            {isOffline && (
+                <div
+                    role="status"
+                    className="shrink-0 px-4 py-2 border-t border-border/70 bg-muted/70 text-xs font-medium text-muted-foreground text-center"
+                >
+                    {OFFLINE_MESSAGE}
+                </div>
+            )}
             {/* pb-safe keeps the composer above the iOS home indicator. */}
             <div className="pb-safe bg-card shrink-0">
                 <MessageComposer
-                    onSend={async (content) => {
-                        // Failures (incl. rate-limit rejections) keep the draft
-                        // and surface as a toast inside MessageComposer.
-                        await sendMessage({
-                            chatId: conversation._id as Id<"chats">,
-                            content,
-                        });
-                    }}
-                    disabled={meta.composerDisabled}
-                    disabledReason={meta.composerDisabledReason}
+                    onSend={handleSend}
+                    disabled={meta.composerDisabled || isOffline}
+                    // A permanent thread-kind reason (e.g. deleted flyer) wins
+                    // over the transient offline one.
+                    disabledReason={
+                        meta.composerDisabled
+                            ? meta.composerDisabledReason
+                            : "You're offline"
+                    }
                 />
             </div>
             <ReportModal
@@ -840,13 +1015,18 @@ function ThreadView({ chatId }: { chatId: string }) {
 
     // Mobile: body portal (escapes <main>'s `contain: paint`), full-viewport
     // column. BottomNav is hidden on this route, so bottom-0 is correct.
+    // slideOver() gives the inbox → thread swap its ~200ms slide-in (motion
+    // helpers only ever come from useMotionPrefs — collapses under
+    // prefers-reduced-motion).
     if (isMobile && typeof document !== "undefined") {
         return createPortal(
-            <div
+            <motion.div
+                ref={portalColumnRef}
+                {...slideOver()}
                 className="fixed inset-0 z-40 bg-card flex flex-col pt-safe"
             >
                 {threadColumn}
-            </div>,
+            </motion.div>,
             document.body
         );
     }

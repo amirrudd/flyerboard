@@ -79,4 +79,10 @@ export interface ThreadMessage {
   content: string;
   timestamp: number;
   senderId: string;
+  /** Client-only optimistic-send state: in flight, not yet confirmed. */
+  pending?: boolean;
+  /** Client-only optimistic-send state: rejected — bubble offers retry. */
+  failed?: boolean;
+  /** Re-sends a failed message (only meaningful with `failed`). */
+  onRetry?: () => void;
 }

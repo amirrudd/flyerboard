@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvexConnectionState } from 'convex/react';
 import { getFunctionName } from 'convex/server';
 import { MessagesPage } from './MessagesPage';
 import { HeaderSlotsContext, HeaderSlotsStore } from '../features/layout/HeaderSlots';
@@ -25,6 +25,8 @@ vi.mock('react-router-dom', async () => {
 vi.mock('convex/react', () => ({
     useQuery: vi.fn(),
     useMutation: vi.fn(() => vi.fn()),
+    // Online by default; the offline tests override per-test.
+    useConvexConnectionState: vi.fn(),
 }));
 
 // useInbox / the archived view gate queries on user sync. Overridable per
@@ -168,6 +170,10 @@ beforeEach(() => {
     installMutationSpies();
     mockQueries();
     mockUseUserSync.mockReturnValue({ isUserSynced: true });
+    vi.mocked(useConvexConnectionState).mockReturnValue({
+        isWebSocketConnected: true,
+        hasEverConnected: true,
+    } as ReturnType<typeof useConvexConnectionState>);
     // framer-motion's useReducedMotion needs matchMedia; jsdom lacks it.
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -838,5 +844,272 @@ describe('MessagesPage - desktop two-pane (≥md)', () => {
             screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })
         ).not.toBeInTheDocument();
         expect(screen.getByTestId('conversation-thread')).toBeInTheDocument();
+    });
+});
+
+// ── Phase 5: optimistic send, offline, focus management ─────────────────────
+
+describe('MessagesPage - optimistic send', () => {
+    beforeEach(() => {
+        setInnerWidth(390);
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+            'messages:getChatMessages': chatSellMessages,
+        });
+    });
+
+    const typeAndSend = (content: string) => {
+        fireEvent.change(screen.getByLabelText('Type your message'), {
+            target: { value: content },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+    };
+
+    it('shows a pending bubble immediately (composer cleared) and removes it when the send resolves', async () => {
+        renderAt('/messages/chat-sell');
+
+        let resolveSend!: (value?: unknown) => void;
+        mutationSpies['messages:sendMessage'].mockImplementation(
+            () => new Promise((resolve) => { resolveSend = resolve; })
+        );
+
+        typeAndSend('Sure, come by at 5');
+
+        // Optimistic bubble renders while the mutation is still in flight,
+        // and the composer draft clears without awaiting it.
+        expect(screen.getByText('Sending')).toBeInTheDocument();
+        const bubbles = screen.getAllByTestId('message-bubble');
+        expect(bubbles[bubbles.length - 1]).toHaveTextContent('Sure, come by at 5');
+        await waitFor(() => {
+            expect(screen.getByLabelText('Type your message')).toHaveValue('');
+        });
+
+        resolveSend();
+        await waitFor(() => {
+            expect(screen.queryByText('Sending')).not.toBeInTheDocument();
+        });
+    });
+
+    it('marks the bubble failed on rejection (content kept) and retries on tap', async () => {
+        renderAt('/messages/chat-sell');
+
+        mutationSpies['messages:sendMessage'].mockRejectedValueOnce(
+            new Error("You're sending messages too quickly")
+        );
+
+        typeAndSend('Hello there');
+
+        // Failure: toast + retryable bubble that keeps the typed content.
+        await waitFor(() => {
+            expect(screen.getByText('Not sent — tap to retry')).toBeInTheDocument();
+        });
+        expect(screen.getByText('Hello there')).toBeInTheDocument();
+        expect(mockToast.error).toHaveBeenCalledWith("You're sending messages too quickly");
+
+        // Retry re-sends the same content (spy resolves by default now).
+        fireEvent.click(screen.getByRole('button', { name: /Not sent — tap to retry/ }));
+
+        await waitFor(() => {
+            expect(mutationSpies['messages:sendMessage']).toHaveBeenCalledTimes(2);
+        });
+        expect(mutationSpies['messages:sendMessage']).toHaveBeenLastCalledWith({
+            chatId: 'chat-sell',
+            content: 'Hello there',
+        });
+        await waitFor(() => {
+            expect(screen.queryByText('Not sent — tap to retry')).not.toBeInTheDocument();
+        });
+    });
+});
+
+describe('MessagesPage - offline state', () => {
+    beforeEach(() => {
+        setInnerWidth(390);
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+            'messages:getChatMessages': chatSellMessages,
+        });
+    });
+
+    it('shows the offline banner and disables the composer only after the outage persists ~2s', () => {
+        vi.useFakeTimers();
+        try {
+            vi.mocked(useConvexConnectionState).mockReturnValue({
+                isWebSocketConnected: false,
+                hasEverConnected: true,
+            } as ReturnType<typeof useConvexConnectionState>);
+
+            renderAt('/messages/chat-sell');
+
+            // Inside the debounce window nothing shows — a reconnect blip
+            // (tab wake, network switch) must not flicker the banner.
+            expect(
+                screen.queryByText("You're offline — messages will update when you reconnect")
+            ).not.toBeInTheDocument();
+            expect(screen.getByLabelText('Type your message')).not.toBeDisabled();
+
+            act(() => { vi.advanceTimersByTime(2000); });
+
+            expect(
+                screen.getByText("You're offline — messages will update when you reconnect")
+            ).toBeInTheDocument();
+            expect(screen.getByLabelText('Type your message')).toBeDisabled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('a permanent thread-kind disable reason wins over the offline reason', () => {
+        vi.useFakeTimers();
+        try {
+            vi.mocked(useConvexConnectionState).mockReturnValue({
+                isWebSocketConnected: false,
+                hasEverConnected: true,
+            } as ReturnType<typeof useConvexConnectionState>);
+            const deletedAdChat = { ...sellerChat, _id: 'chat-del', ad: null };
+            mockQueries({
+                'posts:getSellerChats': [deletedAdChat],
+                'messages:getChatMessages': chatSellMessages,
+            });
+
+            renderAt('/messages/chat-del');
+            act(() => { vi.advanceTimersByTime(2000); });
+
+            // Composer disabled with the PERMANENT reason, not "You're offline".
+            expect(screen.getByLabelText('Type your message')).toBeDisabled();
+            expect(screen.getByText('This flyer is no longer active')).toBeInTheDocument();
+            expect(screen.queryByText("You're offline")).not.toBeInTheDocument();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not flash the banner during the initial connect (never connected yet)', () => {
+        vi.mocked(useConvexConnectionState).mockReturnValue({
+            isWebSocketConnected: false,
+            hasEverConnected: false,
+        } as ReturnType<typeof useConvexConnectionState>);
+
+        renderAt('/messages/chat-sell');
+
+        expect(
+            screen.queryByText("You're offline — messages will update when you reconnect")
+        ).not.toBeInTheDocument();
+        expect(screen.getByLabelText('Type your message')).not.toBeDisabled();
+    });
+});
+
+describe('MessagesPage - focus management (a11y)', () => {
+    beforeEach(() => {
+        mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+        mockQueries({
+            'posts:getSellerChats': [sellerChat],
+            'posts:getBuyerChats': [buyerChat],
+            'messages:getChatMessages': chatSellMessages,
+        });
+    });
+
+    it('focuses the thread back button when the mobile full-screen thread opens', async () => {
+        setInnerWidth(390);
+
+        renderAt('/messages/chat-sell');
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'Back' })).toHaveFocus();
+        });
+    });
+
+    // Real-navigation harness: row taps call the MOCKED navigate (a no-op),
+    // so these links drive the actual route changes. MessagesPage stays
+    // mounted across inbox <-> thread (same element shape on both routes,
+    // as in App.tsx) — only the inbox/thread views swap.
+    const renderWithNavLinks = () =>
+        render(
+            <HeaderSlotsContext.Provider value={new HeaderSlotsStore()}>
+                <MemoryRouter initialEntries={['/messages']}>
+                    <Routes>
+                        <Route
+                            path="/messages"
+                            element={
+                                <>
+                                    <MessagesPage />
+                                    <Link to="/messages/chat-sell">Open thread link</Link>
+                                </>
+                            }
+                        />
+                        <Route
+                            path="/messages/:chatId"
+                            element={
+                                <>
+                                    <MessagesPage />
+                                    <Link to="/messages">Back to inbox link</Link>
+                                    <Link to="/messages?flyer=ad-2">Back to filtered inbox link</Link>
+                                </>
+                            }
+                        />
+                    </Routes>
+                </MemoryRouter>
+            </HeaderSlotsContext.Provider>
+        );
+
+    it('restores focus to the originating inbox row after returning from a thread', async () => {
+        setInnerWidth(390);
+        renderWithNavLinks();
+
+        // Tap the row (records it), then actually navigate to the thread —
+        // the mobile full-screen thread unmounts the inbox wholesale.
+        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Bella Buyer' }));
+        fireEvent.click(screen.getByText('Open thread link'));
+        expect(
+            screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })
+        ).not.toBeInTheDocument();
+
+        // Back: the same row regains focus.
+        fireEvent.click(screen.getByText('Back to inbox link'));
+        await waitFor(() => {
+            expect(
+                screen.getByRole('button', { name: 'Conversation with Bella Buyer' })
+            ).toHaveFocus();
+        });
+    });
+
+    it('drops the restore target when the messages page unmounts (no focus steal on a later visit)', () => {
+        setInnerWidth(390);
+
+        // Record a row, then leave /messages entirely (full unmount).
+        const first = renderAt('/messages');
+        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Bella Buyer' }));
+        first.unmount();
+
+        // A later inbox mount must not focus the stale row.
+        renderAt('/messages');
+        expect(
+            screen.getByRole('button', { name: 'Conversation with Bella Buyer' })
+        ).not.toHaveFocus();
+    });
+
+    it('clears the restore target after a failed attempt so a later inbox mount does not focus any row', async () => {
+        setInnerWidth(390);
+        renderWithNavLinks();
+
+        // Record the Blue Bike row, open the thread, and come back to a
+        // FILTERED inbox that does not contain that row — the restore
+        // attempt finds nothing and must still clear the target.
+        fireEvent.click(screen.getByRole('button', { name: 'Conversation with Bella Buyer' }));
+        fireEvent.click(screen.getByText('Open thread link'));
+        fireEvent.click(screen.getByText('Back to filtered inbox link'));
+        expect(
+            screen.queryByRole('button', { name: 'Conversation with Bella Buyer' })
+        ).not.toBeInTheDocument();
+
+        // Thread → unfiltered inbox again: the stale id must not steal focus.
+        fireEvent.click(screen.getByText('Open thread link'));
+        fireEvent.click(screen.getByText('Back to inbox link'));
+        const row = await screen.findByRole('button', { name: 'Conversation with Bella Buyer' });
+        expect(row).not.toHaveFocus();
     });
 });

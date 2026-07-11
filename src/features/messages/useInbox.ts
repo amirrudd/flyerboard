@@ -23,7 +23,10 @@ export function mergeInboxChats(
     ...chat,
     role: "buying" as const,
   }));
-  return [...selling, ...buying].sort(
+  // Self-chat defense: a chat with buyerId === sellerId comes back from BOTH
+  // source queries — keep one row (the selling copy) per _id.
+  const sellingIds = new Set(selling.map((chat) => chat._id));
+  return [...selling, ...buying.filter((chat) => !sellingIds.has(chat._id))].sort(
     (a, b) => b.lastMessageAt - a.lastMessageAt
   );
 }

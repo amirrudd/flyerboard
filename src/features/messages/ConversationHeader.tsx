@@ -37,6 +37,18 @@ export function ConversationHeader({
   onReport,
   statusLabel,
 }: ConversationHeaderProps) {
+  // Descriptive name for the title heading, e.g.
+  // "About: Blue Bike, $50, No longer available". Lives on the heading, NOT
+  // the <header>: renaming the header would rename the region containing the
+  // Back/Report buttons for assistive tech.
+  const stripLabel = [
+    `About: ${title}`,
+    price !== undefined ? formatPrice(price) : null,
+    statusLabel ?? null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <header className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border/70 bg-card">
       {onBack && (
@@ -64,7 +76,10 @@ export function ConversationHeader({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
-          <h2 className="font-display text-base font-semibold tracking-tight text-foreground truncate">
+          <h2
+            aria-label={stripLabel}
+            className="font-display text-base font-semibold tracking-tight text-foreground truncate"
+          >
             {title}
           </h2>
           {statusLabel && (

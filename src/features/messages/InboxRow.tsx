@@ -64,6 +64,9 @@ export function InboxRow({
       }}
       aria-current={isActive ? "true" : undefined}
       aria-label={`Conversation with ${counterpartName}`}
+      // Focus-restoration hook: lets the inbox re-focus the originating row
+      // when the user comes back from a full-screen thread (a11y).
+      data-chat-id={chat._id}
       {...listStagger(index)}
       className={`relative w-full text-left px-4 py-3.5 sm:px-5 sm:py-4 cursor-pointer transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
         isActive ? "bg-muted/50" : "hover:bg-muted/40"

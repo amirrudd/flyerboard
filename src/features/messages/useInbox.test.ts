@@ -35,6 +35,21 @@ describe('mergeInboxChats', () => {
         expect(merged.map((c) => c._id)).toEqual(['s-new', 'b-mid', 's-old', 'b-older']);
     });
 
+    it('dedupes a self-chat (buyerId === sellerId) that both source queries return', () => {
+        const selfChat = chat({
+            _id: 'self-1',
+            buyerId: 'u1',
+            sellerId: 'u1',
+            lastMessageAt: 100,
+        });
+
+        const merged = mergeInboxChats([selfChat], [selfChat]);
+
+        expect(merged).toHaveLength(1);
+        // The selling copy wins deterministically.
+        expect(merged[0].role).toBe('selling');
+    });
+
     it('treats undefined inputs (loading / skipped queries) as empty lists', () => {
         expect(mergeInboxChats(undefined, undefined)).toEqual([]);
         expect(

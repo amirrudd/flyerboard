@@ -530,7 +530,7 @@ export const setAdminUser = internalMutation({
             ? [await ctx.db.get(args.userId)].filter((u) => u !== null)
             : await ctx.db
                   .query("users")
-                  .withIndex("email", (q) => q.eq("email", args.email!))
+                  .withIndex("email", (q) => q.eq("email", args.email))
                   .collect();
 
         if (users.length === 0) {

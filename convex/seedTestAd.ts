@@ -35,7 +35,7 @@ export const seedTallImageAd = internalMutation({
         : args.userEmail
         ? ctx.db
             .query("users")
-            .withIndex("email", (q) => q.eq("email", args.userEmail!))
+            .withIndex("email", (q) => q.eq("email", args.userEmail))
             .first()
         : ctx.db.query("users").first(),
       ctx.db.query("categories").first(),

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BottomNav } from './BottomNav';
 import { BrowserRouter } from 'react-router-dom';
@@ -52,6 +52,11 @@ describe('BottomNav', () => {
         // Default to not authenticated
         mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: false });
         mockUnreadCount(0);
+    });
+
+    afterEach(() => {
+        // Route-visibility tests move the jsdom URL — restore it for the rest.
+        window.history.pushState({}, '', '/');
     });
 
     it('should render navigation items', () => {
@@ -120,6 +125,68 @@ describe('BottomNav', () => {
 
         expect(mockSetShowAuthModal).not.toHaveBeenCalled();
         expect(mockNavigate).toHaveBeenCalledWith('/post');
+    });
+
+    describe('Messages item routing', () => {
+        it('navigates to /messages when authenticated', () => {
+            mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+            renderBottomNav();
+
+            fireEvent.click(screen.getByText('Messages').closest('button')!);
+
+            expect(mockSetShowAuthModal).not.toHaveBeenCalled();
+            expect(mockNavigate).toHaveBeenCalledWith('/messages');
+        });
+
+        it('opens the auth modal instead of navigating when signed out', () => {
+            mockUseSession.mockReturnValue({ isAuthenticated: false, isSessionLoading: false });
+            renderBottomNav();
+
+            fireEvent.click(screen.getByText('Messages').closest('button')!);
+
+            expect(mockSetShowAuthModal).toHaveBeenCalledWith(true);
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('route-based visibility', () => {
+        it('renders on the /messages inbox route', () => {
+            mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+            window.history.pushState({}, '', '/messages');
+
+            renderBottomNav();
+
+            expect(screen.getByText('Home')).toBeInTheDocument();
+            expect(screen.getByText('Messages')).toBeInTheDocument();
+        });
+
+        it('hides on the conversation route /messages/:chatId', () => {
+            mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+            window.history.pushState({}, '', '/messages/chat123');
+
+            renderBottomNav();
+
+            expect(screen.queryByText('Home')).not.toBeInTheDocument();
+            expect(screen.queryByText('Messages')).not.toBeInTheDocument();
+        });
+
+        it('renders on the /messages/archived inbox sub-view (not a thread)', () => {
+            mockUseSession.mockReturnValue({ isAuthenticated: true, isSessionLoading: false });
+            window.history.pushState({}, '', '/messages/archived');
+
+            renderBottomNav();
+
+            expect(screen.getByText('Home')).toBeInTheDocument();
+            expect(screen.getByText('Messages')).toBeInTheDocument();
+        });
+
+        it('hides on the blog', () => {
+            window.history.pushState({}, '', '/blog');
+
+            renderBottomNav();
+
+            expect(screen.queryByText('Home')).not.toBeInTheDocument();
+        });
     });
 
     describe('Messages unread badge', () => {

@@ -33,3 +33,13 @@ e2e/.auth/
 
 # Test coverage output
 coverage/
+
+# Vendored impeccable agent-skill tooling (installed per-machine, not project source)
+.claude/skills/impeccable/
+.cursor/skills/
+.cursor/hooks.json
+.github/skills/
+.github/hooks/
+
+# impeccable live-mode local session/recovery state (keep design.json + live/config.json)
+.impeccable/live/sessions/

@@ -230,6 +230,8 @@ function BrowserNotificationsCard() {
         )}
       </div>
     </div>
+  );
+}
 
 interface MyAdCardProps {
   ad: any;

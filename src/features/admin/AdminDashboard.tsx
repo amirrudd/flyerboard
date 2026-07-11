@@ -11,6 +11,7 @@ import {
     Shield,
     GridFour,
     Flag,
+    Sliders,
 } from '@phosphor-icons/react';
 import { UsersTab } from "./UsersTab";
 import { FlyersTab } from "./FlyersTab";
@@ -18,13 +19,14 @@ import { ReportsTab } from "./ReportsTab";
 import { ChatsTab } from "./ChatsTab";
 import { CategoriesTab } from "./CategoriesTab";
 import { FeatureFlagsTab } from "./FeatureFlagsTab";
+import { SettingsTab } from "./SettingsTab";
 
 interface AdminDashboardProps {
     onBack: () => void;
 }
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
-    const [activeTab, setActiveTab] = useState<"users" | "flyers" | "reports" | "chats" | "categories" | "flags">("users");
+    const [activeTab, setActiveTab] = useState<"users" | "flyers" | "reports" | "chats" | "categories" | "flags" | "settings">("users");
 
     const isAdmin = useQuery(api.admin.isCurrentUserAdmin);
 
@@ -113,6 +115,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         { id: "chats", label: "Chats", icon: ChatText },
         { id: "categories", label: "Categories", icon: GridFour },
         { id: "flags", label: "Feature Flags", icon: Flag },
+        { id: "settings", label: "Settings", icon: Sliders },
     ] as const;
 
     return (
@@ -161,6 +164,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                     {activeTab === "chats" && <ChatsTab />}
                     {activeTab === "categories" && <CategoriesTab />}
                     {activeTab === "flags" && <FeatureFlagsTab />}
+                    {activeTab === "settings" && <SettingsTab />}
                 </section>
             </main>
         </div>

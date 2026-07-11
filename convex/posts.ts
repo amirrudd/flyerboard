@@ -6,8 +6,19 @@ import { fromR2Reference, isR2Reference, r2 } from "./r2";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { createError, logOperation } from "./lib/logger";
-import { checkRateLimit } from "./lib/rateLimit";
+import { checkRateLimit, checkRateLimitDynamic, RATE_LIMITS } from "./lib/rateLimit";
 import { detachAdFromBundle } from "./bundles";
+import { readSettingValue } from "./appSettings";
+import {
+  FLAG_BOOST_TO_TOP,
+  SETTING_BOOST_COOLDOWN_DAYS,
+  SETTING_BOOST_DAILY_CAP,
+  DEFAULT_BOOST_COOLDOWN_DAYS,
+  DEFAULT_BOOST_DAILY_CAP,
+  clampCooldownDays,
+  clampDailyCap,
+  MS_PER_DAY,
+} from "./lib/boost";
 
 /**
  * Creates a new flyer listing.
@@ -73,6 +84,8 @@ export const createAd = mutation({
       userId,
       isActive: true,
       views: 0,
+      bumpedAt: Date.now(), // Boost feed sort key — initialized to creation time.
+      boostCount: 0,
     });
 
     logOperation("Flyer created", { adId, userId, categoryId: args.categoryId, listingType });
@@ -161,6 +174,110 @@ export const updateAd = mutation({
 
     logOperation("Flyer updated", { adId: args.adId, userId, listingType });
     return args.adId;
+  },
+});
+
+/**
+ * Boost ("push to top") — re-stamps an ad's `bumpedAt` to now, lifting it back to the
+ * top of the newest-first feed. This is the flagship visibility action.
+ *
+ * Authoritative server-side gate (never trust the client):
+ *   1. Auth — must be logged in.
+ *   2. Feature flag `boostToTop` must be ENABLED — fail closed if the flag is off or
+ *      missing, so the feature can ship dark and be flipped from the admin dashboard.
+ *   3. Ad must exist and not be soft-deleted.
+ *   4. Ownership — only the owner may boost.
+ *   5. Eligibility — active, not sold, not a sale-event member, not bundled.
+ *   6. Cooldown — `Date.now() - bumpedAt >= cooldown`, where the cooldown length is
+ *      admin-tunable (`appSettings.boostCooldownDays`, default 7, clamped 1–30 on read).
+ *   7. Per-user daily cap — admin-tunable (`appSettings.boostDailyCap`, default 3,
+ *      clamped 1–20) enforced in-mutation via `checkRateLimitDynamic`. A single
+ *      rate-limit row per boost; the static `RATE_LIMITS.boostAd` (20/day) is the hard
+ *      backstop ceiling the clamp can never exceed. Convex transactions roll the row
+ *      back on any later throw, so only SUCCESSFUL boosts consume budget.
+ *
+ * PRICING SEAM (folded former Phase 4): `boostCount` is recorded from day one so a
+ * future "first boost free, then paid" rollout needs no migration. When pricing lands,
+ * non-first boosts route through a checkout flow here — mirroring the STUB pattern in
+ * `saleEvents.ts` purchaseAddon. Build NO payments table / Stripe / purchase UI now.
+ *
+ * @requires Authentication + ownership
+ * @throws "Boost is not available right now" if the feature flag is disabled
+ * @throws cooldown / eligibility / rate-limit errors naming the reason
+ */
+export const boostAd = mutation({
+  args: { adId: v.id("ads") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getDescopeUserId(ctx);
+    if (!userId) {
+      throw createError("Must be logged in to boost a flyer", { operation: "boostAd", adId: args.adId });
+    }
+
+    // Feature flag gate — fail closed (off or missing → rejected).
+    const flag = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", FLAG_BOOST_TO_TOP))
+      .first();
+    if (!flag?.enabled) {
+      throw createError("Boost is not available right now", { operation: "boostAd", adId: args.adId });
+    }
+
+    const existingAd = await ctx.db.get(args.adId);
+    if (!existingAd || existingAd.isDeleted) {
+      throw createError("Flyer not found", { adId: args.adId, userId });
+    }
+
+    if (existingAd.userId !== userId) {
+      throw createError("You can only boost your own flyers", { adId: args.adId, userId, ownerId: existingAd.userId });
+    }
+
+    // Eligibility (mirrors the dashboard's client-side gate — display only there; this
+    // is the authority). Sale-event members are permanently ineligible in v1 because
+    // saleEventId is never cleared today (documented accepted limitation).
+    if (!existingAd.isActive) {
+      throw createError("This flyer is inactive and can't be boosted", { adId: args.adId, userId });
+    }
+    if (existingAd.isSold) {
+      throw createError("Sold flyers can't be boosted", { adId: args.adId, userId });
+    }
+    if (existingAd.saleEventId) {
+      throw createError("Sale items can't be boosted", { adId: args.adId, userId });
+    }
+    if (existingAd.bundleId) {
+      throw createError("Bundled flyers can't be boosted", { adId: args.adId, userId });
+    }
+
+    // Cooldown — admin-tunable, clamped on read; falls back to the default when unset.
+    const cooldownRaw = await readSettingValue(ctx, SETTING_BOOST_COOLDOWN_DAYS);
+    const cooldownDays = clampCooldownDays(cooldownRaw ?? DEFAULT_BOOST_COOLDOWN_DAYS);
+    const cooldownMs = cooldownDays * MS_PER_DAY;
+    const elapsed = Date.now() - existingAd.bumpedAt;
+    if (elapsed < cooldownMs) {
+      const waitDays = Math.ceil((cooldownMs - elapsed) / MS_PER_DAY);
+      throw createError(
+        `You can boost this flyer again in ${waitDays} day${waitDays === 1 ? "" : "s"}`,
+        { adId: args.adId, userId, waitDays }
+      );
+    }
+
+    // Per-user daily cap — admin-tunable, clamped to ≤ the static backstop ceiling so a
+    // single rate-limit row enforces both. Placed last (after all cheaper checks) so
+    // the row is only inserted for boosts that otherwise pass.
+    const capRaw = await readSettingValue(ctx, SETTING_BOOST_DAILY_CAP);
+    const dailyCap = clampDailyCap(capRaw ?? DEFAULT_BOOST_DAILY_CAP);
+    await checkRateLimitDynamic(ctx, userId, "boostAd", dailyCap, RATE_LIMITS.boostAd.windowMs);
+
+    // Pricing seam: recorded, allowed regardless for the free v1 (see docblock).
+    const nextBoostCount = (existingAd.boostCount ?? 0) + 1;
+
+    await ctx.db.patch(args.adId, {
+      bumpedAt: Date.now(),
+      boostCount: nextBoostCount,
+    });
+
+    logOperation("Flyer boosted", { adId: args.adId, userId, boostCount: nextBoostCount });
+    return null;
   },
 });
 

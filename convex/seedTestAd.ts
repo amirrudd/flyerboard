@@ -20,11 +20,24 @@ export const seedTallImageAd = internalMutation({
   args: {
     // "tall" (default) puts the portrait first; "wide" puts the landscape first.
     orientation: v.optional(v.union(v.literal("tall"), v.literal("wide"))),
+    // Backdate bumpedAt by N days so the ad is immediately Boost-eligible.
+    ageDays: v.optional(v.number()),
+    // Own the ad as this user (defaults to the first user in the table).
+    userEmail: v.optional(v.string()),
+    // Or by id — for logged-in Descope users that have no email set.
+    userId: v.optional(v.id("users")),
   },
   returns: v.id("ads"),
   handler: async (ctx, args) => {
     const [user, category] = await Promise.all([
-      ctx.db.query("users").first(),
+      args.userId
+        ? ctx.db.get(args.userId)
+        : args.userEmail
+        ? ctx.db
+            .query("users")
+            .withIndex("email", (q) => q.eq("email", args.userEmail))
+            .first()
+        : ctx.db.query("users").first(),
       ctx.db.query("categories").first(),
     ]);
     if (!user) {
@@ -51,6 +64,8 @@ export const seedTallImageAd = internalMutation({
       isActive: true,
       isDeleted: false,
       views: 0,
+      bumpedAt: Date.now() - (args.ageDays ?? 0) * 24 * 60 * 60 * 1000, // Boost feed sort key.
+      boostCount: 0,
     });
   },
 });

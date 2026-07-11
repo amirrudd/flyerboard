@@ -269,6 +269,8 @@ export const addSaleItems = mutation({
         saleEventId: args.saleEventId,
         condition: item.condition,
         views: 0,
+        bumpedAt: Date.now(), // Boost feed sort key — set here too so sale items don't sink to the feed bottom.
+        boostCount: 0,
       });
       createdIds.push(adId);
     }

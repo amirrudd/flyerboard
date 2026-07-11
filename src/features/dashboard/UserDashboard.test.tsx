@@ -49,6 +49,12 @@ vi.mock('../../hooks/usePushNotifications', () => ({
     usePushNotifications: () => pushState,
 }));
 
+// MyAdCard → useBoostAction reads the marketplace refresh seam.
+const mockRefreshAds = vi.fn();
+vi.mock('../../context/MarketplaceContext', () => ({
+    useMarketplace: () => ({ refreshAds: mockRefreshAds }),
+}));
+
 // Mock child components
 vi.mock('../layout/Header', () => ({
     Header: () => <div>Header</div>,
@@ -251,6 +257,46 @@ describe('UserDashboard', () => {
         renderDashboard();
 
         expect(screen.getByText('7')).toBeInTheDocument();
+    });
+
+    // ── Boost CTA (Phase 3) ────────────────────────────────────────────────
+    const eligibleAd = {
+        _id: 'ad-1', title: 'Old Couch', price: 100, images: [], views: 5,
+        isActive: true, isSold: false, bumpedAt: 1, // epoch → long past cooldown
+    };
+
+    it('shows the "Boost to top" CTA on an eligible ad when the flag is on', () => {
+        mockQueries({ 'flag:boostToTop': true, 'posts:getUserAds': [eligibleAd] });
+        renderDashboard();
+        expect(screen.getByRole('button', { name: 'Boost to top' })).toBeInTheDocument();
+    });
+
+    it('hides the Boost CTA entirely when the flag is off', () => {
+        mockQueries({ 'flag:boostToTop': false, 'posts:getUserAds': [eligibleAd] });
+        renderDashboard();
+        expect(screen.queryByRole('button', { name: 'Boost to top' })).not.toBeInTheDocument();
+    });
+
+    it('renders no Boost CTA on a sold ad even with the flag on', () => {
+        mockQueries({
+            'flag:boostToTop': true,
+            'posts:getUserAds': [{ ...eligibleAd, isSold: true }],
+        });
+        renderDashboard();
+        expect(screen.queryByRole('button', { name: 'Boost to top' })).not.toBeInTheDocument();
+    });
+
+    it('opens the confirm modal and drives a successful boost + forced refresh', async () => {
+        mockQueries({ 'flag:boostToTop': true, 'posts:getUserAds': [eligibleAd] });
+        renderDashboard();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Boost to top' }));
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('Boost this flyer?')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Boost to top' }));
+        await waitFor(() => expect(mutationSpies['posts:boostAd']).toHaveBeenCalledWith({ adId: 'ad-1' }));
+        await waitFor(() => expect(mockRefreshAds).toHaveBeenCalledWith(true));
     });
 });
 

@@ -6,6 +6,9 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
+import { useBoostAction, type BoostableAd } from "../../hooks/useBoostAction";
+import { BoostConfirmModal } from "./BoostConfirmModal";
+import { BoostRingOverlay, BoostArrowFloat } from "./BoostFx";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +18,7 @@ import { RatingModal } from "../../components/RatingModal";
 import { ReviewListModal } from "../../components/ReviewListModal";
 import { useSession } from "@descope/react-sdk";
 import { getDisplayName, getInitials } from "../../lib/displayName";
-import { Flag, CaretLeft, ShareNetwork, BookmarkSimple, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PencilSimple, Repeat, ChatCircle, House } from '@phosphor-icons/react';
+import { Flag, CaretLeft, ShareNetwork, BookmarkSimple, X, SmileySad, Image as ImageIcon, MapPin, CaretRight, PencilSimple, Repeat, ChatCircle, House, ArrowUp } from '@phosphor-icons/react';
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { SellerProfile } from "../../components/ui/SellerProfile";
@@ -85,6 +88,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
   const sendFirstMessage = useMutation(api.adDetail.sendFirstMessage);
   const sendMessage = useMutation(api.adDetail.sendMessage);
   const batchIncrementViews = useMutation(api.adDetail.batchIncrementViews);
+
+  // Owner-facing Boost CTA (flag-gated). Called unconditionally here (before the
+  // loading/not-found early returns) per the rules of hooks — `useBoostAction`
+  // tolerates an undefined ad and only activates once the doc + ownership resolve.
+  const boostEnabled = useFeatureFlag("boostToTop");
+  const boost = useBoostAction((ad ?? initialAd) as BoostableAd | undefined);
+  // Single source of truth for "render Boost UI" — mirrors MyAdCard's `showBoost`.
+  const showBoost = boostEnabled && boost.state !== "ineligible";
 
   // Use Descope for authentication state
   const { isAuthenticated } = useSession();
@@ -792,18 +803,39 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               )}
 
               {/* Quick Actions */}
-              <div className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hidden sm:block">
+              <motion.div animate={boost.cardControls} className="relative bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hidden sm:block">
+                <BoostRingOverlay ringKey={boost.ringKey} ringProps={boost.ringProps} />
                 <h3 className="kicker mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   {user && displayAd.userId === user._id ? (
-                    // Show Edit button for own flyers
-                    <button
-                      onClick={() => { void navigate('/post', { state: { editingAd: displayAd, from: `/ad/${adId}` } }); }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"
-                    >
-                      <PencilSimple className="w-4 h-4" weight="bold" />
-                      Edit Flyer
-                    </button>
+                    // Owner: Boost is the primary action; Edit demoted to secondary.
+                    <>
+                      {showBoost && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            disabled={boost.state === "cooldown"}
+                            aria-label={boost.state === "cooldown" ? boost.cooldownAria : "Boost to top"}
+                            title={boost.state === "cooldown" ? boost.cooldownAria : undefined}
+                            onClick={() => boost.openConfirm()}
+                            className={boost.state === "cooldown"
+                              ? "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-muted-foreground ring-1 ring-border font-medium text-sm cursor-not-allowed"
+                              : "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all font-semibold shadow-sm shadow-primary/25 text-sm"}
+                          >
+                            <ArrowUp className="w-4 h-4" weight="bold" />
+                            {boost.state === "cooldown" ? boost.cooldownLabel : "Boost to top"}
+                          </button>
+                          <BoostArrowFloat show={boost.showArrow} arrowProps={boost.arrowProps} />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => { void navigate('/post', { state: { editingAd: displayAd, from: `/ad/${adId}` } }); }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-muted/40 text-foreground ring-1 ring-border hover:bg-muted/70 hover:ring-foreground/15 transition-all active:scale-[0.98] font-medium text-sm"
+                      >
+                        <PencilSimple className="w-4 h-4" weight="bold" />
+                        Edit Flyer
+                      </button>
+                    </>
                   ) : (
                     // Show Save and Report buttons for other users' flyers
                     user && (
@@ -836,11 +868,48 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     Share Flyer
                   </button>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Owner Boost confirm modal (shared shell; primary confirm, not destructive) */}
+      {showBoost && (
+        <BoostConfirmModal
+          open={boost.isConfirmOpen}
+          cooldownDays={boost.cooldownDays}
+          isBoosting={boost.isBoosting}
+          onConfirm={() => void boost.confirmBoost()}
+          onCancel={boost.closeConfirm}
+        />
+      )}
+
+      {/* Mobile owner Boost FAB — Quick Actions is hidden sm:block, so without this a
+          mobile owner has no way to boost from the detail page. Sits at the same
+          bottom offset as the buyer's Message FAB (bottom-nav gotcha). */}
+      {user && displayAd.userId === user._id && showBoost && createPortal(
+        <div className="lg:hidden">
+          <div className="fixed right-4 z-40" style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}>
+            <motion.button
+              animate={boost.cardControls}
+              type="button"
+              disabled={boost.state === "cooldown"}
+              onClick={() => boost.openConfirm()}
+              aria-label={boost.state === "cooldown" ? boost.cooldownAria : "Boost to top"}
+              title={boost.state === "cooldown" ? boost.cooldownAria : undefined}
+              className={boost.state === "cooldown"
+                ? "flex items-center gap-2 py-3 px-5 rounded-full bg-card text-muted-foreground ring-1 ring-border font-medium text-sm shadow-card-hover cursor-not-allowed"
+                : "flex items-center gap-2 py-3 px-5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-[0_8px_24px_-4px_hsl(var(--primary)/0.45)] hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all ring-4 ring-background"}
+            >
+              <ArrowUp className="w-5 h-5" weight="bold" />
+              {boost.state === "cooldown" ? boost.cooldownLabel : "Boost to top"}
+            </motion.button>
+            <BoostArrowFloat show={boost.showArrow} arrowProps={boost.arrowProps} />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Mobile FABs - Using Portal to ensure fixed positioning works */}
       {user && displayAd.userId !== user._id && createPortal(

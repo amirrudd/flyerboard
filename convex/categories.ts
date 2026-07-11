@@ -241,7 +241,7 @@ export const deleteCategory = mutation({
     // Check if category is used by any ads
     const adsWithCategory = await ctx.db
       .query("ads")
-      .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId))
+      .withIndex("by_category_and_bumped_at", (q) => q.eq("categoryId", args.categoryId))
       .first();
 
     if (adsWithCategory) {

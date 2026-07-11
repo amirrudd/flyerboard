@@ -42,6 +42,14 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     // Image uploads
     generateUploadUrl: { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
 
+    // Boost ("push to top") — ABUSE BACKSTOP ONLY. The real, admin-configurable
+    // per-user daily cap is enforced inside `boostAd` via `checkRateLimitDynamic`
+    // (default 3/day, tunable 1–20 from the admin Settings tab). This static entry
+    // defines the hard ceiling (20 = BOOST_DAILY_CAP_MAX) and the window; the
+    // configurable cap is clamped to ≤ this ceiling, so a single rate-limit row per
+    // boost enforces both without double-counting. See convex/posts.ts boostAd.
+    boostAd: { maxRequests: 20, windowMs: 24 * 60 * 60 * 1000 }, // 20 per day (backstop)
+
     // Default for unspecified operations
     default: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
 };
@@ -68,8 +76,35 @@ export async function checkRateLimit(
     operation: string
 ): Promise<void> {
     const config = RATE_LIMITS[operation] || RATE_LIMITS.default;
+    await checkRateLimitDynamic(ctx, userId, operation, config.maxRequests, config.windowMs);
+}
+
+/**
+ * Like `checkRateLimit`, but the max and window are supplied by the caller instead
+ * of read from the static `RATE_LIMITS` table. Reuses the exact same storage (a
+ * `ratelimit:${userId}:${operation}` row per successful op in the `uploads` table)
+ * and cleanup, so no new table is needed.
+ *
+ * Use this when the limit is runtime-configurable — e.g. the boost daily cap, which
+ * is admin-tunable via `appSettings` and so cannot live in the compile-time table.
+ * Pass the SAME `operation` string you'd use with `checkRateLimit` so the row key is
+ * stable; do NOT also call `checkRateLimit` for the same operation in one mutation,
+ * or you'll insert two rows per op and double-count.
+ *
+ * Transactional safety: a mutation that throws after this call rolls the inserted
+ * row back, so only SUCCESSFUL operations consume budget.
+ *
+ * @throws Error if the user has hit `maxRequests` within `windowMs`.
+ */
+export async function checkRateLimitDynamic(
+    ctx: MutationCtx,
+    userId: Id<"users">,
+    operation: string,
+    maxRequests: number,
+    windowMs: number
+): Promise<void> {
     const now = Date.now();
-    const windowStart = now - config.windowMs;
+    const windowStart = now - windowMs;
 
     // Query rate limit records for this user and operation
     // Using a composite key stored in the uploads table for simplicity
@@ -83,8 +118,8 @@ export async function checkRateLimit(
         .filter((q) => q.gte(q.field("uploadedAt"), windowStart))
         .collect();
 
-    if (recentRequests.length >= config.maxRequests) {
-        const resetTime = Math.ceil((windowStart + config.windowMs - now) / 1000 / 60);
+    if (recentRequests.length >= maxRequests) {
+        const resetTime = Math.ceil((windowStart + windowMs - now) / 1000 / 60);
         throw new Error(
             `Rate limit exceeded for ${operation}. Please try again in ${resetTime} minute(s).`
         );
@@ -102,7 +137,7 @@ export async function checkRateLimit(
     const oldRecords = await ctx.db
         .query("uploads")
         .withIndex("by_key", (q) => q.eq("key", rateLimitKey))
-        .filter((q) => q.lt(q.field("uploadedAt"), windowStart - config.windowMs))
+        .filter((q) => q.lt(q.field("uploadedAt"), windowStart - windowMs))
         .collect();
 
     for (const record of oldRecords) {

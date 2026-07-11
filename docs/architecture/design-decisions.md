@@ -348,3 +348,50 @@ from Vercel and `.env.local`, and revoke the key in Google Cloud (it was previou
 committed in a migration doc). The active basemap is a one-line swap via the
 `TILE_STYLES` map in `LocationMap.tsx` (positron / voyager / positronNoLabels /
 darkMatter / osm) — all free and commercial-OK.
+
+## Boost to Top (Jul 2026)
+
+**Decision**: owners can push an existing ad back to the top of the feed ("Boost"),
+gated by a cooldown and a per-user daily cap, shipped dark behind the `boostToTop`
+feature flag.
+
+**Name — "Boost"** (founder, 2026-07-09): the Terms and Privacy Policy already reserve
+the word ("boost" / "pin to top" as a paid feature), so the name inherits legal cover
+with zero copy changes. "Repin" was considered — nicely on-brand for a flyer board —
+and passed on in favour of the name users already see in the legal docs.
+
+**`bumpedAt` over re-insert**: boosting re-stamps a mutable `ads.bumpedAt` field (the
+feed's actual sort key) rather than deleting/re-inserting the ad. Re-insert would break
+`_id` stability (saved ads, chats, reports all reference the ad), reset views, and
+forge the "Posted X ago" date. `_creationTime` stays honest and display-only. Cost:
+`bumpedAt` is a required field on a hot table, and rollout needed a two-deploy
+optional-field → backfill → required-field sequence (see gatheredContext
+infrastructure/database.md).
+
+**Cooldown + cap via admin-editable `appSettings`** (supersedes the earlier "shared
+code constant, no env override" decision): `boostCooldownDays` (default 7, clamp 1–30)
+and `boostDailyCap` (default 3, clamp 1–20) live in a numeric `appSettings` table
+(mirror of `featureFlags`) editable from Admin > Settings. A DB-backed reactive value
+solves the client/server drift problem *better* than a constant — the client countdown
+subscribes to the same row the server enforces, so an admin change recomputes open
+countdowns live. Code defaults in `convex/lib/boost.ts` remain the fallback when a key
+is unseeded; clamping happens on both write and read.
+
+**No "New" badge on boosted ads, and no rotation in the pin-drop animation**: a "New"
+badge would contradict the detail page's honest "Posted 1 month ago" (trust issue); the
+one-time primary ring pulse is the arrival cue instead. The pin-drop settle deliberately
+has **no rotate** — on a rectangular grid card it reads as misalignment, not playfulness.
+
+**Ship dark**: `boostToTop` flag gates the dashboard CTA, the AdDetail CTA, *and* the
+`boostAd` mutation server-side (fail closed). Flip in Admin > Feature Flags when ready.
+
+**Abuse register (accepted for v1)**: (1) delete→repost bypasses the cooldown — it costs
+the seller their views/chats today and only becomes a real leak when boost is paid;
+revisit with pricing. (2) Launch-day thundering herd — every aged ad is instantly
+eligible on flag flip; a one-time scramble is accepted (the fresh-rail `take(50)` cap
+may briefly truncate the rail). The daily cap, not the cooldown, is the real
+anti-flooding control.
+
+**Pricing seam**: v1 is free ("It's free" is load-bearing modal copy — the Terms mention
+paid boost, so users hesitate). `boostCount` is written on every boost so "first free,
+then paid" is a follow-up, not a migration.

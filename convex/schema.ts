@@ -37,8 +37,21 @@ const applicationTables = {
 
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
+
+    // Boost ("push to top"): mutable feed sort key. Initialized to creation time
+    // at every insert site and on backfill; a boost re-stamps it to Date.now().
+    // REQUIRED as of Phase 1B — the backfill guaranteed no undefined rows remain,
+    // and the feed now sorts on this field, so any future insert path that forgets
+    // it must fail schema validation loudly rather than silently sink the ad to the
+    // bottom of the feed. `_creationTime` stays the honest "Posted X ago" display
+    // value; `bumpedAt` drives feed order. PROD ROLLOUT: this required-field deploy
+    // must land only AFTER Phase 1A is deployed and `backfillBumpedAt` has run to
+    // completion (zero undefined rows) — otherwise old rows fail validation.
+    bumpedAt: v.number(),               // epoch ms — the feed sort key (see convex/lib/boost.ts)
+    boostCount: v.optional(v.number()), // total boosts; future-pricing seam ("first free, then paid")
   })
-    .index("by_category", ["categoryId"])
+    .index("by_category_and_bumped_at", ["categoryId", "bumpedAt"])
+    .index("by_bumped_at", ["bumpedAt"])
     .index("by_location", ["location"])
     .index("by_active", ["isActive"])
     .index("by_user", ["userId"])
@@ -179,6 +192,18 @@ const applicationTables = {
   featureFlags: defineTable({
     key: v.string(),           // Unique identifier (e.g., "identityVerification")
     enabled: v.boolean(),      // Whether the flag is enabled
+    description: v.string(),   // Human-readable description
+  })
+    .index("by_key", ["key"]),
+
+  // Numeric app settings (admin-tunable). Mirrors featureFlags but stores numbers
+  // instead of booleans — booleans live in featureFlags, magnitudes live here.
+  // First consumers: boostCooldownDays, boostDailyCap (see convex/appSettings.ts +
+  // convex/lib/boost.ts). Reads are clamped for known keys so a bad value can't break
+  // the feed; writes reject out-of-range values.
+  appSettings: defineTable({
+    key: v.string(),           // Unique identifier (e.g., "boostCooldownDays")
+    value: v.number(),         // The numeric value
     description: v.string(),   // Human-readable description
   })
     .index("by_key", ["key"]),

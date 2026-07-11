@@ -145,6 +145,7 @@ describe("sendSaleMessage", () => {
         userId: (await ctx.db.query("users").first())!._id,
         isActive: true,
         views: 0,
+        bumpedAt: Date.now(),
       })
     );
     const { chatId } = await asBuyer.mutation(api.saleChats.sendSaleMessage, {

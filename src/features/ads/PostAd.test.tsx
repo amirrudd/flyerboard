@@ -21,6 +21,7 @@ const makeAd = (overrides: Partial<Doc<'ads'>> = {}): Doc<'ads'> => ({
     userId: 'user1' as Id<'users'>,
     isActive: true,
     views: 0,
+    bumpedAt: 0, // Boost feed sort key (required as of Phase 1B)
     ...overrides,
 });
 

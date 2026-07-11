@@ -14,7 +14,9 @@ import { paginationOptsValidator } from "convex/server";
  * @param args.search - Search term for title search (optional, returns top 50 results)
  * @param args.location - Filter by location string (optional, applied in-memory)
  * @param args.paginationOpts - Pagination cursor and page size
- * @param args.maxCreationTime - Maximum creation timestamp for pagination (optional)
+ * @param args.maxSortTime - Upper bound on the feed sort key `bumpedAt` for stable
+ *   pagination (optional). Named generically because the sort key is `bumpedAt`
+ *   (mutable, boost-aware) — NOT `_creationTime`.
  * @returns Paginated result with ads array, continuation cursor, and isDone flag
  * 
  * @example
@@ -48,7 +50,7 @@ export const getAds = query({
     search: v.optional(v.string()),
     location: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
-    maxCreationTime: v.optional(v.number()),
+    maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     if (args.search) {
@@ -81,13 +83,21 @@ export const getAds = query({
     } else {
       let q = ctx.db
         .query("ads")
-        .withIndex("by_creation_time", (q) => q.lte("_creationTime", args.maxCreationTime || Date.now()))
+        // Feed ordering is by `bumpedAt` (Phase 1B) — the mutable, boost-aware sort
+        // key. A boost re-stamps bumpedAt to now, lifting the ad to the top.
+        .withIndex("by_bumped_at", (q) => q.lte("bumpedAt", args.maxSortTime || Date.now()))
         .order("desc");
 
       if (args.categoryId) {
         q = ctx.db
           .query("ads")
-          .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+          // Category branch also orders by bumpedAt (Phase 1B) via the composite
+          // [categoryId, bumpedAt] index. The index supports .eq on the leading
+          // categoryId AND a range on the trailing bumpedAt, so the upper bound
+          // is pushed into the index range here (no post-filter needed).
+          .withIndex("by_category_and_bumped_at", (q) =>
+            q.eq("categoryId", args.categoryId!).lte("bumpedAt", args.maxSortTime || Date.now())
+          )
           .order("desc");
       }
 
@@ -96,10 +106,7 @@ export const getAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
-            q.neq(q.field("isSold"), true),
-            args.maxCreationTime && args.categoryId
-              ? q.lte(q.field("_creationTime"), args.maxCreationTime)
-              : true
+            q.neq(q.field("isSold"), true)
           )
         )
         .paginate(args.paginationOpts);
@@ -256,16 +263,24 @@ export const getLatestAds = query({
 
       return ads;
     } else {
-      // For non-search queries, use creation time index
+      // For non-search queries, order by the bumpedAt feed sort key (Phase 1B).
+      // `sinceTimestamp` is a bumpedAt watermark: this surfaces both brand-new ads
+      // AND ads boosted since the caller last refreshed.
       let q = ctx.db
         .query("ads")
-        .withIndex("by_creation_time", (q) => q.gt("_creationTime", args.sinceTimestamp))
+        .withIndex("by_bumped_at", (q) => q.gt("bumpedAt", args.sinceTimestamp))
         .order("desc");
 
       if (args.categoryId) {
         q = ctx.db
           .query("ads")
-          .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+          // Category branch also orders by bumpedAt (Phase 1B) via the composite
+          // [categoryId, bumpedAt] index. The index supports .eq on the leading
+          // categoryId AND a range on the trailing bumpedAt, so the lower bound
+          // is pushed into the index range here (no post-filter needed).
+          .withIndex("by_category_and_bumped_at", (q) =>
+            q.eq("categoryId", args.categoryId!).gt("bumpedAt", args.sinceTimestamp)
+          )
           .order("desc");
       }
 
@@ -274,10 +289,7 @@ export const getLatestAds = query({
           q.and(
             q.eq(q.field("isActive"), true),
             q.neq(q.field("isDeleted"), true),
-            q.neq(q.field("isSold"), true),
-            args.categoryId
-              ? q.gt(q.field("_creationTime"), args.sinceTimestamp)
-              : true
+            q.neq(q.field("isSold"), true)
           )
         )
         .take(limit);

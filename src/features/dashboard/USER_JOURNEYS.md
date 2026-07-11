@@ -226,3 +226,18 @@ This document captures all user journeys and flows for the User Dashboard featur
 **Given** the user is on the dashboard  
 **When** they perform actions (post, edit, delete flyers)  
 **Then** the dashboard data automatically refreshes via Convex reactivity
+
+## 46. Boost a Flyer (Eligible)
+**Given** the `boostToTop` flag is on, the user owns an active, unsold, un-bundled flyer whose cooldown has elapsed  
+**When** they click "Boost to top" in the card's action row and confirm in the modal  
+**Then** the flyer's `bumpedAt` is re-stamped (it jumps to the top of the feed), the launch animation plays (card lift + ring pulse + floating arrow), a success toast shows, and the button settles into the disabled "Boost in {N}d" countdown
+
+## 47. Boost During Cooldown
+**Given** the user owns a flyer boosted (or created) less than the cooldown period ago  
+**When** they view the flyer on the dashboard or its detail page  
+**Then** they see a disabled "Boost in Xd" (or "Boost in Xh" inside the final day) button; the countdown recomputes live if an admin changes the cooldown setting, and a raced/rejected boost shows the server error toast with NO celebration animation
+
+## 48. Boost Ineligible by State or Flag
+**Given** a flyer is sold, inactive, part of a bundle or Moving Sale — or the `boostToTop` feature flag is off  
+**When** the owner views it on the dashboard or detail page  
+**Then** no Boost control is rendered at all (the server also rejects `boostAd` for every one of these states, fail closed)

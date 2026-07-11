@@ -34,6 +34,9 @@ import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { notificationService } from "../../services/notifications";
 import { useFeatureFlag } from "../../hooks/useFeatureFlag";
+import { useBoostAction, type BoostableAd } from "../../hooks/useBoostAction";
+import { BoostConfirmModal } from "../ads/BoostConfirmModal";
+import { BoostRingOverlay, BoostArrowFloat } from "../ads/BoostFx";
 import { formatPrice, formatPriceWithCurrency } from "../../lib/priceFormatter";
 import {
   SquaresFour,
@@ -53,7 +56,8 @@ import {
   Package,
   X,
   Plus,
-  Stack
+  Stack,
+  ArrowUp
 } from '@phosphor-icons/react';
 import { MovingSalesTab } from "./MovingSalesTab";
 import { BundlesTab } from "./BundlesTab";
@@ -229,6 +233,208 @@ function BrowserNotificationsCard() {
   );
 }
 
+interface MyAdCardProps {
+  ad: any;
+  boostEnabled: boolean;
+  bundleModeEnabled: boolean;
+  bundleInfo?: { bundleId: string; label: string };
+  unreadCount: number;
+  onEdit: (ad: any) => void;
+  onOpenMessages: (adId: string) => void;
+  onToggleStatus: (adId: string) => void;
+  onManageBundle: (bundleId: string) => void;
+  onAddToBundle: (adId: string) => void;
+}
+
+/**
+ * A single My-Ads card. Extracted from the map so `useBoostAction` (a hook) can be
+ * called at a component top level rather than inside a `.map` callback (rules of
+ * hooks). Owns the card lift + ring pulse on a successful boost; the Boost button is
+ * the ONLY filled-primary element on the card (leftmost via `mr-auto`).
+ */
+function MyAdCard({
+  ad,
+  boostEnabled,
+  bundleModeEnabled,
+  bundleInfo,
+  unreadCount,
+  onEdit,
+  onOpenMessages,
+  onToggleStatus,
+  onManageBundle,
+  onAddToBundle,
+}: MyAdCardProps) {
+  const boost = useBoostAction(ad as BoostableAd);
+  const showBoost = boostEnabled && boost.state !== "ineligible";
+  const inCooldown = boost.state === "cooldown";
+
+  return (
+    <motion.article
+      animate={boost.cardControls}
+      className="relative ring-1 ring-border/70 rounded-2xl p-3 sm:p-4 hover:ring-foreground/15 hover:shadow-card transition-all cursor-pointer bg-card"
+      onClick={() => onEdit(ad)}
+    >
+      <BoostRingOverlay ringKey={boost.ringKey} ringProps={boost.ringProps} />
+      {/* Mobile: Vertical layout, Desktop: Horizontal layout */}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+        {/* Image */}
+        {ad.images[0] ? (
+          <ImageDisplay
+            imageRef={ad.images[0]}
+            alt={ad.title}
+            className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded-xl ring-1 ring-border/60"
+          />
+        ) : (
+          <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60">
+            <ImageIcon className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title and Price */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 className="font-display text-base font-semibold tracking-tight text-foreground flex-1 min-w-0 leading-snug">{ad.title}</h3>
+            <div className="flex flex-col items-end">
+              {ad.previousPrice !== undefined && ad.price !== undefined && ad.previousPrice > ad.price && (
+                <p className="text-xs text-muted-foreground line-through tabular-nums">
+                  {formatPrice(ad.previousPrice)}
+                </p>
+              )}
+              <p className="font-display text-lg font-semibold tabular-nums text-primary whitespace-nowrap">
+                {formatPrice(ad.price || 0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Bundle membership tag / "Bundle this" action (flag-gated) */}
+          {bundleModeEnabled && (() => {
+            if (bundleInfo) {
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onManageBundle(bundleInfo.bundleId);
+                  }}
+                  className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-bundle/10 px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/20 hover:bg-bundle/15 transition"
+                >
+                  <Package size={13} weight="fill" className="shrink-0" />
+                  <span className="truncate">In bundle: {bundleInfo.label}</span>
+                </button>
+              );
+            }
+            const eligible = !ad.isSold && !ad.bundleId && !ad.saleEventId;
+            if (eligible) {
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToBundle(ad._id);
+                  }}
+                  className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/40 hover:bg-bundle/10 active:scale-[0.98] transition"
+                >
+                  <Plus size={13} weight="bold" className="shrink-0" />
+                  Add to a bundle
+                </button>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Stats and Status */}
+          <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1 tabular-nums"><Eye className="w-4 h-4" aria-hidden="true" /> {ad.views}</span>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ${ad.isActive ? 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400' : 'bg-muted text-muted-foreground ring-border/60'
+              }`}>
+              {ad.isActive ? <CheckCircle className="w-3 h-3" aria-hidden="true" /> : <XCircle className="w-3 h-3" aria-hidden="true" />}
+              {ad.isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+
+          {/* Action Buttons. `flex-wrap` is the narrow-viewport safety valve; Boost is
+              the leftmost hero action (`mr-auto`), utilities pushed right. */}
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            {showBoost && (
+              <div className="relative mr-auto">
+                <button
+                  type="button"
+                  disabled={inCooldown}
+                  aria-label={inCooldown ? boost.cooldownAria : "Boost to top"}
+                  title={inCooldown ? boost.cooldownAria : undefined}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    boost.openConfirm();
+                  }}
+                  className={inCooldown
+                    ? "inline-flex items-center gap-1.5 h-11 md:h-9 px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-muted-foreground text-sm font-medium cursor-not-allowed"
+                    : "inline-flex items-center gap-1.5 h-11 md:h-9 px-3.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"}
+                >
+                  <ArrowUp className="w-4 h-4" weight="bold" aria-hidden="true" />
+                  <span>{inCooldown ? boost.cooldownLabel : "Boost to top"}</span>
+                </button>
+                <BoostArrowFloat show={boost.showArrow} arrowProps={boost.arrowProps} />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenMessages(ad._id);
+              }}
+              aria-label="Messages"
+              className="relative inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
+            >
+              <ChatText className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden md:inline">Messages</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold tabular-nums shadow-sm">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus(ad._id);
+              }}
+              aria-label={ad.isActive ? 'Deactivate' : 'Activate'}
+              className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
+            >
+              {ad.isActive ? <XCircle className="w-4 h-4" aria-hidden="true" /> : <CheckCircle className="w-4 h-4 text-primary" aria-hidden="true" />}
+              <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(ad);
+              }}
+              aria-label="Edit"
+              className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
+            >
+              <PencilSimple className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden md:inline">Edit</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showBoost && (
+        <BoostConfirmModal
+          open={boost.isConfirmOpen}
+          cooldownDays={boost.cooldownDays}
+          isBoosting={boost.isBoosting}
+          onConfirm={() => void boost.confirmBoost()}
+          onCancel={boost.closeConfirm}
+        />
+      )}
+    </motion.article>
+  );
+}
+
 interface UserDashboardProps {
   onBack: () => void;
   onPostAd: () => void;
@@ -245,6 +451,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const [activeTab, setActiveTab] = useState<"ads" | "chats" | "saved" | "sales" | "bundles" | "profile" | "archived">(tabParam || "ads");
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const bundleModeEnabled = useFeatureFlag("bundleListing");
+  const boostEnabled = useFeatureFlag("boostToTop");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [manageBundleId, setManageBundleId] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
@@ -1177,143 +1384,24 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                     ) : (
                       // Loaded state - show ads
                       userAds.map((ad) => (
-                        <article
+                        <MyAdCard
                           key={ad._id}
-                          className="ring-1 ring-border/70 rounded-2xl p-3 sm:p-4 hover:ring-foreground/15 hover:shadow-card transition-all cursor-pointer bg-card"
-                          onClick={() => onEditAd(ad)}
-                        >
-                          {/* Mobile: Vertical layout, Desktop: Horizontal layout */}
-                          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                            {/* Image */}
-                            {ad.images[0] ? (
-                              <ImageDisplay
-                                imageRef={ad.images[0]}
-                                alt={ad.title}
-                                className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded-xl ring-1 ring-border/60"
-                              />
-                            ) : (
-                              <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60">
-                                <ImageIcon className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
-                              </div>
-                            )}
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              {/* Title and Price */}
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h3 className="font-display text-base font-semibold tracking-tight text-foreground flex-1 min-w-0 leading-snug">{ad.title}</h3>
-                                <div className="flex flex-col items-end">
-                                  {ad.previousPrice !== undefined && ad.price !== undefined && ad.previousPrice > ad.price && (
-                                    <p className="text-xs text-muted-foreground line-through tabular-nums">
-                                      {formatPrice(ad.previousPrice)}
-                                    </p>
-                                  )}
-                                  <p className="font-display text-lg font-semibold tabular-nums text-primary whitespace-nowrap">
-                                    {formatPrice(ad.price || 0)}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Bundle membership tag / "Bundle this" action (flag-gated) */}
-                              {bundleModeEnabled && (() => {
-                                const inBundle = bundleByAdId.get(ad._id);
-                                if (inBundle) {
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setManageBundleId(inBundle.bundleId);
-                                      }}
-                                      className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-bundle/10 px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/20 hover:bg-bundle/15 transition"
-                                    >
-                                      <Package size={13} weight="fill" className="shrink-0" />
-                                      <span className="truncate">In bundle: {inBundle.label}</span>
-                                    </button>
-                                  );
-                                }
-                                const eligible = !ad.isSold && !ad.bundleId && !ad.saleEventId;
-                                if (eligible) {
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        void navigate(`/sell/bundle?preselect=${ad._id}`);
-                                      }}
-                                      className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-bundle-emphasis ring-1 ring-bundle/40 hover:bg-bundle/10 active:scale-[0.98] transition"
-                                    >
-                                      <Plus size={13} weight="bold" className="shrink-0" />
-                                      Add to a bundle
-                                    </button>
-                                  );
-                                }
-                                return null;
-                              })()}
-
-                              {/* Stats and Status */}
-                              <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1 tabular-nums"><Eye className="w-4 h-4" aria-hidden="true" /> {ad.views}</span>
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ${ad.isActive ? 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400' : 'bg-muted text-muted-foreground ring-border/60'
-                                  }`}>
-                                  {ad.isActive ? <CheckCircle className="w-3 h-3" aria-hidden="true" /> : <XCircle className="w-3 h-3" aria-hidden="true" />}
-                                  {ad.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex items-center gap-2 justify-end">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateInlineViewParams({ messages: ad._id });
-                                  }}
-                                  aria-label="Messages"
-                                  className="relative inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                                >
-                                  <ChatText className="w-4 h-4" aria-hidden="true" />
-                                  <span className="hidden md:inline">Messages</span>
-                                  {unreadCounts && unreadCounts[ad._id] > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold tabular-nums shadow-sm">
-                                      {unreadCounts[ad._id]}
-                                    </span>
-                                  )}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleToggleStatus(ad._id);
-                                  }}
-                                  aria-label={ad.isActive ? 'Deactivate' : 'Activate'}
-                                  className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                                >
-                                  {ad.isActive ? <XCircle className="w-4 h-4" aria-hidden="true" /> : <CheckCircle className="w-4 h-4 text-primary" aria-hidden="true" />}
-                                  <span className="hidden md:inline">{ad.isActive ? 'Deactivate' : 'Activate'}</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditAd(ad);
-                                  }}
-                                  aria-label="Edit"
-                                  className="inline-flex items-center gap-1.5 h-9 px-2.5 md:px-3.5 rounded-full bg-muted/40 ring-1 ring-border text-foreground text-sm font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                                >
-                                  <PencilSimple className="w-4 h-4" aria-hidden="true" />
-                                  <span className="hidden md:inline">Edit</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </article>
+                          ad={ad}
+                          boostEnabled={!!boostEnabled}
+                          bundleModeEnabled={!!bundleModeEnabled}
+                          bundleInfo={bundleByAdId.get(ad._id)}
+                          unreadCount={unreadCounts?.[ad._id] ?? 0}
+                          onEdit={onEditAd}
+                          onOpenMessages={(adId) => updateInlineViewParams({ messages: adId })}
+                          onToggleStatus={(adId) => void handleToggleStatus(adId)}
+                          onManageBundle={(bundleId) => setManageBundleId(bundleId)}
+                          onAddToBundle={(adId) => void navigate(`/sell/bundle?preselect=${adId}`)}
+                        />
                       ))
                     )}
                   </div>
                 </section>
               )}
-
               {activeTab === "chats" && (
                 <section ref={chatsContentRef} className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card p-4 sm:p-6" aria-label="My messages">
                   {/* Header + filters — on <lg the open thread replaces the list, so hide these */}

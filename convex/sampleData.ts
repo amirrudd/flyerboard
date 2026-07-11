@@ -350,7 +350,8 @@ export const clearAndCreateSampleData = mutation({
     ];
 
     for (const ad of sampleAds) {
-      await ctx.db.insert("ads", ad);
+      // Boost feed sort key — initialized to creation time for every seeded ad.
+      await ctx.db.insert("ads", { ...ad, bumpedAt: Date.now(), boostCount: 0 });
     }
 
     return "Sample data created successfully";

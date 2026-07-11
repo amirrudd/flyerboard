@@ -68,6 +68,7 @@ async function insertAd(
       userId: opts.userId,
       isActive: true,
       views: 0,
+      bumpedAt: Date.now(),
       ...(opts.isSold !== undefined ? { isSold: opts.isSold } : {}),
       ...(opts.saleEventId ? { saleEventId: opts.saleEventId } : {}),
       ...(opts.bundleId ? { bundleId: opts.bundleId } : {}),

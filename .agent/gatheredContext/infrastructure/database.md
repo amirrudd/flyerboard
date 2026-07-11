@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-11
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -17,6 +17,23 @@
   - Two-deploy rollout: PROD must deploy Phase 1A (optional field + backfill) and run
     `migrations:backfillBumpedAt` to zero-undefined BEFORE the Phase 1B required-field +
     query-switch deploy, or old rows fail validation / sink to the feed bottom.
+  - **POSTMORTEM (Jul 11 2026) — this rule was violated and caused a prod deploy outage.**
+    PR #288 merged Phase 1A + 1B in ONE deploy, so the backfill never ran and
+    `convex deploy` was rejected by legacy rows missing `bumpedAt`. That's a DEADLOCK:
+    the failing deploy is also the one that would ship the backfill, so you can't run it.
+    Recovery that worked: flip `defineSchema(tables, { schemaValidation: false })` (one
+    boolean, NO type churn — schema stays `v.number()`, all reads stay typed `number`;
+    making the field optional instead breaks ~6 typed read sites and the `tsc -b` gate),
+    deploy, run the backfill to `done:true`, then a SEPARATE plain-edit PR removes the flag.
+    Gotcha: the re-enable PR must be a **fresh edit off main**, NOT `git revert` of the
+    disable commit — a branch containing both the flag-add and its revert **squash-merges
+    to a net-zero diff** and silently does nothing (this is exactly how #292 "merged" yet
+    left `schemaValidation: false` live on `main`; #293 fixed it with a plain edit).
+  - When "prod migration function not found" in the Convex dashboard: you're likely on the
+    wrong deployment. **Prod = `resilient-pheasant-112`; dev = `doting-dogfish-130`.** Also
+    verify the Vercel prod build actually ran `convex deploy` — grep its log for
+    `✅ Running Production Build: Deploying Convex backend.` (from `vercel-build.sh`, which
+    only runs when `VERCEL_ENV==production`). No such line ⇒ the build was frontend-only.
 - **`appSettings` table** = admin-tunable NUMERIC config (mirrors `featureFlags`, which
   is booleans-only). `{ key, value, description }` + `by_key`. `convex/appSettings.ts`:
   public `getSetting(key)` (clamped on read for known boost keys, returns `number|null`),

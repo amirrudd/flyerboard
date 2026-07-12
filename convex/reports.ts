@@ -79,34 +79,3 @@ export const getUserReports = query({
         return reports;
     },
 });
-
-/**
- * Get all reports (admin only - for future use)
- */
-export const getAllReports = query({
-    args: {
-        status: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const userId = await getDescopeUserId(ctx);
-        if (!userId) {
-            return [];
-        }
-
-        // TODO: Add admin check when admin system is implemented
-        // For now, this query is available but would need authorization
-
-        let reports;
-
-        if (args.status) {
-            reports = await ctx.db
-                .query("reports")
-                .withIndex("by_status", (q) => q.eq("status", args.status!))
-                .collect();
-        } else {
-            reports = await ctx.db.query("reports").collect();
-        }
-
-        return reports;
-    },
-});

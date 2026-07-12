@@ -7,7 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useUserSync } from "../../context/UserSyncContext";
 import { useScrollLock } from "../../hooks/useScrollLock";
-import { AuthModal } from "../auth/AuthModal";
+import { useOutletContext } from "react-router-dom";
 import { MessageBubble, MessageComposer } from "../messages";
 
 interface BundleMessageModalProps {
@@ -41,7 +41,9 @@ export function BundleMessageModal({
   );
   const sendMessage = useMutation(api.bundleChats.sendBundleMessage);
 
-  const [showAuth, setShowAuth] = useState(false);
+  // Layout owns the single SmsOtpSignIn modal; null when rendered outside the router (tests).
+  const layoutCtx = useOutletContext<{ setShowAuthModal: (show: boolean) => void } | null>();
+  const openSignIn = () => layoutCtx?.setShowAuthModal(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { lockScroll, unlockScroll } = useScrollLock();
 
@@ -106,7 +108,7 @@ export function BundleMessageModal({
               </p>
               <button
                 type="button"
-                onClick={() => setShowAuth(true)}
+                onClick={openSignIn}
                 className="mt-3 rounded-xl bg-bundle px-5 py-2.5 text-sm font-semibold text-bundle-foreground"
               >
                 Sign in
@@ -144,8 +146,6 @@ export function BundleMessageModal({
           />
         )}
       </section>
-
-      <AuthModal showAuthModal={showAuth} setShowAuthModal={setShowAuth} />
     </div>,
     document.body
   );

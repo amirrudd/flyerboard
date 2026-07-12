@@ -5,7 +5,7 @@ description: Rules and architecture for Authentication (Descope + Convex)
 
 # Authentication Architecture & Rules
 
-**Last Updated**: 2026-05-09
+**Last Updated**: 2026-07-12
 
 This project uses a **Hybrid Authentication** approach:
 - **Identity Provider**: [Descope](https://descope.com) handles user identity, OTP verification, and session management.
@@ -68,6 +68,27 @@ The `useDescopeUserSync` hook automatically syncs Descope users to Convex on aut
 
 ### ✅ DO: Verify Tokens via OIDC
 Convex is configured to verify Descope JWTs via OIDC. Ensure `convex/auth.config.ts` points to the correct Descope issuer URL.
+
+**How the token actually reaches Convex (verified live 2026-07-12):**
+1. Descope verifies the phone OTP and mints an RS256-signed session JWT; `useSession()` exposes it as `sessionToken`.
+2. `src/lib/useDescopeAuth.ts` returns it from `fetchAccessToken`; `ConvexProviderWithAuth` (main.tsx) attaches it to the Convex WebSocket.
+3. **Convex's runtime validates the JWT itself** — it fetches Descope's public keys (JWKS) from the issuer in `auth.config.ts` (`domain` = `https://api.descope.com/<PROJECT_ID>`, `applicationID` = project ID as audience) and checks signature/issuer/audience/expiry. **No Descope SDK or secret runs in Convex code** — pure asymmetric-crypto verification.
+4. Valid token → `ctx.auth.getUserIdentity()` returns claims; `identity.subject` = Descope user ID; `getDescopeUserId()` maps it to `users` via `tokenIdentifier`. Invalid/absent → null → function rejects.
+
+So: auth happens at Descope, verification inside Convex's runtime, authorization in each function.
+
+### ⚠️ GOTCHA: Two files named `auth.ts` — and why the legacy one can't be deleted
+- `convex/lib/auth.ts` — **the real path**: `getDescopeUserId()`.
+- `convex/auth.ts` — legacy `@convex-dev/auth` (`convexAuth()` with Password/Anonymous providers). NOT used by Descope-authed users, but it **cannot simply be deleted** because:
+  1. `convex/schema.ts` spreads `...authTables` and builds the `users` table on `...authTables.users.validator.fields` — prod user docs physically have that shape; removing the package means a schema rewrite + prod data migration.
+  2. `convex/http.ts` registers `auth.addHttpRoutes(http)`.
+- Import trap: `convex/lib/adminAuth.ts` does `import { getDescopeUserId } from "./auth"` — that resolves to *lib/*auth.ts, but reads identically to an import of the legacy file. Don't "fix" it.
+
+### ✅ FIXED (2026-07-12): `AuthModal`/`SignInForm` password path deleted
+`AuthModal.tsx`/`SignInForm.tsx` used `useAuthActions()` from `@convex-dev/auth/react`, but main.tsx mounts `ConvexProviderWithAuth` (Descope) — no `ConvexAuthProvider` existed in the tree, so the form was dead. `SaleMessageModal` and `BundleMessageModal` now open Layout's `SmsOtpSignIn` via `useOutletContext<{ setShowAuthModal }>()` (returns null outside a router, so tests render without a wrapper). **The only sign-in surface is `SmsOtpSignIn`** — never re-introduce a convex-auth form without adding its provider.
+
+### ✅ FIXED (2026-07-12): tokenIdentifier lookups use the index
+`convex/lib/auth.ts`, `convex/descopeAuth.ts`, and `convex/users.ts` now use `.withIndex("tokenIdentifier", ...)` instead of `.filter(...)` (was a full users scan on every authed request). Keep any new tokenIdentifier lookup on the index.
 
 ### ✅ DO: Use `getDescopeUserId`
 In Convex mutations/queries, use `getDescopeUserId(ctx)` (from `convex/lib/auth.ts`) to retrieve the authenticated user's ID. This replaces the legacy `getAuthUserId` function.

@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { X, PaperPlaneRight, CircleNotch, Check, Plus } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useOutletContext } from "react-router-dom";
 import { useUserSync } from "../../context/UserSyncContext";
-import { AuthModal } from "../auth/AuthModal";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { formatAUD } from "./saleHelpers";
 import type { SaleItem } from "./types";
@@ -24,7 +24,7 @@ interface SaleMessageModalProps {
 /**
  * Sale-level message thread (v2). One conversation per buyer per Sale; items are
  * attached as chips (referencedAdIds) so a buyer can ask about several at once.
- * Reuses the app's AuthModal for the Descope sign-in gate.
+ * Signed-out users are routed to Layout's SmsOtpSignIn modal via outlet context.
  */
 export function SaleMessageModal({
   saleEventId,
@@ -46,7 +46,9 @@ export function SaleMessageModal({
 
   const [text, setText] = useState("");
   const [chips, setChips] = useState<Set<string>>(new Set());
-  const [showAuth, setShowAuth] = useState(false);
+  // Layout owns the single SmsOtpSignIn modal; null when rendered outside the router (tests).
+  const layoutCtx = useOutletContext<{ setShowAuthModal: (show: boolean) => void } | null>();
+  const openSignIn = () => layoutCtx?.setShowAuthModal(true);
   const [sending, setSending] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [seedKey, setSeedKey] = useState<string | null>(null);
@@ -103,7 +105,7 @@ export function SaleMessageModal({
     const content = text.trim();
     if (!content) return;
     if (!ready) {
-      setShowAuth(true);
+      openSignIn();
       return;
     }
     setSending(true);
@@ -165,7 +167,7 @@ export function SaleMessageModal({
               </p>
               <button
                 type="button"
-                onClick={() => setShowAuth(true)}
+                onClick={openSignIn}
                 className="mt-3 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
               >
                 Sign in
@@ -316,8 +318,6 @@ export function SaleMessageModal({
           </div>
         )}
       </section>
-
-      <AuthModal showAuthModal={showAuth} setShowAuthModal={setShowAuth} />
     </div>,
     document.body
   );

@@ -9,7 +9,7 @@ export const getUserByToken = internalQuery({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("tokenIdentifier"), args.token))
+      .withIndex("tokenIdentifier", (q) => q.eq("tokenIdentifier", args.token))
       .first();
     return user;
   },

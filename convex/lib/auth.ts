@@ -20,7 +20,7 @@ export async function getDescopeUserId(
     const subject = identity.subject;
     const user = await ctx.db
         .query("users")
-        .filter((q) => q.eq(q.field("tokenIdentifier"), subject))
+        .withIndex("tokenIdentifier", (q) => q.eq("tokenIdentifier", subject))
         .first();
 
     return user?._id || null;

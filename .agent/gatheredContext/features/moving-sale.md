@@ -148,8 +148,9 @@ now reflected in the code:
 - **Sale-level messaging is real now** (replaces the old "Message → route to /ad/:id" shortcut):
   `convex/saleChats.ts` → `sendSaleMessage` / `getSaleThread`. One thread per buyer per Sale
   (`chats.saleEventId` + index `by_sale_event_buyer`; `chats.adId` is now **optional**), items as
-  chips (`messages.referencedAdIds`). Frontend: `SaleMessageModal` on the public page (reuses the
-  app `AuthModal` for the Descope gate). **Gotcha:** making `chats.adId` optional broke 6 call
+  chips (`messages.referencedAdIds`). Frontend: `SaleMessageModal` on the public page (signed-out
+  users are routed to Layout's `SmsOtpSignIn` via outlet context — the local `AuthModal` was a dead
+  convex-auth password form, removed 2026-07-12; see features/authentication.md). **Gotcha:** making `chats.adId` optional broke 6 call
   sites that assumed it (adDetail/admin/messages) — all now guard `if (chat.adId)`; item-chat push/
   email notifications only fire when `adId` is set (sale-thread notifications not wired yet).
   `getSellerChats`/`getBuyerChats` now also return `sale`; the dashboard chats tab shows a 🏠 title

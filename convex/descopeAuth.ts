@@ -32,7 +32,7 @@ export const syncDescopeUser = mutation({
         // Check if user already exists by tokenIdentifier
         const existingUser = await ctx.db
             .query("users")
-            .filter((q) => q.eq(q.field("tokenIdentifier"), subject))
+            .withIndex("tokenIdentifier", (q) => q.eq("tokenIdentifier", subject))
             .first();
 
         if (existingUser) {

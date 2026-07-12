@@ -22,11 +22,6 @@ vi.mock('convex/react', () => ({
     useMutation: () => mockSendMessage,
 }));
 
-// AuthModal renders nothing meaningful for these tests.
-vi.mock('../auth/AuthModal', () => ({
-    AuthModal: () => null,
-}));
-
 // ImageDisplay pulls in convex/lazy-load — stub it.
 vi.mock('../../components/ui/ImageDisplay', () => ({
     ImageDisplay: ({ alt }: any) => <img alt={alt} />,

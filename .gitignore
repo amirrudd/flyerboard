@@ -43,3 +43,6 @@ coverage/
 
 # impeccable live-mode local session/recovery state (keep design.json + live/config.json)
 .impeccable/live/sessions/
+
+# graphify knowledge-graph output (regenerable)
+graphify-out/

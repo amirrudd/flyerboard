@@ -40,7 +40,7 @@ Here's a quick guide for the grey-area items:
 | Clothing | Near-new, brand items | Clean everyday wear | Stained, torn |
 | Kitchenware | Full sets, appliances | Odd mugs, spare cutlery | Cracked, chipped |
 
-Donating keeps usable things out of landfill and supports your local op shop — a small win for the community and the planet on a day that's already about clearing out.
+Donating — or selling — keeps usable things out of landfill and supports your local op shop, a small win for the community and the planet on a day that's already about clearing out. It's the same reason [buying secondhand is better for the planet and your budget](/blog/why-buy-secondhand-saves-money-planet).
 
 ## How should you price items for a moving sale?
 

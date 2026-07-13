@@ -101,6 +101,43 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
     return [...sameCategory, ...rest].slice(0, limit);
 }
 
+export interface FaqItem {
+    question: string;
+    answer: string;
+}
+
+/**
+ * Pulls Q&A pairs out of a post's `## Frequently asked questions` section so the
+ * page can emit FAQPage JSON-LD (AI-citation + rich-result signal). House format
+ * is `**Q: question?**` followed by the answer text (an optional leading `A:` is
+ * tolerated — see how-to-run-a-moving-sale.md). Returns [] if there's no FAQ block.
+ */
+export function extractFaqs(content: string): FaqItem[] {
+    const headingIdx = content.search(/^#{2,}\s+Frequently asked questions/im);
+    if (headingIdx === -1) return [];
+    let section = content.slice(headingIdx);
+    const endIdx = section.search(/^\s*---\s*$/m); // stop at the footer rule
+    if (endIdx !== -1) section = section.slice(0, endIdx);
+
+    const toPlainText = (s: string): string =>
+        s
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // markdown links → link text
+            .replace(/\*\*/g, "") // drop stray bold markers
+            .replace(/\s+/g, " ")
+            .trim();
+
+    const faqs: FaqItem[] = [];
+    // Each pair starts at `**Q:`; the answer runs until the next `**Q:` or the end.
+    for (const part of section.split(/^\*\*Q:\s*/im).slice(1)) {
+        const close = part.indexOf("**");
+        if (close === -1) continue;
+        const question = toPlainText(part.slice(0, close));
+        const answer = toPlainText(part.slice(close + 2).replace(/^\s*A:\s*/i, ""));
+        if (question && answer) faqs.push({ question, answer });
+    }
+    return faqs;
+}
+
 /** Formats an ISO post date; falls back to the raw string if unparseable. */
 export function formatBlogDate(date: string, pattern = "d MMM yyyy"): string {
     if (!date) return "";

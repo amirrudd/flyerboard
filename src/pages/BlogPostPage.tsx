@@ -7,7 +7,7 @@ import { useHeaderSlots } from "../features/layout/HeaderSlots";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { BlogPostCard } from "../components/BlogPostCard";
-import { getPostBySlug, getRelatedPosts, formatBlogDate } from "../lib/blog";
+import { getPostBySlug, getRelatedPosts, formatBlogDate, extractFaqs } from "../lib/blog";
 import { SITE_URL, postUrl } from "../lib/site";
 
 export function BlogPostPage() {
@@ -85,11 +85,12 @@ export function BlogPostPage() {
         description: post.description,
         datePublished: post.date,
         dateModified: post.updated ?? post.date,
-        author: { "@type": "Organization", name: post.author },
+        author: { "@type": "Organization", name: post.author, url: SITE_URL },
         publisher: {
             "@type": "Organization",
             name: "FlyerBoard",
             url: SITE_URL,
+            logo: { "@type": "ImageObject", url: `${SITE_URL}/icons/icon-512x512.png` },
         },
         keywords: keywordsContent,
         articleSection: post.category,
@@ -97,6 +98,21 @@ export function BlogPostPage() {
         mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
         url: canonical,
     };
+
+    // FAQPage schema from the post's own FAQ section — a strong AI-citation and
+    // rich-result signal. Omitted for posts without a `## Frequently asked questions` block.
+    const faqs = extractFaqs(post.content);
+    const faqJsonLd = faqs.length > 0
+        ? {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((f) => ({
+                "@type": "Question",
+                name: f.question,
+                acceptedAnswer: { "@type": "Answer", text: f.answer },
+            })),
+        }
+        : null;
 
     return (
         <>
@@ -118,6 +134,12 @@ export function BlogPostPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
+            {faqJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                />
+            )}
 
             <section className="min-h-screen bg-background pb-12 md:pb-16">
                 <div className="content-max-width mx-auto container-padding">
@@ -142,6 +164,8 @@ export function BlogPostPage() {
                             <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1">
                                 {post.category}
                             </span>
+                            <span className="text-sm font-medium text-foreground">By {post.author}</span>
+                            <span className="text-sm text-muted-foreground">·</span>
                             <time dateTime={post.date} className="text-sm text-muted-foreground">
                                 {formatBlogDate(post.date, "d MMMM yyyy")}
                             </time>

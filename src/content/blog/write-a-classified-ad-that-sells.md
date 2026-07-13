@@ -3,7 +3,7 @@ title: "How to Write a Classified Ad That Sells Fast: 9 Tips"
 description: "Nine practical tips to write a classified ad that sells fast — clear titles, honest details, good photos, fair pricing, and a safe, on-platform close."
 slug: write-a-classified-ad-that-sells
 date: 2026-06-30
-updated: 2026-06-30
+updated: 2026-07-13
 author: FlyerBoard Team
 category: Selling
 keywords: [classified ad tips, how to write a listing, selling online, ad photos, pricing secondhand]
@@ -64,7 +64,7 @@ Right-pricing is the single biggest lever on how fast something sells. Before yo
 | Priced at the fair market rate | Steady interest, sells in good time |
 | Priced slightly below market | Sells fast, often within days |
 
-If you want room to negotiate, add a small buffer and mark it "ONO" (or nearest offer). If you want it gone this week, price it sharp and say so.
+If you want room to negotiate, add a small buffer and mark it "ONO" (or nearest offer). If you want it gone this week, price it sharp and say so. And if it's something hard to put a price on, you could [trade it for what you actually want](/blog/trade-and-swap-items-flyerboard) instead.
 
 ### 5. Include what matters, leave out what doesn't
 
@@ -103,7 +103,7 @@ A safe sale is a smooth sale. Keep your guard up and the handover stays easy for
 - **Keep chat on FlyerBoard.** If someone pushes to move to text, email, or another app early, that's a red flag — staying in-app keeps a record and protects you.
 - **Meet in a public place** in daylight for smaller items; a busy car park or café works well.
 - For larger pickups at home, **have someone with you** and keep the exchange at the door or driveway.
-- **Be wary of overpayment, courier, or "I'll pay extra" scams.** For local sales, cash on pickup is simplest. If you're unsure, [Scamwatch](https://www.scamwatch.gov.au/) lists the common ones.
+- **Be wary of [overpayment, courier, or "I'll pay extra" scams](/blog/avoid-marketplace-scams-australia).** For local sales, cash on pickup is simplest. If you're unsure, [Scamwatch](https://www.scamwatch.gov.au/) lists the common ones.
 
 ## A quick pre-post checklist
 

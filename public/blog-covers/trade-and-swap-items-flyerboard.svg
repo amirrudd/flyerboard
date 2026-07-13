@@ -1,13 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Trading and swapping items">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Editorial illustration of two boxes swapping places with an exchange arrow">
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#EAE8E1"/>
+    </pattern>
+  </defs>
   <rect width="1200" height="675" fill="#F7F6F3"/>
-  <circle cx="930" cy="470" r="235" fill="#FCE7D1"/>
-  <g fill="none" stroke="#2F3437" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-10 585 354)">
-    <rect x="420" y="270" width="150" height="120" rx="18"/>
-    <rect x="650" y="270" width="150" height="120" rx="18"/>
-    <path d="M580 300 H648 M636 288 L650 300 L636 312"/>
-    <path d="M640 360 H572 M584 348 L570 360 L584 372"/>
+  <rect width="1200" height="675" fill="url(#dots)"/>
+  <circle cx="930" cy="300" r="250" fill="#FCE7D1"/>
+  <circle cx="958" cy="326" r="250" fill="none" stroke="#F6C99E" stroke-width="7" opacity="0.7"/>
+  <circle cx="1092" cy="560" r="46" fill="#F6C99E" opacity="0.7"/>
+  <g stroke="#2F3437" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="430" y="298" width="150" height="132" rx="18"/>
+    <rect x="628" y="298" width="150" height="132" rx="18"/>
   </g>
-  <text x="80" y="104" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2F3437">FlyerBoard</text>
-  <text x="80" y="598" font-family="'SF Mono', ui-monospace, monospace" font-size="22" letter-spacing="5" fill="#787774">SELLING</text>
-  <line x1="80" y1="620" x2="210" y2="620" stroke="#E0DED8" stroke-width="2"/>
+  <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M505 292 C505 220 703 220 703 288" stroke="#DC3626"/>
+    <path d="M690 276 L703 290 L716 276" stroke="#DC3626"/>
+    <path d="M703 436 C703 508 505 508 505 440" stroke="#2F3437"/>
+    <path d="M492 452 L505 438 L518 452" stroke="#2F3437"/>
+  </g>
+  <circle cx="92" cy="90" r="7" fill="#DC3626"/>
+  <text x="112" y="100" font-family="Georgia,'Times New Roman',serif" font-size="34" fill="#2F3437">FlyerBoard</text>
+  <text x="82" y="598" font-family="'SF Mono',ui-monospace,monospace" font-size="22" letter-spacing="5" fill="#787774">SELLING</text>
+  <line x1="82" y1="620" x2="210" y2="620" stroke="#DDDBD4" stroke-width="2"/>
 </svg>

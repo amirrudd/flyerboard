@@ -3,7 +3,7 @@ title: "How to Run a Successful Moving Sale: A Step-by-Step Checklist"
 description: "A step-by-step checklist for running a moving sale in Australia: plan early, sort, price well, list everything in one place, and clear the house."
 slug: how-to-run-a-moving-sale
 date: 2026-06-30
-updated: 2026-06-30
+updated: 2026-07-13
 author: FlyerBoard Team
 category: Selling
 keywords: [moving sale, garage sale, decluttering, selling secondhand, Moving Sale Mode]
@@ -60,7 +60,7 @@ Good photos do most of the selling before anyone messages you. Shoot in daylight
 
 Then write a short, honest description for each: what it is, rough dimensions or size, condition, and any flaws. Naming flaws upfront saves you time-wasting messages and builds trust.
 
-The slow part of any moving sale is listing dozens of items one by one. This is exactly what **Moving Sale Mode** on FlyerBoard is built for — you bulk-list everything in one flow instead of creating each ad from scratch.
+The slow part of any moving sale is listing dozens of items one by one. This is exactly what **[Moving Sale Mode](/blog/moving-sale-mode-list-everything-at-once)** on FlyerBoard is built for — you bulk-list everything in one flow instead of creating each ad from scratch.
 
 ## How do you put everything in one place buyers can browse?
 
@@ -94,7 +94,7 @@ Keep it simple and sensible. A few habits make pickup day smooth:
 - **Take cash or instant transfer**, and confirm the payment has landed before the item leaves.
 - **Set clear pickup windows** so you're not on call all day.
 
-For more on staying safe when buying and selling secondhand, [Scamwatch](https://www.scamwatch.gov.au/) has practical Australian guidance.
+For more on staying safe, read our guide to [spotting and avoiding marketplace scams](/blog/avoid-marketplace-scams-australia) — and [Scamwatch](https://www.scamwatch.gov.au/) has practical Australian guidance too.
 
 ## What do you do with leftovers?
 

@@ -1,9 +1,9 @@
 ---
-title: "How to Spot and Avoid Scams When Buying Secondhand in Australia"
+title: "How to Spot & Avoid Secondhand Scams in Australia"
 description: "A practical checklist for spotting overpayment, fake payment and courier scams when buying or selling secondhand in Australia — plus simple steps to stay safe."
 slug: avoid-marketplace-scams-australia
 date: 2026-06-30
-updated: 2026-06-30
+updated: 2026-07-13
 author: FlyerBoard Team
 category: Safety
 keywords: [marketplace scams, online safety, buying secondhand, Australia, Scamwatch]
@@ -12,7 +12,7 @@ heroImage: /blog-covers/avoid-marketplace-scams-australia.svg
 heroAlt: Editorial illustration of a safety shield with a checkmark
 ---
 
-# How to Spot and Avoid Scams When Buying Secondhand in Australia
+# How to Spot & Avoid Secondhand Scams in Australia
 
 **Most secondhand scams in Australia follow a handful of familiar patterns: overpayment, fake payment confirmations, "courier" or shipping requests, dodgy links, and pressure to pay off-platform. You can avoid nearly all of them by sticking to a few simple rules — meet in a public place, pay cash or verify the money has truly landed in your account, keep the conversation on FlyerBoard, and never click a payment link. If a deal feels rushed or too good to be true, walk away.**
 
@@ -73,7 +73,7 @@ The defence is the same for both: meet locally, verify real money, and stay on-p
 
 ## Why staying on FlyerBoard helps
 
-A big part of safety is keeping a trail. When you keep chat and arrangements inside FlyerBoard, there's a record of who said what, and the conversation can't quietly vanish into a stranger's private inbox. FlyerBoard is built around *local* trades between real people in your community — which naturally cuts out the long-distance "I'll send a courier" scams that rely on you never meeting face to face. Combine that with cash or verified payment in person, and you've removed most of the risk.
+A big part of safety is keeping a trail. When you keep chat and arrangements inside FlyerBoard, there's a record of who said what, and the conversation can't quietly vanish into a stranger's private inbox. FlyerBoard is built around *local* trades between real people in your community — which naturally cuts out the long-distance "I'll send a courier" scams that rely on you never meeting face to face. Combine that with cash or verified payment in person, and you've removed most of the risk. A clear, honest listing helps too — here's how to [write an ad that sells safely](/blog/write-a-classified-ad-that-sells).
 
 ## Frequently asked questions
 

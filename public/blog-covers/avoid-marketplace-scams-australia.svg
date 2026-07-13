@@ -1,11 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Staying safe from scams">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Editorial illustration of a safety shield with a checkmark">
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#EAE8E1"/>
+    </pattern>
+  </defs>
   <rect width="1200" height="675" fill="#F7F6F3"/>
-  <circle cx="940" cy="200" r="245" fill="#FDEBEC"/>
-  <g fill="none" stroke="#2F3437" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M600 148 L762 210 V362 C762 482 690 544 600 584 C510 544 438 482 438 362 V210 Z"/>
-    <path d="M543 362 L590 410 L678 312"/>
+  <rect width="1200" height="675" fill="url(#dots)"/>
+  <circle cx="930" cy="300" r="250" fill="#FDEBEC"/>
+  <circle cx="958" cy="326" r="250" fill="none" stroke="#F6CFD3" stroke-width="7" opacity="0.7"/>
+  <circle cx="1092" cy="560" r="46" fill="#F6CFD3" opacity="0.7"/>
+  <g stroke="#2F3437" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M590 150 L760 214 V368 C760 492 686 556 590 598 C494 556 420 492 420 368 V214 Z"/>
+    <path d="M497 292 L590 258 L683 292" opacity="0.35"/>
   </g>
-  <text x="80" y="104" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2F3437">FlyerBoard</text>
-  <text x="80" y="598" font-family="'SF Mono', ui-monospace, monospace" font-size="22" letter-spacing="5" fill="#787774">SAFETY</text>
-  <line x1="80" y1="620" x2="210" y2="620" stroke="#E0DED8" stroke-width="2"/>
+  <path d="M512 372 L572 432 L690 300" fill="none" stroke="#DC3626" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="92" cy="90" r="7" fill="#DC3626"/>
+  <text x="112" y="100" font-family="Georgia,'Times New Roman',serif" font-size="34" fill="#2F3437">FlyerBoard</text>
+  <text x="82" y="598" font-family="'SF Mono',ui-monospace,monospace" font-size="22" letter-spacing="5" fill="#787774">SAFETY</text>
+  <line x1="82" y1="620" x2="210" y2="620" stroke="#DDDBD4" stroke-width="2"/>
 </svg>

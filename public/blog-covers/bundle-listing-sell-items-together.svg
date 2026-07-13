@@ -1,13 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Bundling items together">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Editorial illustration of several boxes tied together with a ribbon">
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#EAE8E1"/>
+    </pattern>
+  </defs>
   <rect width="1200" height="675" fill="#F7F6F3"/>
-  <circle cx="930" cy="470" r="235" fill="#E4F0DE"/>
-  <g fill="none" stroke="#2F3437" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-8 585 354)">
-    <rect x="440" y="300" width="120" height="110" rx="14"/>
-    <rect x="570" y="270" width="120" height="140" rx="14"/>
-    <rect x="700" y="310" width="120" height="100" rx="14"/>
-    <path d="M430 300 C580 220 680 220 830 300" stroke-dasharray="2 16"/>
+  <rect width="1200" height="675" fill="url(#dots)"/>
+  <circle cx="930" cy="300" r="250" fill="#E4F0DE"/>
+  <circle cx="958" cy="326" r="250" fill="none" stroke="#CBE6BE" stroke-width="7" opacity="0.7"/>
+  <circle cx="1092" cy="560" r="46" fill="#CBE6BE" opacity="0.7"/>
+  <g stroke="#2F3437" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="450" y="342" width="130" height="120" rx="14"/>
+    <rect x="580" y="300" width="132" height="162" rx="14"/>
+    <rect x="712" y="352" width="122" height="110" rx="14"/>
   </g>
-  <text x="80" y="104" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2F3437">FlyerBoard</text>
-  <text x="80" y="598" font-family="'SF Mono', ui-monospace, monospace" font-size="22" letter-spacing="5" fill="#787774">SELLING</text>
-  <line x1="80" y1="620" x2="210" y2="620" stroke="#E0DED8" stroke-width="2"/>
+  <g stroke="#DC3626" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M450 388 H834"/>
+    <path d="M646 322 V462"/>
+    <path d="M646 322 C602 288 570 312 600 322 C570 332 602 356 646 322"/>
+    <path d="M646 322 C690 288 722 312 692 322 C722 332 690 356 646 322"/>
+  </g>
+  <circle cx="646" cy="322" r="8" fill="#DC3626"/>
+  <circle cx="92" cy="90" r="7" fill="#DC3626"/>
+  <text x="112" y="100" font-family="Georgia,'Times New Roman',serif" font-size="34" fill="#2F3437">FlyerBoard</text>
+  <text x="82" y="598" font-family="'SF Mono',ui-monospace,monospace" font-size="22" letter-spacing="5" fill="#787774">SELLING</text>
+  <line x1="82" y1="620" x2="210" y2="620" stroke="#DDDBD4" stroke-width="2"/>
 </svg>

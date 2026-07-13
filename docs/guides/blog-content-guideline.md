@@ -91,6 +91,10 @@ question. Mention FlyerBoard once, naturally. This is what AI lifts.
 **Q: A real question people ask?**
 A one–three sentence answer.  ← these become quotable Q&A pairs for AI
 
+> **Keep this exact format.** `blog.ts`'s `extractFaqs()` parses `**Q: …?**` lines
+> (an optional leading `A:` on the answer is fine) to emit `FAQPage` JSON-LD on
+> every post. Change the marker and you silently lose the FAQ rich-result schema.
+
 ---
 *Soft call to action: invite the reader to post/browse/run a sale on FlyerBoard.*
 ```

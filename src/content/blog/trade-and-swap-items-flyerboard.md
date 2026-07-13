@@ -3,7 +3,7 @@ title: "Skip the Cash: Trade Your Stuff for What You Actually Want"
 description: "Why trading beats selling for hard-to-price items — and how FlyerBoard's Exchange listings let you swap instead of haggling over dollars."
 slug: trade-and-swap-items-flyerboard
 date: 2026-07-07
-updated: 2026-07-07
+updated: 2026-07-13
 author: FlyerBoard Team
 category: Selling
 keywords: [trade items online, swap items Australia, barter marketplace, exchange listing, FlyerBoard trade]
@@ -37,7 +37,7 @@ It's built straight into the normal posting flow — no separate app, no separat
 4. Write your **exchange description**: what you're hoping to get in return. "Looking for a mountain bike or camping gear" pulls far better offers than "open to offers."
 5. Add photos and describe the item, same as always.
 
-That's it. It shows up in the normal feed and category pages, right alongside cash listings.
+That's it. It shows up in the normal feed and category pages, right alongside cash listings. Good photos and an honest description matter just as much on a trade, so the same [tips that make an ad sell fast](/blog/write-a-classified-ad-that-sells) apply here too.
 
 ## What do buyers see on a trade listing?
 

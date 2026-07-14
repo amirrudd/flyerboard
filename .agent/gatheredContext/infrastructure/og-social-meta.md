@@ -41,9 +41,12 @@ and point `og:image` at a per-listing PNG generator (`@vercel/og`).
   flex (verified against `@vercel/og@0.11.1`; a `maxHeight`+`overflow:hidden`
   guard was the earlier workaround before we confirmed lineClamp works);
   `objectFit:'cover'` on `<img>` works and does the photo crop. Fonts must be
-  **TTF/OTF, not woff2** (satori/opentype.js can't read woff2) — committed under
-  `api/og/fonts/`, loaded once at module scope via `fetch(new URL('../fonts/x.ttf',
-  import.meta.url))` (hoisted so a warm isolate fetches them once, not per request).
+  **TTF/OTF, not woff2** (satori/opentype.js can't read woff2) — embedded as
+  base64 in `api/og/_fonts.ts` and decoded once at module scope. Do NOT load
+  them via `fetch(new URL('../fonts/x.ttf', import.meta.url))`: the deployed
+  edge bundle does not include the TTF assets, the fetch rejects at module
+  init, and every invocation dies with FUNCTION_INVOCATION_FAILED (the raw
+  TTFs remain in `api/og/fonts/` for tooling/local harnesses only).
 - **`VITE_` env vars at runtime**: functions/middleware read
   `process.env.VITE_CONVEX_URL` / `VITE_R2_PUBLIC_URL`. Vercel exposes ALL
   project env vars to the function runtime regardless of the `VITE_` prefix (the

@@ -59,8 +59,14 @@ and point `og:image` at a per-listing PNG generator (`@vercel/og`).
   Add new server files there or CI's `eslint .` breaks.
 - **`.js` import specifiers** in api/middleware resolve to `.ts` sources under
   `moduleResolution: bundler` (Vercel esbuild + local tsc both accept this).
-- **vercel.json catch-all is safe**: Vercel checks functions/static before
-  `rewrites`, so `/api/og/*` isn't shadowed by the `/(.*) → /index.html` rewrite.
+- **vercel.json catch-all MUST exclude `/api`** (load-bearing — this shipped
+  broken in #305): Vercel applies `rewrites` **before** matching serverless/edge
+  functions, so an unqualified `/(.*) → /index.html` rewrites `/api/og/ad/:id` to
+  the SPA shell and the OG function never runs — crawlers get HTML as the image.
+  The source must be `/((?!api/).*)` (negative lookahead). Static assets are
+  unaffected (filesystem phase precedes rewrites); this is ALSO why `middleware.ts`
+  worked but the image didn't — middleware runs before rewrites, `/api` after.
+  Fixed in #310.
 
 ## Verified vs pending
 

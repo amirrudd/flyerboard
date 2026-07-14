@@ -12,6 +12,12 @@ updates:
     labels:
       - "dependencies"
       - "npm"
+    ignore:
+      # TypeScript 7 (native compiler) isn't supported by the Convex peer deps
+      # yet (convex-helpers/@convex-dev/* require ^5.5 || ^6.0.0). Revisit when
+      # convex-helpers widens its typescript peer range.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       # Group ALL non-major production dependencies
       production-dependencies:

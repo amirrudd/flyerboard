@@ -12,25 +12,42 @@ import type { Id } from "../../../convex/_generated/dataModel.js";
 import { flyerOgElement } from "../_template.js";
 import { ICON_DATA_URI } from "../_icon.js";
 import { publicImageUrl } from "../_imageUrl.js";
+import { FRAUNCES_600_B64, JAKARTA_700_B64, JAKARTA_800_B64, fontBytes } from "../_fonts.js";
 
 export const config = { runtime: "edge" };
 
 const CONVEX_URL = process.env.VITE_CONVEX_URL as string;
 // Hoisted to module scope: the client is stateless config, and the fonts are
-// static — a warm edge isolate loads them once instead of once per request.
+// static — a warm edge isolate decodes them once instead of once per request.
+// Fonts are base64-embedded (_fonts.ts): the previous fetch(new URL('../fonts/
+// *.ttf', import.meta.url)) rejected on the deployed edge runtime (the TTF
+// assets weren't bundled), which crashed module init on every invocation
+// (FUNCTION_INVOCATION_FAILED) — decoding an inlined string cannot fail that way.
 const convex = new ConvexHttpClient(CONVEX_URL);
-const font = (path: string) => fetch(new URL(path, import.meta.url)).then((r) => r.arrayBuffer());
-const fontsPromise = Promise.all([
-  font("../fonts/Fraunces-600.ttf").then((data) => ({ name: "Fraunces", data, weight: 600 as const, style: "normal" as const })),
-  font("../fonts/Jakarta-700.ttf").then((data) => ({ name: "Jakarta", data, weight: 700 as const, style: "normal" as const })),
-  font("../fonts/Jakarta-800.ttf").then((data) => ({ name: "Jakarta", data, weight: 800 as const, style: "normal" as const })),
-]);
+const FONTS = [
+  { name: "Fraunces", data: fontBytes(FRAUNCES_600_B64), weight: 600 as const, style: "normal" as const },
+  { name: "Jakarta", data: fontBytes(JAKARTA_700_B64), weight: 700 as const, style: "normal" as const },
+  { name: "Jakarta", data: fontBytes(JAKARTA_800_B64), weight: 800 as const, style: "normal" as const },
+];
 
 export default async function handler(req: Request): Promise<Response> {
+  try {
+    return await render(req);
+  } catch (e) {
+    // A readable 500 beats Vercel's opaque FUNCTION_INVOCATION_FAILED page —
+    // crawlers ignore the card either way, but curl/debugging sees the cause.
+    return new Response(`og-image render failed: ${e instanceof Error ? e.stack ?? e.message : String(e)}`, {
+      status: 500,
+      headers: { "content-type": "text/plain", "cache-control": "no-store" },
+    });
+  }
+}
+
+async function render(req: Request): Promise<Response> {
   const id = new URL(req.url).pathname.split("/").pop() ?? "";
 
-  const [fonts, ad, categories] = await Promise.all([
-    fontsPromise,
+  const fonts = FONTS;
+  const [ad, categories] = await Promise.all([
     convex.query(api.adDetail.getAdById, { adId: id as Id<"ads"> }).catch(() => null),
     convex.query(api.categories.getCategories, {}).catch(() => []),
   ]);

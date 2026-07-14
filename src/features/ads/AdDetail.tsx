@@ -155,6 +155,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/ad/${adId}`;
+    // Warm the OG share-card cache: the first render of /api/og/ad/:id takes
+    // ~2s, so trigger it now — by the time the pasted link is crawled, the CDN
+    // serves the cached card instantly. Cancel the body: we only need the
+    // render+cache to happen server-side, not a ~1MB download here.
+    void fetch(`/api/og/ad/${adId}`)
+      .then((r) => r.body?.cancel())
+      .catch(() => undefined);
     await navigator.clipboard.writeText(shareUrl);
     toast.success("Link to flyer copied to clipboard");
     if (!reduced) {

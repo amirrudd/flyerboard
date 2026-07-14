@@ -16,8 +16,8 @@
     "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1085.0",
-    "@aws-sdk/s3-request-presigner": "^3.1085.0",
+    "@aws-sdk/client-s3": "^3.1086.0",
+    "@aws-sdk/s3-request-presigner": "^3.1086.0",
     "@convex-dev/auth": "^0.0.94",
     "@convex-dev/r2": "^0.10.2",
     "@convex-dev/resend": "^0.2.5",

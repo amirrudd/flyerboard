@@ -1,6 +1,6 @@
 # Blog
 
-**Last Updated**: 2026-06-30
+**Last Updated**: 2026-07-15 (corrected two stale OG/SSR notes below — see `infrastructure/og-social-meta.md`)
 
 The blog is a file-based, SEO + GEO (Generative Engine Optimization) oriented
 content section. Goal: rank in classic search **and** be easy for AI assistants
@@ -47,9 +47,27 @@ to extract and cite. No backend, no Convex table.
   `dist/sitemap.xml`. It writes via `fs.writeFileSync(options.dir, ...)` rather
   than `this.emitFile` to avoid Rollup `this`-typing friction. Dev server doesn't
   serve these (prod crawlers only) — that's intentional.
-- **SPA caveat**: this is a client-rendered SPA, so meta tags populate after JS
-  runs. Googlebot and the major AI crawlers render JS, so it works, but if true
-  pre-render/SSR is ever needed, that's the upgrade path. Documented, accepted.
+- **Build-time OG card generation**: a SEPARATE step, `scripts/generate-og-assets.ts`
+  (run via `tsx`, chained after `vite build` in `package.json`'s `build` script —
+  deliberately not folded into `blogDiscoverabilityPlugin`'s `writeBundle` hook,
+  since that hook can't reliably import `.ts` files at runtime). For every post it
+  rasterizes the SVG `heroImage` (stripping the cover's own baked-in wordmark/label
+  first — see `scripts/blog-cover-og.mjs`), renders a branded 1200×630 card, and
+  writes `dist/blog-og/<slug>.png` + `dist/blog-meta.json`. Full mechanics, the
+  Cloudflare JPEG-transform step, and the middleware wiring live in
+  `infrastructure/og-social-meta.md` — this file only covers the blog-specific
+  slice (the cover-SVG rasterization + which build step runs when).
+- **SPA caveat — partially resolved, don't re-introduce the old assumption**:
+  the post *body* still only renders after client JS runs (Googlebot and major AI
+  crawlers execute JS, so that's fine). But the **crawler-critical share preview**
+  (title, description, `og:image`) no longer depends on JS at all: `middleware.ts`
+  intercepts `/blog/:slug` and injects real meta tags into the HTML response
+  itself, using `blog-meta.json` + the pre-rendered card above. This was the
+  "if true pre-render is ever needed, that's the upgrade path" line this file
+  used to carry — it's now built for the meta tags specifically (not the full
+  page body). See `infrastructure/og-social-meta.md` for why full HTML
+  prerendering at the clean `/blog/:slug` URL was deliberately avoided in favor
+  of this middleware approach.
 
 ## Authoring contract
 
@@ -65,8 +83,15 @@ top of the post and as the index card thumbnail (both `aspect-[16/9]`), and is
 added to the post's `BlogPosting` JSON-LD `image`. House covers are minimalist
 editorial **SVGs** in `public/blog-covers/<slug>.svg` (warm-bone canvas, one
 muted-pastel offset shape, bold charcoal line-art — built per the `minimalist-ui`
-skill). `og:image` deliberately stays the raster site default because SVG
-previews poorly on social; supply a raster `heroImage` for a custom social card. The parser, loader, and that schema are a
+skill).
+
+`og:image` is now a real per-post card, not the generic site default — SVG
+previews poorly on social, so `scripts/generate-og-assets.ts` rasterizes the
+SVG `heroImage` at build time and composes it into a branded 1200×630 JPEG
+(see `infrastructure/og-social-meta.md`). Only `/blog-covers/*.svg` local
+covers get rasterized this way; a post with an external or non-SVG `heroImage`
+falls back to the plain brand-mark card, so prefer a local SVG cover for a
+proper social preview. The parser, loader, and that schema are a
 contract — change one, change all three.
 
 ## Tests

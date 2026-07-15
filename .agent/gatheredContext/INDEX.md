@@ -1,6 +1,6 @@
 # FlyerBoard AI Context Index
 
-**Last Updated**: 2026-07-05 (added Messaging + visual-test determinism notes; Bundle Listing added 2026-07-02)
+**Last Updated**: 2026-07-15 (added Open Graph / share-image context; Messaging + visual-test determinism notes added 2026-07-05; Bundle Listing added 2026-07-02)
 
 This index helps AI agents quickly locate relevant implementation context for any task.
 
@@ -15,7 +15,8 @@ This index helps AI agents quickly locate relevant implementation context for an
 | **Authentication/Login** | `features/authentication.md` | `infrastructure/database.md` |
 | **Moving Sale Mode** | `features/moving-sale.md` | `infrastructure/database.md`, `features/image-upload.md` |
 | **Bundle Listing** | `features/bundles.md` | `features/moving-sale.md` (shares `saleBundles`), `infrastructure/database.md` |
-| **Blog / SEO / GEO content** | `features/blog.md` | `frontend/routing-navigation.md`, `../../docs/guides/blog-content-guideline.md` |
+| **Blog / SEO / GEO content** | `features/blog.md` | `frontend/routing-navigation.md`, `../../docs/guides/blog-content-guideline.md`, `infrastructure/og-social-meta.md` |
+| **Open Graph / share images** (ad/bundle/sale/blog link previews) | `infrastructure/og-social-meta.md` | `features/blog.md`, `infrastructure/storage.md`, `../../docs/guides/cloudflare-image-transformations-setup.md` |
 | **Image Upload** | `features/image-upload.md` | `infrastructure/storage.md` |
 | **Messaging/Chat** | `features/messaging.md` | `infrastructure/database.md`, `features/notifications.md` |
 | **Notifications** | `features/notifications.md` | `infrastructure/database.md` |
@@ -48,6 +49,7 @@ This index helps AI agents quickly locate relevant implementation context for an
 │   ├── backend-api.md           # Convex API patterns
 │   ├── cost-optimization.md     # Cost management strategies
 │   ├── database.md              # Schema, queries, soft deletes
+│   ├── og-social-meta.md        # Open Graph share cards (ad/bundle/sale/blog), edge functions + build-time gen
 │   └── storage.md               # R2 integration, presigned URLs
 │
 ├── frontend/                    # UI patterns & architecture
@@ -82,6 +84,13 @@ This index helps AI agents quickly locate relevant implementation context for an
 - **Storage Backend**: `infrastructure/storage.md`
 - **Rules**: `../rules/global-guideline.md#image-quality-standards`
 - **Migration Guide**: `../../docs/migrations/storage-migration.md`
+
+### Open Graph / Share Images
+- **Implementation**: `infrastructure/og-social-meta.md` — edge functions (ad/bundle/sale)
+  + build-time generation (blog) + Edge Middleware meta injection + Cloudflare JPEG transform
+- **Blog cards specifically**: `features/blog.md` (build pipeline integration)
+- **Human Docs (manual setup)**: `../../docs/guides/cloudflare-image-transformations-setup.md`
+- **Architecture rationale**: `../../docs/architecture/design-decisions.md`
 
 ### Notifications
 - **Implementation**: `features/notifications.md` (email + push)
@@ -176,6 +185,16 @@ Strategies for managing costs across services (Convex, R2, Resend).
 - Soft delete implementation
 - Authentication in mutations
 - Pagination patterns
+
+#### `infrastructure/og-social-meta.md`
+Open Graph share-card images and meta tags for `/ad`, `/bundle`, `/sale`, `/blog` links:
+- Edge functions (`api/og/*`) rendering per-listing PNG cards via `@vercel/og`, Convex-backed
+- Build-time card generation for blog (static markdown, unreachable from edge) via
+  `scripts/generate-og-assets.ts`
+- `middleware.ts` injecting real meta tags into the SPA shell for crawlers
+- Cloudflare Image Transformations re-encoding to JPEG at the edge
+- Load-bearing gotchas: the `vercel.json` `/api` rewrite exclusion, base64-embedded fonts
+  (not fetched), satori's `lineClamp` quirks
 
 #### `infrastructure/storage.md`
 Cloudflare R2 integration:

@@ -40,13 +40,14 @@ export const submitRating = mutation({
         // conversation happened — and structurally blocks sellers from rating
         // buyers (a seller is never the `buyerId` on their own listing's thread).
         // Without this, any logged-in user could rate anyone, enabling retaliatory
-        // and drive-by ratings. Scans only the rater's own threads (bounded, small).
-        const buyerThreads = await ctx.db
+        // and drive-by ratings. Derived from the DB (not the client-passed chatId)
+        // so every caller is covered; `.first()` stops at the first matching thread.
+        const sellerThread = await ctx.db
             .query("chats")
             .withIndex("by_buyer", (q) => q.eq("buyerId", userId))
-            .collect();
-        const hasSellerThread = buyerThreads.some((c) => c.sellerId === args.ratedUserId);
-        if (!hasSellerThread) {
+            .filter((q) => q.eq(q.field("sellerId"), args.ratedUserId))
+            .first();
+        if (!sellerThread) {
             throw createError("You can only rate a seller you've messaged", { userId, ratedUserId: args.ratedUserId, operation: "submitRating" });
         }
 

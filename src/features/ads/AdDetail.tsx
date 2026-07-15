@@ -521,6 +521,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     className="w-full h-full object-contain cursor-pointer"
                     variant="large"
                     onClick={() => setShowLightbox(true)}
+                    size="hero"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -578,6 +579,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                           alt={`Thumbnail ${index + 1}`}
                           className="w-full h-full object-cover"
                           variant="small"
+                          size="thumb"
                         />
                       </button>
                     ))}
@@ -656,12 +658,12 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <div className="mt-3 flex gap-1">
                     {saleBanner.currentImage && (
                       <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md ring-2 ring-primary">
-                        <ImageDisplay imageRef={saleBanner.currentImage} alt="" className="h-full w-full object-cover opacity-50" />
+                        <ImageDisplay imageRef={saleBanner.currentImage} alt="" className="h-full w-full object-cover opacity-50" size="thumb" />
                       </div>
                     )}
                     {saleBanner.otherImages.map((img, i) => (
                       <div key={i} className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md bg-muted">
-                        <ImageDisplay imageRef={img} alt="" className="h-full w-full object-cover" />
+                        <ImageDisplay imageRef={img} alt="" className="h-full w-full object-cover" size="thumb" />
                       </div>
                     ))}
                     {saleBanner.moreCount > 0 && (
@@ -936,6 +938,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   alt={displayAd.seller.name}
                   className="w-10 h-10 rounded-full object-cover"
                   onError={() => setAvatarImageError(true)}
+                  size="thumb"
                 />
               ) : (
                 <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-muted-foreground font-semibold text-sm">

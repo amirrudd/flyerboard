@@ -386,6 +386,7 @@ export const AdsGrid = memo(function AdsGrid({
                     className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.025]"
                     priority={isPriority}
                     backdrop
+                    size="card"
                   />
 
                   {/* Warm-tint gradient — always present at rest, deepens on hover */}

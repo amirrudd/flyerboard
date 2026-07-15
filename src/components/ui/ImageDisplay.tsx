@@ -4,7 +4,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/opacity.css";
 import { useState, useEffect } from "react";
 import { Image as ImageIcon } from '@phosphor-icons/react';
-import { resolvePublicImageUrl } from "@/lib/imageUrl";
+import { resolvePublicImageUrl, type ImageSize } from "@/lib/imageUrl";
 
 interface ImageDisplayProps {
   // New prop (preferred)
@@ -24,9 +24,13 @@ interface ImageDisplayProps {
   // NOTE: this renders an `absolute inset-0` layer, so the PARENT must be
   // positioned (e.g. `relative`). AdsGrid's `aspect-[4/3] relative` box provides it.
   backdrop?: boolean;
+  // Cloudflare Image Transformations tier to request for CDN-resolved refs
+  // (no-op for external/data URLs or the Convex presigned fallback). Every
+  // call site should set this explicitly — see src/lib/imageUrl.ts.
+  size?: ImageSize;
 }
 
-export function ImageDisplay({ imageRef, src, alt, className = "", onError, onClick, priority = false, backdrop = false }: ImageDisplayProps) {
+export function ImageDisplay({ imageRef, src, alt, className = "", onError, onClick, priority = false, backdrop = false, size }: ImageDisplayProps) {
   const [hasError, setHasError] = useState(false);
 
   // Use imageRef if provided, otherwise fall back to src
@@ -38,7 +42,7 @@ export function ImageDisplay({ imageRef, src, alt, className = "", onError, onCl
   // defeats the browser HTTP cache). Falls back to the query when the R2
   // custom domain isn't configured (VITE_R2_PUBLIC_URL unset) or the ref is
   // a legacy Convex `_storage` id.
-  const publicUrl = resolvePublicImageUrl(reference);
+  const publicUrl = resolvePublicImageUrl(reference, { size });
 
   const imageUrl = useQuery(
     api.posts.getImageUrl,

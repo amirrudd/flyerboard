@@ -226,7 +226,7 @@ export function PublicBundleView({
             >
               <div className={`aspect-square overflow-hidden rounded-xl bg-muted ring-1 ring-border/60 ${item.isSold ? "opacity-55 grayscale" : ""}`}>
                 {item.image ? (
-                  <ImageDisplay imageRef={item.image} alt={item.title} className="h-full w-full object-cover" />
+                  <ImageDisplay imageRef={item.image} alt={item.title} className="h-full w-full object-cover" size="card" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                     <Package size={22} aria-hidden="true" />
@@ -257,6 +257,7 @@ export function PublicBundleView({
                 imageRef={bundle.seller.image}
                 alt=""
                 className="h-10 w-10 rounded-full object-cover ring-1 ring-border/60"
+                size="thumb"
               />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-bundle/10 font-semibold text-bundle-emphasis">

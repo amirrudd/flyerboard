@@ -95,6 +95,7 @@ export function ImageLightbox({
                         imageRef={images[currentIndex]}
                         alt={`${altPrefix} ${currentIndex + 1}`}
                         className="w-full h-full object-contain"
+                        size="full"
                     />
                 </div>
 
@@ -141,6 +142,7 @@ export function ImageLightbox({
                                     imageRef={image}
                                     alt={`Thumbnail ${index + 1}`}
                                     className="w-full h-full object-cover"
+                                    size="thumb"
                                 />
                             </button>
                         ))}

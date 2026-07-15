@@ -1,6 +1,6 @@
 # Storage & R2 Integration
 
-**Last Updated**: 2026-07-02
+**Last Updated**: 2026-07-15
 
 ## Overview
 FlyerBoard uses Cloudflare R2 (S3-compatible) for image storage with direct uploads via presigned URLs.
@@ -210,7 +210,7 @@ When an ad is deleted:
 ### Signed URL Caching — FIXED & LIVE 2026-07-02 (stable public URLs via CDN)
 Background (still true today when `VITE_R2_PUBLIC_URL` is unset): `r2.getUrl()` mints a *new* SigV4 presigned URL on every call, and `ImageDisplay` re-ran `posts.getImageUrl` on every mount (Convex drops the query subscription on unmount) → browser HTTP cache never hit → full re-download from R2 on every Home ↔ AdDetail navigation. Presigned URLs also point at `*.r2.cloudflarestorage.com` directly, bypassing the Cloudflare CDN.
 
-**Fix landed (client-side, env-gated)**: `src/lib/imageUrl.ts` exports `resolvePublicImageUrl(imageRef, publicBase = import.meta.env.VITE_R2_PUBLIC_URL)`. When `VITE_R2_PUBLIC_URL` is set (e.g. `https://img.flyerboard.com.au`, trailing slash normalized away), it derives a **stable, CDN-cacheable** URL directly from the key — no Convex round trip, no per-mount signature churn:
+**Fix landed (client-side, env-gated)**: `src/lib/imageUrl.ts` exports `resolvePublicImageUrl(imageRef, opts?: { size?: ImageSize; publicBase?: string })` (signature changed 2026-07-15 from a positional `publicBase` 2nd arg to an options object — see "Delivery-side resize tiers" below). When `VITE_R2_PUBLIC_URL` is set (e.g. `https://img.flyerboard.com.au`, trailing slash normalized away), it derives a **stable, CDN-cacheable** URL directly from the key — no Convex round trip, no per-mount signature churn:
 - `r2:<key>` → `${base}/<key>` (strip the `r2:` prefix via the existing `isR2Reference`/`fromR2Reference` helpers in `src/lib/r2.ts`).
 - Legacy unprefixed keys starting with `flyers/`, `profiles/`, or `ad/` → `${base}/<key>`. **Keep these three prefixes in sync with the server-side check in `convex/posts.ts` `getImageUrl` (~lines 385-393)** — they're duplicated by necessity (client needs to decide without a round trip) and will silently drift if only one side is edited.
 - `http(s)://` and `data:` refs always resolve locally (no round trip needed, no env dependency) — this is a strict improvement even before the domain is attached.
@@ -228,6 +228,15 @@ Background (still true today when `VITE_R2_PUBLIC_URL` is unset): `r2.getUrl()` 
 `getImageUrl` in `convex/posts.ts` remains as the fallback path for legacy `_storage` IDs only — do not remove it. Only one direct call site for `api.posts.getImageUrl` exists in the frontend (`ImageDisplay.tsx`); everything else routes through that component.
 
 **Interaction with the cleanup cron**: after `purgeDeletedAdImages` deletes an object, edge/browser caches may serve it until their TTL lapses (up to 1 month edge / 1 year browser). Acceptable for deleted classifieds images; do not "fix" this by shortening TTLs.
+
+### Delivery-side resize tiers — LANDED 2026-07-15 (homepage was downloading ~34MB of full-res images into small grid cards)
+`src/lib/imageUrl.ts` adds `export type ImageSize = "thumb" | "card" | "hero" | "full"` and a `SIZE_TRANSFORMS` map (`thumb`=160w, `card`=640w, `hero`=1600w, `full`=2048w; all `quality=82-90,format=auto,fit=scale-down`). `resolvePublicImageUrl(imageRef, { size, publicBase })` — when `size` is passed and the ref resolves to a CDN key (r2: or legacy-key branch), the URL becomes `${base}/cdn-cgi/image/${transform}/${key}` via Cloudflare Image Transformations (same `/cdn-cgi/image/...` mechanism as `middleware.ts` `jpegImageUrl` for OG cards, #313/#311). **Never applied to external http(s)/data URLs** — those aren't served off our R2 zone, so `size` is a no-op for them (they return unchanged, same as before).
+
+Why no perceived quality loss: widths are chosen at ~2x the rendered CSS box (retina-safe), `fit=scale-down` never upscales a smaller original past its native size (the upload pipeline already caps at 2048px longest side — see `features/image-upload.md`), and `format=auto` serves AVIF/WebP per browser support.
+
+`ImageDisplay.tsx` gained a `size?: ImageSize` prop, passed straight to `resolvePublicImageUrl(reference, { size })`. **Every call site must set `size` explicitly** — there is no default tier, and an unset `size` silently falls back to the untransformed (full-resolution) URL. Convention used across the ~41 existing call sites: `thumb` for avatars/small thumbnails (≤~48px), `card` for grid/list images (AdsGrid, dashboards, bundle/sale thumbnails), `hero` for large-but-not-full detail banners, `full` for true full-screen views (lightbox main image, profile full-screen). When adding a new `<ImageDisplay>` usage, pick the tier by the rendered CSS box size, not by habit — grep existing usages at a similar box size for precedent.
+
+Deliberately duplicated, NOT touched by this change: the edge/OG copies of image-URL logic in `api/` and `middleware.ts` — see the "Three Justified Code Duplications" note for the rationale (edge bundle can't share `src/` imports).
 
 ### Direct Uploads
 - Bypasses Convex backend

@@ -94,6 +94,7 @@ export function InboxRow({
             imageRef={chat.ad.images[0]}
             alt={chat.ad.title}
             className="w-12 h-12 object-cover rounded-xl ring-1 ring-border/60 shrink-0"
+            size="thumb"
           />
         ) : (
           <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60 shrink-0">

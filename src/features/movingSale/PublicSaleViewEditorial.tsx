@@ -156,6 +156,7 @@ export function PublicSaleViewEditorial({
                 imageRef={sellerImage}
                 alt={sellerName ?? "Seller"}
                 className="h-11 w-11 shrink-0 rounded-full object-cover"
+                size="thumb"
               />
             ) : (
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary font-display text-lg font-semibold text-primary-foreground">
@@ -263,7 +264,7 @@ export function PublicSaleViewEditorial({
                           className="h-[46px] w-[46px] overflow-hidden rounded-xl border-2 border-card bg-muted shadow-sm"
                           style={{ marginLeft: i === 0 ? 0 : -14 }}
                         >
-                          <ImageDisplay imageRef={m.images[0]} alt={m.title} className="h-full w-full object-cover" />
+                          <ImageDisplay imageRef={m.images[0]} alt={m.title} className="h-full w-full object-cover" size="thumb" />
                         </div>
                       ))}
                     </div>
@@ -331,7 +332,7 @@ export function PublicSaleViewEditorial({
               className="mb-3 block w-full overflow-hidden rounded-[22px] border border-border bg-card text-left"
             >
               <div className="relative aspect-[16/11] bg-muted">
-                <ImageDisplay imageRef={featured.images[0]} alt={featured.title} backdrop className="h-full w-full object-cover" />
+                <ImageDisplay imageRef={featured.images[0]} alt={featured.title} backdrop className="h-full w-full object-cover" size="hero" />
                 <span className="absolute left-3 top-3 rounded-full bg-neutral-900 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide text-white">
                   Most wanted
                 </span>
@@ -370,6 +371,7 @@ export function PublicSaleViewEditorial({
                       alt={item.title}
                       backdrop
                       className={`h-full w-full object-cover ${item.isSold ? "grayscale opacity-50" : ""}`}
+                      size="card"
                     />
                     {item.isSold && (
                       <div className="absolute inset-0 flex items-center justify-center">

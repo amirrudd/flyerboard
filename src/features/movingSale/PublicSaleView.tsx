@@ -219,6 +219,7 @@ export function PublicSaleView({
                               imageRef={m.images[0]}
                               alt={m.title}
                               className="h-full w-full object-cover"
+                              size="thumb"
                             />
                           </div>
                         ))}
@@ -283,6 +284,7 @@ export function PublicSaleView({
                       className={`h-full w-full object-cover ${
                         item.isSold ? "opacity-40 grayscale" : ""
                       }`}
+                      size="card"
                     />
                     {item.isSold && (
                       <span className="absolute left-2 top-2 rounded-full bg-neutral-800 px-2 py-0.5 text-xs font-semibold text-white">

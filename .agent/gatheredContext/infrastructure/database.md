@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-07-11
+**Last Updated**: 2026-07-15
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -177,6 +177,25 @@ if (ad.userId !== userId) {
   throw new Error("You can only modify your own ads");
 }
 ```
+
+### Transaction-verified ratings (one-sided, Jul 2026)
+**Pattern**: `ratings.submitRating` is buyer-rates-seller only, and requires a real
+buyer→seller thread — the rater must appear as `buyerId` on a `chats` row whose
+`sellerId` is the rated user. A chat row only exists after a first message
+(`adDetail.sendFirstMessage`), so it's a genuine transaction proxy; and because a
+seller is never the `buyerId` on their own listing's thread, this structurally blocks
+seller→buyer retaliation ratings. Do NOT loosen this back to un-gated any-user-rates-any-user.
+```typescript
+const buyerThreads = await ctx.db
+  .query("chats").withIndex("by_buyer", (q) => q.eq("buyerId", userId)).collect();
+if (!buyerThreads.some((c) => c.sellerId === args.ratedUserId)) {
+  throw createError("You can only rate a seller you've messaged", { ... });
+}
+```
+UI mirrors this: `AdDetail`'s "Rate Seller" buttons are gated on `chatId` (existing
+thread for this ad) so un-messaged buyers don't hit the error. Guard test:
+`convex/ratings.test.ts`. Rationale: reputation only works as a trust signal if it's
+transaction-verified and non-retaliatory (eBay dropped seller-rates-buyer in 2008).
 
 ### Soft Delete
 **Pattern**: Mark as deleted instead of removing

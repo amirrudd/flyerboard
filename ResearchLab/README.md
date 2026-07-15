@@ -41,6 +41,7 @@ Every idea is rated on three axes (1–5) and given an **Overall** call:
 
 | Idea | Status | Build | Value@0 | Diff | Overall | Notes |
 |------|--------|-------|---------|------|---------|-------|
+| [Seller reputation](ideas/seller-reputation.md) | Shipped | 1 | 3 | 3 | **4** | Transaction-verified, one-sided ratings. Makes existing ratings a real trust signal — the bridge that carries in-group trust to strangers as we expand. See [market-readiness-2026-07.md](market-readiness-2026-07.md). |
 | [Moving sale mode](ideas/moving-sale-mode.md) | Exploring | 4 | 5 | 5 | **5** | Now the *clearest* wedge — Meta's March 2026 AI launch didn't touch multi-item bundles. AU TAM ≈ 1.14M moves/yr. |
 | [Printable flyers](ideas/printable-flyers.md) | Exploring | 3 | 5 | 5 | **5** | Build bumped 2→3 (Cloudflare Browser Run for HTML→PDF). The only physical surface Meta can't replicate. |
 | [Wanted ads](ideas/wanted-ads.md) | Exploring | 3 | 4 | 4 | **4** | Demand side is unclaimed after Meta's supply-side launch. Watch for scam-honeypot and privacy. |

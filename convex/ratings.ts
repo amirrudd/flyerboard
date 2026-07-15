@@ -34,6 +34,23 @@ export const submitRating = mutation({
             throw createError("Rating must be between 0 and 5 in 0.5 increments", { rating: args.rating, userId, ratedUserId: args.ratedUserId });
         }
 
+        // One-sided + transaction-verified: the rater must be a BUYER who has a
+        // thread with this seller. A chat row only exists once a first message is
+        // sent (see adDetail.sendFirstMessage), so this proves a real buyer→seller
+        // conversation happened — and structurally blocks sellers from rating
+        // buyers (a seller is never the `buyerId` on their own listing's thread).
+        // Without this, any logged-in user could rate anyone, enabling retaliatory
+        // and drive-by ratings. Derived from the DB (not the client-passed chatId)
+        // so every caller is covered; `.first()` stops at the first matching thread.
+        const sellerThread = await ctx.db
+            .query("chats")
+            .withIndex("by_buyer", (q) => q.eq("buyerId", userId))
+            .filter((q) => q.eq(q.field("sellerId"), args.ratedUserId))
+            .first();
+        if (!sellerThread) {
+            throw createError("You can only rate a seller you've messaged", { userId, ratedUserId: args.ratedUserId, operation: "submitRating" });
+        }
+
         // Check if user has already rated this person
         const existingRating = await ctx.db
             .query("ratings")

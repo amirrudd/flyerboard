@@ -56,7 +56,12 @@ async function resolveMeta(pathname: string, origin: string): Promise<Meta | nul
     return {
       title: `${ad.title}${priced ? ` — $${ad.price}` : ""} | FlyerBoard`,
       description: ad.description?.slice(0, 200) || "See this listing on FlyerBoard — your local marketplace.",
-      image: `${origin}/api/og/ad/${id}`,
+      // Route the PNG card through Cloudflare Transformations to re-encode as
+      // JPEG (~150KB vs the ~1MB PNG — faster on mobile, under WhatsApp's ~300KB
+      // preview cap). @vercel/og only emits PNG, so the size cut happens at the
+      // CDN edge. REQUIRES zone Transformations enabled (Images → Transformations)
+      // — until then /cdn-cgi/image/ 404s, so enable it BEFORE shipping this.
+      image: `${origin}/cdn-cgi/image/format=jpeg,quality=82/api/og/ad/${id}`,
       url: `${SITE}/ad/${id}`,
       type: "article",
     };

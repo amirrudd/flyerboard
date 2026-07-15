@@ -751,12 +751,14 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         Contact Seller
                       </button>
                     )}
-                    <button
-                      onClick={() => setShowRatingModal(true)}
-                      className="w-full bg-transparent text-primary ring-1 ring-primary/40 hover:ring-primary py-2.5 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      Rate Seller
-                    </button>
+                    {chatId && (
+                      <button
+                        onClick={() => setShowRatingModal(true)}
+                        className="w-full bg-transparent text-primary ring-1 ring-primary/40 hover:ring-primary py-2.5 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Rate Seller
+                      </button>
+                    )}
                   </>
                 )}
 
@@ -985,15 +987,17 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <ChatCircle className="w-5 h-5" />
               Message Seller
             </button>
-            <button
-              onClick={() => {
-                setShowMobileSellerSheet(false);
-                setShowRatingModal(true);
-              }}
-              className="w-full bg-card text-primary ring-1 ring-primary/40 hover:ring-primary py-3 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold"
-            >
-              Rate Seller
-            </button>
+            {chatId && (
+              <button
+                onClick={() => {
+                  setShowMobileSellerSheet(false);
+                  setShowRatingModal(true);
+                }}
+                className="w-full bg-card text-primary ring-1 ring-primary/40 hover:ring-primary py-3 px-4 rounded-full hover:bg-primary/[0.06] active:scale-[0.98] transition-all font-semibold"
+              >
+                Rate Seller
+              </button>
+            )}
             <button
               onClick={() => {
                 setShowMobileSellerSheet(false);

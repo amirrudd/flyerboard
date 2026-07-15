@@ -23,7 +23,10 @@ docs/
 │   ├── architecture-review.md
 │   └── design-decisions.md
 ├── guides/                      # Setup & usage guides
+│   ├── blog-content-guideline.md
+│   ├── cloudflare-image-transformations-setup.md
 │   ├── push-notifications.md
+│   ├── r2-cdn-setup.md
 │   └── r2-cors-setup.md
 └── migrations/                  # Historical migration guides
     ├── descope-convex-integration.md

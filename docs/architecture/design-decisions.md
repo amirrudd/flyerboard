@@ -421,3 +421,56 @@ the `DashboardPage` shim (`src/lib/legacyChatsRedirect.ts`); `AdMessages` surviv
 only for legacy `?messages=<adId>` deep links pending retirement. e2e coverage is
 signed-out-only (Descope SMS OTP can't be automated) — authed chat flows are covered
 by unit tests until an auth harness is feasible.
+
+## Open Graph Share Cards — Edge Rendering + Build-Time Generation, Split by Data Source (Jul 2026, PRs #305/#310/#311/#313/#314)
+
+**Decision**: shared FlyerBoard links (`/ad`, `/bundle`, `/sale`, `/blog`) get a real
+1200×630 preview image and correct title/description in chat apps and social platforms.
+The mechanism differs by where the data lives:
+- **Convex-backed types** (ad/bundle/sale) render **at request time**: a Vercel Edge
+  Middleware (`middleware.ts`) intercepts the route, fetches the listing, injects real
+  `<meta>` tags into the SPA shell; a companion edge function (`api/og/*`, `@vercel/og`)
+  renders the actual card image from the same data.
+- **Blog** (static markdown, bundled into the SPA at build time — not reachable from
+  either the edge functions or middleware, both compiled independently from Vite) renders
+  **at build time** instead: `scripts/generate-og-assets.ts` renders every post's card
+  ahead of time and writes a small `blog-meta.json` alongside it; middleware self-fetches
+  that JSON at request time rather than querying anything live.
+- Every card image is re-encoded to JPEG via **Cloudflare Image Transformations**
+  (`/cdn-cgi/image/format=jpeg,quality=82/...`) before it reaches a crawler — `@vercel/og`
+  only outputs PNG (~700KB–1MB per card), which is slow on mobile and over WhatsApp's
+  ~300KB link-preview cap; the transform cuts that by ~10×.
+
+**Why not full server-side rendering / a framework migration**: the site is a client-
+rendered Vite SPA on purpose (see the Blog and Feed decisions above) and doesn't need
+full SSR — only the crawler-facing preview does. Middleware-injected meta on top of the
+existing SPA shell gets 100% of the SEO/social benefit for a fraction of the migration
+cost and risk.
+
+**Why not prerendered static HTML at the blog's clean URL** (`dist/blog/<slug>/index.html`
+served at `/blog/<slug>`): considered, but Vercel's own documentation does not clearly
+confirm that a static file at a directory's `index.html` is served for the clean,
+no-trailing-slash path — and an earlier, unrelated but structurally similar assumption
+about Vercel's routing order (`vercel.json` rewrites vs. serverless/edge function
+matching — see below) had *already* shipped broken once in this exact feature. Rather
+than gamble on a second unverified routing behavior, blog reuses the identical,
+already-proven mechanism the ad/bundle/sale middleware branches use: self-fetching a
+static JSON file at request time (the same pattern already used to fetch `/index.html`).
+
+**Load-bearing gotcha that shipped broken once and was fixed as a follow-up (#310)**:
+Vercel applies `vercel.json` `rewrites` **before** matching serverless/edge functions —
+an unqualified SPA catch-all (`/(.*) → /index.html`) silently rewrites `/api/og/ad/:id`
+to the SPA shell itself, so the image endpoint returns HTML instead of a PNG and every
+crawler sees a broken image. Fixed with a negative-lookahead exclusion
+(`/((?!api/).*)`). A second follow-up (#311) fixed a font-loading crash: fonts must be
+base64-embedded at module scope, not `fetch()`ed from the edge bundle at runtime (the
+deployed bundle doesn't include the raw TTF asset files, so the fetch reliably rejects).
+
+**Consequences**: four separate PRs were needed to reach a fully working state (#305
+shipped the ad card + the two routing/font bugs above; #313 added the Cloudflare JPEG
+transform; #314 added bundle/sale/blog + the default brand card) — a reminder that a
+feature spanning "Vercel edge runtime behavior" + "a CDN's own dashboard config" carries
+real integration risk beyond the application code itself, worth budgeting for. Full
+implementation detail and every gotcha: `.agent/gatheredContext/infrastructure/og-social-meta.md`.
+The one manual, non-code setup step (enabling Cloudflare Image Transformations on the
+zone) is documented for reproducibility in `docs/guides/cloudflare-image-transformations-setup.md`.

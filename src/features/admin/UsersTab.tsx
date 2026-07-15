@@ -160,6 +160,7 @@ export function UsersTab() {
                                                 imageRef={user.image}
                                                 alt={user.name || "User"}
                                                 className="w-full h-full object-cover"
+                                                size="thumb"
                                             />
                                         ) : (
                                             getInitials(user)
@@ -328,6 +329,7 @@ export function UsersTab() {
                                                                 imageRef={ad.images[0]}
                                                                 alt={ad.title}
                                                                 className="w-12 h-12 object-cover rounded-lg"
+                                                                size="thumb"
                                                             />
                                                         )}
                                                         <div className="flex-1 min-w-0">

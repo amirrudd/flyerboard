@@ -93,7 +93,7 @@ export function BundleBanner({
                   className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md ring-2 ring-bundle"
                   aria-label={`${item.title} (you're viewing this item)`}
                 >
-                  <ImageDisplay imageRef={item.image} alt="" className="h-full w-full object-cover opacity-50" />
+                  <ImageDisplay imageRef={item.image} alt="" className="h-full w-full object-cover opacity-50" size="card" />
                 </div>
               ) : (
                 <button
@@ -105,7 +105,7 @@ export function BundleBanner({
                   className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md bg-muted transition active:scale-[0.92]"
                   title={item.title}
                 >
-                  <ImageDisplay imageRef={item.image} alt={item.title} className="h-full w-full object-cover" />
+                  <ImageDisplay imageRef={item.image} alt={item.title} className="h-full w-full object-cover" size="card" />
                 </button>
               )}
             </div>

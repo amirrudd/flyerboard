@@ -253,6 +253,7 @@ function MyAdCard({
             imageRef={ad.images[0]}
             alt={ad.title}
             className="w-full sm:w-20 h-32 sm:h-20 object-cover rounded-xl ring-1 ring-border/60"
+            size="card"
           />
         ) : (
           <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-xl flex items-center justify-center ring-1 ring-border/60">
@@ -971,6 +972,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={() => setImageError(true)}
+                          size="full"
                         />
                       ) : (
                         getInitials(user)
@@ -1284,6 +1286,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                               src={savedAd.ad!.images[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop'}
                               alt={savedAd.ad!.title}
                               className="w-20 h-20 object-cover rounded-xl ring-1 ring-border/60 group-hover:scale-[1.03] transition-transform duration-300 flex-shrink-0"
+                              size="card"
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-display text-base font-semibold tracking-tight text-foreground mb-1 leading-snug group-hover:text-primary transition-colors">

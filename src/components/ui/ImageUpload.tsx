@@ -278,6 +278,7 @@ export function ImageUpload({
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-full object-cover"
+                  size="card"
                 />
               </div>
               <button

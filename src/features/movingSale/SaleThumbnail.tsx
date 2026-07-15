@@ -40,6 +40,7 @@ export function SaleThumbnail({ covers, photoCount, itemCount, suburb }: SaleThu
         alt=""
         backdrop
         className="h-full w-full object-cover"
+        size="card"
       />
     );
   }
@@ -50,7 +51,7 @@ export function SaleThumbnail({ covers, photoCount, itemCount, suburb }: SaleThu
       <div className="grid h-full w-full grid-cols-2 gap-px bg-border">
         {covers.slice(0, 2).map((ref, i) => (
           <div key={i} className={cell}>
-            <ImageDisplay imageRef={ref} alt="" className="h-full w-full object-cover" />
+            <ImageDisplay imageRef={ref} alt="" className="h-full w-full object-cover" size="card" />
           </div>
         ))}
       </div>
@@ -63,7 +64,7 @@ export function SaleThumbnail({ covers, photoCount, itemCount, suburb }: SaleThu
     <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-border">
       {[0, 1, 2].map((i) => (
         <div key={i} className={cell}>
-          <ImageDisplay imageRef={covers[i]} alt="" className="h-full w-full object-cover" />
+          <ImageDisplay imageRef={covers[i]} alt="" className="h-full w-full object-cover" size="card" />
         </div>
       ))}
       {photoCount >= 4 ? (

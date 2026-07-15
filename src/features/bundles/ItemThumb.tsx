@@ -11,7 +11,7 @@ interface ItemThumbProps {
 /** Shared item image tile — falls back to a Package placeholder when there's no image. */
 export function ItemThumb({ image, title, iconSize = 18 }: ItemThumbProps) {
   return image ? (
-    <ImageDisplay imageRef={image} alt={title} className="h-full w-full object-cover" />
+    <ImageDisplay imageRef={image} alt={title} className="h-full w-full object-cover" size="card" />
   ) : (
     <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
       <Package size={iconSize} weight="light" />

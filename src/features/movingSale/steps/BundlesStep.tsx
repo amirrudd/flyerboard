@@ -283,6 +283,7 @@ export function BundlesStep({
                       imageRef={item.images[0]}
                       alt={item.title}
                       className="h-full w-full object-cover"
+                      size="card"
                     />
                     {on && (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/30" />
@@ -368,6 +369,7 @@ function BundleThumbs({
               imageRef={item.images[0]}
               alt={item.title}
               className="h-full w-full object-cover"
+              size="thumb"
             />
           </div>
         );

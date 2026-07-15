@@ -96,6 +96,7 @@ export function ReviewListModal({
                                                         imageRef={review.raterImage}
                                                         alt={review.raterName}
                                                         className="w-10 h-10 rounded-full object-cover ring-1 ring-border/70"
+                                                        size="thumb"
                                                     />
                                                 ) : (
                                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm ring-1 ring-border/70">

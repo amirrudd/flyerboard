@@ -41,6 +41,7 @@ export function SellerProfile({
                     alt={seller.name}
                     className={`${sizeClass} rounded-full object-cover`}
                     onError={onAvatarError}
+                    size="thumb"
                 />
             ) : (
                 <div className={`${sizeClass} bg-muted rounded-full flex items-center justify-center text-muted-foreground font-semibold`}>

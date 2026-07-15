@@ -37,6 +37,7 @@ export function BundleThumbnail({ covers, itemCount }: BundleThumbnailProps) {
         alt=""
         backdrop
         className="h-full w-full object-cover"
+        size="card"
       />
     );
   }
@@ -47,7 +48,7 @@ export function BundleThumbnail({ covers, itemCount }: BundleThumbnailProps) {
     <div className="grid h-full w-full gap-px bg-border" style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}>
       {shown.map((ref, i) => (
         <div key={i} className={strip}>
-          <ImageDisplay imageRef={ref} alt="" className="h-full w-full object-cover" />
+          <ImageDisplay imageRef={ref} alt="" className="h-full w-full object-cover" size="card" />
         </div>
       ))}
     </div>

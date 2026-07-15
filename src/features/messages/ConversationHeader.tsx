@@ -67,6 +67,7 @@ export function ConversationHeader({
           imageRef={image}
           alt={title}
           className="w-10 h-10 object-cover rounded-lg ring-1 ring-border/60 shrink-0"
+          size="thumb"
         />
       ) : (
         <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center ring-1 ring-border/60 shrink-0">

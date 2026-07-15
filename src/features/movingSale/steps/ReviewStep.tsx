@@ -163,6 +163,7 @@ export function ReviewStep({ items, categories, onComplete }: ReviewStepProps) {
                 alt={active.title}
                 backdrop
                 className="h-full w-full object-cover"
+                size="card"
               />
               <ConfidenceBadge item={active} />
               {decided[activeId] === "skipped" && (

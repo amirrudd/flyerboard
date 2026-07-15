@@ -144,6 +144,7 @@ export function FlyersTab() {
                                             imageRef={flyer.images[0]}
                                             alt={flyer.title}
                                             className="w-full sm:w-32 h-32 object-cover rounded-2xl ring-1 ring-border/70"
+                                            size="card"
                                         />
                                     ) : (
                                         <div className="w-full sm:w-32 h-32 bg-muted rounded-2xl ring-1 ring-border/70 flex items-center justify-center">
@@ -294,6 +295,7 @@ export function FlyersTab() {
                                         imageRef={imageRef}
                                         alt={`Image ${index + 1}`}
                                         className="w-full h-48 object-cover rounded-2xl ring-1 ring-border/70"
+                                        size="hero"
                                     />
                                     <button
                                         type="button"

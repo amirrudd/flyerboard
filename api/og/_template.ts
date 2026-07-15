@@ -344,3 +344,104 @@ export function saleOgElement(c: SaleCard) {
     })
   );
 }
+
+// ---------------------------------------------------------------- editorial (blog / brand)
+//
+// Blog and the default brand card share a cream editorial ground, distinct
+// from the flyer/bundle/sale ink cards — these aren't a marketplace listing,
+// so borrowing that visual language would misrepresent the content. Built at
+// BUILD TIME (vite.config.ts), not as an edge function: blog posts are static
+// markdown bundled into the SPA, not reachable from the separately-bundled
+// api/ edge functions.
+
+const CREAM = "#F7F6F3";
+
+function creamLockup(iconDataUri: string, size: 34 | 40 = 34) {
+  return h(
+    "div",
+    { style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 12 } },
+    h("img", { src: iconDataUri, width: size, height: size, style: { borderRadius: size === 40 ? 9 : 8 } }),
+    h(
+      "div",
+      { style: { display: "flex", fontFamily: "Fraunces", fontWeight: 600, fontSize: size === 40 ? 28 : 24, color: INK, letterSpacing: -0.3 } },
+      "FlyerBoard"
+    )
+  );
+}
+
+export interface BlogCard {
+  title: string;
+  category: string;
+  readingTime: number;
+  /** Rasterized cover art as a data URI (SVG source rasterized to PNG at build time — satori/resvg can't embed nested SVG reliably). Null shows the brand mark instead. */
+  coverDataUri: string | null;
+  iconDataUri: string;
+}
+
+export function blogOgElement(c: BlogCard) {
+  const art = c.coverDataUri
+    ? h("img", { src: c.coverDataUri, width: VIS_W, height: HEIGHT, style: { width: VIS_W, height: HEIGHT, objectFit: "cover" } })
+    : h(
+        "div",
+        { style: { display: "flex", width: VIS_W, height: HEIGHT, backgroundColor: "#EFECE5", alignItems: "center", justifyContent: "center" } },
+        h("img", { src: c.iconDataUri, width: 170, height: 170, style: { opacity: 0.5 } })
+      );
+
+  return h(
+    "div",
+    { style: { display: "flex", flexDirection: "row", width: PANEL_W + VIS_W, height: HEIGHT, backgroundColor: CREAM, fontFamily: "Jakarta" } },
+    h(
+      "div",
+      { style: { display: "flex", flexDirection: "column", width: PANEL_W, height: HEIGHT, padding: "56px 24px 48px 60px" } },
+      creamLockup(c.iconDataUri),
+      h(
+        "div",
+        { style: { display: "flex", marginTop: 66, fontFamily: "Jakarta", fontWeight: 800, fontSize: 21, letterSpacing: 2, textTransform: "uppercase", color: ACCENT } },
+        clamp(`FlyerBoard Blog · ${c.category}`, 40)
+      ),
+      h(
+        "div",
+        { style: { display: "block", lineClamp: 4, marginTop: 20, fontFamily: "Fraunces", fontWeight: 600, fontSize: 46, lineHeight: 1.14, letterSpacing: -0.3, color: INK } },
+        c.title
+      ),
+      h("div", { style: { display: "flex", flex: 1 } }),
+      h(
+        "div",
+        { style: { display: "flex", fontFamily: "Jakarta", fontWeight: 600, fontSize: 22, color: SUBTLE } },
+        `${c.readingTime} min read`
+      )
+    ),
+    h("div", { style: { display: "flex", overflow: "hidden" } }, art)
+  );
+}
+
+export interface BrandCard {
+  headline: string;
+  subline: string;
+  iconDataUri: string;
+}
+
+/** The default share card for the homepage and any route without its own — also fixes the site-wide og-preview.png 404. */
+export function brandOgElement(c: BrandCard) {
+  return h(
+    "div",
+    { style: { display: "flex", flexDirection: "column", width: PANEL_W + VIS_W, height: HEIGHT, backgroundColor: CREAM, fontFamily: "Jakarta", padding: "64px 64px 56px" } },
+    creamLockup(c.iconDataUri, 40),
+    h("div", { style: { display: "flex", flex: 1 } }),
+    h(
+      "div",
+      { style: { display: "flex", fontFamily: "Fraunces", fontWeight: 600, fontSize: 62, lineHeight: 1.08, letterSpacing: -0.5, color: INK, maxWidth: 760 } },
+      c.headline
+    ),
+    h(
+      "div",
+      { style: { display: "flex", marginTop: 22, fontFamily: "Jakarta", fontWeight: 600, fontSize: 27, lineHeight: 1.4, color: SUBTLE, maxWidth: 640 } },
+      c.subline
+    ),
+    h(
+      "div",
+      { style: { display: "flex", marginTop: 34, fontFamily: "Jakarta", fontWeight: 700, fontSize: 22, color: SUBTLE } },
+      "flyerboard.com.au"
+    )
+  );
+}

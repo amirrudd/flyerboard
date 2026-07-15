@@ -18,15 +18,24 @@ import type { Id } from "./convex/_generated/dataModel.js";
 
 export const config = {
   // Only crawlable content routes. Everything else serves statically untouched.
-  // NOTE: this matcher and the route regexes in `resolveMeta` must stay in sync —
-  // adding a type (e.g. /blog/:slug with its build-time meta map) means editing both.
-  matcher: ["/ad/:id"],
+  // NOTE: this matcher and the route regexes in `resolveMeta` must stay in sync
+  // — adding a type means editing both.
+  matcher: ["/ad/:id", "/bundle/:id", "/sale/:slug", "/blog/:slug"],
 };
 
 const CONVEX_URL = process.env.VITE_CONVEX_URL as string;
 const SITE = "https://flyerboard.com.au";
 // Module scope: stateless config, reused across a warm isolate.
 const convex = new ConvexHttpClient(CONVEX_URL);
+
+/** Every og:image goes through Cloudflare Transformations to re-encode the
+ * ~1MB PNG (@vercel/og's only output format) as a ~150KB JPEG — faster on
+ * mobile, under WhatsApp's ~300KB preview cap. REQUIRES zone Transformations
+ * enabled (Images → Transformations, Sources: same zone) — confirmed live on
+ * flyerboard.com.au (see #313). */
+function jpegImageUrl(origin: string, path: string): string {
+  return `${origin}/cdn-cgi/image/format=jpeg,quality=82${path}`;
+}
 
 function esc(s: string): string {
   return s
@@ -56,13 +65,58 @@ async function resolveMeta(pathname: string, origin: string): Promise<Meta | nul
     return {
       title: `${ad.title}${priced ? ` — $${ad.price}` : ""} | FlyerBoard`,
       description: ad.description?.slice(0, 200) || "See this listing on FlyerBoard — your local marketplace.",
-      // Route the PNG card through Cloudflare Transformations to re-encode as
-      // JPEG (~150KB vs the ~1MB PNG — faster on mobile, under WhatsApp's ~300KB
-      // preview cap). @vercel/og only emits PNG, so the size cut happens at the
-      // CDN edge. REQUIRES zone Transformations enabled (Images → Transformations)
-      // — until then /cdn-cgi/image/ 404s, so enable it BEFORE shipping this.
-      image: `${origin}/cdn-cgi/image/format=jpeg,quality=82/api/og/ad/${id}`,
+      image: jpegImageUrl(origin, `/api/og/ad/${id}`),
       url: `${SITE}/ad/${id}`,
+      type: "article",
+    };
+  }
+
+  const bundleMatch = pathname.match(/^\/bundle\/([^/]+)$/);
+  if (bundleMatch) {
+    const id = bundleMatch[1];
+    const bundle = await convex.query(api.bundles.getPublicBundle, { bundleId: id }).catch(() => null);
+    if (!bundle) return null;
+    return {
+      title: `${bundle.label} — $${bundle.bundlePrice} bundle | FlyerBoard`,
+      description: `${bundle.items.length} items bundled${bundle.savingsPct > 0 ? ` — save ${bundle.savingsPct}%` : ""} on FlyerBoard.`,
+      image: jpegImageUrl(origin, `/api/og/bundle/${id}`),
+      url: `${SITE}/bundle/${id}`,
+      type: "article",
+    };
+  }
+
+  const saleMatch = pathname.match(/^\/sale\/([^/]+)$/);
+  if (saleMatch) {
+    const slug = saleMatch[1];
+    const result = await convex.query(api.saleEvents.getSaleBySlug, { slug }).catch(() => null);
+    if (!result) return null;
+    return {
+      title: `${result.sale.title} — Moving Sale in ${result.sale.suburb} | FlyerBoard`,
+      description: `${result.stats.available} of ${result.stats.total} items available. See the full moving sale on FlyerBoard.`,
+      image: jpegImageUrl(origin, `/api/og/sale/${slug}`),
+      url: `${SITE}/sale/${slug}`,
+      type: "article",
+    };
+  }
+
+  const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
+  if (blogMatch) {
+    const slug = blogMatch[1];
+    // Blog posts are static markdown, not reachable from this independently-
+    // compiled middleware bundle — scripts/generate-og-assets.mts renders every
+    // post's card at build time and writes this JSON alongside it. Self-fetching
+    // a static asset is the same proven pattern already used below for
+    // /index.html; static files are always served ahead of the SPA rewrite
+    // (see vercel.json's /api exclusion note — same routing-order reasoning).
+    const metaRes = await fetch(new URL("/blog-meta.json", origin)).catch(() => null);
+    const all = metaRes?.ok ? await metaRes.json().catch(() => null) : null;
+    const post = Array.isArray(all) ? all.find((p) => p?.slug === slug) : null;
+    if (!post) return null;
+    return {
+      title: `${post.title} — FlyerBoard Blog`,
+      description: post.description || "See this post on the FlyerBoard blog.",
+      image: jpegImageUrl(origin, `/blog-og/${slug}.png`),
+      url: `${SITE}/blog/${slug}`,
       type: "article",
     };
   }
@@ -102,11 +156,12 @@ export default async function middleware(req: Request): Promise<Response> {
 
   let html = await shell.text();
 
-  // Replace the generic <title> and strip index.html's default og:image so ours
-  // is the only one, then inject the resolved tags right before </head>.
+  // Replace the generic <title> and strip every default og:*/twitter:* tag
+  // (index.html sets a full set for the homepage/fallback — see its comment)
+  // so ours are the only ones, then inject the resolved tags before </head>.
   html = html
     .replace(/<title>.*?<\/title>/, `<title>${esc(meta.title)}</title>`)
-    .replace(/<meta property="og:image"[^>]*>/g, "")
+    .replace(/<meta (property="og:[^"]*"|name="twitter:[^"]*")[^>]*>\s*/g, "")
     .replace("</head>", `${tags(meta)}</head>`);
 
   return new Response(html, {

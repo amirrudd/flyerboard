@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { useConvexConnectionState, useMutation, useQuery } from "convex/react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { toast } from "sonner";
 import {
     Archive,
@@ -365,7 +365,7 @@ function InboxView({
                                 className={`relative h-8 px-4 rounded-full text-sm font-medium transition-colors active:scale-[0.98] ${isActiveFilter ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                             >
                                 {isActiveFilter && (
-                                    <motion.span
+                                    <m.span
                                         layoutId="messages-filter-pill"
                                         aria-hidden="true"
                                         transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
@@ -1030,13 +1030,13 @@ function ThreadView({ chatId }: { chatId: string }) {
     // prefers-reduced-motion).
     if (isMobile) {
         return createPortal(
-            <motion.div
+            <m.div
                 ref={portalColumnRef}
                 {...slideOver()}
                 className="fixed inset-0 z-40 bg-card flex flex-col pt-safe"
             >
                 {threadColumn}
-            </motion.div>,
+            </m.div>,
             document.body
         );
     }

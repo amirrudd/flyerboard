@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Package } from "@phosphor-icons/react";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { formatPrice } from "../../lib/priceFormatter";
@@ -54,7 +54,7 @@ export function BundleBanner({
   const takeWord = items.length > 2 ? "all" : "both";
 
   return (
-    <motion.div
+    <m.div
       {...whileInView(0.05)}
       onClick={onBannerClick}
       role="button"
@@ -125,6 +125,6 @@ export function BundleBanner({
           </span>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

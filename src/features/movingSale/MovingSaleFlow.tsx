@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { X, Package, Sparkle, Tag, Lightning } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -238,13 +238,13 @@ function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => voi
         <X size={20} />
       </button>
       <div className="flex flex-1 flex-col justify-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
         >
           <Package size={32} weight="fill" />
-        </motion.div>
+        </m.div>
         <h1 className="mt-5 font-display text-3xl font-semibold leading-tight text-foreground">
           Run your whole moving sale in one go
         </h1>
@@ -254,7 +254,7 @@ function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => voi
         </p>
         <ul className="mt-7 space-y-4">
           {points.map((p, i) => (
-            <motion.li
+            <m.li
               key={i}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
@@ -265,7 +265,7 @@ function IntroStep({ onStart, onExit }: { onStart: () => void; onExit: () => voi
                 {p.icon}
               </span>
               <span className="text-sm text-foreground">{p.text}</span>
-            </motion.li>
+            </m.li>
           ))}
         </ul>
       </div>

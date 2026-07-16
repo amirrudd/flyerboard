@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { toast } from "sonner";
 import { Package, Check } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
@@ -127,7 +127,7 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
       <div className="mx-auto w-full max-w-md px-5 py-6">
         <AnimatePresence mode="wait">
           {step === "pick" && (
-            <motion.div key="pick" {...slide}>
+            <m.div key="pick" {...slide}>
               <PickStep
                 ads={eligibleAds}
                 selected={selected}
@@ -136,11 +136,11 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
                 canProceed={canProceedFromPick}
                 onNext={() => setStep("price")}
               />
-            </motion.div>
+            </m.div>
           )}
 
           {step === "price" && (
-            <motion.div key="price" {...slide}>
+            <m.div key="price" {...slide}>
               <PriceStep
                 items={selectedAds}
                 separatelyTotal={separatelyTotal}
@@ -155,11 +155,11 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
                 canProceed={canCreate}
                 onNext={() => setStep("confirm")}
               />
-            </motion.div>
+            </m.div>
           )}
 
           {step === "confirm" && (
-            <motion.div key="confirm" {...slide}>
+            <m.div key="confirm" {...slide}>
               <ConfirmStep
                 items={selectedAds}
                 label={label}
@@ -170,7 +170,7 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
                 submitting={submitting}
                 onCreate={() => { void handleCreate(); }}
               />
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>
@@ -239,7 +239,7 @@ function PickStep({
           {ads.map((ad) => {
             const isSelected = selected.includes(ad._id);
             return (
-              <motion.button
+              <m.button
                 key={ad._id}
                 type="button"
                 disabled={!ad.eligible}
@@ -273,7 +273,7 @@ function PickStep({
                     {ad.reason}
                   </span>
                 )}
-              </motion.button>
+              </m.button>
             );
           })}
         </div>
@@ -390,7 +390,7 @@ function PriceStep({
       <div className="mt-5 min-h-[2.75rem]">
         <AnimatePresence mode="wait">
           {bundlePrice > 0 && !noSaving && (
-            <motion.p
+            <m.p
               key="save"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -399,10 +399,10 @@ function PriceStep({
             >
               <Check size={16} weight="bold" />
               Buyers save {formatPrice(savings)} ({savingsPct}%)
-            </motion.p>
+            </m.p>
           )}
           {noSaving && (
-            <motion.p
+            <m.p
               key="nosave"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -410,7 +410,7 @@ function PriceStep({
               className="rounded-xl bg-amber-500/10 px-3.5 py-3 text-sm font-medium text-amber-700 dark:text-amber-400"
             >
               This price is at or above the separate total — buyers get no saving.
-            </motion.p>
+            </m.p>
           )}
         </AnimatePresence>
       </div>

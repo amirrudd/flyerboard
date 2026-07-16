@@ -1,6 +1,19 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-07-11
+**Last Updated**: 2026-07-16
+
+## Icon library policy (2026-07-16)
+Phosphor (`@phosphor-icons/react`) is the app-wide icon library — 16/20/24px. lucide-react survives in exactly one place: category icons, because the DB stores category `icon` as a Lucide PascalCase slug (e.g. `"Car"`). Two files:
+- `src/lib/categoryIcons.tsx` — public, imported eagerly (homepage Sidebar). Ships a **curated** ~21-icon subset that's a superset of every slug prod categories actually use. Exports `getCategoryIcon` (LayoutGrid fallback), `hasIcon`, `getIconCdnUrl`, `pascalToKebab`.
+- `src/lib/adminIconMap.ts` — admin-only, the full ~180-icon mega-map (spreads the curated map + the rest). Only `src/features/admin/CategoriesTab.tsx` imports it, and it's only reachable through the lazy `/admin` route. **Never import `adminIconMap` from a public/eager surface** — importing the full mega-map eagerly was costing ~56KB in the entry chunk before this 2026-07-16 split.
+- Ceiling: an admin-picked icon outside the curated map renders as `LayoutGrid` on public surfaces (Sidebar, PostAd category picker) until it's added to the curated list. `CategoriesTab`'s own preview still works for any icon via the lucide-static CDN fallback (`getIconCdnUrl`), independent of the curated map.
+- `src/components/ui/LucideIconPicker.tsx` does NOT import either module — it fetches `tags.json` from the lucide-static CDN and renders `<img>` tags, so it carries zero lucide-react JS cost.
+
+## LazyMotion / `m.*` (2026-07-16)
+The app loads framer-motion's full feature set (`domMax`, needed for `layout`/`layoutId`/`drag` used across ~14 sites) asynchronously via `<LazyMotion features={...} strict>` wrapped around the router in `src/App.tsx`, loading `src/lib/motionFeatures.ts` (`export { domMax as default } from "framer-motion"`) as a dynamic import.
+- **Use `m.*`, not `motion.*`.** Every file that renders an animated element imports `{ m }` from `"framer-motion"` and writes `<m.div>` etc. `strict` mode on `LazyMotion` throws in dev if a stray `motion.*` import sneaks back in — that's the regression guard, don't remove `strict` to silence it, fix the import instead.
+- Non-JSX framer-motion APIs (`useAnimation`, `useAnimationControls`, `useMotionValue`, `useTransform`, `animate`, `useReducedMotion`, `AnimatePresence`) are unaffected by this — they don't go through the `m` namespace and don't need renaming.
+- `useMotionPrefs.ts` remains the sanctioned place for variant objects (`fadeUp`, `whileInView`, `staggerCard`, etc.) — spread its helpers onto `<m.*>` elements, same as before.
 
 ## Shared messaging component library (2026-07-05)
 `src/features/messages/` is the ONE chat/inbox implementation — `ConversationThread` (protected scroll pattern: outer `flex-1 min-h-0 overflow-y-auto` + inner `min-h-full justify-end`, auto-scroll, touch props), `MessageBubble`, `MessageComposer` (Enter sends / Shift+Enter newline — the app-wide rule now), `ConversationHeader`, `InboxRow`, `RoleChip`, `UnreadBadge`, `useInbox(options: {flyerId?, initialFilter?, enabled?})`. Consumers: UserDashboard chats tab (unified inbox), AdMessages (per-ad seller view), AdDetail (buyer panel + mobile sheet), BottomNav (UnreadBadge). Do NOT hand-roll new chat UI or a second composer — extend this library. Its tests own the protected chat behaviors formerly documented only in `ADMESSAGES_BEHAVIOR.md`.

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowUp } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 
@@ -15,7 +15,7 @@ export function ScrollToTopButton({ visible, onClick }: ScrollToTopButtonProps) 
   return createPortal(
     <AnimatePresence>
       {visible && (
-        <motion.button
+        <m.button
           initial={hiddenState}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={hiddenState}
@@ -29,7 +29,7 @@ export function ScrollToTopButton({ visible, onClick }: ScrollToTopButtonProps) 
           <span className="flex items-center justify-center transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
             <ArrowUp weight="bold" className="w-[18px] h-[18px]" />
           </span>
-        </motion.button>
+        </m.button>
       )}
     </AnimatePresence>,
     document.body

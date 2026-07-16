@@ -3,7 +3,7 @@ import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { MagnifyingGlass, Repeat, House, Package } from '@phosphor-icons/react';
 import { memo, useCallback, useMemo, useRef } from "react";
-import { motion, LayoutGroup } from "framer-motion";
+import { m, LayoutGroup } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
@@ -232,7 +232,7 @@ export const AdsGrid = memo(function AdsGrid({
             if (entry.kind === "sale") {
               const sale = entry.sale;
               return (
-                <motion.article
+                <m.article
                   key={`sale-${sale._id}`}
                   layout={animateLayout}
                   onClick={() => onSaleClick?.(sale.slug)}
@@ -280,7 +280,7 @@ export const AdsGrid = memo(function AdsGrid({
                       </span>
                     </div>
                   </div>
-                </motion.article>
+                </m.article>
               );
             }
 
@@ -288,7 +288,7 @@ export const AdsGrid = memo(function AdsGrid({
             if (entry.kind === "bundle") {
               const bundle = entry.bundle;
               return (
-                <motion.article
+                <m.article
                   key={`bundle-${bundle._id}`}
                   layout={animateLayout}
                   onClick={() => onBundleClick?.(bundle)}
@@ -343,7 +343,7 @@ export const AdsGrid = memo(function AdsGrid({
                       </span>
                     </div>
                   </div>
-                </motion.article>
+                </m.article>
               );
             }
 
@@ -359,7 +359,7 @@ export const AdsGrid = memo(function AdsGrid({
             const isBoostArrival = boostedAdKeys.has(boostKey);
 
             return (
-              <motion.article
+              <m.article
                 key={boostKey}
                 layout={animateLayout}
                 onClick={() => handleAdClick(ad)}
@@ -461,14 +461,14 @@ export const AdsGrid = memo(function AdsGrid({
                     ring-inset because the article is overflow-hidden — an
                     outset ring would be clipped entirely. */}
                 {isBoostArrival && (
-                  <motion.div
+                  <m.div
                     aria-hidden
                     data-testid="boost-ring-pulse"
                     className="absolute inset-0 rounded-xl ring-2 ring-inset ring-primary pointer-events-none"
                     {...boostRingPulse()}
                   />
                 )}
-              </motion.article>
+              </m.article>
             );
           })}
 

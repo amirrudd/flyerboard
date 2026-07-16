@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { CaretLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
@@ -81,7 +81,7 @@ export function BlogIndexPage() {
                 <div className="content-max-width mx-auto container-padding">
 
                     {/* Hero */}
-                    <motion.header {...fadeUp()} className="py-10 sm:py-14 max-w-2xl">
+                    <m.header {...fadeUp()} className="py-10 sm:py-14 max-w-2xl">
                         <span className="kicker text-primary/80">FlyerBoard Blog</span>
                         <h1 className="font-display font-display-var text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground leading-[1.05] tracking-[-0.02em] mt-3">
                             Guides for buying &amp; selling locally
@@ -89,21 +89,21 @@ export function BlogIndexPage() {
                         <p className="text-base text-muted-foreground leading-relaxed mt-4">
                             Practical, no-nonsense tips on selling faster, buying smarter, and staying safe on Australia's local marketplace.
                         </p>
-                    </motion.header>
+                    </m.header>
 
                     <div className="hairline mb-8" />
 
                     {/* Post list — horizontal cards (image left / preview right) in a grid */}
-                    <motion.ul
+                    <m.ul
                         {...whileInView(0.05)}
                         className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 pb-6 list-none"
                     >
                         {posts.map((post, i) => (
-                            <motion.li key={post.slug} {...staggerCard(i)}>
+                            <m.li key={post.slug} {...staggerCard(i)}>
                                 <BlogPostCard post={post} />
-                            </motion.li>
+                            </m.li>
                         ))}
-                    </motion.ul>
+                    </m.ul>
 
                     {posts.length === 0 && (
                         <p className="text-muted-foreground py-12 text-center">No posts yet — check back soon.</p>

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Toaster } from "sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { LazyMotion } from "framer-motion";
 import { Layout } from "./features/layout/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PageLoader } from "./components/PageLoader";
@@ -41,6 +42,9 @@ export default function App() {
     <ErrorBoundary>
       <UserSyncProvider>
         <MarketplaceProvider>
+          {/* strict: throws in dev if a stray motion.* import sneaks back in
+              instead of m.* — that's the regression guard for this migration. */}
+          <LazyMotion features={() => import("@/lib/motionFeatures").then((m) => m.default)} strict>
           <BrowserRouter>
             <SpeedInsights />
             <Routes>
@@ -171,6 +175,7 @@ export default function App() {
             </Routes>
             <Toaster />
           </BrowserRouter>
+          </LazyMotion>
         </MarketplaceProvider>
       </UserSyncProvider>
     </ErrorBoundary>

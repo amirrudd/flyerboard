@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { House, Image as ImageIcon, Package } from "@phosphor-icons/react";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
@@ -52,7 +52,7 @@ export function InboxRow({
   const open = () => onOpen(chat._id);
 
   return (
-    <motion.div
+    <m.div
       role="button"
       tabIndex={0}
       onClick={open}
@@ -144,6 +144,6 @@ export function InboxRow({
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

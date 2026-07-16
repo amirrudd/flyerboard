@@ -4,6 +4,13 @@
 // LucideIconPicker, and getIconCdnUrl() builds lucide-static CDN URLs from them.
 // "Finishing" the migration here would require a data migration of every category's
 // stored `icon` field — don't swap these to Phosphor without that.
+//
+// This module is imported eagerly (homepage sidebar), so it only bundles a curated
+// subset of icons — a superset of every slug actually in use by prod categories.
+// The full ~180-icon mega-map lives in ./adminIconMap.ts and is only reachable from
+// the lazy admin route. Ceiling: an admin-picked icon outside this curated map
+// renders as LayoutGrid on public surfaces until added here (admin previews still
+// work via the CDN fallback in CategoriesTab).
 import {
     Car,
     Home,
@@ -28,185 +35,6 @@ import {
     Utensils,
     Plane,
     Heart,
-    Gift,
-    ShoppingBag,
-    Laptop,
-    Headphones,
-    Bike,
-    Tv,
-    Monitor,
-    Scissors,
-    Hammer,
-    Coffee,
-    Wine,
-    Pizza,
-    Apple,
-    Flower2,
-    TreePine,
-    Sun,
-    Moon,
-    Cloud,
-    Umbrella,
-    Snowflake,
-    Flame,
-    Droplet,
-    Mountain,
-    Building2,
-    Store,
-    School,
-    Hotel,
-    Church,
-    Landmark,
-    Factory,
-    Warehouse,
-    Tent,
-    Rocket,
-    Anchor,
-    Ship,
-    Train,
-    Bus,
-    Truck,
-    Tractor,
-    Ambulance,
-    Stethoscope,
-    Pill,
-    Syringe,
-    Activity,
-    Microscope,
-    GraduationCap,
-    BookOpen,
-    Library,
-    Newspaper,
-    FileText,
-    Folder,
-    MessageCircle,
-    Mail,
-    Phone,
-    Wifi,
-    Bluetooth,
-    Battery,
-    Zap,
-    Lightbulb,
-    Cpu,
-    HardDrive,
-    Mouse,
-    Keyboard,
-    Printer,
-    Speaker,
-    Radio,
-    Mic,
-    Video,
-    Film,
-    Image,
-    Brush,
-    Pen,
-    Edit3,
-    Type,
-    Glasses,
-    Crown,
-    Medal,
-    Trophy,
-    Target,
-    Flag,
-    Star,
-    Sparkles,
-    Diamond,
-    Gem,
-    Coins,
-    Banknote,
-    CreditCard,
-    Receipt,
-    ShoppingCart,
-    Package,
-    Box,
-    Archive,
-    Trash2,
-    Recycle,
-    Leaf,
-    Sprout,
-    Bug,
-    Cat,
-    Dog,
-    Bird,
-    Fish,
-    Egg,
-    Bone,
-    Footprints,
-    HandMetal,
-    ThumbsUp,
-    Users,
-    UserCircle,
-    PersonStanding,
-    Smile,
-    Frown,
-    Angry,
-    PartyPopper,
-    Cake,
-    IceCream,
-    Cookie,
-    Candy,
-    Soup,
-    Salad,
-    Beef,
-    Croissant,
-    Beer,
-    Martini,
-    Cigarette,
-    Pill as Medicine,
-    Dna,
-    Atom,
-    Brain,
-    Eye,
-    Ear,
-    Hand,
-    Footprints as Feet,
-    Bed,
-    Sofa,
-    Lamp,
-    Fan,
-    AirVent,
-    Refrigerator,
-    WashingMachine,
-    Microwave,
-    CookingPot,
-    UtensilsCrossed,
-    Timer,
-    AlarmClock,
-    Clock,
-    Calendar,
-    CalendarDays,
-    Map,
-    MapPin,
-    Compass,
-    Navigation,
-    Route,
-    Signpost,
-    Globe,
-    Languages,
-    QrCode,
-    Barcode,
-    Scan,
-    Search,
-    Filter,
-    SlidersHorizontal,
-    Settings,
-    Cog,
-    Wrench as ToolIcon,
-    Hammer as HammerIcon,
-    Axe,
-    Shovel,
-    Paintbrush,
-    PaintRoller,
-    Ruler,
-    Eraser,
-    Paperclip,
-    Link,
-    Lock,
-    Unlock,
-    Key,
-    Shield,
-    ShieldCheck,
-    Fingerprint,
 } from "lucide-react";
 
 const LUCIDE_CDN_BASE = "https://cdn.jsdelivr.net/npm/lucide-static@0.517.0";
@@ -222,47 +50,22 @@ function pascalToKebab(str: string): string {
 }
 
 /**
- * Map of available icon names to Lucide components.
- * Icon names stored in DB should be PascalCase (e.g., "Car", "ShoppingBag").
+ * Curated map of available icon names to Lucide components — covers every
+ * icon slug actually assigned to a category in prod. Icon names stored in
+ * the DB should be PascalCase (e.g., "Car", "ShoppingBag").
  */
 export const iconMap: Record<string, LucideIcon> = {
     // Core category icons
     Car, Home, Smartphone, Armchair, Wrench, Shirt, Dumbbell, Briefcase,
     Watch, Book, PawPrint, Palette, CalendarClock, Baby, Gamepad2, LayoutGrid,
-    // Extended icons
-    Music, Camera, Utensils, Plane, Heart, Gift, ShoppingBag, Laptop,
-    Headphones, Bike, Tv, Monitor, Scissors, Hammer, Coffee, Wine, Pizza,
-    Apple, Flower2, TreePine, Sun, Moon, Cloud, Umbrella, Snowflake, Flame,
-    Droplet, Mountain, Building2, Store, School, Hotel, Church, Landmark,
-    Factory, Warehouse, Tent, Rocket, Anchor, Ship, Train, Bus, Truck,
-    Tractor, Ambulance, Stethoscope, Pill, Syringe, Activity, Microscope,
-    GraduationCap, BookOpen, Library, Newspaper, FileText, Folder,
-    MessageCircle, Mail, Phone, Wifi, Bluetooth, Battery, Zap, Lightbulb,
-    Cpu, HardDrive, Mouse, Keyboard, Printer, Speaker, Radio, Mic, Video,
-    Film, Image, Brush, Pen, Edit3, Type, Glasses, Crown, Medal, Trophy,
-    Target, Flag, Star, Sparkles, Diamond, Gem, Coins, Banknote, CreditCard,
-    Receipt, ShoppingCart, Package, Box, Archive, Trash2, Recycle, Leaf,
-    Sprout, Bug, Cat, Dog, Bird, Fish, Egg, Bone, Footprints, HandMetal,
-    ThumbsUp, Users, UserCircle, PersonStanding, Smile, Frown, Angry,
-    PartyPopper, Cake, IceCream, Cookie, Candy, Soup, Salad, Beef, Croissant,
-    Beer, Martini, Cigarette, Dna, Atom, Brain, Eye, Ear, Hand, Bed, Sofa,
-    Lamp, Fan, AirVent, Refrigerator, WashingMachine, Microwave, CookingPot,
-    UtensilsCrossed, Timer, AlarmClock, Clock, Calendar, CalendarDays, Map, MapPin,
-    Compass, Navigation, Route, Signpost, Globe, Languages, QrCode, Barcode,
-    Scan, Search, Filter, SlidersHorizontal, Settings, Cog, Axe,
-    Shovel, Paintbrush, PaintRoller, Ruler, Eraser, Paperclip, Link, Lock, Unlock,
-    Key, Shield, ShieldCheck, Fingerprint,
+    // Extended icons for common categories
+    Music, Camera, Utensils, Plane, Heart,
 };
-
-/**
- * List of available icon names for admin icon picker dropdown.
- */
-export const AVAILABLE_ICONS = Object.keys(iconMap);
 
 /**
  * Get category icon component from database icon name.
  * Falls back to LayoutGrid if icon is not found or not provided.
- * 
+ *
  * @param icon - Icon name from database (PascalCase, e.g., "Car", "ShoppingBag")
  * @returns Lucide icon component
  */
@@ -274,7 +77,7 @@ export const getCategoryIcon = (icon?: string): LucideIcon => {
 };
 
 /**
- * Check if an icon exists in the pre-imported map
+ * Check if an icon exists in the pre-imported (curated) map
  */
 export const hasIcon = (icon: string): boolean => {
     return icon in iconMap;

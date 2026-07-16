@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { Clock } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
@@ -55,7 +55,7 @@ export function MessageBubble({
       data-testid="message-bubble"
       className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
     >
-      <motion.div
+      <m.div
         {...bubbleIn()}
         {...retryProps}
         className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl shadow-sm ${
@@ -97,7 +97,7 @@ export function MessageBubble({
             {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
           </p>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

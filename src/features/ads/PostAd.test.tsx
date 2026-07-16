@@ -59,6 +59,7 @@ vi.mock('../../lib/categoryIcons', () => ({
 vi.mock('../../lib/locationService', () => ({
     searchLocations: vi.fn(),
     formatLocation: vi.fn((loc) => loc.locality),
+    fetchLocations: vi.fn(),
 }));
 
 describe('PostAd', () => {

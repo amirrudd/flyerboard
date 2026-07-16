@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 
 export interface UnreadBadgeProps {
@@ -18,13 +18,13 @@ export function UnreadBadge({ count, className = "" }: UnreadBadgeProps) {
   const display = count > 99 ? "99+" : String(count);
 
   return (
-    <motion.span
+    <m.span
       key={display}
       {...scalePop()}
       aria-label={`${count} unread ${count === 1 ? "message" : "messages"}`}
       className={`inline-flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full text-[11px] font-semibold tabular-nums bg-primary text-primary-foreground ${className}`}
     >
       {display}
-    </motion.span>
+    </m.span>
   );
 }

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   BookmarkSimple,
   ChatCircle,
@@ -89,7 +89,7 @@ export function PublicBundleView({
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
-              <motion.button
+              <m.button
                 type="button"
                 animate={bookmarkControls}
                 onClick={() => { void toggleSaved(); }}
@@ -98,7 +98,7 @@ export function PublicBundleView({
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition hover:bg-white/25"
               >
                 <BookmarkSimple size={19} weight={displaySaved ? "fill" : "regular"} />
-              </motion.button>
+              </m.button>
               <button
                 type="button"
                 onClick={onShare}
@@ -114,7 +114,7 @@ export function PublicBundleView({
 
       <div className="mx-auto max-w-2xl px-5 pb-[calc(var(--bottom-nav-height)_+_6rem)] md:pb-28">
         {/* ── The ticket ──────────────────────────────────────────────── */}
-        <motion.section
+        <m.section
           {...fadeUp(0)}
           aria-label="Bundle deal pricing"
           className="relative -mt-14 rounded-2xl bg-card p-6 shadow-card ring-1 ring-border/70"
@@ -212,10 +212,10 @@ export function PublicBundleView({
               </div>
             )
           )}
-        </motion.section>
+        </m.section>
 
         {/* ── Image strip ─────────────────────────────────────────────── */}
-        <motion.div {...fadeUp(0.05)} className="mt-5 flex gap-3">
+        <m.div {...fadeUp(0.05)} className="mt-5 flex gap-3">
           {bundle.items.map((item) => (
             <button
               key={item.adId}
@@ -238,17 +238,17 @@ export function PublicBundleView({
               </p>
             </button>
           ))}
-        </motion.div>
+        </m.div>
 
         {/* ── Trust line ──────────────────────────────────────────────── */}
-        <motion.p {...fadeUp(0.08)} className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
+        <m.p {...fadeUp(0.08)} className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
           <ShieldCheck size={15} className="mt-0.5 shrink-0 text-bundle-emphasis" aria-hidden="true" />
           Every item stays individually listed — tap any thumbnail to see its full ad.
-        </motion.p>
+        </m.p>
 
         {/* ── Seller ──────────────────────────────────────────────────── */}
         {bundle.seller && (
-          <motion.div
+          <m.div
             {...fadeUp(0.1)}
             className="mt-5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-border/70"
           >
@@ -277,7 +277,7 @@ export function PublicBundleView({
                 </p>
               )}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { CaretLeft, ArrowLeft } from "@phosphor-icons/react";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
@@ -146,7 +146,7 @@ export function BlogPostPage() {
                     <article className="max-w-[760px] mx-auto pt-8 sm:pt-12">
                         {/* Editorial cover image */}
                         {post.heroImage && (
-                            <motion.figure
+                            <m.figure
                                 {...fadeUp()}
                                 className="mb-8 overflow-hidden rounded-2xl ring-1 ring-border/70 bg-muted/40"
                             >
@@ -156,11 +156,11 @@ export function BlogPostPage() {
                                     className="w-full aspect-[16/9] object-cover"
                                     loading="eager"
                                 />
-                            </motion.figure>
+                            </m.figure>
                         )}
 
                         {/* Meta row */}
-                        <motion.div {...fadeUp()} className="flex flex-wrap items-center gap-3 mb-6">
+                        <m.div {...fadeUp()} className="flex flex-wrap items-center gap-3 mb-6">
                             <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1">
                                 {post.category}
                             </span>
@@ -171,12 +171,12 @@ export function BlogPostPage() {
                             </time>
                             <span className="text-sm text-muted-foreground">·</span>
                             <span className="text-sm text-muted-foreground">{post.readingTime} min read</span>
-                        </motion.div>
+                        </m.div>
 
                         {/* Body — the markdown's own H1 is the article title */}
-                        <motion.div {...whileInView(0.05)}>
+                        <m.div {...whileInView(0.05)}>
                             <MarkdownContent content={post.content} />
-                        </motion.div>
+                        </m.div>
 
                         {/* Keep reading — related posts to continue the session */}
                         {related.length > 0 && (
@@ -186,9 +186,9 @@ export function BlogPostPage() {
                                 </h2>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {related.map((p) => (
-                                        <motion.div key={p.slug} {...whileInView(0.05)}>
+                                        <m.div key={p.slug} {...whileInView(0.05)}>
                                             <BlogPostCard post={p} />
-                                        </motion.div>
+                                        </m.div>
                                     ))}
                                 </div>
                             </section>

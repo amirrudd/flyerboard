@@ -1,6 +1,6 @@
 # Quality Gates (type-check, lint, CI, Stop hook)
 
-Last Updated: 2026-07-05
+Last Updated: 2026-07-16
 
 How regressions are caught in FlyerBoard. Three layers: local Stop hook (per turn),
 the `lint` script (pre-commit, manual), and CI `build.yml` (required to merge).
@@ -110,8 +110,46 @@ silently. They're now deterministic by construction (full rationale: `e2e/README
   Without the backend the app renders "0 listings"/no categories and the category wait
   fails (deliberately: prevents baking empty states into baselines).
 - `visual-tests.yml` (CI, Desktop Chrome only) auto-generates + commits missing `-linux`
-  baselines on the next PR run — deleting stale linux PNGs is safe.
+  baselines when Playwright reports "snapshot doesn't exist" — deleting stale linux PNGs
+  is safe. NOTE: the bot push uses `GITHUB_TOKEN`, which does NOT trigger a fresh
+  workflow run; the committed baseline is compared on the next human push.
 - No auth fixture exists; `/post` unauthenticated redirects to `/` (asserted, not
   snapshotted). storageState plan for dashboard/messaging flows: `e2e/README.md`.
+
+## The visual CI gate was a false green for its entire life (fixed 2026-07-16)
+
+Every "Visual Regression Tests" run had reported `success` while all 6 desktop tests
+actually failed. Two stacked causes — both matter if you ever touch `visual-tests.yml`:
+
+1. **The app never booted in CI.** No `.env.local` on the runner → `VITE_CONVEX_URL`
+   undefined → `new ConvexReactClient(undefined)` throws in `src/main.tsx` (and the vite
+   dev server is DEV mode, so the missing `VITE_DESCOPE_PROJECT_ID` check throws too) →
+   nothing renders → every test dies at the 30s `waitForSelector('[data-testid="ads-grid"]')`
+   timeout. No screenshot was ever actually compared on CI.
+2. **The workflow swallowed the failure.** `continue-on-error: true` on the test step,
+   then a grep *allowlist* of recognized failure strings ("snapshot doesn't exist",
+   "Screenshot comparison failed") decided whether anything downstream reacted. A
+   timeout matched neither pattern → job exited 0. **Allowlisting known failures is
+   backwards; a gate must default to failing.**
+
+Fixes (in `visual-tests.yml`):
+- Job-level env: `VITE_CONVEX_URL` → prod Convex (`resilient-pheasant-112.convex.cloud`)
+  and prod `VITE_DESCOPE_PROJECT_ID`. Deliberate choice: these are public browser-bundle
+  values, the suite is unauthenticated/read-only, and dynamic feed content is masked —
+  so prod data is safe and needs no seed/mock harness. Verified locally by running the
+  suite with exactly these vars and no backend: 6/6 desktop tests pass, deterministic
+  across runs.
+- `continue-on-error` kept ONLY to allow the missing-snapshot bootstrap path; a new
+  final step fails the job whenever tests failed and it wasn't that bootstrap case
+  (covers timeouts, crashes, and real visual diffs — the report artifact now uploads on
+  any failure).
+- The `pixels.*different` warn-only path is gone: a real visual regression now fails CI.
+- Workflow `paths` now include `e2e/**`, `playwright.config.ts`, and the workflow file
+  itself, so test/workflow changes re-run the gate.
+
+Residual gaps (known, deliberate): `visual` is NOT in branch protection's required
+checks (only `build` is) — making it required conflicts with the `paths` filter (PRs
+that don't touch those paths would hang on "Expected"); CI runs Desktop Chrome only, so
+Mobile Chrome snapshots have no Linux baseline and mobile layout is untested in CI.
 
 See also: [[regression-guardrails plan]] at `.agent/plans/regression-guardrails.md`.

@@ -7,6 +7,9 @@ on:
       - 'src/**/*.tsx'
       - 'src/**/*.css'
       - 'tailwind.config.js'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/visual-tests.yml'
 
 permissions:
   contents: write
@@ -14,6 +17,14 @@ permissions:
 jobs:
   visual:
     runs-on: ubuntu-latest
+    env:
+      # Public client-side values (shipped in every browser bundle — not secrets).
+      # The e2e suite is unauthenticated and read-only, and layout.spec.ts masks
+      # dynamic feed content, so pointing at prod is safe and gives the app real
+      # data to render. Without these the app throws on boot and every test
+      # times out waiting for [data-testid="ads-grid"].
+      VITE_CONVEX_URL: https://resilient-pheasant-112.convex.cloud
+      VITE_DESCOPE_PROJECT_ID: P363bEaEDNeBq3fLWpNjbiUvuloU
     steps:
       - uses: actions/checkout@v7
       
@@ -39,22 +50,16 @@ jobs:
         if: steps.visual-test.outcome == 'failure'
         run: |
           HAS_MISSING=false
-          HAS_REGRESSIONS=false
-          
-          # Check if there are missing snapshots
           if grep -qi "snapshot doesn't exist" test-output.log 2>/dev/null; then
             HAS_MISSING=true
           fi
-          
-          # Check if there are actual visual diffs (regressions)
-          if grep -qi "Screenshot comparison failed" test-output.log 2>/dev/null || \
-             grep -qi "pixels.*different" test-output.log 2>/dev/null; then
-            HAS_REGRESSIONS=true
-          fi
-          
           echo "missing=$HAS_MISSING" >> $GITHUB_OUTPUT
-          echo "has_regressions=$HAS_REGRESSIONS" >> $GITHUB_OUTPUT
-        
+
+      # Bootstrap path: a brand-new screenshot has no Linux baseline yet.
+      # Generate it, commit it to the PR branch, and re-run the suite against
+      # it. If tests fail for any OTHER reason (timeout, crash, real visual
+      # diff), this step doesn't run and the job fails below — the gate
+      # defaults to failing, not to an allowlist of recognized failures.
       - name: Update missing snapshots
         if: steps.check-snapshots.outputs.missing == 'true'
         run: npx playwright test --project='Desktop Chrome' --update-snapshots
@@ -80,17 +85,17 @@ jobs:
           name: playwright-snapshots-linux
           path: e2e/layout.spec.ts-snapshots/
           retention-days: 30
-          
+
       - uses: actions/upload-artifact@v7
-        if: steps.check-snapshots.outputs.has_regressions == 'true'
+        if: steps.visual-test.outcome == 'failure'
         with:
           name: visual-regression-report
           path: playwright-report/
-          
-      - name: Warn if visual regression detected
-        if: steps.check-snapshots.outputs.has_regressions == 'true'
+
+      - name: Fail on test failures
+        if: steps.visual-test.outcome == 'failure' && steps.check-snapshots.outputs.missing != 'true'
         run: |
-          echo "::warning::Visual regression detected! This may be expected if UI changes were made."
-          echo "📊 Check the uploaded 'visual-regression-report' artifact for details."
-          echo "ℹ️  If changes are intentional, the pipeline will auto-update snapshots on next run."
+          echo "::error::Visual/E2E tests failed (regression, timeout, or crash). See the 'visual-regression-report' artifact and test-output.log above."
+          echo "ℹ️  If UI changes are intentional, update baselines with 'npm run test:visual:update' — or delete the stale e2e/layout.spec.ts-snapshots/*-linux.png so CI regenerates them."
+          exit 1
 

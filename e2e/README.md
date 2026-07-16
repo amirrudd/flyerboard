@@ -13,6 +13,15 @@ what stops you from baking an empty-backend state into a baseline.
 Worktree note: copy `.env.local` from the main repo into the worktree or Vite
 starts without a Convex URL.
 
+**In CI** (`.github/workflows/visual-tests.yml`) there is no `.env.local` and no
+local backend: the workflow sets `VITE_CONVEX_URL` to the **prod** Convex
+deployment plus the prod `VITE_DESCOPE_PROJECT_ID` (both are public client-side
+values). The suite is unauthenticated and read-only, and dynamic feed content is
+masked, so prod data is safe to render against. Without these env vars the app
+throws on boot and every test times out waiting for `[data-testid="ads-grid"]` —
+which is exactly what happened silently until 2026-07-16 (the workflow also
+swallowed the failure; it now fails on any unrecognized test failure).
+
 ## How the visual snapshots stay data-independent
 
 The home feed renders live Convex data, so naive full-page screenshots broke

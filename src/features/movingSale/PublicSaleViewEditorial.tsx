@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useAnimation } from "framer-motion";
+import { m, useAnimation } from "framer-motion";
 import {
   Package,
   ShareNetwork,
@@ -126,7 +126,7 @@ export function PublicSaleViewEditorial({
     <div className={`relative mx-auto w-full max-w-3xl ${preview ? "select-none" : ""}`}>
       <div className={preview ? "pointer-events-none blur-[3px]" : ""}>
         {/* 1. Hero */}
-        <motion.header {...fadeUp(0)} className="relative px-4 pt-6">
+        <m.header {...fadeUp(0)} className="relative px-4 pt-6">
           {/* Rotated "stamp" badge — from the original mockup; carries the
               suburb so the hero reads as a physical flyer at a glance. */}
           <div
@@ -179,10 +179,10 @@ export function PublicSaleViewEditorial({
               "{sale.note}"
             </p>
           )}
-        </motion.header>
+        </m.header>
 
         {/* 2. Live countdown to pickup window — inverted panel for contrast */}
-        <motion.section {...fadeUp(0.05)} className="mt-5 px-4">
+        <m.section {...fadeUp(0.05)} className="mt-5 px-4">
           <div className="rounded-[22px] bg-neutral-900 p-5 text-center text-neutral-50 dark:bg-black">
             {countdown.isLive ? (
               <p className="flex items-center justify-center gap-2 font-semibold text-emerald-400">
@@ -209,10 +209,10 @@ export function PublicSaleViewEditorial({
             </p>
             <p className="mt-0.5 text-xs text-neutral-400">Cash or bank transfer on pickup</p>
           </div>
-        </motion.section>
+        </m.section>
 
         {/* 3. Stats strip */}
-        <motion.section {...fadeUp(0.08)} className="mt-5 px-6">
+        <m.section {...fadeUp(0.08)} className="mt-5 px-6">
           <div className="grid grid-cols-3">
             <div className="border-r border-border text-center">
               <div className="font-display text-3xl font-semibold leading-none text-foreground">{available}</div>
@@ -227,11 +227,11 @@ export function PublicSaleViewEditorial({
               <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">of stuff</div>
             </div>
           </div>
-        </motion.section>
+        </m.section>
 
         {/* 4. Bundles — "take the whole room" */}
         {bundles.length > 0 && (
-          <motion.section {...fadeUp(0.1)} className="mt-7 px-4">
+          <m.section {...fadeUp(0.1)} className="mt-7 px-4">
             <div className="mb-3.5 flex items-baseline justify-between">
               <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
                 Take the whole room
@@ -289,7 +289,7 @@ export function PublicSaleViewEditorial({
                 );
               })}
             </div>
-          </motion.section>
+          </m.section>
         )}
 
         {/* 5. Category filter bar */}
@@ -325,7 +325,7 @@ export function PublicSaleViewEditorial({
 
           {/* Featured — "most wanted" */}
           {featured && (
-            <motion.button
+            <m.button
               type="button"
               {...fadeUp(0.12)}
               onClick={() => !featured.isSold && onItemClick?.(featured._id)}
@@ -350,7 +350,7 @@ export function PublicSaleViewEditorial({
                   {formatAUD(featured.price)}
                 </p>
               </div>
-            </motion.button>
+            </m.button>
           )}
 
           {visibleItems.length === 0 ? (
@@ -358,7 +358,7 @@ export function PublicSaleViewEditorial({
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {visibleItems.map((item, index) => (
-                <motion.button
+                <m.button
                   type="button"
                   key={item._id}
                   {...staggerCard(index)}
@@ -394,7 +394,7 @@ export function PublicSaleViewEditorial({
                       </p>
                     )}
                   </div>
-                </motion.button>
+                </m.button>
               ))}
             </div>
           )}
@@ -465,18 +465,18 @@ export function PublicSaleViewEditorial({
               <ChatCircle size={20} weight="fill" />
               Message {sellerFirstName}
             </button>
-            <motion.button
+            <m.button
               type="button"
               onClick={handleShareClick}
               whileTap={{ scale: 0.9 }}
               aria-label="Share this sale"
               className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card text-foreground"
             >
-              <motion.span animate={shareControls} style={{ display: "inline-flex" }}>
+              <m.span animate={shareControls} style={{ display: "inline-flex" }}>
                 <ShareNetwork size={20} />
-              </motion.span>
-            </motion.button>
-            <motion.button
+              </m.span>
+            </m.button>
+            <m.button
               type="button"
               onClick={() => { void toggleSaved(); }}
               whileTap={{ scale: 0.9 }}
@@ -488,10 +488,10 @@ export function PublicSaleViewEditorial({
                   : "border-border bg-card text-foreground"
               }`}
             >
-              <motion.span animate={bookmarkControls} style={{ display: "inline-flex" }}>
+              <m.span animate={bookmarkControls} style={{ display: "inline-flex" }}>
                 <BookmarkSimple size={20} weight={displaySaved ? "fill" : "regular"} />
-              </motion.span>
-            </motion.button>
+              </m.span>
+            </m.button>
           </div>
         </div>,
         document.body

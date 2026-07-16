@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
@@ -49,16 +49,16 @@ export function TermsPage() {
                 <div className="content-max-width mx-auto container-padding">
                     <article className="content-width-reading mx-auto">
 
-                        <motion.header {...whileInView()} className="mb-10">
+                        <m.header {...whileInView()} className="mb-10">
                             <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-[-0.02em] leading-[1.05] text-foreground">
                                 Terms & Privacy
                             </h1>
                             <p className="mt-3 text-muted-foreground text-[15px] max-w-prose">
                                 Our terms of service and how we handle your data.
                             </p>
-                        </motion.header>
+                        </m.header>
 
-                        <motion.nav {...whileInView(0.05)}
+                        <m.nav {...whileInView(0.05)}
                             aria-label="Table of contents"
                             className="bg-card ring-1 ring-border/70 rounded-2xl p-6 mb-12 shadow-sm"
                         >
@@ -83,15 +83,15 @@ export function TermsPage() {
                                     </a>
                                 </li>
                             </ul>
-                        </motion.nav>
+                        </m.nav>
 
-                        <motion.section {...whileInView(0.05)} id="terms" className="mb-16 scroll-mt-24">
+                        <m.section {...whileInView(0.05)} id="terms" className="mb-16 scroll-mt-24">
                             <MarkdownContent content={termsContent} headingShift={1} />
-                        </motion.section>
+                        </m.section>
 
-                        <motion.section {...whileInView(0.05)} id="privacy" className="scroll-mt-24">
+                        <m.section {...whileInView(0.05)} id="privacy" className="scroll-mt-24">
                             <MarkdownContent content={privacyContent} headingShift={1} />
-                        </motion.section>
+                        </m.section>
                     </article>
                 </div>
             </section>

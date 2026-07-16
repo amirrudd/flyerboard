@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { m, useMotionValue, useTransform, animate } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
@@ -100,7 +100,7 @@ function CountUp({ value, reduced }: { value: number; reduced: boolean }) {
     return controls.stop;
   }, [value, reduced]);
 
-  return <motion.span>{rounded}</motion.span>;
+  return <m.span>{rounded}</m.span>;
 }
 
 function ToggleSwitch({ checked, disabled, ariaLabel, className = "", onChange }: {
@@ -239,7 +239,7 @@ function MyAdCard({
   const inCooldown = boost.state === "cooldown";
 
   return (
-    <motion.article
+    <m.article
       animate={boost.cardControls}
       className="relative ring-1 ring-border/70 rounded-2xl p-3 sm:p-4 hover:ring-foreground/15 hover:shadow-card transition-all cursor-pointer bg-card"
       onClick={() => onEdit(ad)}
@@ -402,7 +402,7 @@ function MyAdCard({
           onCancel={boost.closeConfirm}
         />
       )}
-    </motion.article>
+    </m.article>
   );
 }
 
@@ -948,7 +948,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
               {!convexUser || userStats === undefined ? (
                 <UserProfileSkeleton />
               ) : (
-                <motion.section {...whileInView()} className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-5 mb-6" aria-label="Your profile summary">
+                <m.section {...whileInView()} className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-5 mb-6" aria-label="Your profile summary">
                   <input
                     ref={profileImageInputRef}
                     type="file"
@@ -1026,7 +1026,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                       showCount={true}
                     />
                   </div>
-                </motion.section>
+                </m.section>
               )}
 
               <nav className="bg-card rounded-2xl ring-1 ring-border/70 shadow-card p-4 hidden md:block" aria-label="Dashboard sections">

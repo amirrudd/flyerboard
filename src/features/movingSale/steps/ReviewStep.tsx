@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "convex/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import {
   Check,
   Clock,
@@ -149,7 +149,7 @@ export function ReviewStep({ items, categories, onComplete }: ReviewStepProps) {
       {/* Active card */}
       <AnimatePresence mode="wait">
         {active && activeId && (
-          <motion.div
+          <m.div
             key={activeId}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -237,7 +237,7 @@ export function ReviewStep({ items, categories, onComplete }: ReviewStepProps) {
                 <Check size={18} weight="bold" /> Looks good
               </button>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

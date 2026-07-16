@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, type TargetAndTransition } from "framer-motion";
+import { AnimatePresence, m, type TargetAndTransition } from "framer-motion";
 import { ArrowUp } from "@phosphor-icons/react";
 
 interface RingProps {
@@ -16,7 +16,7 @@ interface RingProps {
 export function BoostRingOverlay({ ringKey, ringProps }: { ringKey: number; ringProps: RingProps }) {
   if (ringKey === 0) return null;
   return (
-    <motion.div
+    <m.div
       key={ringKey}
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-primary"
@@ -42,7 +42,7 @@ export function BoostArrowFloat({
   return (
     <AnimatePresence>
       {show && (
-        <motion.span
+        <m.span
           key="boost-arrow"
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 text-primary"
@@ -53,7 +53,7 @@ export function BoostArrowFloat({
           transition={arrowProps.transition}
         >
           <ArrowUp size={20} weight="bold" />
-        </motion.span>
+        </m.span>
       )}
     </AnimatePresence>
   );

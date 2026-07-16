@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useMotionPrefs } from "../hooks/useMotionPrefs";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
@@ -41,7 +41,7 @@ export function AboutUsPage() {
                 <div className="content-max-width mx-auto container-padding">
 
                     {/* Editorial 2-column hero — brand image + narrative */}
-                    <motion.div
+                    <m.div
                         {...fadeUp()}
                         className="py-10 sm:py-14 flex flex-col sm:flex-row gap-8 sm:gap-12 items-center"
                     >
@@ -81,14 +81,14 @@ export function AboutUsPage() {
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </m.div>
 
                     <div className="hairline mb-10" />
 
                     {/* Body */}
-                    <motion.article {...whileInView(0.05)} className="max-w-[1120px] mx-auto pb-4">
+                    <m.article {...whileInView(0.05)} className="max-w-[1120px] mx-auto pb-4">
                         <MarkdownContent content={aboutContent} />
-                    </motion.article>
+                    </m.article>
                 </div>
             </section>
         </>

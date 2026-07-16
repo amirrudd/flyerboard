@@ -13,7 +13,8 @@ import {
     X,
     Check,
 } from '@phosphor-icons/react';
-import { getCategoryIcon, iconMap, hasIcon, getIconCdnUrl } from "../../lib/categoryIcons";
+import { getCategoryIcon, hasIcon, getIconCdnUrl } from "../../lib/categoryIcons";
+import { iconMap } from "../../lib/adminIconMap";
 import { LucideIconPicker } from "../../components/ui/LucideIconPicker";
 
 interface Category {

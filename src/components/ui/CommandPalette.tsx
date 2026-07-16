@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../../lib/priceFormatter";
@@ -83,7 +83,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   if (!open) return null;
 
   return createPortal(
-    <motion.div
+    <m.div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -92,7 +92,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     >
       <div className="absolute inset-0 bg-black/50" aria-hidden="true" onMouseDown={onClose} />
 
-      <motion.div
+      <m.div
         className="relative w-full max-w-xl bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover overflow-hidden"
         initial={{ opacity: 0, scale: 0.97, y: -8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -187,8 +187,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
           {hasResults && <div className="h-2" />}
         </div>
-      </motion.div>
-    </motion.div>,
+      </m.div>
+    </m.div>,
     document.body
   );
 }

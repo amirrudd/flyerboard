@@ -5,7 +5,7 @@ import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass 
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
-import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, LocationData } from "../../lib/locationService";
 import { debounce } from "../../lib/performanceUtils";
 
 interface HeaderProps {
@@ -128,6 +128,10 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     };
 
     if (isOpen) {
+      // Prefetch the 1.9MB postcode dataset as soon as the dropdown (and its
+      // search input) opens, instead of waiting for the first keystroke.
+      // fetchLocations() caches/dedupes internally, so repeat opens are free.
+      void fetchLocations();
       document.addEventListener('click', handleClickOutside);
       if (inputRef.current) {
         inputRef.current.focus();

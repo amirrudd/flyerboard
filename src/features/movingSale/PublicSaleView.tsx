@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useAnimation } from "framer-motion";
+import { m, useAnimation } from "framer-motion";
 import {
   MapPin,
   Package,
@@ -103,7 +103,7 @@ export function PublicSaleView({
     <div className={`relative mx-auto w-full max-w-3xl ${preview ? "select-none" : ""}`}>
       <div className={preview ? "pointer-events-none blur-[3px]" : ""}>
         {/* 1. Named hero */}
-        <motion.header {...fadeUp(0)} className="px-4 pt-6 text-center">
+        <m.header {...fadeUp(0)} className="px-4 pt-6 text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
             <Package size={14} weight="fill" /> Moving sale
           </span>
@@ -118,10 +118,10 @@ export function PublicSaleView({
           {sale.note && (
             <p className="mx-auto mt-3 max-w-md text-sm text-foreground/80">{sale.note}</p>
           )}
-        </motion.header>
+        </m.header>
 
         {/* 2. Live countdown to pickup window */}
-        <motion.section {...fadeUp(0.05)} className="mt-6 px-4">
+        <m.section {...fadeUp(0.05)} className="mt-6 px-4">
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
             {countdown.isLive ? (
               <p className="flex items-center justify-center gap-2 font-semibold text-emerald-600">
@@ -145,10 +145,10 @@ export function PublicSaleView({
             </p>
             <p className="text-xs text-muted-foreground">Cash or bank transfer</p>
           </div>
-        </motion.section>
+        </m.section>
 
         {/* 3. Stats strip */}
-        <motion.section {...fadeUp(0.1)} className="mt-4 px-4">
+        <m.section {...fadeUp(0.1)} className="mt-4 px-4">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
             <span className="font-semibold text-foreground">{available} available</span>
             <span className="text-muted-foreground">·</span>
@@ -158,7 +158,7 @@ export function PublicSaleView({
               {formatAUD(totalValue)} total value
             </span>
           </div>
-        </motion.section>
+        </m.section>
 
         {/* 4. Category filter bar */}
         {categoryPills.length > 1 && (
@@ -187,7 +187,7 @@ export function PublicSaleView({
 
         {/* 5. Bundles — above the grid */}
         {bundles.length > 0 && activeCategory === "all" && (
-          <motion.section {...fadeUp(0.12)} className="mt-6 px-4">
+          <m.section {...fadeUp(0.12)} className="mt-6 px-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-foreground">
                 Bundles — save when you take more
@@ -252,7 +252,7 @@ export function PublicSaleView({
                 );
               })}
             </div>
-          </motion.section>
+          </m.section>
         )}
 
         {/* 6. Items grid (sold items stay, greyed) */}
@@ -269,7 +269,7 @@ export function PublicSaleView({
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {visibleItems.map((item, index) => (
-                <motion.button
+                <m.button
                   type="button"
                   key={item._id}
                   {...staggerCard(index)}
@@ -303,7 +303,7 @@ export function PublicSaleView({
                       </p>
                     )}
                   </div>
-                </motion.button>
+                </m.button>
               ))}
             </div>
           )}
@@ -354,18 +354,18 @@ export function PublicSaleView({
               <ChatCircle size={20} weight="fill" />
               Message {sellerFirstName}
             </button>
-            <motion.button
+            <m.button
               type="button"
               onClick={handleShareClick}
               whileTap={{ scale: 0.9 }}
               aria-label="Share this sale"
               className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card text-foreground"
             >
-              <motion.span animate={shareControls} style={{ display: "inline-flex" }}>
+              <m.span animate={shareControls} style={{ display: "inline-flex" }}>
                 <ShareNetwork size={20} />
-              </motion.span>
-            </motion.button>
-            <motion.button
+              </m.span>
+            </m.button>
+            <m.button
               type="button"
               onClick={() => { void toggleSaved(); }}
               whileTap={{ scale: 0.9 }}
@@ -377,10 +377,10 @@ export function PublicSaleView({
                   : "border-border bg-card text-foreground"
               }`}
             >
-              <motion.span animate={bookmarkControls} style={{ display: "inline-flex" }}>
+              <m.span animate={bookmarkControls} style={{ display: "inline-flex" }}>
                 <BookmarkSimple size={20} weight={displaySaved ? "fill" : "regular"} />
-              </motion.span>
-            </motion.button>
+              </m.span>
+            </m.button>
           </div>
         </div>,
         document.body

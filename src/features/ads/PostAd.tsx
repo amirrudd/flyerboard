@@ -6,7 +6,7 @@ import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { CircularProgress } from "../../components/ui/CircularProgress";
-import { searchLocations, formatLocation, LocationData } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { useHeaderSlots } from "../layout/HeaderSlots";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
@@ -747,6 +747,10 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
                     }
                   }}
                   onFocus={() => {
+                    // Prefetch the 1.9MB postcode dataset on focus so it's warm
+                    // before the first keystroke. fetchLocations() caches/dedupes
+                    // internally, so repeat focuses are free.
+                    void fetchLocations();
                     if (locationSuggestions.length > 0) setShowSuggestions(true);
                   }}
                   className={

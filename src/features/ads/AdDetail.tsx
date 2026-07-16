@@ -4,7 +4,7 @@ import { HeaderRightActions } from "../layout/HeaderRightActions";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect, useMemo } from "react";
-import { motion, useAnimation } from "framer-motion";
+import { m, useAnimation } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useBoostAction, type BoostableAd } from "../../hooks/useBoostAction";
 import { BoostConfirmModal } from "./BoostConfirmModal";
@@ -285,19 +285,19 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       rightNode: (
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <motion.button
+            <m.button
               onClick={() => { void handleShare(); }}
               whileTap={{ scale: 0.9 }}
               className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
               title="Share flyer"
             >
-              <motion.span animate={shareControls} style={{ display: 'inline-flex' }}>
+              <m.span animate={shareControls} style={{ display: 'inline-flex' }}>
                 <ShareNetwork className="w-5 h-5" />
-              </motion.span>
-            </motion.button>
+              </m.span>
+            </m.button>
             {user && displayAd.userId !== user._id && (
               <>
-                <motion.button
+                <m.button
                   onClick={() => { void handleSave(); }}
                   whileTap={{ scale: 0.88 }}
                   className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${displaySaved
@@ -306,18 +306,18 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     }`}
                   title={displaySaved ? "Remove from saved" : "Save ad"}
                 >
-                  <motion.span animate={heartControls} style={{ display: 'inline-flex' }}>
+                  <m.span animate={heartControls} style={{ display: 'inline-flex' }}>
                     <BookmarkSimple className="w-5 h-5" weight={displaySaved ? "fill" : "regular"} />
-                  </motion.span>
-                </motion.button>
-                <motion.button
+                  </m.span>
+                </m.button>
+                <m.button
                   onClick={() => setShowReportModal(true)}
                   whileTap={{ scale: 0.9 }}
                   className="inline-flex items-center justify-center p-2 rounded-lg bg-accent text-muted-foreground hover:bg-accent/80 transition-colors sm:hidden"
                   title="Report flyer"
                 >
                   <Flag className="w-5 h-5" />
-                </motion.button>
+                </m.button>
               </>
             )}
           </div>
@@ -512,7 +512,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
           <div className="lg:w-[70%] min-w-0 space-y-6">
             {/* Image Gallery with Slider */}
             <div className="ambient-glow">
-            <motion.div {...whileInView(0)} className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
+            <m.div {...whileInView(0)} className="bg-card rounded-2xl overflow-hidden shadow-card ring-1 ring-border/70">
               <div className="relative aspect-video bg-muted">
                 {images.length > 0 ? (
                   <ImageDisplay
@@ -586,11 +586,11 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   </div>
                 </div>
               )}
-            </motion.div>
+            </m.div>
             </div>
 
             {/* Ad Information */}
-            <motion.div {...whileInView(0.05)} className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
+            <m.div {...whileInView(0.05)} className="bg-card rounded-2xl p-6 shadow-card ring-1 ring-border/70">
               <div className="flex items-start justify-between gap-6 mb-5">
                 <div className="min-w-0 flex-1">
                   <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-3 leading-[1.1] tracking-[-0.02em]">{displayAd.title}</h1>
@@ -709,13 +709,13 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                   <span className="text-foreground/80 font-medium">{displayAd.location}</span>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
 
             {/* Map */}
-            <motion.div {...whileInView(0.1)} className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
+            <m.div {...whileInView(0.1)} className="bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card">
               <h3 className="kicker mb-4">Location</h3>
               <LocationMap location={displayAd.location} />
-            </motion.div>
+            </m.div>
           </div>
 
           {/* Sidebar - 30% of container width, capped at 400px - Hidden on mobile, shown on desktop */}
@@ -814,7 +814,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               )}
 
               {/* Quick Actions */}
-              <motion.div animate={boost.cardControls} className="relative bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hidden sm:block">
+              <m.div animate={boost.cardControls} className="relative bg-card ring-1 ring-border/70 rounded-2xl p-6 shadow-card hidden sm:block">
                 <BoostRingOverlay ringKey={boost.ringKey} ringProps={boost.ringProps} />
                 <h3 className="kicker mb-4">Quick Actions</h3>
                 <div className="space-y-3">
@@ -879,7 +879,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                     Share Flyer
                   </button>
                 </div>
-              </motion.div>
+              </m.div>
             </div>
           </div>
         </div>
@@ -902,7 +902,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
       {user && displayAd.userId === user._id && showBoost && createPortal(
         <div className="lg:hidden">
           <div className="fixed right-4 z-40" style={{ bottom: 'calc(var(--bottom-nav-height) + 1rem)' }}>
-            <motion.button
+            <m.button
               animate={boost.cardControls}
               type="button"
               disabled={boost.state === "cooldown"}
@@ -915,7 +915,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
             >
               <ArrowUp className="w-5 h-5" weight="bold" />
               {boost.state === "cooldown" ? boost.cooldownLabel : "Boost to top"}
-            </motion.button>
+            </m.button>
             <BoostArrowFloat show={boost.showArrow} arrowProps={boost.arrowProps} />
           </div>
         </div>,

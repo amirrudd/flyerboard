@@ -334,7 +334,9 @@ export function HomePage() {
           {/* Main Content - Feed */}
           <div
             ref={adsFeedRef}
-            className="flex-1 min-w-0 pb-bottom-nav md:pb-0 md:h-full md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] scrollbar-hide"
+            // md:overflow-y-auto forces overflow-x:auto — a clip boundary that trims
+            // the outer cards' 1px ring. md:px-2 buys room; md:-mx-2 cancels the shift.
+            className="flex-1 min-w-0 pb-bottom-nav md:pb-0 md:h-full md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:px-2 md:-mx-2 scrollbar-hide"
           >
             <AdsFilterBar />
             <AdsGrid

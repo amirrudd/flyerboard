@@ -96,6 +96,16 @@ export function HomePage() {
     selectedCategory || !bundleModeEnabled ? "skip" : {}
   );
 
+  // Sale/Bundle cards resolve a round-trip after the ads paint; hold the
+  // skeleton while they're still possibly coming (flag true or unresolved,
+  // uncategorised feed only — mirrors the "skip" conditions above) so they
+  // don't pop in and shift the grid. Any new flag-gated card source must
+  // extend this check.
+  const auxCardsPending =
+    !selectedCategory &&
+    ((movingSaleModeEnabled !== false && activeSales === undefined) ||
+      (bundleModeEnabled !== false && bundleCards === undefined));
+
   // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
   // the bundle's own detail page (the "Deal Ticket", bundle v2) — the bundle
   // is a first-class destination, not a proxy for its first member ad.
@@ -343,7 +353,7 @@ export function HomePage() {
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
               onAdClick={(ad) => { void navigate(`/ad/${ad._id}`, { state: { initialAd: ad } }); }}
-              isLoading={status === "LoadingFirstPage"}
+              isLoading={status === "LoadingFirstPage" || auxCardsPending}
               isLoadingMore={status === "LoadingMore"}
               newAdIds={newAdIds}
               boostedAdKeys={boostedAdKeys}

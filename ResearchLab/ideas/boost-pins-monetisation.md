@@ -104,8 +104,8 @@ not blocking), copy per designer spec:
 - Fractional/per-member pin weighting.
 
 ## How we'd validate it
-Cap-hit interest-tap rate per region per week. Sustained >20% of active boosters
-capped + majority "I'd use extra pins" taps ⇒ build payments for that region.
+Cap-hit interest-tap rate per region per week, against the paid-phase trigger
+defined above (see "Paid phase") plus majority "I'd use extra pins" taps.
 
 ## Related
 - `.agent/plans/boost-to-top-feature.md` — base Boost mechanics (cooldown, bumpedAt,

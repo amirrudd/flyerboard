@@ -1,6 +1,6 @@
 # Bundle Listing
 
-**Last Updated**: 2026-07-05 (v2: public `/bundle/:id` Deal Ticket page, bundle threads, savedBundles, exchange guard, feed cap)
+**Last Updated**: 2026-07-16 (fixed home-feed layout shift from late bundle/sale card pop-in)
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
@@ -121,6 +121,19 @@ efficiency/altitude agents) surfaced it:
   `/sell/moving-sale`. Page: `src/pages/BundlePage.tsx`.
 - `AdsGrid` gained a `"bundle"` `FeedEntry` kind + `bundleCards`/`onBundleClick` props;
   `HomePage` wires `api.bundles.getActiveBundleFeedCards` (skip unless flag on & no category).
+
+### Gotcha: bundle/sale cards pop into the feed late, shifting layout (fixed 2026-07-16)
+`bundleCards`/`activeSales` are separate `useQuery` calls gated behind their own
+`useFeatureFlag` query resolving first (`HomePage.tsx`) — a second round-trip that lands
+well after the main ads pagination query paints. `AdsGrid`'s skeleton gate
+(`isLoading || ads === undefined`) only looked at the ads query, and `bundleCards`/
+`saleCards` default to `[]` when still `undefined` — so the feed rendered ads-only, then
+the Sale/Bundle card popped into its date-sorted slot later and shifted every card below
+it. Fixed by computing `auxCardsPending` in `HomePage.tsx` (true while `!selectedCategory`
+and either flag is `true`/unresolved and its card query hasn't resolved yet) and OR-ing it
+into the `isLoading` prop passed to `AdsGrid`. Any *new* feed-merged card type gated behind
+a feature flag must extend this same `auxCardsPending` check — don't just add another
+independent `useQuery` and expect the skeleton to account for it.
 - `AdDetail` renders `BundleBanner` right after the Sale banner (an ad is never in both).
 - `UserDashboard` ads tab: blue "Bundle ads" header button, per-card "📦 In bundle: {label}"
   tag (opens manage modal) or "Bundle this →" (→ `/sell/bundle?preselect=`), all flag-gated.

@@ -24,9 +24,9 @@ Use when "port already in use" errors occur.
    ```
 
 // turbo
-2. **Kill the process**
+2. **Kill the process** — keep the `-sTCP:LISTEN` filter: without it, `lsof -ti :5173` also returns browser processes with tabs connected to the port, and the kill takes out the user's browser.
    ```bash
-   lsof -ti :5173 | xargs kill -9 2>/dev/null; lsof -ti :3210 | xargs kill -9 2>/dev/null
+   lsof -ti :5173 -sTCP:LISTEN | xargs kill 2>/dev/null; lsof -ti :3210 -sTCP:LISTEN | xargs kill 2>/dev/null
    ```
 
 3. **Restart services**

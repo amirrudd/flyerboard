@@ -1,11 +1,12 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-07-15
+**Last Updated**: 2026-07-18
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
 - **`ads.bumpedAt` is THE feed sort key, and it is REQUIRED (`v.number()`).** The feed
-  (`convex/ads.ts` `getAds` + `getLatestAds`, non-search branches) orders by `bumpedAt`
+  (home feed: `convex/feed.ts` `getFeed` — see Unified home feed section below;
+  category/search + fresh-rail: `convex/ads.ts` `getAds` + `getLatestAds`) orders by `bumpedAt`
   desc via the `by_bumped_at` and `by_category_and_bumped_at` indexes — NOT
   `_creationTime`. `_creationTime` is now display-only ("Posted X ago"). A boost
   (`convex/posts.ts` `boostAd`) re-stamps `bumpedAt = Date.now()`, lifting the ad to top.
@@ -48,6 +49,58 @@
   so ONE rate-limit row per boost enforces both. Convex transactional rollback means only
   SUCCESSFUL boosts consume budget. Don't ALSO call `checkRateLimit` for the same op —
   that double-inserts. Feature flag `boostToTop` gates `boostAd` server-side (fail closed).
+
+## Unified home feed — `mergedStream` (Jul 2026) — first use in the project
+
+The home feed is ONE paginated query, `convex/feed.ts` `getFeed`, interleaving three
+tables (ads, standalone `saleBundles`, published `saleEvents`) on the shared `bumpedAt`
+sort key via convex-helpers `mergedStream`. This replaced the client-side three-query
+merge (`getActiveBundleFeedCards` / `getActiveSales` were deleted; `ads.getAds` survives
+for category feeds, search, and the CommandPalette). **Future multi-table feeds should
+follow this pattern**, not a denormalized feed table (see
+`docs/architecture/design-decisions.md`, "Unified feed via mergedStream").
+
+- **Schema**: `saleBundles` and `saleEvents` gained `bumpedAt` (`v.optional(v.number())`,
+  mirrors `ads.bumpedAt`) + `boostCount` (optional, mirrors ads) + a
+  `by_status_and_bumped_at` index (`["status", "bumpedAt"]`). Bundles stamp `bumpedAt`
+  at insert; sales stamp at PUBLISH (draft → active), not draft creation.
+- **`bumpedAt` on the composites is still OPTIONAL** — widen→backfill→narrow rollout,
+  same as `ads.bumpedAt` (and same postmortem risk: don't narrow in the same deploy as
+  the backfill). Narrowing to `v.number()` is PENDING until
+  `migrations:backfillFeedBumpedAt` has run to completion on prod. Until then the
+  composite streams `filterWith(bumpedAt !== undefined)` so un-backfilled rows are
+  excluded rather than sinking to the feed bottom (Convex sorts `undefined` below all
+  numbers on desc).
+- **mergedStream gotcha**: the order-fields argument must be the FULL non-equality
+  suffix of each stream's index — `["bumpedAt", "_creationTime", "_id"]`, NOT bare
+  `["bumpedAt"]` (the implicit system tie-breakers count). All three indexes end in
+  `[..., "bumpedAt"]`, so after the composites' `.eq("status", "active")` every stream
+  is ordered by exactly those fields.
+
+```typescript
+// convex/feed.ts (condensed)
+import { stream, mergedStream } from "convex-helpers/server/stream";
+const streams = [
+  stream(ctx.db, schema).query("ads")
+    .withIndex("by_bumped_at", (q) => q.lte("bumpedAt", maxSortTime))
+    .order("desc")
+    .filterWith(async (ad) => ad.isActive && ad.isDeleted !== true && ad.isSold !== true)
+    .map(async (doc) => ({ kind: "ad" as const, doc })),
+  stream(ctx.db, schema).query("saleBundles")
+    .withIndex("by_status_and_bumped_at", (q) =>
+      q.eq("status", "active").lte("bumpedAt", maxSortTime))
+    .order("desc")
+    .filterWith(async (b) => b.bumpedAt !== undefined && !b.saleEventId)
+    .map(async (doc) => ({ kind: "bundle" as const, doc })),
+];
+// Full non-equality index suffix — NOT just ["bumpedAt"]
+const result = await mergedStream(streams, ["bumpedAt", "_creationTime", "_id"])
+  .paginate(args.paginationOpts);
+```
+
+Feature flags (`bundleListing`, `movingSaleMode`) are read server-side; a disabled flag
+simply omits its stream. Composites are hydrated per page only; a bundle with <2 live
+members is dropped from the page (can shrink a page by a card — accepted).
 
 ## Schema Overview
 

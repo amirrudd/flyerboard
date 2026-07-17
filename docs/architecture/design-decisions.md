@@ -474,3 +474,32 @@ real integration risk beyond the application code itself, worth budgeting for. F
 implementation detail and every gotcha: `.agent/gatheredContext/infrastructure/og-social-meta.md`.
 The one manual, non-code setup step (enabling Cloudflare Image Transformations on the
 zone) is documented for reproducibility in `docs/guides/cloudflare-image-transformations-setup.md`.
+
+## Unified feed via `mergedStream` instead of a denormalized `feedCards` table (Jul 2026)
+
+**Decision**: the home feed is one paginated Convex query, `convex/feed.ts` `getFeed`,
+that interleaves standard ads, standalone Bundle cards, and Moving Sale cards
+server-side using convex-helpers `mergedStream` over three indexes that all end in
+`bumpedAt`. It replaced the client-side three-query merge (ads paginated; bundles and
+sales fetched whole and spliced in on the client), which caused composite cards to pop
+into the feed after first paint and made pagination boundaries meaningless for
+composites. Feature flags are evaluated server-side (a disabled flag omits its stream),
+and the page is a discriminated union (`ad | bundle | sale`) so existing card
+components render it unchanged.
+
+**Why not a denormalized `feedCards` table** (one row per feed entry, single index,
+trivially paginated): it requires dual-writes from every mutation that creates,
+deletes, sells, expires, boosts, or edits an ad/bundle/sale — a large, easy-to-miss
+write surface — plus a backfill table to maintain and keep consistent. `mergedStream`
+reads the three source tables directly, so there is no second copy of the truth to
+drift, no new write sites, and the soft-delete/liveness rules stay in one place (the
+stream filters, which mirror the source queries' predicates exactly).
+
+**Cost accepted**: each page merges three index streams at read time, and composites
+are hydrated per page (~0–2 per page in practice). **Documented upgrade trigger**: if
+composite volume (or stream cost) ever makes the per-page merge measurably slow, that
+is the point to introduce the denormalized `feedCards` table — not before.
+
+**Spec**: `docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md`.
+Implementation patterns and the mergedStream order-fields gotcha:
+`.agent/gatheredContext/infrastructure/database.md` ("Unified home feed").

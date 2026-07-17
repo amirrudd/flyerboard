@@ -22,6 +22,8 @@ description: Build/launch/drive recipe for verifying FlyerBoard web changes at r
 
 ## Gotchas
 
+- **`npm run test:visual` needs the :3210 backend too**: the Playwright webServer config only auto-starts the frontend. Without the local backend, home-page tests fail on `waitForCategories` ("Vehicles" never renders) — an environment failure that looks like a regression.
+
 - **Loading-race verification**: CLS from a performance trace does NOT discriminate locally — the local backend answers in ms, so shifts score ~0.01 either way. Instead inject a rAF poller via `navigate_page`'s `initScript` that samples the grid every frame and logs state transitions:
   - skeletons: `grid.querySelectorAll('.animate-pulse, .shimmer').length`
   - cards: `grid.querySelectorAll('.listings-grid > *').length`

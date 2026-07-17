@@ -238,10 +238,18 @@ const applicationTables = {
     flyerPdfUrl: v.optional(v.string()),   // R2 key for cached printable flyer, null until first generated
     expiresAt: v.optional(v.number()),     // Auto-close target (after pickup window)
     createdAt: v.number(),
+    // Unified-feed sort key (mirrors ads.bumpedAt). Stamped at PUBLISH (draft →
+    // active), not draft creation — a sale must not feed-rank by when drafting
+    // started. Optional until migrations:backfillFeedBumpedAt has run to
+    // completion on prod; then narrow to v.number() (same widen→backfill→narrow
+    // rollout ads.bumpedAt used).
+    bumpedAt: v.optional(v.number()),      // epoch ms — feed sort key
+    boostCount: v.optional(v.number()),    // total boosts; mirrors ads.boostCount
   })
     .index("by_user", ["userId"])
     .index("by_slug", ["slug"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_status_and_bumped_at", ["status", "bumpedAt"]),
 
   // Bundles serve two callers off one table:
   //   • Moving Sale step-5 "bundle suggestions" — always carry a `saleEventId`.
@@ -266,9 +274,16 @@ const applicationTables = {
       )
     ),
     isDeleted: v.optional(v.boolean()),    // Soft-delete flag (project-wide pattern)
+    // Unified-feed sort key (mirrors ads.bumpedAt). Set to Date.now() at insert.
+    // Optional until migrations:backfillFeedBumpedAt has run to completion on
+    // prod (backfill = _creationTime); then narrow to v.number() (same
+    // widen→backfill→narrow rollout ads.bumpedAt used).
+    bumpedAt: v.optional(v.number()),      // epoch ms — feed sort key
+    boostCount: v.optional(v.number()),    // total boosts; mirrors ads.boostCount
   })
     .index("by_sale_event", ["saleEventId"])
-    .index("by_seller", ["sellerId"]),
+    .index("by_seller", ["sellerId"])
+    .index("by_status_and_bumped_at", ["status", "bumpedAt"]),
 };
 
 // Extend the auth tables to add custom fields

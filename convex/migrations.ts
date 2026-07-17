@@ -606,6 +606,58 @@ export const backfillBumpedAt = internalMutation({
 });
 
 /**
+ * Backfill `bumpedAt` on `saleBundles` and `saleEvents` for the unified feed
+ * (spec: docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md).
+ *
+ * - saleBundles: rows missing `status` are normalised to "active" (legacy Moving
+ *   Sale rows predate the field; reads already treat missing as "active");
+ *   `bumpedAt = _creationTime` where missing.
+ * - saleEvents: `bumpedAt = createdAt` where missing (new sales get it stamped
+ *   at publish, not draft creation).
+ *
+ * Idempotent — only touches rows missing a field, so re-running is safe.
+ * Unbatched full-table collect() (per backfillSaleBundles): composites number in
+ * the dozens, not thousands. After this has run to completion on prod, narrow
+ * both tables' `bumpedAt` validators from v.optional(v.number()) to v.number()
+ * (same widen→backfill→narrow rollout ads.bumpedAt used).
+ *
+ * Usage: npx convex run migrations:backfillFeedBumpedAt
+ */
+export const backfillFeedBumpedAt = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = { bundlesPatched: 0, salesPatched: 0, skipped: 0 };
+
+    for (const bundle of await ctx.db.query("saleBundles").collect()) {
+      const patch: { status?: "active"; bumpedAt?: number } = {};
+      if (!bundle.status) patch.status = "active";
+      if (bundle.bumpedAt === undefined) patch.bumpedAt = bundle._creationTime;
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(bundle._id, patch);
+        results.bundlesPatched += 1;
+      } else {
+        results.skipped += 1;
+      }
+    }
+
+    for (const sale of await ctx.db.query("saleEvents").collect()) {
+      if (sale.bumpedAt === undefined) {
+        await ctx.db.patch(sale._id, { bumpedAt: sale.createdAt });
+        results.salesPatched += 1;
+      } else {
+        results.skipped += 1;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Patched ${results.bundlesPatched} bundles, ${results.salesPatched} sales, skipped ${results.skipped}`,
+      results,
+    };
+  },
+});
+
+/**
  * Rename feature flag key from userSelfVerification to identityVerification
  * Run this once to update existing database
  *

@@ -410,6 +410,7 @@ export const setBundles = mutation({
         saleEventId: args.saleEventId,
         sellerId: userId,      // populate the shared field so Sale bundles match standalone ones
         status: "active",
+        bumpedAt: Date.now(),  // never feeds (sale-suggestion bundle), but keeps the field total for the future required-field narrowing
         label: bundle.label.trim() || "Bundle",
         bundlePrice: bundle.bundlePrice,
         adIds,
@@ -453,6 +454,9 @@ export const publishSaleEvent = mutation({
       slug,
       status: "active",
       expiresAt: sale.pickupWindowEnd + EXPIRY_BUFFER_MS,
+      // Feed sort key stamped at the draft → active transition only — re-publishing
+      // an already-active sale must not act as a free boost.
+      ...(sale.status !== "active" ? { bumpedAt: Date.now() } : {}),
     });
 
     // Activate all (non-deleted) items so they go live.

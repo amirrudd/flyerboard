@@ -219,6 +219,7 @@ export const createBundle = mutation({
       bundlePrice: args.bundlePrice,
       label,
       status: "active",
+      bumpedAt: Date.now(), // unified-feed sort key
       // saleEventId intentionally omitted — standalone bundle.
     });
     for (const adId of adIds) {

@@ -19,9 +19,10 @@ import { saleItems } from "./saleEvents";
  *
  * One paginated query interleaving standard ads, standalone Bundle cards, and
  * Moving Sale cards on the shared `bumpedAt` sort key via convex-helpers
- * `mergedStream`. Replaces the client-side three-query merge (getAds +
- * getActiveBundleFeedCards + getActiveSales) — those survive until Phase 3
- * removes their remaining callers.
+ * `mergedStream`. Replaced the client-side three-query merge (getAds +
+ * getActiveBundleFeedCards + getActiveSales) — the latter two were deleted in
+ * Phase 3 (home feed was their only caller); getAds survives for search and
+ * the CommandPalette. Card hydration below preserves their exact shapes.
  *
  * Streams are merged on ["bumpedAt", "_creationTime", "_id"] — the real
  * mergedStream API requires the FULL non-equality suffix of each stream's index

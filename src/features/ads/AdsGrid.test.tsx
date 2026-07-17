@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AdsGrid } from './AdsGrid';
+import { AdsGrid, FeedEntry } from './AdsGrid';
 import { boostArrivalKey } from '../../context/freshAdsMerge';
 import { Id } from '../../../convex/_generated/dataModel';
 
@@ -10,6 +10,11 @@ vi.mock('../../components/ui/ImageDisplay', () => ({
         <img src={src} alt={alt} data-testid="ad-image" />
     ),
 }));
+
+/** Wrap plain ads as server-shaped feed entries (order preserved). */
+type AdDoc = Extract<FeedEntry, { kind: 'ad' }>['ad'];
+const adEntries = (ads: readonly AdDoc[]): FeedEntry[] =>
+    ads.map((ad) => ({ kind: 'ad' as const, ad }));
 
 const mockCategories = [
     { _id: 'cat1' as Id<'categories'>, name: 'Electronics', slug: 'electronics' },
@@ -49,7 +54,7 @@ describe('AdsGrid', () => {
     it('should render loading skeleton when isLoading is true', () => {
         render(
             <AdsGrid
-                ads={undefined}
+                entries={undefined}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -65,7 +70,7 @@ describe('AdsGrid', () => {
     it('should render ads when data is provided', () => {
         render(
             <AdsGrid
-                ads={mockAds}
+                entries={adEntries(mockAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -81,7 +86,7 @@ describe('AdsGrid', () => {
     it('should render category name when selected', () => {
         render(
             <AdsGrid
-                ads={mockAds}
+                entries={adEntries(mockAds)}
                 categories={mockCategories}
                 selectedCategory={'cat1' as Id<'categories'>}
                 sidebarCollapsed={false}
@@ -96,7 +101,7 @@ describe('AdsGrid', () => {
         const handleAdClick = vi.fn();
         render(
             <AdsGrid
-                ads={mockAds}
+                entries={adEntries(mockAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -111,7 +116,7 @@ describe('AdsGrid', () => {
     it('should render empty state when no ads found', () => {
         render(
             <AdsGrid
-                ads={[]}
+                entries={[]}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -154,7 +159,7 @@ describe('AdsGrid', () => {
 
         render(
             <AdsGrid
-                ads={adsWithFree}
+                entries={adEntries(adsWithFree)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -187,7 +192,7 @@ describe('AdsGrid', () => {
 
         render(
             <AdsGrid
-                ads={exchangeAds}
+                entries={adEntries(exchangeAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -218,7 +223,7 @@ describe('AdsGrid', () => {
 
         render(
             <AdsGrid
-                ads={bothAds}
+                entries={adEntries(bothAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -248,7 +253,7 @@ describe('AdsGrid', () => {
 
         render(
             <AdsGrid
-                ads={saleAds}
+                entries={adEntries(saleAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -281,7 +286,7 @@ describe('AdsGrid', () => {
 
         render(
             <AdsGrid
-                ads={legacyAds}
+                entries={adEntries(legacyAds)}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -331,7 +336,7 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
     it('renders a sale item like a normal listing (no badge, no sale footer)', () => {
         render(
             <AdsGrid
-                ads={[saleAd]}
+                entries={adEntries([saleAd])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -347,12 +352,11 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
     it('renders a whole-Sale card from saleCards (badge, price, item count)', () => {
         render(
             <AdsGrid
-                ads={[]}
+                entries={[{ kind: 'sale', card: saleCard }]}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                saleCards={[saleCard]}
             />
         );
         expect(screen.getByText("Jane's Moving Sale")).toBeInTheDocument();
@@ -364,13 +368,12 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
         const onSaleClick = vi.fn();
         render(
             <AdsGrid
-                ads={[]}
+                entries={[{ kind: 'sale', card: saleCard }]}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
                 onSaleClick={onSaleClick}
-                saleCards={[saleCard]}
             />
         );
         fireEvent.click(screen.getByText("Jane's Moving Sale"));
@@ -400,12 +403,11 @@ describe('AdsGrid - bundle listing feed', () => {
     it('renders a whole-Bundle card from bundleCards (badge, save pill, price, item count)', () => {
         render(
             <AdsGrid
-                ads={[]}
+                entries={[{ kind: 'bundle', card: bundleCard }]}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                bundleCards={[bundleCard]}
             />
         );
         expect(screen.getByText('Kitchen Starter Bundle')).toBeInTheDocument();
@@ -420,17 +422,69 @@ describe('AdsGrid - bundle listing feed', () => {
         const onBundleClick = vi.fn();
         render(
             <AdsGrid
-                ads={[]}
+                entries={[{ kind: 'bundle', card: bundleCard }]}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
                 onBundleClick={onBundleClick}
-                bundleCards={[bundleCard]}
             />
         );
         fireEvent.click(screen.getByText('Kitchen Starter Bundle'));
         expect(onBundleClick).toHaveBeenCalledWith(bundleCard);
+    });
+});
+
+// ============================================================================
+// UNIFIED FEED — the page arrives pre-interleaved from feed.getFeed and is
+// rendered verbatim: ads, Sale cards, and Bundle cards in server order.
+// ============================================================================
+
+describe('AdsGrid - unified feed page (server-interleaved)', () => {
+    it('renders a mixed pre-interleaved page in exact server order', () => {
+        const entries: FeedEntry[] = [
+            { kind: 'ad', ad: mockAds[0] },
+            {
+                kind: 'sale',
+                card: {
+                    _id: 'sale1', slug: 'janes-sale', title: "Jane's Moving Sale",
+                    suburb: 'Carlton, VIC', createdAt: 1000, itemCount: 9,
+                    photoCount: 9, minPrice: 15, covers: ['c1.jpg'],
+                },
+            },
+            {
+                kind: 'bundle',
+                card: {
+                    _id: 'bundle1', label: 'Kitchen Starter Bundle', createdAt: 2000,
+                    itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
+                    separatelyTotal: 120, savings: 40, covers: ['b1.jpg'],
+                    adIds: ['adB1'],
+                },
+            },
+            { kind: 'ad', ad: mockAds[1] },
+        ];
+        render(
+            <AdsGrid
+                entries={entries}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+        const titles = screen
+            .getAllByRole('heading', { level: 2 })
+            .map((h) => h.textContent);
+        // Verbatim server order — note the composites sit BETWEEN the ads even
+        // though their createdAt values (1000/2000) are older than every ad.
+        expect(titles).toEqual([
+            'iPhone 13',
+            "Jane's Moving Sale",
+            'Kitchen Starter Bundle',
+            'Toyota Camry',
+        ]);
+        // Count line includes composite cards.
+        expect(screen.getByText('4 flyers')).toBeInTheDocument();
     });
 });
 
@@ -468,10 +522,12 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
         views: 2,
     };
 
-    it('sorts the feed by bumpedAt, not creation time (boosted ad leads)', () => {
+    it('renders the server page VERBATIM — no client-side re-sorting (unified feed)', () => {
+        // Deliberately "wrong" client-side order: the server owns the sort
+        // (bumpedAt desc via feed.getFeed); AdsGrid must not reorder.
         render(
             <AdsGrid
-                ads={[newerUnboosted, oldButBoosted]}
+                entries={adEntries([newerUnboosted, oldButBoosted])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -481,13 +537,13 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
         const titles = screen
             .getAllByRole('heading', { level: 2 })
             .map((h) => h.textContent);
-        expect(titles).toEqual(['Boosted Couch', 'Newer Lamp']);
+        expect(titles).toEqual(['Newer Lamp', 'Boosted Couch']);
     });
 
     it('renders the ring pulse for a boost arrival keyed `${_id}:${bumpedAt}`, with no "New" badge', () => {
         render(
             <AdsGrid
-                ads={[oldButBoosted, newerUnboosted]}
+                entries={adEntries([oldButBoosted, newerUnboosted])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -504,7 +560,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
     it('does not render the ring pulse for a stale key (older bumpedAt generation)', () => {
         render(
             <AdsGrid
-                ads={[oldButBoosted]}
+                entries={adEntries([oldButBoosted])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -518,7 +574,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
     it('renders no ring pulse when there are no boost arrivals; brand-new ads keep the "New" badge', () => {
         render(
             <AdsGrid
-                ads={[oldButBoosted, newerUnboosted]}
+                entries={adEntries([oldButBoosted, newerUnboosted])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}

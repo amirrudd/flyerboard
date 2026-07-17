@@ -668,48 +668,6 @@ export const getSaleBannerForAd = query({
   },
 });
 
-/**
- * Active sales rendered as ONE card inside the main date-sorted feed (v3 — there
- * is no separate "sale event" section). Each returns the data the in-grid Sale
- * card needs: a few cover thumbnails for the 2×2 image grid, the photo count (so
- * the card picks its degradation layout), total item count, and a min price.
- */
-export const getActiveSales = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const sales = (
-      await ctx.db
-        .query("saleEvents")
-        .withIndex("by_status", (q) => q.eq("status", "active"))
-        .collect()
-    ).filter((s) => s.slug && (!s.expiresAt || s.expiresAt > now));
-
-    // Newest first — merged into the feed by createdAt; sort rule unchanged.
-    sales.sort((a, b) => b.createdAt - a.createdAt);
-
-    const limited = sales.slice(0, args.limit ?? 12);
-    return Promise.all(
-      limited.map(async (sale) => {
-        const items = await saleItems(ctx, sale._id);
-        const withPhotos = items.filter((i) => i.images.length > 0);
-        const prices = items.map((i) => i.price ?? 0).filter((p) => p > 0);
-        return {
-          _id: sale._id,
-          slug: sale.slug as string,
-          title: sale.title,
-          suburb: sale.suburb,
-          createdAt: sale.createdAt,
-          itemCount: items.length,
-          photoCount: withPhotos.length,
-          minPrice: prices.length ? Math.min(...prices) : 0,
-          covers: withPhotos.slice(0, 3).map((i) => i.images[0]),
-        };
-      })
-    );
-  },
-});
-
 // ============================================================================
 // SAVED SALES — bookmarking a whole Sale (mirrors savedAds/saveAd/isAdSaved).
 // A Sale is a first-class entity in its own right (own detail page, own

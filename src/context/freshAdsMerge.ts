@@ -84,17 +84,24 @@ export function mergeFreshRail<T extends SortableAd>(
 }
 
 /**
- * Rebuild the display list: the fresh rail merged AHEAD of the paginated query
- * results, with the fresh copy winning by `_id`. This single rule both keeps
- * fresh ads alive across query re-emits (8cf9b00) and drops the stale
- * paginated copy of a boosted ad, so an `_id` never appears twice.
+ * Rebuild the display list: the fresh rail merged AHEAD of the unified feed
+ * page, with the fresh copy winning. This single rule both keeps fresh ads
+ * alive across query re-emits (8cf9b00) and drops the stale paginated copy of
+ * a boosted ad, so an entry never appears twice. Unified feed: the page is a
+ * discriminated union, so the dedupe key is `kind + id`; the fresh rail is
+ * ads-only, so only `kind: "ad"` entries can collide — composites pass through.
  */
-export function mergeAheadOfQuery<T extends SortableAd>(
+export function mergeAheadOfQuery<T extends SortableAd, E extends { kind: string }>(
   fresh: readonly T[],
-  queryResults: readonly T[]
-): T[] {
+  queryEntries: readonly E[]
+): (E | { kind: "ad"; ad: T })[] {
   const freshIds = new Set(fresh.map((ad) => ad._id));
-  return [...fresh, ...queryResults.filter((ad) => !freshIds.has(ad._id))];
+  return [
+    ...fresh.map((ad) => ({ kind: "ad" as const, ad })),
+    ...queryEntries.filter(
+      (e) => e.kind !== "ad" || !freshIds.has((e as unknown as { ad: T }).ad._id)
+    ),
+  ];
 }
 
 /**

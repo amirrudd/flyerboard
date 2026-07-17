@@ -493,52 +493,6 @@ export const getBundle = query({
 });
 
 /**
- * Active standalone bundles rendered as ONE card in the date-sorted feed (mirrors
- * `saleEvents.getActiveSales`). A bundle card is a view derived from the bundle row
- * + its items' images — no dedicated `ads` row. Only fully-available (`active`)
- * bundles appear; partial/sold/cancelled drop out of the feed.
- */
-export const getActiveBundleFeedCards = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    // Standalone bundles have no saleEventId; scan the by_sale_event index at the
-    // undefined key so we never touch Sale-scoped rows.
-    const bundles = (
-      await ctx.db
-        .query("saleBundles")
-        .withIndex("by_sale_event", (q) => q.eq("saleEventId", undefined))
-        .collect()
-    ).filter((b) => !b.isDeleted && bundleStatus(b) === "active");
-
-    bundles.sort((a, b) => b._creationTime - a._creationTime);
-    const limited = bundles.slice(0, args.limit ?? 12);
-
-    const cards = await Promise.all(
-      limited.map(async (bundle) => {
-        const items = await hydrateBundleItems(ctx, bundle.adIds, { excludeSold: true });
-        // Guard against drift: only cards that still have a real deal.
-        if (items.length < BUNDLE_MIN_ITEMS) return null;
-        const total = separatelyTotal(items);
-        const { savings } = computeSavings(total, bundle.bundlePrice);
-        return {
-          _id: bundle._id,
-          label: bundle.label,
-          createdAt: bundle._creationTime,
-          itemCount: items.length,
-          location: items[0]?.location ?? "",
-          bundlePrice: bundle.bundlePrice,
-          separatelyTotal: total,
-          savings,
-          covers: items.map((i) => i.images[0]).filter((s): s is string => Boolean(s)),
-          adIds: items.map((i) => i._id), // member ads (thumbnail links etc.)
-        };
-      })
-    );
-    return cards.filter((c): c is NonNullable<typeof c> => c !== null);
-  },
-});
-
-/**
  * The caller's own ads for the bundle picker grid, each flagged with whether it's
  * eligible and why not. Eligibility mirrors the design's rule exactly.
  */

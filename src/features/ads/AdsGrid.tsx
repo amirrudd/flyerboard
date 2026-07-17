@@ -2,7 +2,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { MagnifyingGlass, Repeat, House, Package } from '@phosphor-icons/react';
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useRef } from "react";
 import { m, LayoutGroup } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
@@ -58,11 +58,15 @@ export interface BundleFeedCard {
   adIds: string[];
 }
 
-/** A feed cell is either a normal ad, a Sale card, or a Bundle card; merged by date. */
-type FeedEntry =
-  | { kind: "ad"; sortKey: number; ad: Ad }
-  | { kind: "sale"; sortKey: number; sale: SaleFeedCard }
-  | { kind: "bundle"; sortKey: number; bundle: BundleFeedCard };
+/**
+ * A feed cell is either a normal ad, a Sale card, or a Bundle card. The list
+ * arrives pre-interleaved by the server (feed.getFeed, `bumpedAt` desc) and is
+ * rendered verbatim — no client-side sorting. Shape mirrors the getFeed page.
+ */
+export type FeedEntry =
+  | { kind: "ad"; ad: Ad }
+  | { kind: "sale"; card: SaleFeedCard }
+  | { kind: "bundle"; card: BundleFeedCard };
 
 interface Category {
   _id: Id<"categories">;
@@ -72,7 +76,8 @@ interface Category {
 }
 
 interface AdsGridProps {
-  ads: Ad[] | undefined;
+  /** The unified feed page: ads + composite cards, server-interleaved. */
+  entries: FeedEntry[] | undefined;
   categories: Category[];
   selectedCategory: Id<"categories"> | null;
   sidebarCollapsed: boolean;
@@ -86,16 +91,12 @@ interface AdsGridProps {
    * "New" badge — boosted ads aren't new).
    */
   boostedAdKeys?: Set<string>;
-  /** Whole-Sale cards, interleaved into the same date-sorted grid. */
-  saleCards?: SaleFeedCard[];
   onSaleClick?: (slug: string) => void;
-  /** Whole-Bundle cards, interleaved into the same date-sorted grid. */
-  bundleCards?: BundleFeedCard[];
   onBundleClick?: (card: BundleFeedCard) => void;
 }
 
 export const AdsGrid = memo(function AdsGrid({
-  ads,
+  entries,
   categories,
   selectedCategory,
   sidebarCollapsed,
@@ -104,9 +105,7 @@ export const AdsGrid = memo(function AdsGrid({
   isLoadingMore = false,
   newAdIds = new Set(),
   boostedAdKeys = new Set(),
-  saleCards = [],
   onSaleClick,
-  bundleCards = [],
   onBundleClick,
 }: AdsGridProps) {
   const { staggerCard, boostPinDrop, boostRingPulse, reduced } = useMotionPrefs();
@@ -122,29 +121,6 @@ export const AdsGrid = memo(function AdsGrid({
   // both boost and brand-new arrivals.
   const animateLayout =
     !isMobile && !reduced && (boostedAdKeys.size > 0 || newAdIds.size > 0);
-
-  // Merge ads + Sale cards + Bundle cards into one date-sorted feed (newest
-  // first). Ads sort on `bumpedAt` (Boost, Phase 2) — the mutable feed sort
-  // key, required since Phase 1B, no fallback — so a boosted ad rises to the
-  // top; Sale/Bundle cards still slot in at their own creation date.
-  const feed = useMemo<FeedEntry[]>(() => {
-    const adEntries: FeedEntry[] = (ads ?? []).map((ad) => ({
-      kind: "ad",
-      sortKey: ad.bumpedAt,
-      ad,
-    }));
-    const saleEntries: FeedEntry[] = saleCards.map((sale) => ({
-      kind: "sale",
-      sortKey: sale.createdAt,
-      sale,
-    }));
-    const bundleEntries: FeedEntry[] = bundleCards.map((bundle) => ({
-      kind: "bundle",
-      sortKey: bundle.createdAt,
-      bundle,
-    }));
-    return [...adEntries, ...saleEntries, ...bundleEntries].sort((a, b) => b.sortKey - a.sortKey);
-  }, [ads, saleCards, bundleCards]);
 
   const handleAdClick = useCallback((ad: Ad) => {
     onAdClick(ad);
@@ -189,13 +165,13 @@ export const AdsGrid = memo(function AdsGrid({
             </h1>
           </div>
           <div className="hidden sm:flex items-baseline gap-2 text-muted-foreground pb-1">
-            {ads ? (
+            {entries ? (
               <>
                 <span className="tabular text-2xl font-display font-medium text-foreground">
-                  {ads.length}
+                  {entries.length}
                 </span>
                 <span className="text-sm">
-                  {ads.length === 1 ? 'listing' : 'listings'}
+                  {entries.length === 1 ? 'listing' : 'listings'}
                 </span>
               </>
             ) : (
@@ -205,12 +181,12 @@ export const AdsGrid = memo(function AdsGrid({
         </div>
         <div className="hairline" />
         <div className="text-muted-foreground text-sm tabular sm:hidden">
-          {ads ? (
-            ads.length === 0
+          {entries ? (
+            entries.length === 0
               ? 'No flyers'
-              : ads.length === 1
+              : entries.length === 1
                 ? '1 flyer'
-                : `${ads.length} flyers`
+                : `${entries.length} flyers`
           ) : (
             <div className="h-5 w-20 rounded shimmer" />
           )}
@@ -218,7 +194,7 @@ export const AdsGrid = memo(function AdsGrid({
       </header>
 
       {/* Loading Skeleton (Initial Load) */}
-      {isLoading || ads === undefined ? (
+      {isLoading || entries === undefined ? (
         <div className={gridClasses}>
           {[...Array(12)].map((_, i) => (
             <SkeletonCard key={i} />
@@ -227,10 +203,10 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         <LayoutGroup>
         <div className={`listings-grid ${gridClasses}`}>
-          {feed.map((entry, index) => {
+          {entries.map((entry, index) => {
             // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
             if (entry.kind === "sale") {
-              const sale = entry.sale;
+              const sale = entry.card;
               return (
                 <m.article
                   key={`sale-${sale._id}`}
@@ -286,7 +262,7 @@ export const AdsGrid = memo(function AdsGrid({
 
             // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
             if (entry.kind === "bundle") {
-              const bundle = entry.bundle;
+              const bundle = entry.card;
               return (
                 <m.article
                   key={`bundle-${bundle._id}`}
@@ -481,7 +457,7 @@ export const AdsGrid = memo(function AdsGrid({
         </LayoutGroup>
       )}
 
-      {!isLoading && ads && ads.length === 0 && (
+      {!isLoading && entries && entries.length === 0 && (
         <div className="text-center py-24 sm:py-32">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/60 ring-1 ring-border/60 mb-6">
             <MagnifyingGlass className="w-9 h-9 text-muted-foreground/60" weight="light" />

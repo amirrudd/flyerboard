@@ -1,10 +1,18 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from "react";
-import { useQuery, usePaginatedQuery, useConvex } from "convex/react";
+import { useQuery, useConvex } from "convex/react";
+// convex-helpers' clone of usePaginatedQuery — REQUIRED for stream-based
+// queries like feed.getFeed: it pins each page's endCursor on loadMore so
+// merged-stream pages never gap or overlap (the stock hook doesn't).
+import { usePaginatedQuery } from "convex-helpers/react";
+import { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 import { classifyLatestAds, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey } from "./freshAdsMerge";
+
+/** One unified-feed page entry (ad | bundle card | sale card), server-interleaved on `bumpedAt` desc; rendered verbatim. */
+export type FeedEntry = FunctionReturnType<typeof api.feed.getFeed>["page"][number];
 
 interface Category {
     _id: Id<"categories">;
@@ -24,7 +32,8 @@ interface MarketplaceContextType {
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     isCategoriesLoading: boolean;
-    ads: Doc<"ads">[] | undefined;
+    /** The unified feed page(s): ads + composite cards, server-interleaved. */
+    feed: FeedEntry[] | undefined;
     loadMore: (numItems: number) => void;
     status: "CanLoadMore" | "LoadingMore" | "Exhausted" | "LoadingFirstPage";
     refreshAds: (forceRefresh?: boolean) => Promise<void>;
@@ -57,9 +66,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
 
     // --- Client-Side Cache ---
-    // Cache ads by filter combination to prevent reloads when switching categories
-    const adsCache = useRef<Map<string, Doc<"ads">[]>>(new Map());
-    const [cachedAds, setCachedAds] = useState<Doc<"ads">[] | undefined>(undefined);
+    // Cache feed entries by filter combination to prevent reloads when switching categories
+    const feedCache = useRef<Map<string, FeedEntry[]>>(new Map());
+    const [cachedFeed, setCachedFeed] = useState<FeedEntry[] | undefined>(undefined);
 
     // Track new ads for highlighting
     const [newAdIds, setNewAdIds] = useState<Set<string>>(new Set());
@@ -80,6 +89,8 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // an ad above the frozen bound, so the reactive paginated query ejects it
     // from open sessions; this rail is its only way back (as a replacement
     // entry that shadows the stale copy by _id — see freshAdsMerge.ts).
+    // Unified feed: the rail stays ads-only (live arrivals are ads-only in
+    // v1, spec §4); a composite published mid-session appears on refresh.
     //
     // Known accepted limitations (plan 2-2.6, revisit only if reports surface):
     // - Entries here are one-shot snapshots: a boosted ad that is then
@@ -108,19 +119,46 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // The user can manually refresh the page to get the absolute latest ads.
     const [initialLoadTimestamp] = useState(() => Date.now());
 
-    const { results: ads, status, loadMore } = usePaginatedQuery(
-        api.ads.getAds,
-        {
-            categoryId: selectedCategory ?? undefined,
-            search: searchQuery || undefined,
-            location: selectedLocation || undefined,
-            maxSortTime: initialLoadTimestamp,
-        },
+    // The unified feed: one paginated query interleaving ads + Bundle + Sale
+    // cards, feature flags handled server-side. Search still routes through
+    // ads.getAds' search-index branch (composites never appear in search —
+    // documented decision), so exactly one of these two hooks is live.
+    const isSearching = searchQuery !== "";
+    const feedQuery = usePaginatedQuery(
+        api.feed.getFeed,
+        isSearching
+            ? "skip"
+            : {
+                categoryId: selectedCategory ?? undefined,
+                maxSortTime: initialLoadTimestamp,
+            },
         { initialNumItems: 30 }
     );
+    const searchQueryResult = usePaginatedQuery(
+        api.ads.getAds,
+        isSearching
+            ? {
+                categoryId: selectedCategory ?? undefined,
+                search: searchQuery,
+                location: selectedLocation || undefined,
+                maxSortTime: initialLoadTimestamp,
+            }
+            : "skip",
+        { initialNumItems: 30 }
+    );
+    const { status, loadMore } = isSearching ? searchQueryResult : feedQuery;
 
-    // Query for latest ads (for refresh) - REMOVED continuous subscription
-    // Now using on-demand query via useConvex below
+    // Normalise both sources to FeedEntry[]. Location (non-search path) is
+    // filtered here over ad entries — same predicate getAds used to apply
+    // in-memory server-side; composite cards were never location-filtered.
+    const feedEntries = useMemo<FeedEntry[] | undefined>(() => {
+        if (isSearching) {
+            return searchQueryResult.results?.map((ad) => ({ kind: "ad" as const, ad }));
+        }
+        const entries = feedQuery.results;
+        if (!entries || !selectedLocation) return entries;
+        return entries.filter((e) => e.kind !== "ad" || e.ad.location === selectedLocation);
+    }, [isSearching, searchQueryResult.results, feedQuery.results, selectedLocation]);
 
     // --- On-demand refresh with throttling ---
     const convex = useConvex();
@@ -160,6 +198,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             }
 
             const fresh = freshAdsRef.current.get(cacheKey) ?? [];
+            const heldAds = (feedEntries ?? [])
+                .filter((e): e is Extract<FeedEntry, { kind: "ad" }> => e.kind === "ad")
+                .map((e) => e.ad);
 
             // Replacement-aware dedupe (Boost, Jul 2026): an unknown _id is a
             // brand-new ad; a known _id whose bumpedAt is newer than the held
@@ -167,7 +208,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             // the 8cf9b00 vanishing-ads bug class); a known, unchanged _id is
             // a plain duplicate and is dropped. Fresh rail first: its copy is
             // always at least as new as the paginated query's.
-            const { brandNew, boosted } = classifyLatestAds(latestAds, [...fresh, ...(ads || [])]);
+            const { brandNew, boosted } = classifyLatestAds(latestAds, [...fresh, ...heldAds]);
             const merged = [...brandNew, ...boosted];
 
             if (merged.length > 0) {
@@ -187,11 +228,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 const updatedFresh = mergeFreshRail(fresh, brandNew, boosted);
                 freshAdsRef.current.set(cacheKey, updatedFresh);
 
-                // Merge fresh ads at the beginning of the query results (the
-                // fresh copy wins by _id, dropping any stale paginated copy).
-                const mergedAds = mergeAheadOfQuery(updatedFresh, ads || []);
-                setCachedAds(mergedAds);
-                adsCache.current.set(cacheKey, mergedAds);
+                // Merge fresh ads at the beginning of the feed page (the fresh
+                // copy wins by kind+id, dropping any stale paginated copy).
+                const mergedFeed = mergeAheadOfQuery(updatedFresh, feedEntries ?? []);
+                setCachedFeed(mergedFeed);
+                feedCache.current.set(cacheKey, mergedFeed);
 
                 // Advance this filter's refresh watermark to max(bumpedAt of
                 // merged results) — never Date.now(), which could advance past
@@ -207,7 +248,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Failed to refresh ads:', error);
         }
-    }, [convex, selectedCategory, searchQuery, selectedLocation, ads, cacheKey, initialRefreshTimestamp]);
+    }, [convex, selectedCategory, searchQuery, selectedLocation, feedEntries, cacheKey, initialRefreshTimestamp]);
 
     // Clear new ad IDs (called after animation or user interaction)
     const clearNewAdIds = useCallback(() => {
@@ -236,33 +277,33 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         return () => clearInterval(intervalId);
     }, [refreshAds]);
 
-    // Update cache when new ads are loaded. Fresh ads merged via refreshAds
+    // Update cache when a new feed page loads. Fresh ads merged via refreshAds
     // are prepended here too — the paginated query can't see them (created or
-    // boosted past its frozen maxSortTime), so rebuilding from `ads` alone
-    // would drop them whenever the query re-emits. The fresh copy wins by _id,
+    // boosted past its frozen maxSortTime), so rebuilding from the query alone
+    // would drop them whenever it re-emits. The fresh copy wins by kind+id,
     // which also drops the stale paginated copy of a boosted ad.
     useEffect(() => {
-        if (ads && ads.length > 0) {
+        if (feedEntries && feedEntries.length > 0) {
             const fresh = freshAdsRef.current.get(cacheKey) ?? [];
-            const mergedAds = mergeAheadOfQuery(fresh, ads);
-            adsCache.current.set(cacheKey, mergedAds);
-            setCachedAds(mergedAds);
+            const mergedFeed = mergeAheadOfQuery(fresh, feedEntries);
+            feedCache.current.set(cacheKey, mergedFeed);
+            setCachedFeed(mergedFeed);
         }
-    }, [ads, cacheKey]);
+    }, [feedEntries, cacheKey]);
 
     // Load from cache when filters change
     useEffect(() => {
-        const cached = adsCache.current.get(cacheKey);
+        const cached = feedCache.current.get(cacheKey);
         if (cached) {
             // Show cached data immediately
-            setCachedAds(cached);
+            setCachedFeed(cached);
         } else {
             // No cache, show loading state
-            setCachedAds(undefined);
+            setCachedFeed(undefined);
         }
     }, [cacheKey]);
 
-    const displayAds = cachedAds || ads;
+    const displayFeed = cachedFeed || feedEntries;
 
     // --- Effects ---
 
@@ -293,7 +334,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         sidebarCollapsed,
         setSidebarCollapsed,
         isCategoriesLoading: categories === undefined,
-        ads: displayAds, // Use cached ads for instant display
+        feed: displayFeed, // Use cached feed for instant display
         loadMore,
         status,
         refreshAds,

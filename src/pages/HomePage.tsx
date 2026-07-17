@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Sidebar } from "../features/layout/Sidebar/index";
@@ -10,7 +10,6 @@ import { AdsGrid } from "../features/ads/AdsGrid";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { AdsFilterBar } from "../features/ads/AdsFilterBar";
 import { useAdFilters } from "../hooks/useAdFilters";
-import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
 import { toast } from "sonner";
@@ -35,7 +34,7 @@ export function HomePage() {
     sidebarCollapsed,
     setSidebarCollapsed,
     isCategoriesLoading,
-    ads,
+    feed,
     loadMore,
     status,
     refreshAds,
@@ -51,60 +50,33 @@ export function HomePage() {
   // undercut the model. Filtering by min/max never changes the order.
   const { minPrice, maxPrice } = useAdFilters();
 
-  const filteredAds = useMemo(() => {
-    if (!ads) return ads;
-    let result = ads;
-    if (minPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price >= minPrice);
-    if (maxPrice !== undefined) result = result.filter(a => a.price !== undefined && a.price <= maxPrice);
-    return result;
-  }, [ads, minPrice, maxPrice]);
-
-  // Moving Sale feed integration (v3.1): individual sale items render exactly like
-  // single listings (no badge/strip). We only (a) cap how many items from one Sale
-  // show in the feed, and (b) inject the whole-Sale card. Bundles (v2) get the same
-  // treatment, gentler: a 4-item bundle would otherwise yield 5 cards from one
-  // seller (4 members + the bundle card), so cap members at 2 on this feed.
-  // Category/search results stay uncapped — "members look like plain listings in
-  // search" is a deliberate design decision (see bundle-listing-design.md).
-  const displayAds = useMemo(() => {
-    if (!filteredAds) return filteredAds;
+  // One pass over the server-interleaved feed page (order preserved):
+  // 1. Price range applies to ad entries only — composite cards are never
+  //    price-filtered (they weren't before unification either).
+  // 2. Member caps (Moving Sale v3.1 / Bundle v2): individual sale items
+  //    render exactly like single listings, so cap how many members of one
+  //    Sale (3) or Bundle (2) show — a 4-item bundle would otherwise yield 5
+  //    cards from one seller. Category/search results stay uncapped —
+  //    "members look like plain listings in search" is a deliberate design
+  //    decision (see bundle-listing-design.md).
+  const displayFeed = useMemo(() => {
+    if (!feed) return feed;
     const counts = new Map<string, number>();
     const underCap = (key: string, max: number) => {
       const n = (counts.get(key) ?? 0) + 1;
       counts.set(key, n);
       return n <= max;
     };
-    return filteredAds.filter((a) => {
+    return feed.filter((entry) => {
+      if (entry.kind !== "ad") return true;
+      const a = entry.ad;
+      if (minPrice !== undefined && !(a.price !== undefined && a.price >= minPrice)) return false;
+      if (maxPrice !== undefined && !(a.price !== undefined && a.price <= maxPrice)) return false;
       if (a.saleEventId) return underCap(`sale:${a.saleEventId}`, 3);
       if (a.bundleId) return underCap(`bundle:${a.bundleId}`, 2);
       return true;
     });
-  }, [filteredAds]);
-
-  // Only needed for the Sale event cards, which render on the uncategorised feed.
-  const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
-  const activeSales = useQuery(
-    api.saleEvents.getActiveSales,
-    selectedCategory || !movingSaleModeEnabled ? "skip" : {}
-  );
-
-  // Bundle Listing feed integration: whole-Bundle cards render on the
-  // uncategorised feed, same rule as Sale cards above.
-  const bundleModeEnabled = useFeatureFlag("bundleListing");
-  const bundleCards = useQuery(
-    api.bundles.getActiveBundleFeedCards,
-    selectedCategory || !bundleModeEnabled ? "skip" : {}
-  );
-
-  // Sale/Bundle cards resolve a round-trip after the ads paint; hold the
-  // skeleton while they're still possibly coming (flag true or unresolved,
-  // uncategorised feed only — mirrors the "skip" conditions above) so they
-  // don't pop in and shift the grid. Any new flag-gated card source must
-  // extend this check.
-  const auxCardsPending =
-    !selectedCategory &&
-    ((movingSaleModeEnabled !== false && activeSales === undefined) ||
-      (bundleModeEnabled !== false && bundleCards === undefined));
+  }, [feed, minPrice, maxPrice]);
 
   // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
   // the bundle's own detail page (the "Deal Ticket", bundle v2) — the bundle
@@ -350,18 +322,16 @@ export function HomePage() {
           >
             <AdsFilterBar />
             <AdsGrid
-              ads={displayAds}
+              entries={displayFeed}
               categories={categories || []}
               selectedCategory={selectedCategory}
               sidebarCollapsed={sidebarCollapsed}
               onAdClick={(ad) => { void navigate(`/ad/${ad._id}`, { state: { initialAd: ad } }); }}
-              isLoading={status === "LoadingFirstPage" || auxCardsPending}
+              isLoading={status === "LoadingFirstPage"}
               isLoadingMore={status === "LoadingMore"}
               newAdIds={newAdIds}
               boostedAdKeys={boostedAdKeys}
-              saleCards={activeSales}
               onSaleClick={handleSaleClick}
-              bundleCards={bundleCards}
               onBundleClick={handleBundleClick}
             />
 
@@ -382,7 +352,7 @@ export function HomePage() {
               )}
 
               {/* End of results */}
-              {status === "Exhausted" && ads && ads.length > 0 && (
+              {status === "Exhausted" && feed && feed.length > 0 && (
                 <div className="text-center py-12 flex flex-col items-center gap-3 w-full max-w-xs">
                   <div className="flex items-center gap-3 w-full">
                     <div className="hairline flex-1" />

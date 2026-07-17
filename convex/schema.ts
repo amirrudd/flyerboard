@@ -248,7 +248,6 @@ const applicationTables = {
   })
     .index("by_user", ["userId"])
     .index("by_slug", ["slug"])
-    .index("by_status", ["status"])
     .index("by_status_and_bumped_at", ["status", "bumpedAt"]),
 
   // Bundles serve two callers off one table:

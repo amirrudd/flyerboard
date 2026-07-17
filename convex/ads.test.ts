@@ -54,25 +54,11 @@ async function insertAd(
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// getAds — sold ads must not browse as available (bundles/Moving Sale can mark
-// a standalone ad isSold: true; the general feed shouldn't mislead buyers).
+// getAds (search-only since the unified feed; browse coverage lives in
+// feed.test.ts) — sold ads must not browse as available (bundles/Moving Sale
+// can mark a standalone ad isSold: true; search shouldn't mislead buyers).
 // ──────────────────────────────────────────────────────────────────────────
 describe("getAds excludes sold ads", () => {
-  test("non-search: a sold ad is excluded, an available one is included", async () => {
-    const t = convexTest(schema, modules);
-    const userId = await seedUser(t);
-    const categoryId = await seedCategory(t);
-    const available = await insertAd(t, { userId, categoryId, title: "Available sofa" });
-    const sold = await insertAd(t, { userId, categoryId, title: "Sold table", isSold: true });
-
-    const result = await t.query(api.ads.getAds, {
-      paginationOpts: { numItems: 20, cursor: null },
-    });
-    const ids = result.page.map((a) => a._id);
-    expect(ids).toContain(available);
-    expect(ids).not.toContain(sold);
-  });
-
   test("search: a sold ad is excluded from search results", async () => {
     const t = convexTest(schema, modules);
     const userId = await seedUser(t);

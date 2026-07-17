@@ -19,6 +19,7 @@ import {
   clampDailyCap,
   MS_PER_DAY,
 } from "./lib/boost";
+import { isFlagEnabled } from "./featureFlags";
 
 /**
  * Creates a new flyer listing.
@@ -215,11 +216,7 @@ export const boostAd = mutation({
     }
 
     // Feature flag gate — fail closed (off or missing → rejected).
-    const flag = await ctx.db
-      .query("featureFlags")
-      .withIndex("by_key", (q) => q.eq("key", FLAG_BOOST_TO_TOP))
-      .first();
-    if (!flag?.enabled) {
+    if (!(await isFlagEnabled(ctx, FLAG_BOOST_TO_TOP))) {
       throw createError("Boost is not available right now", { operation: "boostAd", adId: args.adId });
     }
 

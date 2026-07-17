@@ -83,6 +83,20 @@ export function mergeFreshRail<T extends SortableAd>(
   return [...brandNew, ...boosted, ...fresh.filter((ad) => !replacedIds.has(ad._id))];
 }
 
+/** Any feed-page entry the merge can key: an ad entry or a composite card. */
+export type KeyableEntry = { kind: string } & (
+  | { ad: { _id: string } }
+  | { card: { _id: string } }
+);
+
+/**
+ * The one `kind + id` identity for a feed entry — the dedupe key used by
+ * `mergeAheadOfQuery` (and by tests asserting on merge results).
+ */
+export function entryKey(e: KeyableEntry): string {
+  return "ad" in e ? `${e.kind}:${e.ad._id}` : `${e.kind}:${e.card._id}`;
+}
+
 /**
  * Rebuild the display list: the fresh rail merged AHEAD of the unified feed
  * page, with the fresh copy winning. This single rule both keeps fresh ads
@@ -91,16 +105,14 @@ export function mergeFreshRail<T extends SortableAd>(
  * discriminated union, so the dedupe key is `kind + id`; the fresh rail is
  * ads-only, so only `kind: "ad"` entries can collide — composites pass through.
  */
-export function mergeAheadOfQuery<T extends SortableAd, E extends { kind: string }>(
+export function mergeAheadOfQuery<T extends SortableAd, E extends KeyableEntry>(
   fresh: readonly T[],
   queryEntries: readonly E[]
 ): (E | { kind: "ad"; ad: T })[] {
-  const freshIds = new Set(fresh.map((ad) => ad._id));
+  const freshKeys = new Set(fresh.map((ad) => entryKey({ kind: "ad", ad })));
   return [
     ...fresh.map((ad) => ({ kind: "ad" as const, ad })),
-    ...queryEntries.filter(
-      (e) => e.kind !== "ad" || !freshIds.has((e as unknown as { ad: T }).ad._id)
-    ),
+    ...queryEntries.filter((e) => !freshKeys.has(entryKey(e))),
   ];
 }
 

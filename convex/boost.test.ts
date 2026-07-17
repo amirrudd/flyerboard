@@ -333,26 +333,29 @@ describe("boostAd — daily cap", () => {
 });
 
 describe("feed ordering by bumpedAt (Phase 1B)", () => {
-  test("getAds surfaces a boosted ad first", async () => {
+  test("the feed surfaces a boosted ad first", async () => {
     const { t, categoryId, asUser } = await freshWithUser();
     await enableBoostFlag(t);
 
     const older = await createAgedAd(t, asUser, categoryId, 10 * DAY, "Older");
     const newer = await createAgedAd(t, asUser, categoryId, 1 * DAY, "Newer");
 
+    const adIds = (page: Array<{ ad: { _id: string } } | { card: { _id: string } }>) =>
+      page.flatMap((e) => ("ad" in e ? [e.ad._id] : []));
+
     // Before boosting: newer (bumpedAt = now-1d) leads older (now-10d).
-    const before = await asUser.query(api.ads.getAds, {
+    const before = await asUser.query(api.feed.getFeed, {
       paginationOpts: { numItems: 10, cursor: null },
     });
-    expect(before.page[0]._id).toBe(newer);
+    expect(adIds(before.page)[0]).toBe(newer);
 
     // Boost the older ad → its bumpedAt jumps to now, above newer.
     await asUser.mutation(api.posts.boostAd, { adId: older });
 
-    const after = await asUser.query(api.ads.getAds, {
+    const after = await asUser.query(api.feed.getFeed, {
       paginationOpts: { numItems: 10, cursor: null },
     });
-    expect(after.page[0]._id).toBe(older);
+    expect(adIds(after.page)[0]).toBe(older);
   });
 
   test("getLatestAds returns a boosted ad for a since-watermark below its new bumpedAt", async () => {

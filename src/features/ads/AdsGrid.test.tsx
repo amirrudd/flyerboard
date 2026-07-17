@@ -24,6 +24,7 @@ const mockCategories = [
 const mockAds = [
     {
         _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
         title: 'iPhone 13',
         description: 'Good condition',
         price: 500,
@@ -37,6 +38,7 @@ const mockAds = [
     },
     {
         _id: 'ad2' as Id<'ads'>,
+        _creationTime: 0,
         title: 'Toyota Camry',
         description: 'Low mileage',
         price: 15000,
@@ -131,6 +133,7 @@ describe('AdsGrid', () => {
         const adsWithFree = [
             {
                 _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
                 title: 'Free Item',
                 description: 'Take it away',
                 price: 0,
@@ -144,6 +147,7 @@ describe('AdsGrid', () => {
             },
             {
                 _id: 'ad2' as Id<'ads'>,
+        _creationTime: 0,
                 title: 'Paid Item',
                 description: 'For sale',
                 price: 1500,
@@ -178,6 +182,7 @@ describe('AdsGrid', () => {
     it('should display "Open to Trade" for exchange-only listings', () => {
         const exchangeAds = [{
             _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
             title: 'Trading Cards',
             description: 'Looking to trade',
             listingType: 'exchange' as const,
@@ -208,6 +213,7 @@ describe('AdsGrid', () => {
     it('should display price with "Trade" badge for "both" listing type', () => {
         const bothAds = [{
             _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
             title: 'Sell or Trade Item',
             description: 'Accept cash or trades',
             listingType: 'both' as const,
@@ -238,6 +244,7 @@ describe('AdsGrid', () => {
     it('should display regular price for sale-only listings', () => {
         const saleAds = [{
             _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
             title: 'For Sale Item',
             description: 'Cash only',
             listingType: 'sale' as const,
@@ -271,6 +278,7 @@ describe('AdsGrid', () => {
         // Legacy ads without listingType should display as regular sale
         const legacyAds = [{
             _id: 'ad1' as Id<'ads'>,
+        _creationTime: 0,
             title: 'Legacy Ad',
             description: 'Old format',
             price: 75,
@@ -307,6 +315,7 @@ describe('AdsGrid', () => {
 describe('AdsGrid - moving sale feed (v3.1)', () => {
     const saleAd = {
         _id: 'adSale' as Id<'ads'>,
+        _creationTime: 0,
         title: 'Sale Sofa',
         description: 'An ad that belongs to a sale',
         listingType: 'sale' as const,
@@ -322,7 +331,7 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
     };
 
     const saleCard = {
-        _id: 'sale1',
+        _id: 'sale1' as Id<'saleEvents'>,
         slug: 'janes-sale',
         title: "Jane's Moving Sale",
         suburb: 'Carlton, VIC',
@@ -388,7 +397,7 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
 
 describe('AdsGrid - bundle listing feed', () => {
     const bundleCard = {
-        _id: 'bundle1',
+        _id: 'bundle1' as Id<'saleBundles'>,
         label: 'Kitchen Starter Bundle',
         createdAt: 2000,
         itemCount: 3,
@@ -397,7 +406,7 @@ describe('AdsGrid - bundle listing feed', () => {
         separatelyTotal: 120,
         savings: 40,
         covers: ['b1.jpg', 'b2.jpg', 'b3.jpg'],
-        adIds: ['adB1', 'adB2', 'adB3'],
+        adIds: ['adB1', 'adB2', 'adB3'] as Id<'ads'>[],
     };
 
     it('renders a whole-Bundle card from bundleCards (badge, save pill, price, item count)', () => {
@@ -447,7 +456,7 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
             {
                 kind: 'sale',
                 card: {
-                    _id: 'sale1', slug: 'janes-sale', title: "Jane's Moving Sale",
+                    _id: 'sale1' as Id<'saleEvents'>, slug: 'janes-sale', title: "Jane's Moving Sale",
                     suburb: 'Carlton, VIC', createdAt: 1000, itemCount: 9,
                     photoCount: 9, minPrice: 15, covers: ['c1.jpg'],
                 },
@@ -455,10 +464,10 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
             {
                 kind: 'bundle',
                 card: {
-                    _id: 'bundle1', label: 'Kitchen Starter Bundle', createdAt: 2000,
+                    _id: 'bundle1' as Id<'saleBundles'>, label: 'Kitchen Starter Bundle', createdAt: 2000,
                     itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
                     separatelyTotal: 120, savings: 40, covers: ['b1.jpg'],
-                    adIds: ['adB1'],
+                    adIds: ['adB1'] as Id<'ads'>[],
                 },
             },
             { kind: 'ad', ad: mockAds[1] },

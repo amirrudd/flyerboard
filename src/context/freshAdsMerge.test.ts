@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     classifyLatestAds,
+    entryKey,
     mergeFreshRail,
     mergeAheadOfQuery,
     nextWatermark,
@@ -91,17 +92,13 @@ describe('mergeFreshRail — accumulation with boost replacement', () => {
 // Unified feed: the query page is a discriminated union; the dedupe key is
 // kind + id (the fresh rail is ads-only, so composite entries always pass).
 const adEntry = (id: string, bumpedAt: number) => ({ kind: 'ad' as const, ad: ad(id, bumpedAt) });
-const key = (e: { kind: string }) =>
-    e.kind === 'ad'
-        ? `ad:${(e as unknown as { ad: { _id: string } }).ad._id}`
-        : `${e.kind}:${(e as unknown as { card: { _id: string } }).card._id}`;
 
 describe('mergeAheadOfQuery — display rebuild over the unified feed page', () => {
     it('never yields a duplicate kind+id after rebuild (fresh copy wins)', () => {
         const fresh = [ad('boosted', 900), ad('new', 800)];
         const query = [adEntry('boosted', 100), adEntry('other', 90)];
         const rebuilt = mergeAheadOfQuery(fresh, query);
-        const keys = rebuilt.map(key);
+        const keys = rebuilt.map(entryKey);
         expect(new Set(keys).size).toBe(keys.length);
         // The surviving copy of the boosted ad is the fresh (re-bumped) one.
         const survivor = rebuilt.find((e) => e.kind === 'ad' && e.ad._id === 'boosted');
@@ -112,7 +109,7 @@ describe('mergeAheadOfQuery — display rebuild over the unified feed page', () 
     it('keeps fresh ads alive when the query re-emits without them', () => {
         const fresh = [ad('freshOnly', 500)];
         const rebuilt = mergeAheadOfQuery(fresh, [adEntry('q1', 100)]);
-        expect(rebuilt.map(key)).toEqual(['ad:freshOnly', 'ad:q1']);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:freshOnly', 'ad:q1']);
     });
 
     it('composite cards pass through untouched, even sharing an id with a fresh ad', () => {
@@ -123,7 +120,7 @@ describe('mergeAheadOfQuery — display rebuild over the unified feed page', () 
             { kind: 'sale' as const, card: { _id: 's1' } },
         ];
         const rebuilt = mergeAheadOfQuery(fresh, query);
-        expect(rebuilt.map(key)).toEqual(['ad:x', 'bundle:x', 'sale:s1']);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:x', 'bundle:x', 'sale:s1']);
     });
 
     it('full boost round-trip: eject → recover via rail → exactly one copy at top', () => {
@@ -135,11 +132,11 @@ describe('mergeAheadOfQuery — display rebuild over the unified feed page', () 
         // Rebuild against the ORIGINAL query snapshot (worst case: stale copy
         // still present) — the rail copy must shadow it.
         const rebuilt = mergeAheadOfQuery(rail, query);
-        expect(rebuilt.map(key)).toEqual(['ad:A', 'ad:B']);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:A', 'ad:B']);
         expect(rebuilt[0].kind === 'ad' && rebuilt[0].ad.bumpedAt).toBe(500);
         // And against the post-ejection re-emit (A gone from query results).
         const rebuiltAfterEject = mergeAheadOfQuery(rail, [adEntry('B', 90)]);
-        expect(rebuiltAfterEject.map(key)).toEqual(['ad:A', 'ad:B']);
+        expect(rebuiltAfterEject.map(entryKey)).toEqual(['ad:A', 'ad:B']);
     });
 });
 

@@ -13,6 +13,7 @@ import {
   separatelyTotal,
 } from "./bundles";
 import { saleItems } from "./saleEvents";
+import { isFlagEnabled } from "./featureFlags";
 
 /**
  * Unified home feed (Phase 2 of docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md).
@@ -47,14 +48,6 @@ type FeedSourceEntry =
 
 // Full non-equality index suffix shared by all three streams (see doc comment).
 const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
-
-async function isFlagEnabled(ctx: QueryCtx, key: string): Promise<boolean> {
-  const flag = await ctx.db
-    .query("featureFlags")
-    .withIndex("by_key", (q) => q.eq("key", key))
-    .first();
-  return flag?.enabled ?? false;
-}
 
 /**
  * Hydrate a bundle row into the feed card shape (identical to
@@ -108,6 +101,9 @@ async function hydrateSaleCard(ctx: QueryCtx, sale: Doc<"saleEvents">) {
  * @param args.paginationOpts - Pagination cursor and page size.
  * @param args.categoryId - Category filter (optional). When set, the feed is
  *   ads-only — composites never appear on category feeds (documented decision).
+ * @param args.location - Location filter (optional, exact match on the ad's
+ *   `location`). Applies to ADS only — composite cards were never
+ *   location-filtered (documented decision).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; same freeze-at-mount contract as `ads.getAds`.
  * @returns Standard pagination result whose `page` is a discriminated union:
@@ -121,6 +117,7 @@ export const getFeed = query({
   args: {
     paginationOpts: paginationOptsValidator,
     categoryId: v.optional(v.id("categories")),
+    location: v.optional(v.string()),
     maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -142,9 +139,14 @@ export const getFeed = query({
           )
         )
         .paginate(args.paginationOpts);
+      // Location applied in memory post-paginate — same trade-off getAds made
+      // (imperfect page sizes when many items filter out; fine at this scale).
+      const page = args.location
+        ? result.page.filter((ad) => ad.location === args.location)
+        : result.page;
       return {
         ...result,
-        page: result.page.map((ad) => ({ kind: "ad" as const, ad })),
+        page: page.map((ad) => ({ kind: "ad" as const, ad })),
       };
     }
 
@@ -162,7 +164,11 @@ export const getFeed = query({
         .withIndex("by_bumped_at", (q) => q.lte("bumpedAt", maxSortTime))
         .order("desc")
         .filterWith(
-          async (ad) => ad.isActive && ad.isDeleted !== true && ad.isSold !== true
+          async (ad) =>
+            ad.isActive &&
+            ad.isDeleted !== true &&
+            ad.isSold !== true &&
+            (!args.location || ad.location === args.location)
         )
         .map(async (doc) => ({ kind: "ad" as const, doc })),
     ];

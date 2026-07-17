@@ -42,6 +42,7 @@ async function insertAd(
     isSold?: boolean;
     price?: number;
     images?: string[];
+    location?: string;
     saleEventId?: Id<"saleEvents">;
   }
 ): Promise<Id<"ads">> {
@@ -50,7 +51,7 @@ async function insertAd(
       title: opts.title ?? "Item",
       description: "desc",
       price: opts.price ?? 100,
-      location: "Richmond, VIC",
+      location: opts.location ?? "Richmond, VIC",
       categoryId: opts.categoryId,
       images: opts.images ?? ["r2:flyers/x/1.jpg"],
       userId: opts.userId,
@@ -403,6 +404,42 @@ describe("getFeed — exclusions", () => {
 
     const result = await getPage(t, { maxSortTime: T0 + 100 });
     expect(result.page.map(entryKey)).toEqual([`ad:${ad}`]);
+  });
+});
+
+describe("getFeed — location", () => {
+  test("location filters ads server-side; composites are unaffected", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 }); // "Richmond, VIC"
+    const elsewhere = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
+    const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30 });
+    const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40 });
+
+    const result = await t.query(api.feed.getFeed, {
+      paginationOpts: { numItems: 20, cursor: null },
+      location: "Richmond, VIC",
+      maxSortTime: T0 + 100,
+    });
+    const keys = result.page.map(entryKey);
+    expect(keys).toContain(`ad:${richmond}`);
+    expect(keys).not.toContain(`ad:${elsewhere}`);
+    // Composite cards were never location-filtered — they stay.
+    expect(keys).toContain(`bundle:${bundleId}`);
+    expect(keys).toContain(`sale:${saleId}`);
+  });
+
+  test("category branch applies the location filter to its page", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
+
+    const result = await t.query(api.feed.getFeed, {
+      paginationOpts: { numItems: 20, cursor: null },
+      categoryId,
+      location: "Richmond, VIC",
+      maxSortTime: T0 + 100,
+    });
+    expect(result.page.map(entryKey)).toEqual([`ad:${richmond}`]);
   });
 });
 

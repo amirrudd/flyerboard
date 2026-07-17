@@ -5,13 +5,14 @@
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
 - **`ads.bumpedAt` is THE feed sort key, and it is REQUIRED (`v.number()`).** The feed
-  (home feed: `convex/feed.ts` `getFeed` — see Unified home feed section below;
-  category/search + fresh-rail: `convex/ads.ts` `getAds` + `getLatestAds`) orders by `bumpedAt`
+  (home + category feed: `convex/feed.ts` `getFeed` — see Unified home feed section below;
+  search: `convex/ads.ts` `getAds` (search-only since the /simplify pass); fresh-rail:
+  `getLatestAds`) orders by `bumpedAt`
   desc via the `by_bumped_at` and `by_category_and_bumped_at` indexes — NOT
   `_creationTime`. `_creationTime` is now display-only ("Posted X ago"). A boost
   (`convex/posts.ts` `boostAd`) re-stamps `bumpedAt = Date.now()`, lifting the ad to top.
-  - `getAds` arg is `maxSortTime` (renamed from `maxCreationTime`) — a `bumpedAt` upper
-    bound. Category branches apply the `bumpedAt` bound in the **post-filter** (the
+  - `getFeed` arg is `maxSortTime` — a `bumpedAt` upper bound (freeze-at-mount).
+    Its category branch applies the `bumpedAt` bound in the **post-filter** (the
     composite index leads with `categoryId`, so it can't range on `bumpedAt` in the index).
   - **Every `insert("ads")` MUST set `bumpedAt`** (schema validation now fails loudly
     otherwise) — this includes test helpers doing direct `ctx.db.insert("ads", …)`.
@@ -55,8 +56,9 @@
 The home feed is ONE paginated query, `convex/feed.ts` `getFeed`, interleaving three
 tables (ads, standalone `saleBundles`, published `saleEvents`) on the shared `bumpedAt`
 sort key via convex-helpers `mergedStream`. This replaced the client-side three-query
-merge (`getActiveBundleFeedCards` / `getActiveSales` were deleted; `ads.getAds` survives
-for category feeds, search, and the CommandPalette). **Future multi-table feeds should
+merge (`getActiveBundleFeedCards` / `getActiveSales` were deleted; `ads.getAds` is now
+**search-only** — `getFeed`'s category branch owns category feeds, and `getFeed` also
+takes the `location` filter server-side). **Future multi-table feeds should
 follow this pattern**, not a denormalized feed table (see
 `docs/architecture/design-decisions.md`, "Unified feed via mergedStream").
 

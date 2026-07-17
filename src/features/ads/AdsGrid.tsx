@@ -10,63 +10,22 @@ import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
 import { boostArrivalKey } from "../../context/freshAdsMerge";
-
-interface Ad {
-  _id: Id<"ads">;
-  _creationTime?: number;
-  /** Mutable feed sort key (Boost) — required since Phase 1B; no fallback. */
-  bumpedAt: number;
-  title: string;
-  description: string;
-  listingType?: "sale" | "exchange" | "both";
-  price?: number;
-  previousPrice?: number;
-  exchangeDescription?: string;
-  location: string;
-  categoryId: Id<"categories">;
-  images: string[];
-  userId: Id<"users">;
-  isActive: boolean;
-  views: number;
-  saleEventId?: Id<"saleEvents">;
-}
-
-/** A whole Sale rendered as one card in the date-sorted feed (v3). */
-export interface SaleFeedCard {
-  _id: string;
-  slug: string;
-  title: string;
-  suburb: string;
-  createdAt: number;
-  itemCount: number;
-  photoCount: number;
-  minPrice: number;
-  covers: string[];
-}
-
-/** A whole Bundle rendered as one card in the date-sorted feed. */
-export interface BundleFeedCard {
-  _id: string;
-  label: string;
-  createdAt: number;
-  itemCount: number;
-  location: string;
-  bundlePrice: number;
-  separatelyTotal: number;
-  savings: number;
-  covers: string[];
-  adIds: string[];
-}
+import type { FeedEntry } from "../../context/MarketplaceContext";
 
 /**
  * A feed cell is either a normal ad, a Sale card, or a Bundle card. The list
  * arrives pre-interleaved by the server (feed.getFeed, `bumpedAt` desc) and is
- * rendered verbatim — no client-side sorting. Shape mirrors the getFeed page.
+ * rendered verbatim — no client-side sorting. The type is DERIVED from the
+ * getFeed return type (single source of truth in MarketplaceContext) — a
+ * server shape change surfaces here as a compile error, not silent drift.
  */
-export type FeedEntry =
-  | { kind: "ad"; ad: Ad }
-  | { kind: "sale"; card: SaleFeedCard }
-  | { kind: "bundle"; card: BundleFeedCard };
+export type { FeedEntry };
+
+type Ad = Extract<FeedEntry, { kind: "ad" }>["ad"];
+/** A whole Sale rendered as one card in the date-sorted feed (v3). */
+export type SaleFeedCard = Extract<FeedEntry, { kind: "sale" }>["card"];
+/** A whole Bundle rendered as one card in the date-sorted feed. */
+export type BundleFeedCard = Extract<FeedEntry, { kind: "bundle" }>["card"];
 
 interface Category {
   _id: Id<"categories">;

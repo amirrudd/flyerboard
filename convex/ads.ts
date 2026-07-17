@@ -4,41 +4,19 @@ import { query, mutation } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
 /**
- * Fetch paginated ads with optional filtering by category, search term, and location
- * 
- * Supports both search-based queries (using full-text search on title) and standard
- * queries (using indexes). Search queries return top 50 results without cursor pagination.
- * Standard queries support cursor-based pagination. Only returns active, non-deleted ads.
- * 
+ * Full-text ad search (title), optionally narrowed by category and location.
+ *
+ * Search-only since the unified feed (Phase 3): browsing/pagination lives in
+ * `feed.getFeed`; this survives for the home-feed search box and the
+ * CommandPalette. Returns the top 50 matches in a single "page" (search
+ * indexes don't cursor-paginate) — `paginationOpts` is accepted for
+ * `usePaginatedQuery` compatibility but only shapes the response envelope.
+ *
+ * @param args.search - Search term for title search
  * @param args.categoryId - Filter by specific category (optional)
- * @param args.search - Search term for title search (optional, returns top 50 results)
- * @param args.location - Filter by location string (optional, applied in-memory)
- * @param args.paginationOpts - Pagination cursor and page size
- * @param args.maxSortTime - Upper bound on the feed sort key `bumpedAt` for stable
- *   pagination (optional). Named generically because the sort key is `bumpedAt`
- *   (mutable, boost-aware) — NOT `_creationTime`.
- * @returns Paginated result with ads array, continuation cursor, and isDone flag
- * 
- * @example
- * ```typescript
- * // Get first page of all ads
- * const result = await ctx.runQuery(api.ads.getAds, {
- *   paginationOpts: { numItems: 20, cursor: null }
- * });
- * 
- * // Search for "laptop" in Electronics category
- * const laptops = await ctx.runQuery(api.ads.getAds, {
- *   categoryId: electronicsId,
- *   search: "laptop",
- *   paginationOpts: { numItems: 20, cursor: null }
- * });
- * 
- * // Get ads in Sydney
- * const sydneyAds = await ctx.runQuery(api.ads.getAds, {
- *   location: "Sydney",
- *   paginationOpts: { numItems: 20, cursor: null }
- * });
- * ```
+ * @param args.location - Filter by location string (optional, exact match)
+ * @param args.paginationOpts - Pagination envelope (results are one page)
+ * @returns Paginated-shaped result with ads array, isDone: true
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
  * shouldn't browse as available. Direct links (e.g. a seller's own dashboard) still
@@ -47,79 +25,37 @@ import { paginationOptsValidator } from "convex/server";
 export const getAds = query({
   args: {
     categoryId: v.optional(v.id("categories")),
-    search: v.optional(v.string()),
+    search: v.string(),
     location: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
-    maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    if (args.search) {
-      // Search queries don't support pagination in the same way, return top results
-      const ads = await ctx.db
-        .query("ads")
-        .withSearchIndex("search_ads", (q) => {
-          let searchQuery = q.search("title", args.search!);
+    // Search queries don't support pagination in the same way, return top results
+    const ads = await ctx.db
+      .query("ads")
+      .withSearchIndex("search_ads", (q) => {
+        let searchQuery = q.search("title", args.search);
 
-          if (args.categoryId) {
-            searchQuery = searchQuery.eq("categoryId", args.categoryId);
-          }
-          if (args.location) {
-            searchQuery = searchQuery.eq("location", args.location);
-          }
+        if (args.categoryId) {
+          searchQuery = searchQuery.eq("categoryId", args.categoryId);
+        }
+        if (args.location) {
+          searchQuery = searchQuery.eq("location", args.location);
+        }
 
-          // Filter out deleted and inactive ads
-          searchQuery = searchQuery.eq("isActive", true);
+        // Filter out deleted and inactive ads
+        searchQuery = searchQuery.eq("isActive", true);
 
-          return searchQuery;
-        })
-        .filter((q) => q.and(q.neq(q.field("isDeleted"), true), q.neq(q.field("isSold"), true)))
-        .take(50); // Limit search results since we can't easily paginate
+        return searchQuery;
+      })
+      .filter((q) => q.and(q.neq(q.field("isDeleted"), true), q.neq(q.field("isSold"), true)))
+      .take(50); // Limit search results since we can't easily paginate
 
-      return {
-        page: ads,
-        isDone: true,
-        continueCursor: "",
-      };
-    } else {
-      let q = ctx.db
-        .query("ads")
-        // Feed ordering is by `bumpedAt` (Phase 1B) — the mutable, boost-aware sort
-        // key. A boost re-stamps bumpedAt to now, lifting the ad to the top.
-        .withIndex("by_bumped_at", (q) => q.lte("bumpedAt", args.maxSortTime || Date.now()))
-        .order("desc");
-
-      if (args.categoryId) {
-        q = ctx.db
-          .query("ads")
-          // Category branch also orders by bumpedAt (Phase 1B) via the composite
-          // [categoryId, bumpedAt] index. The index supports .eq on the leading
-          // categoryId AND a range on the trailing bumpedAt, so the upper bound
-          // is pushed into the index range here (no post-filter needed).
-          .withIndex("by_category_and_bumped_at", (q) =>
-            q.eq("categoryId", args.categoryId!).lte("bumpedAt", args.maxSortTime || Date.now())
-          )
-          .order("desc");
-      }
-
-      const paginatedResult = await q
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("isActive"), true),
-            q.neq(q.field("isDeleted"), true),
-            q.neq(q.field("isSold"), true)
-          )
-        )
-        .paginate(args.paginationOpts);
-
-      // Apply location filter in memory if specified (since we can't easily index everything)
-      // Note: This is imperfect for pagination if many items are filtered out, 
-      // but sufficient for this scale. Ideally we'd have a composite index.
-      if (args.location) {
-        paginatedResult.page = paginatedResult.page.filter(ad => ad.location === args.location);
-      }
-
-      return paginatedResult;
-    }
+    return {
+      page: ads,
+      isDone: true,
+      continueCursor: "",
+    };
   },
 });
 

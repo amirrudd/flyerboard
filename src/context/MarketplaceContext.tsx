@@ -130,6 +130,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             ? "skip"
             : {
                 categoryId: selectedCategory ?? undefined,
+                location: selectedLocation || undefined,
                 maxSortTime: initialLoadTimestamp,
             },
         { initialNumItems: 30 }
@@ -141,24 +142,21 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 categoryId: selectedCategory ?? undefined,
                 search: searchQuery,
                 location: selectedLocation || undefined,
-                maxSortTime: initialLoadTimestamp,
             }
             : "skip",
         { initialNumItems: 30 }
     );
     const { status, loadMore } = isSearching ? searchQueryResult : feedQuery;
 
-    // Normalise both sources to FeedEntry[]. Location (non-search path) is
-    // filtered here over ad entries — same predicate getAds used to apply
-    // in-memory server-side; composite cards were never location-filtered.
+    // Normalise both sources to FeedEntry[]. Location is applied server-side
+    // on both paths (getFeed filters its ads stream; composite cards were
+    // never location-filtered — documented decision).
     const feedEntries = useMemo<FeedEntry[] | undefined>(() => {
         if (isSearching) {
             return searchQueryResult.results?.map((ad) => ({ kind: "ad" as const, ad }));
         }
-        const entries = feedQuery.results;
-        if (!entries || !selectedLocation) return entries;
-        return entries.filter((e) => e.kind !== "ad" || e.ad.location === selectedLocation);
-    }, [isSearching, searchQueryResult.results, feedQuery.results, selectedLocation]);
+        return feedQuery.results;
+    }, [isSearching, searchQueryResult.results, feedQuery.results]);
 
     // --- On-demand refresh with throttling ---
     const convex = useConvex();

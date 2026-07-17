@@ -74,13 +74,13 @@ function autoLabel(titles: string[]): string {
   return `${clean[0]} + ${clean.length - 1} more`;
 }
 
-/** Sum of the individual list prices of a set of ads. */
-function separatelyTotal(items: Doc<"ads">[]): number {
+/** Sum of the individual list prices of a set of ads. Exported for feed.ts card hydration. */
+export function separatelyTotal(items: Doc<"ads">[]): number {
   return items.reduce((sum, a) => sum + (a.price ?? 0), 0);
 }
 
-/** Savings math shared by every bundle payload (banner/dashboard/feed). */
-function computeSavings(total: number, bundlePrice: number): { savings: number; savingsPct: number } {
+/** Savings math shared by every bundle payload (banner/dashboard/feed). Exported for feed.ts. */
+export function computeSavings(total: number, bundlePrice: number): { savings: number; savingsPct: number } {
   const savings = Math.max(0, total - bundlePrice);
   return { savings, savingsPct: total > 0 ? Math.round((savings / total) * 100) : 0 };
 }
@@ -88,8 +88,9 @@ function computeSavings(total: number, bundlePrice: number): { savings: number; 
 /**
  * Resolve a bundle's `adIds` into live ad docs (concurrently), dropping deleted/
  * missing ones — optionally sold ones too (the feed card needs a real deal).
+ * Exported for feed.ts card hydration.
  */
-async function hydrateBundleItems(
+export async function hydrateBundleItems(
   ctx: QueryCtx | MutationCtx,
   adIds: Id<"ads">[],
   opts: { excludeSold?: boolean } = {}

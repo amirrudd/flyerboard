@@ -110,8 +110,8 @@ async function requireOwnedSale(
   return { userId, sale };
 }
 
-/** Non-deleted ads belonging to a sale event. */
-async function saleItems(
+/** Non-deleted ads belonging to a sale event. Exported for feed.ts card hydration. */
+export async function saleItems(
   ctx: QueryCtx | MutationCtx,
   saleEventId: Id<"saleEvents">
 ): Promise<Doc<"ads">[]> {

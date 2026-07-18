@@ -38,11 +38,28 @@
     only runs when `VERCEL_ENV==production`). No such line ⇒ the build was frontend-only.
 - **`appSettings` table** = admin-tunable NUMERIC config (mirrors `featureFlags`, which
   is booleans-only). `{ key, value, description }` + `by_key`. `convex/appSettings.ts`:
-  public `getSetting(key)` (clamped on read for known boost keys, returns `number|null`),
-  admin-gated `getAllSettings`/`updateSetting` (rejects out-of-range, `logAdminAction`).
-  Keys: `boostCooldownDays` (default 7, 1–30), `boostDailyCap` (default 3, 1–20). Shared
-  constants/clamps live in `convex/lib/boost.ts` (frontend-safe — NO server imports).
-  Seed via `migrations:seedAppSettings`. Client reads via `src/hooks/useAppSetting.ts`.
+  public `getSetting(key)` (clamped on read for ALL known keys, returns `number|null`),
+  admin-gated `getAllSettings`/`updateSetting` (rejects out-of-range, `logAdminAction`;
+  **upserts** known keys — a missing row is created with the registry description; unknown
+  keys still throw "not found"). The setting REGISTRY (key/default/min/max/description/seed)
+  lives in `convex/lib/appConfig.ts` (frontend-safe — NO server imports); boost bounds stay
+  sourced from `convex/lib/boost.ts`. Seed via `migrations:seedAppSettings` (registry-driven,
+  `seed: true` entries only). Client reads via `src/hooks/useAppSetting.ts`.
+  Seeded keys (Jul 2026): `boostCooldownDays` (7, 1–30), `boostDailyCap` (3, 1–20),
+  `bundleMaxItems` (4, 2–10 — `createBundle` + BundleFlow picker), `saleMaxItems`
+  (100, 10–500 — `addSaleItems` abuse ceiling), `saleExpiryBufferDays` (2, 0–14 —
+  `publishSaleEvent`), `feedSaleMemberCap` (3, 0–10) and `feedBundleMemberCap` (2, 0–10 —
+  HomePage `underCap`). Server consumers read via `readSettingValue` + `clampAppSetting`
+  with the registry default as fallback; the client mirrors with `useAppSetting(key) ?? DEFAULT_*`.
+- **Sparse rate-limit overrides** (`rateLimitMax_<op>`, Jul 2026): `checkRateLimit` first
+  looks up an appSettings override for the op's `maxRequests` (window is NEVER overridable),
+  clamped to `[1, 4× static default]`. These rows are deliberately **NOT seeded** — missing
+  row = static default; the admin Settings tab shows "Using default N" and creates the row
+  on first save (via updateSetting's upsert). Static limits DATA + overridable-op list +
+  `rateLimitSettingKey(op)` live in `convex/lib/rateLimitConfig.ts` (frontend-safe;
+  `convex/lib/rateLimit.ts` imports it because it can't be imported by the UI itself).
+  `boostAd` and `default` are EXCLUDED from overrides (boostAd is the static abuse backstop
+  behind the already-configurable boost daily cap).
 - **Runtime-configurable rate limit**: `checkRateLimitDynamic(ctx, userId, op, max, windowMs)`
   in `convex/lib/rateLimit.ts` takes max/window at call time (reuses the same
   `ratelimit:${userId}:${op}` uploads-table storage). `boostAd` uses it with the

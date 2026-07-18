@@ -3,6 +3,12 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
+import { readSettingValue } from "./appSettings";
+import {
+  SETTING_BUNDLE_MAX_ITEMS,
+  DEFAULT_BUNDLE_MAX_ITEMS,
+  clampAppSetting,
+} from "./lib/appConfig";
 import type { Id, Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
@@ -21,9 +27,10 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
  */
 
 // Item cap — a bundle holds between MIN and MAX ads. "N" in the design doc.
-// Configurable constants; tune once real usage data exists.
+// MIN stays static (a bundle of <2 is definitionally not a bundle). MAX is
+// admin-tunable via appSettings key `bundleMaxItems` (default/bounds in
+// convex/lib/appConfig.ts); createBundle reads it with clamp + fallback.
 export const BUNDLE_MIN_ITEMS = 2;
-export const BUNDLE_MAX_ITEMS = 4;
 
 // ──────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -166,9 +173,14 @@ export const createBundle = mutation({
 
     // De-dupe while preserving order.
     const adIds = Array.from(new Set(args.adIds));
-    if (adIds.length < BUNDLE_MIN_ITEMS || adIds.length > BUNDLE_MAX_ITEMS) {
+    const rawMax = await readSettingValue(ctx, SETTING_BUNDLE_MAX_ITEMS);
+    const maxItems =
+      rawMax === null
+        ? DEFAULT_BUNDLE_MAX_ITEMS
+        : clampAppSetting(SETTING_BUNDLE_MAX_ITEMS, rawMax);
+    if (adIds.length < BUNDLE_MIN_ITEMS || adIds.length > maxItems) {
       throw createError(
-        `A bundle needs between ${BUNDLE_MIN_ITEMS} and ${BUNDLE_MAX_ITEMS} items`,
+        `A bundle needs between ${BUNDLE_MIN_ITEMS} and ${maxItems} items`,
         { operation: "createBundle", count: adIds.length }
       );
     }

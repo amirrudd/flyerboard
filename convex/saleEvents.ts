@@ -3,6 +3,15 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
+import { readSettingValue } from "./appSettings";
+import {
+  SETTING_SALE_MAX_ITEMS,
+  DEFAULT_SALE_MAX_ITEMS,
+  SETTING_SALE_EXPIRY_BUFFER_DAYS,
+  DEFAULT_SALE_EXPIRY_BUFFER_DAYS,
+  clampAppSetting,
+} from "./lib/appConfig";
+import { MS_PER_DAY } from "./lib/boost";
 import type { Id, Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
@@ -231,9 +240,14 @@ export const addSaleItems = mutation({
     if (args.items.length === 0) return [];
 
     // v2: the mode is free — no tier cap. Manual listing is unlimited; the only
-    // limit is a high abuse ceiling.
+    // limit is a high abuse ceiling (admin-tunable via appSettings `saleMaxItems`,
+    // default 100, clamped 10–500).
     const existing = await saleItems(ctx, args.saleEventId);
-    const ABUSE_CEILING = 100;
+    const rawCeiling = await readSettingValue(ctx, SETTING_SALE_MAX_ITEMS);
+    const ABUSE_CEILING =
+      rawCeiling === null
+        ? DEFAULT_SALE_MAX_ITEMS
+        : clampAppSetting(SETTING_SALE_MAX_ITEMS, rawCeiling);
     if (existing.length + args.items.length > ABUSE_CEILING) {
       throw createError(`A single sale can hold up to ${ABUSE_CEILING} items.`, {
         operation: "addSaleItems",
@@ -449,7 +463,14 @@ export const publishSaleEvent = mutation({
       slug = await mintSlug(ctx, firstName, sale.suburb);
     }
 
-    const EXPIRY_BUFFER_MS = 2 * 24 * 60 * 60 * 1000; // keep page up 2 days past pickup
+    // Keep the page up N days past pickup — admin-tunable via appSettings
+    // `saleExpiryBufferDays` (default 2, clamped 0–14).
+    const rawBufferDays = await readSettingValue(ctx, SETTING_SALE_EXPIRY_BUFFER_DAYS);
+    const bufferDays =
+      rawBufferDays === null
+        ? DEFAULT_SALE_EXPIRY_BUFFER_DAYS
+        : clampAppSetting(SETTING_SALE_EXPIRY_BUFFER_DAYS, rawBufferDays);
+    const EXPIRY_BUFFER_MS = bufferDays * MS_PER_DAY;
     await ctx.db.patch(args.saleEventId, {
       slug,
       status: "active",

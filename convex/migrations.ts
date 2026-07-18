@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { isR2Reference, r2, toR2Reference } from "./r2";
+import { APP_SETTING_SPECS } from "./lib/appConfig";
 
 const DEFAULT_BATCH_SIZE = 10;
 
@@ -455,7 +456,10 @@ export const seedFeatureFlags = internalMutation({
 });
 
 /**
- * Seed default numeric app settings (Boost cooldown + daily cap).
+ * Seed default numeric app settings from the registry in convex/lib/appConfig.ts
+ * (boost, bundle, sale, and feed knobs). Rate-limit overrides (`rateLimitMax_<op>`)
+ * are deliberately NOT seeded — a missing row means "use the static default"; the
+ * admin tab creates a row on demand when an op is overridden (sparse-row convention).
  * Idempotent — only creates keys that don't already exist; never overwrites an
  * admin-tuned value. Mirrors seedFeatureFlags.
  *
@@ -464,18 +468,11 @@ export const seedFeatureFlags = internalMutation({
 export const seedAppSettings = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const defaultSettings = [
-      {
-        key: "boostCooldownDays",
-        value: 7,
-        description: "Days an ad's owner must wait between boosts (since listing or last boost). Admin-tunable 1–30. Drives the client countdown and the server cooldown check.",
-      },
-      {
-        key: "boostDailyCap",
-        value: 3,
-        description: "Max boosts one user may perform per rolling 24h window (anti-flooding). Admin-tunable 1–20; hard backstop ceiling is 20.",
-      },
-    ];
+    const defaultSettings = APP_SETTING_SPECS.filter((s) => s.seed).map((s) => ({
+      key: s.key,
+      value: s.defaultValue,
+      description: s.description,
+    }));
 
     const results = {
       created: [] as string[],

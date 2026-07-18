@@ -16,6 +16,13 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { registerHomeScroll, unregisterHomeScroll, HOME_SCROLL_KEY } from "../lib/homeScrollBridge";
+import { useAppSetting } from "../hooks/useAppSetting";
+import {
+  SETTING_FEED_SALE_MEMBER_CAP,
+  SETTING_FEED_BUNDLE_MEMBER_CAP,
+  DEFAULT_FEED_SALE_MEMBER_CAP,
+  DEFAULT_FEED_BUNDLE_MEMBER_CAP,
+} from "../../convex/lib/appConfig";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -55,10 +62,16 @@ export function HomePage() {
   //    price-filtered (they weren't before unification either).
   // 2. Member caps (Moving Sale v3.1 / Bundle v2): individual sale items
   //    render exactly like single listings, so cap how many members of one
-  //    Sale (3) or Bundle (2) show — a 4-item bundle would otherwise yield 5
-  //    cards from one seller. Category/search results stay uncapped —
-  //    "members look like plain listings in search" is a deliberate design
-  //    decision (see bundle-listing-design.md).
+  //    Sale (default 3) or Bundle (default 2) show — a 4-item bundle would
+  //    otherwise yield 5 cards from one seller. Caps are admin-tunable via
+  //    Admin > Settings (appSettings feedSaleMemberCap / feedBundleMemberCap).
+  //    Category/search results stay uncapped — "members look like plain
+  //    listings in search" is a deliberate design decision (see
+  //    bundle-listing-design.md).
+  const saleMemberCap =
+    useAppSetting(SETTING_FEED_SALE_MEMBER_CAP) ?? DEFAULT_FEED_SALE_MEMBER_CAP;
+  const bundleMemberCap =
+    useAppSetting(SETTING_FEED_BUNDLE_MEMBER_CAP) ?? DEFAULT_FEED_BUNDLE_MEMBER_CAP;
   const displayFeed = useMemo(() => {
     if (!feed) return feed;
     const counts = new Map<string, number>();
@@ -72,11 +85,11 @@ export function HomePage() {
       const a = entry.ad;
       if (minPrice !== undefined && !(a.price !== undefined && a.price >= minPrice)) return false;
       if (maxPrice !== undefined && !(a.price !== undefined && a.price <= maxPrice)) return false;
-      if (a.saleEventId) return underCap(`sale:${a.saleEventId}`, 3);
-      if (a.bundleId) return underCap(`bundle:${a.bundleId}`, 2);
+      if (a.saleEventId) return underCap(`sale:${a.saleEventId}`, saleMemberCap);
+      if (a.bundleId) return underCap(`bundle:${a.bundleId}`, bundleMemberCap);
       return true;
     });
-  }, [feed, minPrice, maxPrice]);
+  }, [feed, minPrice, maxPrice, saleMemberCap, bundleMemberCap]);
 
   // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
   // the bundle's own detail page (the "Deal Ticket", bundle v2) — the bundle

@@ -129,13 +129,36 @@ describe("createBundle", () => {
     ).rejects.toThrow(/between 2 and 4/i);
   });
 
-  test("rejects more than 4 items", async () => {
+  test("rejects more than 4 items (default bundleMaxItems)", async () => {
     const { t, userId, categoryId, asUser } = await fresh();
     const ids = [];
     for (let i = 0; i < 5; i++) ids.push(await insertAd(t, { userId, categoryId }));
     await expect(
       asUser.mutation(api.bundles.createBundle, { adIds: ids, bundlePrice: 50 })
     ).rejects.toThrow(/between 2 and 4/i);
+  });
+
+  test("respects the bundleMaxItems appSettings override", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    await t.run((ctx) =>
+      ctx.db.insert("appSettings", { key: "bundleMaxItems", value: 5, description: "test" })
+    );
+    const ids = [];
+    for (let i = 0; i < 6; i++) ids.push(await insertAd(t, { userId, categoryId }));
+
+    // 5 items now allowed…
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: ids.slice(0, 5),
+      bundlePrice: 50,
+    });
+    expect(bundleId).toBeDefined();
+
+    // …6 still rejected, with the dynamic max in the message.
+    const more = [];
+    for (let i = 0; i < 6; i++) more.push(await insertAd(t, { userId, categoryId }));
+    await expect(
+      asUser.mutation(api.bundles.createBundle, { adIds: more, bundlePrice: 50 })
+    ).rejects.toThrow(/between 2 and 5/i);
   });
 
   test("de-dupes repeated ids (so [a,a] is treated as 1 item → rejected)", async () => {

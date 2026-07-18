@@ -50,6 +50,12 @@ vi.mock("../../components/PageLoader", () => ({
   PageLoader: () => <div>loading</div>,
 }));
 
+// bundleMaxItems app setting — missing row, so the component falls back to the
+// static default (4). Mocked so the extra useQuery below stays single-purpose.
+vi.mock("../../hooks/useAppSetting", () => ({
+  useAppSetting: () => undefined,
+}));
+
 // Convex hooks. getEligibleAdsForBundle returns our fixture; createBundle is a spy.
 const mockCreateBundle = vi.fn().mockResolvedValue("bundle-new");
 const eligibleAds = [

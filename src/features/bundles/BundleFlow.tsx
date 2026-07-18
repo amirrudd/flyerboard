@@ -13,12 +13,17 @@ import { PageLoader } from "../../components/PageLoader";
 import { WizardShell } from "../../components/WizardShell";
 import { ItemThumb } from "./ItemThumb";
 import { formatPrice } from "../../lib/priceFormatter";
+import { useAppSetting } from "../../hooks/useAppSetting";
+import {
+  SETTING_BUNDLE_MAX_ITEMS,
+  DEFAULT_BUNDLE_MAX_ITEMS,
+} from "../../../convex/lib/appConfig";
 
-// Keep in sync with BUNDLE_MIN_ITEMS/BUNDLE_MAX_ITEMS in convex/bundles.ts. Not imported
-// directly — that file pulls in server-only Convex modules (mutation/query, auth, rate
-// limiting) that shouldn't end up in the client bundle.
+// MIN stays static — a bundle of <2 is definitionally not a bundle (matches
+// BUNDLE_MIN_ITEMS in convex/bundles.ts). MAX is admin-tunable: read reactively
+// via useAppSetting(bundleMaxItems); the server enforces the same value in
+// createBundle, so this is purely the UX-side mirror.
 const MIN_ITEMS = 2;
-const MAX_ITEMS = 4;
 
 /** Auto-generated bundle name from the first two item titles (shared by the price + confirm steps). */
 function autoBundleLabel(items: { title: string }[]): string {
@@ -76,14 +81,16 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
     separatelyTotal > 0 ? Math.round((savings / separatelyTotal) * 100) : 0;
   const noSaving = bundlePrice > 0 && bundlePrice >= separatelyTotal;
 
-  const canProceedFromPick = selected.length >= MIN_ITEMS && selected.length <= MAX_ITEMS;
+  const maxItems = useAppSetting(SETTING_BUNDLE_MAX_ITEMS) ?? DEFAULT_BUNDLE_MAX_ITEMS;
+
+  const canProceedFromPick = selected.length >= MIN_ITEMS && selected.length <= maxItems;
   const canCreate = canProceedFromPick && bundlePrice > 0;
 
   function toggle(adId: string, eligible: boolean) {
     if (!eligible) return;
     setSelected((prev) => {
       if (prev.includes(adId)) return prev.filter((id) => id !== adId);
-      if (prev.length >= MAX_ITEMS) return prev;
+      if (prev.length >= maxItems) return prev;
       return [...prev, adId];
     });
   }
@@ -132,7 +139,7 @@ export function BundleFlow({ preselectAdId }: BundleFlowProps) {
                 ads={eligibleAds}
                 selected={selected}
                 onToggle={toggle}
-                maxItems={MAX_ITEMS}
+                maxItems={maxItems}
                 canProceed={canProceedFromPick}
                 onNext={() => setStep("price")}
               />

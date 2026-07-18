@@ -5,6 +5,8 @@ import { expect, test, describe } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
+import { checkRateLimit } from "./lib/rateLimit";
 
 // Load all Convex modules so convex-test can run them (same glob approach as
 // boost.test.ts — extglob returns [] under this repo's vitest setup).
@@ -136,12 +138,140 @@ describe("appSettings.updateSetting (admin-only)", () => {
     ).rejects.toThrow(/out of range/i);
   });
 
-  test("rejects updating a setting that doesn't exist", async () => {
+  test("rejects an UNKNOWN key that has no row (no blind insert)", async () => {
     const t = convexTest(schema, modules);
     await seedUser(t, "admin", true);
     const asAdmin = t.withIdentity({ subject: "admin" });
     await expect(
-      asAdmin.mutation(api.appSettings.updateSetting, { key: "boostDailyCap", value: 5 })
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "totallyUnknown", value: 5 })
     ).rejects.toThrow(/not found/i);
+  });
+
+  test("upserts a KNOWN key with no row (sparse rate-limit convention)", async () => {
+    const t = convexTest(schema, modules);
+    await seedUser(t, "admin", true);
+    const asAdmin = t.withIdentity({ subject: "admin" });
+    const res = await asAdmin.mutation(api.appSettings.updateSetting, {
+      key: "boostDailyCap",
+      value: 5,
+    });
+    expect(res.success).toBe(true);
+    expect(await t.query(api.appSettings.getSetting, { key: "boostDailyCap" })).toBe(5);
+  });
+
+  test("validates bounds for the new non-boost keys", async () => {
+    const t = convexTest(schema, modules);
+    await seedUser(t, "admin", true);
+    const asAdmin = t.withIdentity({ subject: "admin" });
+
+    // bundleMaxItems: 2–10
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "bundleMaxItems", value: 11 })
+    ).rejects.toThrow(/out of range/i);
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "bundleMaxItems", value: 1 })
+    ).rejects.toThrow(/out of range/i);
+    expect(
+      (await asAdmin.mutation(api.appSettings.updateSetting, { key: "bundleMaxItems", value: 6 }))
+        .success
+    ).toBe(true);
+
+    // saleMaxItems: 10–500
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "saleMaxItems", value: 501 })
+    ).rejects.toThrow(/out of range/i);
+
+    // saleExpiryBufferDays: 0–14 (0 is valid)
+    expect(
+      (
+        await asAdmin.mutation(api.appSettings.updateSetting, {
+          key: "saleExpiryBufferDays",
+          value: 0,
+        })
+      ).success
+    ).toBe(true);
+
+    // feed member caps: 0–10
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "feedSaleMemberCap", value: 11 })
+    ).rejects.toThrow(/out of range/i);
+  });
+
+  test("validates rate-limit override bounds: [1, 4× static default]", async () => {
+    const t = convexTest(schema, modules);
+    await seedUser(t, "admin", true);
+    const asAdmin = t.withIdentity({ subject: "admin" });
+
+    // createAd static default is 10 → allowed range 1–40.
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "rateLimitMax_createAd", value: 41 })
+    ).rejects.toThrow(/out of range/i);
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "rateLimitMax_createAd", value: 0 })
+    ).rejects.toThrow(/out of range/i);
+    const res = await asAdmin.mutation(api.appSettings.updateSetting, {
+      key: "rateLimitMax_createAd",
+      value: 40,
+    });
+    expect(res.success).toBe(true);
+    expect(await t.query(api.appSettings.getSetting, { key: "rateLimitMax_createAd" })).toBe(40);
+  });
+});
+
+// ── checkRateLimit × appSettings override (rateLimitMax_<op>) ────────────────────
+// checkRateLimit only touches ctx.db, so t.run's ctx is a valid stand-in.
+describe("checkRateLimit rate-limit overrides", () => {
+  async function hit(
+    t: ReturnType<typeof convexTest>,
+    userId: Id<"users">,
+    op: string
+  ): Promise<void> {
+    await t.run((ctx) => checkRateLimit(ctx as unknown as MutationCtx, userId, op));
+  }
+
+  test("missing override row → static default applies (createReport = 5/hour)", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await seedUser(t, "u1", false);
+    for (let i = 0; i < 5; i++) await hit(t, userId, "createReport");
+    await expect(hit(t, userId, "createReport")).rejects.toThrow(/rate limit/i);
+  });
+
+  test("appSettings row overrides maxRequests (createReport → 2)", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await seedUser(t, "u1", false);
+    await setSetting(t, "rateLimitMax_createReport", 2);
+    await hit(t, userId, "createReport");
+    await hit(t, userId, "createReport");
+    await expect(hit(t, userId, "createReport")).rejects.toThrow(/rate limit/i);
+  });
+
+  test("out-of-clamp row is clamped, not obeyed (0 → min 1; 999 → 4× default)", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await seedUser(t, "u1", false);
+    // Below min: 0 clamps to 1 — second call must throw.
+    await setSetting(t, "rateLimitMax_createReport", 0);
+    await hit(t, userId, "createReport");
+    await expect(hit(t, userId, "createReport")).rejects.toThrow(/rate limit/i);
+
+    // Above max: 999 clamps to 20 (4 × static default 5) for a fresh user.
+    const userB = await seedUser(t, "u2", false);
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("appSettings")
+        .withIndex("by_key", (q) => q.eq("key", "rateLimitMax_createReport"))
+        .first();
+      await ctx.db.patch(row!._id, { value: 999 });
+    });
+    for (let i = 0; i < 20; i++) await hit(t, userB, "createReport");
+    await expect(hit(t, userB, "createReport")).rejects.toThrow(/rate limit/i);
+  });
+
+  test("boostAd ignores any override row (deliberate static backstop)", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await seedUser(t, "u1", false);
+    await setSetting(t, "rateLimitMax_boostAd", 1);
+    // Static backstop is 20/day — a would-be override of 1 must NOT apply.
+    await hit(t, userId, "boostAd");
+    await hit(t, userId, "boostAd"); // would throw if the override were honoured
   });
 });

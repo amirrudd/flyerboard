@@ -169,6 +169,9 @@ export const createSaleEvent = mutation({
       pickupWindowEnd: args.pickupWindowEnd,
       status: "draft",
       createdAt: Date.now(),
+      // Required field; drafts never feed (status gates them), and publish
+      // re-stamps this at the draft → active transition.
+      bumpedAt: Date.now(),
     });
 
     logOperation("Sale event created", { saleEventId, userId });
@@ -424,7 +427,7 @@ export const setBundles = mutation({
         saleEventId: args.saleEventId,
         sellerId: userId,      // populate the shared field so Sale bundles match standalone ones
         status: "active",
-        bumpedAt: Date.now(),  // never feeds (sale-suggestion bundle), but keeps the field total for the future required-field narrowing
+        bumpedAt: Date.now(),  // required field — never feeds (sale-suggestion bundle)
         label: bundle.label.trim() || "Bundle",
         bundlePrice: bundle.bundlePrice,
         adIds,
@@ -777,13 +780,4 @@ export const getSavedSaleEvents = query({
 
     return withSale.filter((x): x is NonNullable<typeof x> => x !== null);
   },
-});
-
-/**
- * DEPLOY COMPAT STUB (remove one release after the unified feed ships).
- * Replaced by `feed.getFeed`; see bundles.getActiveBundleFeedCards for rationale.
- */
-export const getActiveSales = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async () => [],
 });

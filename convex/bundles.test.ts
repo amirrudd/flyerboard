@@ -210,6 +210,7 @@ describe("createBundle", () => {
         pickupWindowEnd: Date.now() + 3600_000,
         status: "active",
         createdAt: Date.now(),
+        bumpedAt: Date.now(),
       })
     );
     const a = await insertAd(t, { userId, categoryId, saleEventId });
@@ -629,6 +630,7 @@ describe("getPublicBundle", () => {
         pickupWindowStart: Date.now(),
         pickupWindowEnd: Date.now() + 3600_000,
         createdAt: Date.now(),
+        bumpedAt: Date.now(),
       })
     );
     const saleBundleId = await t.run((ctx) =>
@@ -637,6 +639,7 @@ describe("getPublicBundle", () => {
         label: "Sale bundle",
         bundlePrice: 50,
         adIds: [a, b],
+        bumpedAt: Date.now(),
       })
     );
     expect(await t.query(api.bundles.getPublicBundle, { bundleId: saleBundleId })).toBeNull();

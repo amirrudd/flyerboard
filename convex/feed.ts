@@ -31,12 +31,6 @@ import { isFlagEnabled } from "./featureFlags";
  * must be included). All three indexes end in [..., "bumpedAt"], so after the
  * composites' `.eq("status", "active")` every stream is ordered by exactly
  * these fields.
- *
- * `bumpedAt` is still OPTIONAL on saleBundles/saleEvents (widen→backfill→narrow
- * rollout). Convex sorts undefined below every number, so a legacy un-backfilled
- * row would land inside the `lte` range and sink to the very end of the feed
- * with no usable sort key — the composite streams filter `bumpedAt !== undefined`
- * so such rows are excluded outright until the field is narrowed to required.
  */
 
 // The page is a discriminated union so the client renders each entry with the
@@ -105,7 +99,7 @@ async function hydrateSaleCard(ctx: QueryCtx, sale: Doc<"saleEvents">) {
  *   `location`). Applies to ADS only — composite cards were never
  *   location-filtered (documented decision).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
- *   pagination; same freeze-at-mount contract as `ads.getAds`.
+ *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:
  *   `{ kind: "ad", ad } | { kind: "bundle", card } | { kind: "sale", card }`.
  *   Card shapes match `getActiveBundleFeedCards` / `getActiveSales` so the
@@ -182,10 +176,7 @@ export const getFeed = query({
             q.eq("status", "active").lte("bumpedAt", maxSortTime)
           )
           .order("desc")
-          .filterWith(
-            async (b) =>
-              b.bumpedAt !== undefined && !b.saleEventId && b.isDeleted !== true
-          )
+          .filterWith(async (b) => !b.saleEventId && b.isDeleted !== true)
           .map(async (doc) => ({ kind: "bundle" as const, doc }))
       );
     }
@@ -201,10 +192,7 @@ export const getFeed = query({
           )
           .order("desc")
           .filterWith(
-            async (s) =>
-              s.bumpedAt !== undefined &&
-              Boolean(s.slug) &&
-              (!s.expiresAt || s.expiresAt > now)
+            async (s) => Boolean(s.slug) && (!s.expiresAt || s.expiresAt > now)
           )
           .map(async (doc) => ({ kind: "sale" as const, doc }))
       );

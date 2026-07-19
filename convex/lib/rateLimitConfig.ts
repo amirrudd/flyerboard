@@ -70,6 +70,86 @@ export const OVERRIDABLE_RATE_LIMIT_OPS = Object.keys(RATE_LIMITS).filter(
 /** Override ceiling: an admin can raise a limit to at most 4× its static default. */
 export const RATE_LIMIT_OVERRIDE_MAX_MULTIPLIER = 4;
 
+/** Human-readable window noun ("minute" / "hour" / "day") for a static window. */
+export function rateLimitWindowNoun(windowMs: number): string {
+    if (windowMs === 60 * 1000) return "minute";
+    if (windowMs === 60 * 60 * 1000) return "hour";
+    if (windowMs === 24 * 60 * 60 * 1000) return "day";
+    return `${Math.round(windowMs / 60000)} minutes`;
+}
+
+/**
+ * Display metadata for the admin Settings tab — plain product language per op.
+ * Windows are static (see RATE_LIMITS above), so each description spells the
+ * window out; if you ever change a window, update the description beside it.
+ */
+export interface RateLimitOpMeta {
+    /** Human label, e.g. "Start new chats". */
+    label: string;
+    /** One-sentence plain-English description with the window spelled out. */
+    description: string;
+    /** Noun for the input suffix, e.g. "chats" → "chats per user / hour". */
+    noun: string;
+}
+
+export const RATE_LIMIT_OP_META: Record<string, RateLimitOpMeta> = {
+    createAd: {
+        label: "Post new flyers",
+        description: "How many flyers one user can post per hour.",
+        noun: "flyers",
+    },
+    createSaleEvent: {
+        label: "Create moving sales",
+        description: "How many Moving Sales one user can create per day.",
+        noun: "sales",
+    },
+    addSaleItems: {
+        label: "Add sale items",
+        description: "How many items one user can add to their Moving Sales per hour.",
+        noun: "items",
+    },
+    createBundle: {
+        label: "Create bundles",
+        description: "How many bundles one user can create per hour.",
+        noun: "bundles",
+    },
+    updateAd: {
+        label: "Edit flyers",
+        description: "How many times one user can edit their flyers per hour.",
+        noun: "edits",
+    },
+    deleteAd: {
+        label: "Delete flyers",
+        description: "How many flyers one user can delete per hour.",
+        noun: "deletions",
+    },
+    sendMessage: {
+        label: "Send messages",
+        description: "How many chat messages one user can send per minute.",
+        noun: "messages",
+    },
+    createChat: {
+        label: "Start new chats",
+        description: "How many new conversations one user can start per hour.",
+        noun: "chats",
+    },
+    createReport: {
+        label: "Report a flyer",
+        description: "How many flyers one user can report per hour.",
+        noun: "reports",
+    },
+    submitRating: {
+        label: "Leave ratings",
+        description: "How many ratings one user can leave per hour.",
+        noun: "ratings",
+    },
+    generateUploadUrl: {
+        label: "Image uploads",
+        description: "How many images one user can upload per hour.",
+        noun: "uploads",
+    },
+};
+
 /** appSettings key for an op's maxRequests override. */
 export function rateLimitSettingKey(op: string): string {
     return `rateLimitMax_${op}`;

@@ -61,6 +61,11 @@ describe('SettingsTab', () => {
         // Unit suffixes and the "applies immediately" note.
         expect(screen.getByText('days')).toBeInTheDocument();
         expect(screen.getByText('boosts per user / day')).toBeInTheDocument();
+
+        // Description comes from the REGISTRY, not the stale DB row.
+        expect(screen.getByText(/How many boosts one user can use per day/)).toBeInTheDocument();
+        expect(screen.queryByText('Max boosts per day.')).not.toBeInTheDocument();
+
         expect(
             screen.getByText(/Changes apply immediately — in-progress countdowns recompute live\./),
         ).toBeInTheDocument();
@@ -134,16 +139,23 @@ describe('SettingsTab', () => {
         expect(screen.getByText('18 settings')).toBeInTheDocument();
     });
 
-    it('shows the static default for a rate-limit field with no row and saves an override', async () => {
+    it('shows the built-in limit for a rate-limit field with no row and saves an override', async () => {
         render(<SettingsTab />); // SEEDED has no rateLimitMax_* rows
 
-        const input = screen.getByLabelText('createAd');
-        expect(input).toHaveValue(10); // static default from RATE_LIMITS.createAd
+        const input = screen.getByLabelText('Post new flyers');
+        expect(input).toHaveValue(10); // built-in limit from RATE_LIMITS.createAd
         expect(input).toBeEnabled(); // sparse — editable despite the missing row
-        expect(screen.getAllByText(/Using default 10 — saving creates an override/).length).toBeGreaterThan(0);
+        // Raw op name stays visible as a monospace hint for log correlation.
+        expect(screen.getByText('createAd')).toBeInTheDocument();
+        // Plain-language description + unset-state copy (scoped to the card —
+        // submitRating shares the 10/hour limit, so the copy repeats).
+        const card = input.closest('article')!;
+        expect(card).toHaveTextContent('How many flyers one user can post per hour.');
+        expect(card).toHaveTextContent(
+            'Built-in limit: 10 per user per hour. It applies as-is — save a different number only if you want to change it.',
+        );
 
         fireEvent.change(input, { target: { value: '20' } });
-        const card = input.closest('article')!;
         const save = card.querySelector('button')!;
         expect(save).toBeEnabled();
         fireEvent.click(save);
@@ -153,18 +165,38 @@ describe('SettingsTab', () => {
         });
     });
 
-    it('rejects an over-clamp rate-limit value client-side (max 4× static default)', () => {
+    it('shows the override note once a rate-limit row exists', () => {
+        mockUseQuery.mockReturnValue([
+            ...SEEDED,
+            {
+                _id: 'setting_rl_chat' as any,
+                _creationTime: 4,
+                key: 'rateLimitMax_createChat',
+                value: 30,
+                description: 'stale stored text',
+            },
+        ]);
         render(<SettingsTab />);
-        const input = screen.getByLabelText('createAd');
 
-        fireEvent.change(input, { target: { value: '41' } }); // createAd default 10 → max 40
+        const input = screen.getByLabelText('Start new chats');
+        expect(input).toHaveValue(30);
+        expect(screen.getByText('Overrides the built-in limit of 20 per hour.')).toBeInTheDocument();
+        expect(screen.getByText('chats per user / hour')).toBeInTheDocument();
+        expect(screen.queryByText('stale stored text')).not.toBeInTheDocument();
+    });
 
-        expect(screen.getByText('Enter 1–40 requests')).toBeInTheDocument();
+    it('rejects an over-clamp rate-limit value client-side (max 4× the built-in limit)', () => {
+        render(<SettingsTab />);
+        const input = screen.getByLabelText('Post new flyers');
+
+        fireEvent.change(input, { target: { value: '41' } }); // createAd built-in 10 → max 40
+
+        expect(screen.getByText('Enter 1–40 flyers')).toBeInTheDocument();
         const save = input.closest('article')!.querySelector('button')!;
         expect(save).toBeDisabled();
     });
 
-    it('renders a grouped non-boost field with its seeded value', () => {
+    it('renders a grouped non-boost field with its seeded value and registry description', () => {
         mockUseQuery.mockReturnValue([
             ...SEEDED,
             {
@@ -179,7 +211,11 @@ describe('SettingsTab', () => {
 
         const input = screen.getByLabelText('Bundle max items');
         expect(input).toHaveValue(4);
-        expect(screen.getByText('Max ads in one bundle.')).toBeInTheDocument();
+        // Registry description wins over the stored row's stale text.
+        expect(
+            screen.getByText('The most flyers a seller can group into a single bundle.'),
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Max ads in one bundle.')).not.toBeInTheDocument();
     });
 
     it('degrades gracefully when a setting has not been seeded', () => {

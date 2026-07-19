@@ -18,7 +18,9 @@ import {
 import {
     RATE_LIMITS,
     OVERRIDABLE_RATE_LIMIT_OPS,
+    RATE_LIMIT_OP_META,
     rateLimitSettingKey,
+    rateLimitWindowNoun,
 } from "../../../convex/lib/rateLimitConfig";
 
 /**
@@ -37,21 +39,24 @@ import {
 // Field recipe for each known numeric setting. `unit` is the noun used in the
 // out-of-range helper ("Enter 1–30 days"); `suffix` is the label rendered beside
 // the input. Bounds/defaults come from the registry via getAppSettingSpec.
+// Descriptions render from the REGISTRY (or `description` below), never from the
+// DB row — stored descriptions were seeded once and go stale.
 interface SettingField {
     key: string;
     label: string;
     suffix: string;
     unit: string;
+    /** Overrides the registry description for display (used by rate limits). */
+    description?: string;
+    /** Small monospace hint (raw rate-limit op name, for correlating with logs). */
+    hint?: string;
     note?: string;
     /** Sparse settings (rate limits) are editable even without a DB row. */
     sparse?: boolean;
-}
-
-function windowLabel(windowMs: number): string {
-    if (windowMs === 60 * 1000) return "per minute";
-    if (windowMs === 60 * 60 * 1000) return "per hour";
-    if (windowMs === 24 * 60 * 60 * 1000) return "per day";
-    return `per ${Math.round(windowMs / 60000)} min`;
+    /** Shown while no DB row exists (sparse fields only). */
+    unsetNote?: string;
+    /** Shown once an override row exists (sparse fields only). */
+    overrideNote?: string;
 }
 
 const SETTING_GROUPS: { heading: string; fields: SettingField[] }[] = [
@@ -121,13 +126,22 @@ const SETTING_GROUPS: { heading: string; fields: SettingField[] }[] = [
     },
     {
         heading: "Rate limits",
-        fields: OVERRIDABLE_RATE_LIMIT_OPS.map((op) => ({
-            key: rateLimitSettingKey(op),
-            label: op,
-            suffix: `max requests ${windowLabel(RATE_LIMITS[op].windowMs)}`,
-            unit: "requests",
-            sparse: true,
-        })),
+        fields: OVERRIDABLE_RATE_LIMIT_OPS.map((op) => {
+            const { maxRequests, windowMs } = RATE_LIMITS[op];
+            const meta = RATE_LIMIT_OP_META[op];
+            const window = rateLimitWindowNoun(windowMs); // "minute" | "hour" | "day"
+            return {
+                key: rateLimitSettingKey(op),
+                label: meta?.label ?? op,
+                description: meta?.description,
+                hint: op,
+                suffix: `${meta?.noun ?? "requests"} per user / ${window}`,
+                unit: meta?.noun ?? "requests",
+                sparse: true,
+                unsetNote: `Built-in limit: ${maxRequests} per user per ${window}. It applies as-is — save a different number only if you want to change it.`,
+                overrideNote: `Overrides the built-in limit of ${maxRequests} per ${window}.`,
+            };
+        }),
     },
 ];
 
@@ -223,14 +237,23 @@ export function SettingsTab() {
                                 key={field.key}
                                 className="bg-card ring-1 ring-border/70 rounded-2xl p-5 shadow-sm"
                             >
-                                <label
-                                    htmlFor={inputId}
-                                    className="block text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2"
-                                >
-                                    {field.label}
-                                </label>
-                                {setting?.description && (
-                                    <p className="text-sm text-foreground/80 leading-relaxed mb-3">{setting.description}</p>
+                                <div className="flex items-baseline gap-2 mb-2">
+                                    <label
+                                        htmlFor={inputId}
+                                        className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground"
+                                    >
+                                        {field.label}
+                                    </label>
+                                    {field.hint && (
+                                        <code className="text-[11px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">
+                                            {field.hint}
+                                        </code>
+                                    )}
+                                </div>
+                                {(field.description ?? spec.description) && (
+                                    <p className="text-sm text-foreground/80 leading-relaxed mb-3">
+                                        {field.description ?? spec.description}
+                                    </p>
                                 )}
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <input
@@ -272,9 +295,9 @@ export function SettingsTab() {
                                         Not configured — run <code className="bg-muted/60 px-1 rounded text-foreground tabular-nums">npx convex run migrations:seedAppSettings</code>
                                     </p>
                                 )}
-                                {isMissing && field.sparse && (
+                                {field.sparse && (
                                     <p className="text-sm text-muted-foreground mt-2">
-                                        Using default {spec.defaultValue} — saving creates an override.
+                                        {isMissing ? field.unsetNote : field.overrideNote}
                                     </p>
                                 )}
                                 {field.note && (
@@ -292,7 +315,7 @@ export function SettingsTab() {
                 <p className="text-sm text-blue-600/80 dark:text-blue-300/80 leading-relaxed">
                     Numeric configuration applied live across the app. Values are bounded on both
                     the client and the server, so an out-of-range entry is rejected rather than
-                    silently clamped. Rate limits without an override use their static default —
+                    silently clamped. Rate limits without an override use their built-in limit —
                     no row needed. Seed the rest with <code className="bg-blue-500/10 px-1 rounded text-blue-700 dark:text-blue-400 tabular-nums">npx convex run migrations:seedAppSettings</code>.
                 </p>
             </aside>

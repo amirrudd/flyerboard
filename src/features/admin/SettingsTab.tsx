@@ -14,6 +14,8 @@ import {
     SETTING_FEED_SALE_MEMBER_CAP,
     SETTING_FEED_BUNDLE_MEMBER_CAP,
     getAppSettingSpec,
+    UNLIMITED_CAP,
+    isUnlimitedCap,
 } from "../../../convex/lib/appConfig";
 import {
     RATE_LIMITS,
@@ -223,6 +225,9 @@ export function SettingsTab() {
                             Number.isInteger(parsed) &&
                             parsed >= spec.min &&
                             parsed <= spec.max;
+                        // Unlimited-capable fields (feed member caps) use -1 as a
+                        // "no limit" sentinel, surfaced as a toggle instead of a raw number.
+                        const isUnlimited = !!spec.unlimited && Number.isInteger(parsed) && isUnlimitedCap(parsed);
                         const isChanged = inputValue !== String(serverValue);
                         const isSaving = savingKey === field.key;
                         // Sparse fields (rate limits) save even without a row —
@@ -256,23 +261,31 @@ export function SettingsTab() {
                                     </p>
                                 )}
                                 <div className="flex items-center gap-3 flex-wrap">
-                                    <input
-                                        id={inputId}
-                                        type="number"
-                                        inputMode="numeric"
-                                        min={spec.min}
-                                        max={spec.max}
-                                        step={1}
-                                        value={inputValue}
-                                        disabled={isMissing && !field.sparse}
-                                        aria-invalid={!isValid}
-                                        aria-describedby={!isValid ? helperId : undefined}
-                                        onChange={(e) =>
-                                            setDrafts((prev) => ({ ...prev, [field.key]: e.target.value }))
-                                        }
-                                        className="w-28 h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70 tabular-nums disabled:opacity-50 disabled:cursor-not-allowed aria-[invalid=true]:ring-destructive/60"
-                                    />
-                                    <span className="text-sm text-muted-foreground">{field.suffix}</span>
+                                    {isUnlimited ? (
+                                        <span className="h-11 inline-flex items-center px-4 bg-muted/50 rounded-full text-sm font-medium text-foreground">
+                                            Unlimited — every item shows
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <input
+                                                id={inputId}
+                                                type="number"
+                                                inputMode="numeric"
+                                                min={spec.unlimited ? 0 : spec.min}
+                                                max={spec.max}
+                                                step={1}
+                                                value={inputValue}
+                                                disabled={isMissing && !field.sparse}
+                                                aria-invalid={!isValid}
+                                                aria-describedby={!isValid ? helperId : undefined}
+                                                onChange={(e) =>
+                                                    setDrafts((prev) => ({ ...prev, [field.key]: e.target.value }))
+                                                }
+                                                className="w-28 h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70 tabular-nums disabled:opacity-50 disabled:cursor-not-allowed aria-[invalid=true]:ring-destructive/60"
+                                            />
+                                            <span className="text-sm text-muted-foreground">{field.suffix}</span>
+                                        </>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => { void handleSave(field.key, field.label, parsed); }}
@@ -285,9 +298,29 @@ export function SettingsTab() {
                                         Save
                                     </button>
                                 </div>
+                                {spec.unlimited && (
+                                    <label className="flex items-center gap-2 mt-3 text-sm text-foreground/80 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={isUnlimited}
+                                            onChange={(e) =>
+                                                setDrafts((prev) => ({
+                                                    ...prev,
+                                                    [field.key]: e.target.checked
+                                                        ? String(UNLIMITED_CAP)
+                                                        : String(Math.max(0, spec.defaultValue)),
+                                                }))
+                                            }
+                                            className="h-4 w-4 rounded accent-primary"
+                                        />
+                                        No limit — show every item as its own listing
+                                    </label>
+                                )}
                                 {!isValid && (
                                     <p id={helperId} className="text-sm text-destructive mt-2">
-                                        Enter {spec.min}–{spec.max} {field.unit}
+                                        {spec.unlimited
+                                            ? `Enter 0–${spec.max} ${field.unit}, or tick “No limit”.`
+                                            : `Enter ${spec.min}–${spec.max} ${field.unit}`}
                                     </p>
                                 )}
                                 {isMissing && !field.sparse && (

@@ -22,6 +22,7 @@ import {
   SETTING_FEED_BUNDLE_MEMBER_CAP,
   DEFAULT_FEED_SALE_MEMBER_CAP,
   DEFAULT_FEED_BUNDLE_MEMBER_CAP,
+  isUnlimitedCap,
 } from "../../convex/lib/appConfig";
 
 export function HomePage() {
@@ -64,7 +65,8 @@ export function HomePage() {
   //    render exactly like single listings, so cap how many members of one
   //    Sale (default 3) or Bundle (default 2) show — a 4-item bundle would
   //    otherwise yield 5 cards from one seller. Caps are admin-tunable via
-  //    Admin > Settings (appSettings feedSaleMemberCap / feedBundleMemberCap).
+  //    Admin > Settings (appSettings feedSaleMemberCap / feedBundleMemberCap);
+  //    -1 = unlimited (every member shows), 0 = only the composite card.
   //    Category/search results stay uncapped — "members look like plain
   //    listings in search" is a deliberate design decision (see
   //    bundle-listing-design.md).
@@ -76,6 +78,7 @@ export function HomePage() {
     if (!feed) return feed;
     const counts = new Map<string, number>();
     const underCap = (key: string, max: number) => {
+      if (isUnlimitedCap(max)) return true; // Unlimited — every member shows as its own listing.
       const n = (counts.get(key) ?? 0) + 1;
       counts.set(key, n);
       return n <= max;

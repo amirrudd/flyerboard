@@ -54,6 +54,23 @@ export interface AppSettingSpec {
     description: string;
     /** Whether migrations:seedAppSettings creates this row. */
     seed: boolean;
+    /**
+     * When true, the value {@link UNLIMITED_CAP} (-1) is a valid "no limit" sentinel
+     * and the admin UI renders an Unlimited toggle instead of forcing a finite number.
+     * Consumers must treat a negative value as "uncapped".
+     */
+    unlimited?: boolean;
+}
+
+/**
+ * Sentinel meaning "no limit" for {@link AppSettingSpec.unlimited} settings.
+ * -1 (not 0, which is a real value = "hide all members, show only the composite card").
+ */
+export const UNLIMITED_CAP = -1;
+
+/** Whether a cap value means "no limit" (uncapped). */
+export function isUnlimitedCap(value: number): boolean {
+    return value < 0;
 }
 
 const SEEDED_SPECS: AppSettingSpec[] = [
@@ -105,20 +122,22 @@ const SEEDED_SPECS: AppSettingSpec[] = [
     {
         key: SETTING_FEED_SALE_MEMBER_CAP,
         defaultValue: DEFAULT_FEED_SALE_MEMBER_CAP,
-        min: 0,
+        min: UNLIMITED_CAP,
         max: 10,
         description:
-            "How many of a Moving Sale's individual items can appear in the home feed alongside the sale's own card (the sale's card always shows).",
+            "How many of a Moving Sale's individual items can also appear in the home feed as their own listings, alongside the sale's card (which always shows). Set to Unlimited to let every item show, or 0 to show only the sale card.",
         seed: true,
+        unlimited: true,
     },
     {
         key: SETTING_FEED_BUNDLE_MEMBER_CAP,
         defaultValue: DEFAULT_FEED_BUNDLE_MEMBER_CAP,
-        min: 0,
+        min: UNLIMITED_CAP,
         max: 10,
         description:
-            "How many of a bundle's individual items can appear in the home feed alongside the bundle's own card (the bundle's card always shows).",
+            "How many of a bundle's individual items can also appear in the home feed as their own listings, alongside the bundle's card (which always shows). Set to Unlimited to let every item show, or 0 to show only the bundle card.",
         seed: true,
+        unlimited: true,
     },
 ];
 

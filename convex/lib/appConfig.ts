@@ -164,5 +164,7 @@ export function clampAppSetting(key: string, value: number): number {
 export function isAppSettingInRange(key: string, value: number): boolean {
     const spec = SPECS_BY_KEY.get(key);
     if (!spec) return true;
-    return Number.isFinite(value) && value >= spec.min && value <= spec.max;
+    // All registered settings are integer counts/days — reject floats so the
+    // stored value never drifts from what the server's clamp (which floors) enforces.
+    return Number.isInteger(value) && value >= spec.min && value <= spec.max;
 }

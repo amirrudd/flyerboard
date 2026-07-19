@@ -138,6 +138,17 @@ describe("appSettings.updateSetting (admin-only)", () => {
     ).rejects.toThrow(/out of range/i);
   });
 
+  test("rejects a non-integer value (settings are counts/days)", async () => {
+    const t = convexTest(schema, modules);
+    await seedUser(t, "admin", true);
+    await setSetting(t, "bundleMaxItems", 4);
+    const asAdmin = t.withIdentity({ subject: "admin" });
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "bundleMaxItems", value: 3.7 })
+    ).rejects.toThrow(/out of range/i);
+    expect(await t.query(api.appSettings.getSetting, { key: "bundleMaxItems" })).toBe(4);
+  });
+
   test("rejects an UNKNOWN key that has no row (no blind insert)", async () => {
     const t = convexTest(schema, modules);
     await seedUser(t, "admin", true);

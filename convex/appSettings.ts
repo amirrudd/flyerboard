@@ -2,7 +2,7 @@ import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/adminAuth";
 import { logAdminAction } from "./lib/logger";
-import { clampBoostSetting, isBoostSettingInRange } from "./lib/boost";
+import { clampAppSetting, isAppSettingInRange, getAppSettingSpec } from "./lib/appConfig";
 
 // ============================================================================
 // APP SETTINGS (numeric, admin-tunable) — mirrors convex/featureFlags.ts
@@ -42,7 +42,7 @@ export const getSetting = query({
   handler: async (ctx, args) => {
     const raw = await readSettingValue(ctx, args.key);
     if (raw === null) return null;
-    return clampBoostSetting(args.key, raw);
+    return clampAppSetting(args.key, raw);
   },
 });
 
@@ -72,9 +72,11 @@ export const getAllSettings = query({
 
 /**
  * Update a setting's value (admin-only). REJECTS (throws) out-of-range values for
- * known boost keys — an admin gets loud feedback rather than a silent clamp. Reads
- * still clamp as defense-in-depth (see `getSetting`). Requires the setting to exist
- * (seed it via `migrations:seedAppSettings` first), mirroring featureFlags.update.
+ * known keys (registry in convex/lib/appConfig.ts) — an admin gets loud feedback
+ * rather than a silent clamp. Reads still clamp as defense-in-depth (see `getSetting`).
+ * UPSERTS for known keys: a missing row is created with the registry description —
+ * this is what lets sparse rate-limit overrides (never seeded) be set from the admin
+ * tab. Unknown keys still require the row to exist (mirroring featureFlags.update).
  */
 export const updateSetting = mutation({
   args: {
@@ -85,7 +87,7 @@ export const updateSetting = mutation({
   handler: async (ctx, args) => {
     const adminUser = await requireAdmin(ctx);
 
-    if (!isBoostSettingInRange(args.key, args.value)) {
+    if (!isAppSettingInRange(args.key, args.value)) {
       throw new Error(
         `Value ${args.value} is out of range for setting "${args.key}".`
       );
@@ -97,7 +99,22 @@ export const updateSetting = mutation({
       .first();
 
     if (!setting) {
-      throw new Error(`Setting "${args.key}" not found`);
+      const spec = getAppSettingSpec(args.key);
+      if (!spec) {
+        throw new Error(`Setting "${args.key}" not found`);
+      }
+      // Known key without a row (e.g. a sparse rate-limit override) — create it.
+      await ctx.db.insert("appSettings", {
+        key: args.key,
+        value: args.value,
+        description: spec.description,
+      });
+      logAdminAction("App setting created", {
+        adminId: adminUser,
+        key: args.key,
+        value: args.value,
+      });
+      return { success: true };
     }
 
     await ctx.db.patch(setting._id, { value: args.value });

@@ -63,29 +63,6 @@ export function clampDailyCap(cap: number): number {
   return clampInt(cap, BOOST_DAILY_CAP_MIN, BOOST_DAILY_CAP_MAX, DEFAULT_BOOST_DAILY_CAP);
 }
 
-/**
- * Clamp a stored `appSettings` value for a KNOWN boost key; unknown keys pass through
- * untouched. Used on read (getSetting) so the client countdown and any consumer sees
- * the same bounded value the server enforces, even if a raw out-of-range value somehow
- * landed in the DB.
- */
-export function clampBoostSetting(key: string, value: number): number {
-  if (key === SETTING_BOOST_COOLDOWN_DAYS) return clampCooldownDays(value);
-  if (key === SETTING_BOOST_DAILY_CAP) return clampDailyCap(value);
-  return value;
-}
-
-/**
- * Whether a value is within the accepted range for a KNOWN boost key. Used by
- * `updateSetting` to REJECT out-of-range writes loudly (better admin feedback than a
- * silent clamp). Unknown keys are always considered valid here.
- */
-export function isBoostSettingInRange(key: string, value: number): boolean {
-  if (key === SETTING_BOOST_COOLDOWN_DAYS) {
-    return Number.isFinite(value) && value >= BOOST_COOLDOWN_DAYS_MIN && value <= BOOST_COOLDOWN_DAYS_MAX;
-  }
-  if (key === SETTING_BOOST_DAILY_CAP) {
-    return Number.isFinite(value) && value >= BOOST_DAILY_CAP_MIN && value <= BOOST_DAILY_CAP_MAX;
-  }
-  return true;
-}
+// Key-based clamp/range validation moved to the generic setting registry in
+// convex/lib/appConfig.ts (clampAppSetting / isAppSettingInRange), which reuses the
+// bounds above — appSettings.ts validates ALL known keys through it, not just boost.

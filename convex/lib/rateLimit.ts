@@ -1,58 +1,29 @@
 import { internalMutation, MutationCtx } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
+import {
+    RATE_LIMITS,
+    OVERRIDABLE_RATE_LIMIT_OPS,
+    rateLimitSettingKey,
+} from "./rateLimitConfig";
+import { clampAppSetting } from "./appConfig";
+import { readSettingValue } from "../appSettings";
 
 /**
- * Rate limiting configuration for different operations.
- * Uses a sliding window approach stored in memory.
- * 
+ * Rate limiting enforcement (sliding window over rows in the `uploads` table).
+ *
+ * The static limits DATA lives in `./rateLimitConfig.ts` (frontend-safe, so the
+ * admin SettingsTab can render the same defaults). `checkRateLimit` additionally
+ * honours an admin override per op: an appSettings row `rateLimitMax_<op>`
+ * replaces `maxRequests` (clamped to [1, 4× static default]); the window is never
+ * overridable. Missing row = static default.
+ *
  * Note: This is an in-process rate limiter. For production scale,
  * consider using Convex's built-in rate limiting or external service.
  */
 
-interface RateLimitConfig {
-    /** Maximum number of requests allowed in the window */
-    maxRequests: number;
-    /** Time window in milliseconds */
-    windowMs: number;
-}
-
-/** Default rate limits per operation type */
-export const RATE_LIMITS: Record<string, RateLimitConfig> = {
-    // Flyer operations
-    createAd: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
-
-    // Moving Sale Mode — sale events are heavier (bulk items + AI). Cap creation tightly.
-    createSaleEvent: { maxRequests: 5, windowMs: 24 * 60 * 60 * 1000 }, // 5 per day
-    addSaleItems: { maxRequests: 60, windowMs: 60 * 60 * 1000 },        // 60 item-creates per hour (covers a 25-item sale + retries)
-    createBundle: { maxRequests: 20, windowMs: 60 * 60 * 1000 },        // 20 standalone bundles per hour
-    updateAd: { maxRequests: 30, windowMs: 60 * 60 * 1000 }, // 30 per hour
-    deleteAd: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
-
-    // Messaging
-    sendMessage: { maxRequests: 60, windowMs: 60 * 1000 }, // 60 per minute
-    createChat: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
-
-    // Reports
-    createReport: { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
-
-    // Ratings
-    submitRating: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
-
-    // Image uploads
-    generateUploadUrl: { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
-
-    // Boost ("push to top") — ABUSE BACKSTOP ONLY. The real, admin-configurable
-    // per-user daily cap is enforced inside `boostAd` via `checkRateLimitDynamic`
-    // (default 3/day, tunable 1–20 from the admin Settings tab). This static entry
-    // defines the hard ceiling (20 = BOOST_DAILY_CAP_MAX) and the window; the
-    // configurable cap is clamped to ≤ this ceiling, so a single rate-limit row per
-    // boost enforces both without double-counting. See convex/posts.ts boostAd.
-    boostAd: { maxRequests: 20, windowMs: 24 * 60 * 60 * 1000 }, // 20 per day (backstop)
-
-    // Default for unspecified operations
-    default: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
-};
+// Re-exported for existing importers/tests; the data itself lives in rateLimitConfig.
+export { RATE_LIMITS };
 
 /**
  * Checks if a user has exceeded their rate limit for an operation.
@@ -76,7 +47,13 @@ export async function checkRateLimit(
     operation: string
 ): Promise<void> {
     const config = RATE_LIMITS[operation] || RATE_LIMITS.default;
-    await checkRateLimitDynamic(ctx, userId, operation, config.maxRequests, config.windowMs);
+    let maxRequests = config.maxRequests;
+    if (OVERRIDABLE_RATE_LIMIT_OPS.includes(operation)) {
+        const key = rateLimitSettingKey(operation);
+        const raw = await readSettingValue(ctx, key);
+        if (raw !== null) maxRequests = clampAppSetting(key, raw);
+    }
+    await checkRateLimitDynamic(ctx, userId, operation, maxRequests, config.windowMs);
 }
 
 /**

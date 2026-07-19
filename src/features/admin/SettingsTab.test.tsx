@@ -124,6 +124,64 @@ describe('SettingsTab', () => {
         });
     });
 
+    it('renders group headings and the total settings count', () => {
+        render(<SettingsTab />);
+
+        for (const heading of ['Boost', 'Bundles', 'Moving Sales', 'Feed', 'Rate limits']) {
+            expect(screen.getByText(heading)).toBeInTheDocument();
+        }
+        // 7 seeded knobs + 11 overridable rate-limit ops.
+        expect(screen.getByText('18 settings')).toBeInTheDocument();
+    });
+
+    it('shows the static default for a rate-limit field with no row and saves an override', async () => {
+        render(<SettingsTab />); // SEEDED has no rateLimitMax_* rows
+
+        const input = screen.getByLabelText('createAd');
+        expect(input).toHaveValue(10); // static default from RATE_LIMITS.createAd
+        expect(input).toBeEnabled(); // sparse — editable despite the missing row
+        expect(screen.getAllByText(/Using default 10 — saving creates an override/).length).toBeGreaterThan(0);
+
+        fireEvent.change(input, { target: { value: '20' } });
+        const card = input.closest('article')!;
+        const save = card.querySelector('button')!;
+        expect(save).toBeEnabled();
+        fireEvent.click(save);
+
+        await waitFor(() => {
+            expect(mockUpdateSetting).toHaveBeenCalledWith({ key: 'rateLimitMax_createAd', value: 20 });
+        });
+    });
+
+    it('rejects an over-clamp rate-limit value client-side (max 4× static default)', () => {
+        render(<SettingsTab />);
+        const input = screen.getByLabelText('createAd');
+
+        fireEvent.change(input, { target: { value: '41' } }); // createAd default 10 → max 40
+
+        expect(screen.getByText('Enter 1–40 requests')).toBeInTheDocument();
+        const save = input.closest('article')!.querySelector('button')!;
+        expect(save).toBeDisabled();
+    });
+
+    it('renders a grouped non-boost field with its seeded value', () => {
+        mockUseQuery.mockReturnValue([
+            ...SEEDED,
+            {
+                _id: 'setting_bundle_max' as any,
+                _creationTime: 3,
+                key: 'bundleMaxItems',
+                value: 4,
+                description: 'Max ads in one bundle.',
+            },
+        ]);
+        render(<SettingsTab />);
+
+        const input = screen.getByLabelText('Bundle max items');
+        expect(input).toHaveValue(4);
+        expect(screen.getByText('Max ads in one bundle.')).toBeInTheDocument();
+    });
+
     it('degrades gracefully when a setting has not been seeded', () => {
         mockUseQuery.mockReturnValue([]);
         render(<SettingsTab />);

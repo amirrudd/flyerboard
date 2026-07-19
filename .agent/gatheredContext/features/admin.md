@@ -1,6 +1,6 @@
 # Admin Patterns & Dashboard
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-18
 
 ## Overview
 
@@ -197,12 +197,14 @@ Main admin interface with tab navigation.
 ### SettingsTab (numeric app config)
 **File**: `src/features/admin/SettingsTab.tsx` (added Jul 2026, Boost feature)
 
-The numeric sibling of `FeatureFlagsTab`: `featureFlags` stores booleans, `appSettings` stores numbers. Backs the two admin-tunable Boost knobs (`boostCooldownDays` default 7, `boostDailyCap` default 3). Backend: `convex/appSettings.ts` (admin-gated `getAllSettings` + `updateSetting`, public `getSetting`); bounds/defaults/keys live in `convex/lib/boost.ts` and are **imported by the component** (never hardcode 1/30/1/20 — the client bound must track the server clamp).
+The numeric sibling of `FeatureFlagsTab`: `featureFlags` stores booleans, `appSettings` stores numbers. As of Jul 2026 the tab renders **grouped sections** (Boost, Bundles, Moving Sales, Feed, Rate limits) — same per-field card design, lightweight `h3` group headers, count chip = total fields. Backend: `convex/appSettings.ts` (admin-gated `getAllSettings` + `updateSetting` with known-key upsert, public `getSetting`); bounds/defaults come from the setting registry in `convex/lib/appConfig.ts` via `getAppSettingSpec(key)` (boost bounds still originate in `convex/lib/boost.ts`; rate-limit data in `convex/lib/rateLimitConfig.ts`) and are **imported by the component** (never hardcode bounds — the client bound must track the server clamp).
+
+**Sparse rate-limit fields**: one field per op in `OVERRIDABLE_RATE_LIMIT_OPS` (generated, not hand-listed). No row seeded — a missing row renders the static default, stays EDITABLE, shows "Using default N — saving creates an override", and Save upserts the `rateLimitMax_<op>` row. The "Not configured — run seedAppSettings" disabled state applies only to must-seed (non-sparse) fields.
 
 Patterns worth reusing for future numeric settings:
 - **Draft map, no useEffect sync**: `drafts: Record<key,string>` holds a value only while mid-edit; the displayed value is `drafts[key] ?? String(serverValue)`. After a successful save, `delete drafts[key]` so the input falls back to the (now reactive/updated) server value. Avoids stale-state useEffect syncing.
-- **Dual validation**: client disables Save + shows `text-destructive` helper (`Enter {min}–{max} {unit}`) when out of range OR unchanged; server (`updateSetting`) *rejects* (throws) out-of-range via `isBoostSettingInRange` rather than silently clamping — the admin gets loud feedback. Reads still clamp (`clampBoostSetting`) as defense-in-depth.
-- **Graceful un-seeded state**: if a known key is absent from `getAllSettings`, render the field from its code default with Save disabled + a "run `npx convex run migrations:seedAppSettings`" hint (mirrors FeatureFlagsTab's seed hint). Seed: `migrations:seedAppSettings` (idempotent, never overwrites a tuned value).
+- **Dual validation**: client disables Save + shows `text-destructive` helper (`Enter {min}–{max} {unit}`) when out of range OR unchanged; server (`updateSetting`) *rejects* (throws) out-of-range via `isAppSettingInRange` (generic, registry-driven) rather than silently clamping — the admin gets loud feedback. Reads still clamp (`clampAppSetting`) as defense-in-depth.
+- **Graceful un-seeded state**: if a must-seed key is absent from `getAllSettings`, render the field from its registry default with Save disabled + a "run `npx convex run migrations:seedAppSettings`" hint (mirrors FeatureFlagsTab's seed hint). Sparse (rate-limit) keys stay editable instead. Seed: `migrations:seedAppSettings` (idempotent, never overwrites a tuned value, skips `seed: false` entries).
 - Icon: phosphor `Sliders` (repo convention — NOT lucide; enforced by `src/test/phosphor-migration.test.ts`).
 - Tests: `src/features/admin/SettingsTab.test.tsx` mock `convex/react` (`useQuery`/`useMutation`) + `sonner` inline — the established pattern from `AdminDashboardPage.test.tsx` (no per-tab test existed before this).
 

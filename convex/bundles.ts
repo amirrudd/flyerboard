@@ -681,3 +681,15 @@ export const getSavedBundles = query({
     return withBundle.filter((x): x is NonNullable<typeof x> => x !== null);
   },
 });
+
+/**
+ * DEPLOY COMPAT STUB (remove one release after the unified feed ships).
+ * The real query was replaced by `feed.getFeed`; browser sessions opened before
+ * the deploy still subscribe to it (a missing public function throws and crashes
+ * the stale tab's feed). Returns no cards — stale tabs degrade to an ads-only
+ * feed until refreshed.
+ */
+export const getActiveBundleFeedCards = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async () => [],
+});

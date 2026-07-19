@@ -757,3 +757,12 @@ export const getSavedSaleEvents = query({
     return withSale.filter((x): x is NonNullable<typeof x> => x !== null);
   },
 });
+
+/**
+ * DEPLOY COMPAT STUB (remove one release after the unified feed ships).
+ * Replaced by `feed.getFeed`; see bundles.getActiveBundleFeedCards for rationale.
+ */
+export const getActiveSales = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async () => [],
+});

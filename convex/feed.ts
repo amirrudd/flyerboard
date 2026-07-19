@@ -121,7 +121,7 @@ export const getFeed = query({
     maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const maxSortTime = args.maxSortTime || Date.now();
+    const maxSortTime = args.maxSortTime ?? Date.now();
 
     // ── Category branch: ads only, logic identical to getAds' category branch.
     if (args.categoryId) {

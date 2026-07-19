@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { SettingsTab } from './SettingsTab';
 
 // useQuery → getAllSettings result; useMutation → updateSetting.
@@ -216,6 +216,51 @@ describe('SettingsTab', () => {
             screen.getByText('The most flyers a seller can group into a single bundle.'),
         ).toBeInTheDocument();
         expect(screen.queryByText('Max ads in one bundle.')).not.toBeInTheDocument();
+    });
+
+    it('renders a stored Unlimited (-1) feed cap as the Unlimited state with the toggle checked', () => {
+        mockUseQuery.mockReturnValue([
+            ...SEEDED,
+            {
+                _id: 'setting_feed_bundle' as any,
+                _creationTime: 4,
+                key: 'feedBundleMemberCap',
+                value: -1,
+                description: 'stale',
+            },
+        ]);
+        render(<SettingsTab />);
+
+        const card = screen.getByText('Bundle members in feed').closest('article')!;
+        expect(within(card).getByText('Unlimited — every item shows')).toBeInTheDocument();
+        expect(within(card).getByRole('checkbox', { name: /No limit/i })).toBeChecked();
+        // No finite number input while unlimited.
+        expect(screen.queryByLabelText('Bundle members in feed')).not.toBeInTheDocument();
+    });
+
+    it('ticking No-limit on a finite feed cap saves -1', async () => {
+        mockUseQuery.mockReturnValue([
+            ...SEEDED,
+            {
+                _id: 'setting_feed_bundle' as any,
+                _creationTime: 4,
+                key: 'feedBundleMemberCap',
+                value: 2,
+                description: 'stale',
+            },
+        ]);
+        render(<SettingsTab />);
+
+        const card = screen.getByText('Bundle members in feed').closest('article')!;
+        expect(within(card).getByLabelText('Bundle members in feed')).toHaveValue(2);
+        const toggle = within(card).getByRole('checkbox', { name: /No limit/i });
+        expect(toggle).not.toBeChecked();
+        fireEvent.click(toggle);
+
+        fireEvent.click(within(card).getByRole('button', { name: 'Save' }));
+        await waitFor(() =>
+            expect(mockUpdateSetting).toHaveBeenCalledWith({ key: 'feedBundleMemberCap', value: -1 }),
+        );
     });
 
     it('degrades gracefully when a setting has not been seeded', () => {

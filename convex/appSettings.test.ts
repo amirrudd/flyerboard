@@ -202,9 +202,17 @@ describe("appSettings.updateSetting (admin-only)", () => {
       ).success
     ).toBe(true);
 
-    // feed member caps: 0–10
+    // feed member caps: -1–10 (-1 = unlimited sentinel, 0 = hide all members)
     await expect(
       asAdmin.mutation(api.appSettings.updateSetting, { key: "feedSaleMemberCap", value: 11 })
+    ).rejects.toThrow(/out of range/i);
+    // -1 (unlimited) is accepted; -2 is below the floor.
+    expect(
+      (await asAdmin.mutation(api.appSettings.updateSetting, { key: "feedSaleMemberCap", value: -1 })).success
+    ).toBe(true);
+    expect(await t.query(api.appSettings.getSetting, { key: "feedSaleMemberCap" })).toBe(-1);
+    await expect(
+      asAdmin.mutation(api.appSettings.updateSetting, { key: "feedBundleMemberCap", value: -2 })
     ).rejects.toThrow(/out of range/i);
   });
 

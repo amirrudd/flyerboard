@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     classifyLatestAds,
+    entryKey,
     mergeFreshRail,
     mergeAheadOfQuery,
     nextWatermark,
@@ -88,38 +89,54 @@ describe('mergeFreshRail — accumulation with boost replacement', () => {
     });
 });
 
-describe('mergeAheadOfQuery — display rebuild', () => {
-    it('never yields a duplicate _id after rebuild (fresh copy wins)', () => {
+// Unified feed: the query page is a discriminated union; the dedupe key is
+// kind + id (the fresh rail is ads-only, so composite entries always pass).
+const adEntry = (id: string, bumpedAt: number) => ({ kind: 'ad' as const, ad: ad(id, bumpedAt) });
+
+describe('mergeAheadOfQuery — display rebuild over the unified feed page', () => {
+    it('never yields a duplicate kind+id after rebuild (fresh copy wins)', () => {
         const fresh = [ad('boosted', 900), ad('new', 800)];
-        const query = [ad('boosted', 100), ad('other', 90)];
+        const query = [adEntry('boosted', 100), adEntry('other', 90)];
         const rebuilt = mergeAheadOfQuery(fresh, query);
-        const ids = rebuilt.map((a) => a._id);
-        expect(new Set(ids).size).toBe(ids.length);
+        const keys = rebuilt.map(entryKey);
+        expect(new Set(keys).size).toBe(keys.length);
         // The surviving copy of the boosted ad is the fresh (re-bumped) one.
-        expect(rebuilt.find((a) => a._id === 'boosted')?.bumpedAt).toBe(900);
-        expect(ids).toEqual(['boosted', 'new', 'other']);
+        const survivor = rebuilt.find((e) => e.kind === 'ad' && e.ad._id === 'boosted');
+        expect(survivor && 'ad' in survivor ? survivor.ad.bumpedAt : undefined).toBe(900);
+        expect(keys).toEqual(['ad:boosted', 'ad:new', 'ad:other']);
     });
 
     it('keeps fresh ads alive when the query re-emits without them', () => {
         const fresh = [ad('freshOnly', 500)];
-        const rebuilt = mergeAheadOfQuery(fresh, [ad('q1', 100)]);
-        expect(rebuilt.map((a) => a._id)).toEqual(['freshOnly', 'q1']);
+        const rebuilt = mergeAheadOfQuery(fresh, [adEntry('q1', 100)]);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:freshOnly', 'ad:q1']);
+    });
+
+    it('composite cards pass through untouched, even sharing an id with a fresh ad', () => {
+        const fresh = [ad('x', 900)];
+        const query = [
+            { kind: 'bundle' as const, card: { _id: 'x' } }, // same raw id, different kind
+            adEntry('x', 100), // stale copy — shadowed by the fresh rail
+            { kind: 'sale' as const, card: { _id: 's1' } },
+        ];
+        const rebuilt = mergeAheadOfQuery(fresh, query);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:x', 'bundle:x', 'sale:s1']);
     });
 
     it('full boost round-trip: eject → recover via rail → exactly one copy at top', () => {
         // Session holds A@100, B@90 from the paginated query. A is boosted to
         // 500 (the reactive query will eject it). getLatestAds returns A@500.
-        const query = [ad('A', 100), ad('B', 90)];
-        const { brandNew, boosted } = classifyLatestAds([ad('A', 500)], query);
+        const query = [adEntry('A', 100), adEntry('B', 90)];
+        const { brandNew, boosted } = classifyLatestAds([ad('A', 500)], [ad('A', 100), ad('B', 90)]);
         const rail = mergeFreshRail([], brandNew, boosted);
         // Rebuild against the ORIGINAL query snapshot (worst case: stale copy
         // still present) — the rail copy must shadow it.
         const rebuilt = mergeAheadOfQuery(rail, query);
-        expect(rebuilt.map((a) => a._id)).toEqual(['A', 'B']);
-        expect(rebuilt[0].bumpedAt).toBe(500);
+        expect(rebuilt.map(entryKey)).toEqual(['ad:A', 'ad:B']);
+        expect(rebuilt[0].kind === 'ad' && rebuilt[0].ad.bumpedAt).toBe(500);
         // And against the post-ejection re-emit (A gone from query results).
-        const rebuiltAfterEject = mergeAheadOfQuery(rail, [ad('B', 90)]);
-        expect(rebuiltAfterEject.map((a) => a._id)).toEqual(['A', 'B']);
+        const rebuiltAfterEject = mergeAheadOfQuery(rail, [adEntry('B', 90)]);
+        expect(rebuiltAfterEject.map(entryKey)).toEqual(['ad:A', 'ad:B']);
     });
 });
 

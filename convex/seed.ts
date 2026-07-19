@@ -222,6 +222,8 @@ export const seedMovingSale = internalMutation({
       status: "active",
       expiresAt: end + 2 * 24 * 60 * 60 * 1000,
       createdAt: Date.now(),
+      bumpedAt: Date.now(), // Unified-feed sort key.
+      boostCount: 0,
     });
 
     // 4. Items (live ads tied to the sale).
@@ -262,6 +264,7 @@ export const seedMovingSale = internalMutation({
         label: spec.label,
         bundlePrice: spec.price,
         adIds,
+        bumpedAt: Date.now(), // Unified-feed sort key (sale bundles never feed, but keep the field total).
       });
       for (const adId of adIds) await ctx.db.patch(adId, { bundleId });
     }

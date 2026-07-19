@@ -409,55 +409,6 @@ describe("getBundleBannerForAd", () => {
   });
 });
 
-describe("getActiveBundleFeedCards", () => {
-  test("returns active standalone bundles with covers + adIds, newest first", async () => {
-    const { t, userId, categoryId, asUser } = await fresh();
-    const a = await insertAd(t, { userId, categoryId, price: 350, images: ["r2:a.jpg"] });
-    const b = await insertAd(t, { userId, categoryId, price: 280, images: ["r2:b.jpg"] });
-    await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 530 });
-
-    const cards = await t.query(api.bundles.getActiveBundleFeedCards, {});
-    expect(cards).toHaveLength(1);
-    expect(cards[0].itemCount).toBe(2);
-    expect(cards[0].savings).toBe(100);
-    expect(cards[0].covers).toEqual(["r2:a.jpg", "r2:b.jpg"]);
-    expect(cards[0].adIds).toEqual([a, b]);
-  });
-
-  test("excludes partial/sold bundles and Sale-scoped bundles", async () => {
-    const { t, userId, categoryId, asUser } = await fresh();
-    // Partial standalone bundle.
-    const a = await insertAd(t, { userId, categoryId });
-    const b = await insertAd(t, { userId, categoryId });
-    await asUser.mutation(api.bundles.createBundle, { adIds: [a, b], bundlePrice: 50 });
-    await asUser.mutation(api.bundles.markBundleItemSold, { adId: a });
-    // Sale-scoped bundle (should never appear in the standalone feed).
-    const saleEventId = await t.run((ctx) =>
-      ctx.db.insert("saleEvents", {
-        userId,
-        title: "Sale",
-        suburb: "Richmond, VIC",
-        pickupWindowStart: Date.now(),
-        pickupWindowEnd: Date.now() + 3600_000,
-        status: "active",
-        createdAt: Date.now(),
-      })
-    );
-    await t.run((ctx) =>
-      ctx.db.insert("saleBundles", {
-        saleEventId,
-        sellerId: userId,
-        status: "active",
-        label: "Sale bundle",
-        bundlePrice: 20,
-        adIds: [],
-      })
-    );
-    const cards = await t.query(api.bundles.getActiveBundleFeedCards, {});
-    expect(cards).toHaveLength(0);
-  });
-});
-
 describe("getEligibleAdsForBundle", () => {
   test("flags eligibility and reasons", async () => {
     const { t, userId, categoryId, asUser } = await fresh();

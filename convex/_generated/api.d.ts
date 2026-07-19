@@ -20,6 +20,7 @@ import type * as crons from "../crons.js";
 import type * as deleteR2Images from "../deleteR2Images.js";
 import type * as descopeAuth from "../descopeAuth.js";
 import type * as featureFlags from "../featureFlags.js";
+import type * as feed from "../feed.js";
 import type * as http from "../http.js";
 import type * as imageCleanup from "../imageCleanup.js";
 import type * as image_actions from "../image_actions.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   deleteR2Images: typeof deleteR2Images;
   descopeAuth: typeof descopeAuth;
   featureFlags: typeof featureFlags;
+  feed: typeof feed;
   http: typeof http;
   imageCleanup: typeof imageCleanup;
   image_actions: typeof image_actions;

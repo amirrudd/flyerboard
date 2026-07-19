@@ -83,18 +83,37 @@ export function mergeFreshRail<T extends SortableAd>(
   return [...brandNew, ...boosted, ...fresh.filter((ad) => !replacedIds.has(ad._id))];
 }
 
+/** Any feed-page entry the merge can key: an ad entry or a composite card. */
+export type KeyableEntry = { kind: string } & (
+  | { ad: { _id: string } }
+  | { card: { _id: string } }
+);
+
 /**
- * Rebuild the display list: the fresh rail merged AHEAD of the paginated query
- * results, with the fresh copy winning by `_id`. This single rule both keeps
- * fresh ads alive across query re-emits (8cf9b00) and drops the stale
- * paginated copy of a boosted ad, so an `_id` never appears twice.
+ * The one `kind + id` identity for a feed entry — the dedupe key used by
+ * `mergeAheadOfQuery` (and by tests asserting on merge results).
  */
-export function mergeAheadOfQuery<T extends SortableAd>(
+export function entryKey(e: KeyableEntry): string {
+  return "ad" in e ? `${e.kind}:${e.ad._id}` : `${e.kind}:${e.card._id}`;
+}
+
+/**
+ * Rebuild the display list: the fresh rail merged AHEAD of the unified feed
+ * page, with the fresh copy winning. This single rule both keeps fresh ads
+ * alive across query re-emits (8cf9b00) and drops the stale paginated copy of
+ * a boosted ad, so an entry never appears twice. Unified feed: the page is a
+ * discriminated union, so the dedupe key is `kind + id`; the fresh rail is
+ * ads-only, so only `kind: "ad"` entries can collide — composites pass through.
+ */
+export function mergeAheadOfQuery<T extends SortableAd, E extends KeyableEntry>(
   fresh: readonly T[],
-  queryResults: readonly T[]
-): T[] {
-  const freshIds = new Set(fresh.map((ad) => ad._id));
-  return [...fresh, ...queryResults.filter((ad) => !freshIds.has(ad._id))];
+  queryEntries: readonly E[]
+): (E | { kind: "ad"; ad: T })[] {
+  const freshKeys = new Set(fresh.map((ad) => entryKey({ kind: "ad", ad })));
+  return [
+    ...fresh.map((ad) => ({ kind: "ad" as const, ad })),
+    ...queryEntries.filter((e) => !freshKeys.has(entryKey(e))),
+  ];
 }
 
 /**

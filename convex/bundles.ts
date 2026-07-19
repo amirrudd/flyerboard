@@ -74,13 +74,13 @@ function autoLabel(titles: string[]): string {
   return `${clean[0]} + ${clean.length - 1} more`;
 }
 
-/** Sum of the individual list prices of a set of ads. */
-function separatelyTotal(items: Doc<"ads">[]): number {
+/** Sum of the individual list prices of a set of ads. Exported for feed.ts card hydration. */
+export function separatelyTotal(items: Doc<"ads">[]): number {
   return items.reduce((sum, a) => sum + (a.price ?? 0), 0);
 }
 
-/** Savings math shared by every bundle payload (banner/dashboard/feed). */
-function computeSavings(total: number, bundlePrice: number): { savings: number; savingsPct: number } {
+/** Savings math shared by every bundle payload (banner/dashboard/feed). Exported for feed.ts. */
+export function computeSavings(total: number, bundlePrice: number): { savings: number; savingsPct: number } {
   const savings = Math.max(0, total - bundlePrice);
   return { savings, savingsPct: total > 0 ? Math.round((savings / total) * 100) : 0 };
 }
@@ -88,8 +88,9 @@ function computeSavings(total: number, bundlePrice: number): { savings: number; 
 /**
  * Resolve a bundle's `adIds` into live ad docs (concurrently), dropping deleted/
  * missing ones — optionally sold ones too (the feed card needs a real deal).
+ * Exported for feed.ts card hydration.
  */
-async function hydrateBundleItems(
+export async function hydrateBundleItems(
   ctx: QueryCtx | MutationCtx,
   adIds: Id<"ads">[],
   opts: { excludeSold?: boolean } = {}
@@ -219,6 +220,7 @@ export const createBundle = mutation({
       bundlePrice: args.bundlePrice,
       label,
       status: "active",
+      bumpedAt: Date.now(), // unified-feed sort key
       // saleEventId intentionally omitted — standalone bundle.
     });
     for (const adId of adIds) {
@@ -491,52 +493,6 @@ export const getBundle = query({
 });
 
 /**
- * Active standalone bundles rendered as ONE card in the date-sorted feed (mirrors
- * `saleEvents.getActiveSales`). A bundle card is a view derived from the bundle row
- * + its items' images — no dedicated `ads` row. Only fully-available (`active`)
- * bundles appear; partial/sold/cancelled drop out of the feed.
- */
-export const getActiveBundleFeedCards = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    // Standalone bundles have no saleEventId; scan the by_sale_event index at the
-    // undefined key so we never touch Sale-scoped rows.
-    const bundles = (
-      await ctx.db
-        .query("saleBundles")
-        .withIndex("by_sale_event", (q) => q.eq("saleEventId", undefined))
-        .collect()
-    ).filter((b) => !b.isDeleted && bundleStatus(b) === "active");
-
-    bundles.sort((a, b) => b._creationTime - a._creationTime);
-    const limited = bundles.slice(0, args.limit ?? 12);
-
-    const cards = await Promise.all(
-      limited.map(async (bundle) => {
-        const items = await hydrateBundleItems(ctx, bundle.adIds, { excludeSold: true });
-        // Guard against drift: only cards that still have a real deal.
-        if (items.length < BUNDLE_MIN_ITEMS) return null;
-        const total = separatelyTotal(items);
-        const { savings } = computeSavings(total, bundle.bundlePrice);
-        return {
-          _id: bundle._id,
-          label: bundle.label,
-          createdAt: bundle._creationTime,
-          itemCount: items.length,
-          location: items[0]?.location ?? "",
-          bundlePrice: bundle.bundlePrice,
-          separatelyTotal: total,
-          savings,
-          covers: items.map((i) => i.images[0]).filter((s): s is string => Boolean(s)),
-          adIds: items.map((i) => i._id), // member ads (thumbnail links etc.)
-        };
-      })
-    );
-    return cards.filter((c): c is NonNullable<typeof c> => c !== null);
-  },
-});
-
-/**
  * The caller's own ads for the bundle picker grid, each flagged with whether it's
  * eligible and why not. Eligibility mirrors the design's rule exactly.
  */
@@ -724,4 +680,16 @@ export const getSavedBundles = query({
 
     return withBundle.filter((x): x is NonNullable<typeof x> => x !== null);
   },
+});
+
+/**
+ * DEPLOY COMPAT STUB (remove one release after the unified feed ships).
+ * The real query was replaced by `feed.getFeed`; browser sessions opened before
+ * the deploy still subscribe to it (a missing public function throws and crashes
+ * the stale tab's feed). Returns no cards — stale tabs degrade to an ads-only
+ * feed until refreshed.
+ */
+export const getActiveBundleFeedCards = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async () => [],
 });

@@ -5,19 +5,39 @@ description: State management and data flow
 
 # State Management
 
-**Last Updated**: 2026-07-09
+**Last Updated**: 2026-07-17
 
 ## Global State (MarketplaceContext)
 - **Filters**: selectedCategory, searchQuery, selectedLocation.
 - **UI State**: sidebarCollapsed.
-- **Data**: categories (fetched once), ads (paginated).
+- **Data**: categories (fetched once), `feed` (paginated unified feed).
 
 ## Data Fetching (Convex)
 - **Hooks**: useQuery (subscriptions), useMutation (changes), usePaginatedQuery (infinite scroll).
 - **Real-time**: UI updates automatically when backend data changes.
 
+### Unified home feed (2026-07-17, unified-feed-pagination spec)
+`MarketplaceContext` owns EXACTLY ONE feed query: `api.feed.getFeed`, a paginated
+merged-stream query whose page is a discriminated union
+`{ kind: "ad", ad } | { kind: "bundle", card } | { kind: "sale", card }`
+(exported as `FeedEntry` from `MarketplaceContext.tsx`), pre-interleaved server-side on
+`bumpedAt` desc with feature flags handled server-side. Consequences:
+- **Must use `usePaginatedQuery` from `convex-helpers/react`**, NOT `convex/react` — the
+  helper pins each page's `endCursor` on `loadMore`, which stream-based pagination needs
+  to avoid gaps/overlaps between pages. The stock hook silently misbehaves here.
+- **Search is the one exception**: when `searchQuery` is set, a second (otherwise
+  `"skip"`ped) hook routes through `ads.getAds`' search-index branch — composites never
+  appear in search (documented decision). Exactly one hook is live at a time.
+- **Location filter** is applied client-side over ad entries only (same predicate
+  `getAds` used to run in-memory server-side; composite cards were never
+  location-filtered).
+- `AdsGrid` renders the page **verbatim** — the three-way client merge memo is gone; do
+  not reintroduce client-side feed sorting.
+- Fresh-arrivals rail (`getLatestAds`) stays **ads-only** in v1 (spec §4); dedupe at
+  rebuild is by `kind + id` (`freshAdsMerge.mergeAheadOfQuery`).
+
 ## Caching Strategy
-- **Client-side Cache**: adsCache (Map) in context, typed `Map<string, Doc<"ads">[]>` (was `any[]` until 2026-05-09).
+- **Client-side Cache**: feedCache (Map) in context, typed `Map<string, FeedEntry[]>` (held raw `Doc<"ads">[]` until the unified feed, 2026-07-17).
 - **Key**: Combination of filters (category_search_location).
 - **Behavior**: Serves cached ads immediately while fetching fresh data to prevent UI flicker.
 
@@ -27,7 +47,7 @@ The cache has **no TTL and no automatic invalidation**, and `initialLoadTimestam
 **Prod bug fixed 2026-07-06 (drop-merged-ads):** `refreshAds` used to merge new ads into the RAW paginated results (`ads`), not the displayed list — so posting flyer #2 rebuilt the list without flyer #1, and since the `sinceTimestamp` watermark had already advanced past #1's creation time, no later refresh could ever bring it back (only a hard reload). The cache-sync `useEffect` on `[ads, cacheKey]` had the same clobber. Fix pattern (in `MarketplaceContext.tsx`):
 - `freshAdsRef: Map<cacheKey, Doc<"ads">[]>` accumulates every ad merged via `refreshAds`. Both rebuild sites (`refreshAds` and the cache-sync effect) prepend `fresh` and dedupe against it — fresh ads are permanently invisible to the frozen query, so they must be re-merged on EVERY rebuild, forever.
 - Refresh watermarks are per-cacheKey (`lastRefreshTimestamps: Map`), not global — a refresh under one filter must not advance the watermark past ads another filter's view hasn't merged yet.
-- Ordering doesn't matter much: `AdsGrid` re-sorts the merged feed (ads + sale cards + bundle cards) by sort key (`bumpedAt` for ads since Boost; creation time for sale/bundle cards).
+- Ordering: since the unified feed (2026-07-17) `AdsGrid` renders the server page verbatim; the fresh rail is simply prepended ahead of it (dedupe key `kind + id`).
 
 **Boost extension (Jul 2026) — `src/context/freshAdsMerge.ts`:** the merge logic was extracted into a pure, unit-tested module (`freshAdsMerge.test.ts`) precisely because `_id`-only dedupe would have silently dropped boosted ads (the 8cf9b00 bug class, second incarnation). Rules:
 - `classifyLatestAds` splits `getLatestAds` results into **brand-new** (unknown `_id` → added to fresh rail AND `newAdIds` → gets the "New" badge) vs **boosted replacement** (known `_id` but returned `bumpedAt` newer than the held copy → replaces the stale copy in `freshAdsRef`, is dropped from paginated results by `_id` at rebuild, and deliberately gets NO "New" badge — the one-time `boostPinDrop` ring pulse is its arrival cue instead, keyed `${_id}:${bumpedAt}` so re-renders don't replay it but a later boost does).

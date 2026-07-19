@@ -18,26 +18,61 @@ jobs:
   visual:
     runs-on: ubuntu-latest
     env:
-      # Public client-side values (shipped in every browser bundle — not secrets).
-      # The e2e suite is unauthenticated and read-only, and layout.spec.ts masks
-      # dynamic feed content, so pointing at prod is safe and gives the app real
-      # data to render. Without these the app throws on boot and every test
-      # times out waiting for [data-testid="ads-grid"].
-      VITE_CONVEX_URL: https://resilient-pheasant-112.convex.cloud
+      # The suite runs against a LOCAL anonymous Convex backend running THIS
+      # branch's functions, seeded below. It used to point at prod, which broke
+      # by construction whenever a PR's first paint depended on a not-yet-deployed
+      # Convex function (new frontend + old prod backend → boot error → every
+      # test times out). In a non-interactive shell with no existing config the
+      # Convex CLI auto-provisions the local backend without a login.
+      # VITE_DESCOPE_PROJECT_ID is a public client-side value, not a secret.
+      VITE_CONVEX_URL: http://127.0.0.1:3210
       VITE_DESCOPE_PROJECT_ID: P363bEaEDNeBq3fLWpNjbiUvuloU
     steps:
       - uses: actions/checkout@v7
-      
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install Playwright
         run: npx playwright install chromium --with-deps
-        
+
+      - name: Start local Convex backend (this branch's functions)
+        run: |
+          # First run provisions the anonymous local deployment (downloads the
+          # backend binary) but its function push FAILS: auth.config.ts requires
+          # two env vars a fresh deployment doesn't have. Tolerate that, set the
+          # vars (public values, not secrets), then push for real.
+          npx convex dev --once > convex-dev.log 2>&1 || true
+          npx convex env set CONVEX_AUTH_ISSUER "https://api.descope.com/$VITE_DESCOPE_PROJECT_ID"
+          npx convex env set DESCOPE_PROJECT_ID "$VITE_DESCOPE_PROJECT_ID"
+          npx convex dev --once
+          # The backend binary normally outlives the CLI; if this CLI version
+          # reaps it on exit, relaunch it as a watcher and wait for the port.
+          if ! curl -sf http://127.0.0.1:3210/version > /dev/null; then
+            nohup npx convex dev >> convex-dev.log 2>&1 &
+          fi
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:3210/version > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:3210/version > /dev/null || { echo "Convex local backend never came up"; tail -50 convex-dev.log; exit 1; }
+
+      - name: Seed backend data
+        # layout.spec.ts masks the ads grid but asserts the seeded "Vehicles"
+        # category renders (proves the app booted and Convex data flows).
+        # Retry: the backend port opens before the CLI finishes pushing this
+        # branch's functions, so the first attempts can hit "function not found".
+        run: |
+          for i in $(seq 1 15); do
+            npx convex run sampleData:clearAndCreateSampleData && exit 0
+            sleep 4
+          done
+          echo "Seeding never succeeded"; tail -50 convex-dev.log; exit 1
+
       - name: Run visual tests
         id: visual-test
         run: |

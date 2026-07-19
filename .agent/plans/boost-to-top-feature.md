@@ -4,6 +4,16 @@
 **Created:** 2026-07-09. **v2 2026-07-09:** amended after two adversarial reviews (edge-case pass + simplicity/architecture pass) — see "Review changelog" at the bottom. **v2.1 2026-07-09:** name **CONFIRMED by founder: "Boost"** ("Repin" considered and passed on); boost animations added to Phases 2 & 3.
 **Name:** **Boost** (decided — see "Naming").
 
+> **Amendment (2026-07-18, unified feed)**: the home feed is now one server-merged query
+> (`convex/feed.ts` `getFeed` — mergedStream over ads + saleBundles + saleEvents on
+> `bumpedAt`; see `docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md`).
+> The boost surface therefore **extends to composite cards**: saleBundles/saleEvents now
+> carry their own `bumpedAt` + `boostCount` — a Bundle or Sale card is boosted as a whole
+> (re-stamp its `bumpedAt`), and its **member ads are permanently boost-ineligible**
+> (generalises Open decision #7 below). Eligibility/cooldown/cap rules for standard ads
+> are unchanged. The pins monetisation model lives in
+> `ResearchLab/ideas/boost-pins-monetisation.md`.
+
 Each phase below is self-contained and executable in a fresh chat context. Every phase cites the exact files/lines to copy from — **read the cited sources before writing code; do not work from memory.**
 
 ---

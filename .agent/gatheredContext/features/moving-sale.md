@@ -119,7 +119,7 @@ its own `createdAt` position (sort rule unchanged — sale cards just interleave
 - New `src/features/movingSale/SaleThumbnail.tsx` = the 2×2 image-grid **degradation ladder**
   (4+ → 3 covers + "+N" overlay · 3 → 2×2 with house-placeholder cell · 2 → strips · 1 →
   single · 0 → house+suburb). Red "Moving Sale" badge, "from $X" price, "N items" footer.
-- `getActiveSales` returns `{ slug,title,suburb,createdAt,itemCount,photoCount,minPrice,covers }`
+- Sale feed cards (`feed.getFeed`, kind `"sale"`; formerly `getActiveSales`, deleted 2026-07-17) carry `{ slug,title,suburb,createdAt,itemCount,photoCount,minPrice,covers }`
   (newest-first; pinned-first dropped). `HomePage` passes it as `saleCards` (gated to the
   uncategorised feed). The old `SaleEventCard.tsx` + its test are deleted.
 - Built per the **design skill** (redesign-preserve): match existing tokens/shell, no em-dashes.
@@ -372,9 +372,10 @@ deleted):
 - `PublicSalePage.tsx` (`/sale/:slug`) — shows the same "This sale isn't
   available" empty state used for missing/expired sales. A toggled-off flag
   and a bad slug are indistinguishable to the visitor, on purpose.
-- `HomePage.tsx` — the `getActiveSales` query (feed Sale cards) is skipped
-  when the flag is off or still loading (`!movingSaleModeEnabled`), not just
-  when a category filter is active.
+- `HomePage.tsx` — since the unified feed (2026-07-17) there is NO client-side
+  Sale-card query or flag check: `api.feed.getFeed` interleaves Sale cards
+  server-side and reads the `movingSaleMode` flag itself (`getActiveSales`
+  was deleted; `feed.hydrateSaleCard` preserves its card shape).
 - `UserDashboard.tsx` — "Moving sales" sidebar tab is filtered out of the
   SECTIONS array when off; `getSavedSaleEvents` ("Saved Sales" section) is
   also skipped, since surfacing links to a now-gated public page would be

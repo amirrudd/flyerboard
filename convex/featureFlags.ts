@@ -1,7 +1,21 @@
 import { query, mutation } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/adminAuth";
 import { logAdminAction } from "./lib/logger";
+
+/**
+ * The one feature-flag lookup. Fail-closed: a missing or disabled flag reads
+ * as `false`. Shared by `getFeatureFlag`, `feed.getFeed`, and `posts.boostAd`.
+ */
+export async function isFlagEnabled(ctx: QueryCtx, key: string): Promise<boolean> {
+    const flag = await ctx.db
+        .query("featureFlags")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .first();
+
+    return flag?.enabled ?? false;
+}
 
 // ============================================================================
 // FEATURE FLAGS QUERIES
@@ -24,12 +38,7 @@ export const getAllFeatureFlags = query({
 export const getFeatureFlag = query({
     args: { key: v.string() },
     handler: async (ctx, args) => {
-        const flag = await ctx.db
-            .query("featureFlags")
-            .withIndex("by_key", (q) => q.eq("key", args.key))
-            .first();
-
-        return flag?.enabled ?? false;
+        return await isFlagEnabled(ctx, args.key);
     },
 });
 

@@ -5,12 +5,17 @@ This document captures all user journeys and flows for the Admin Dashboard featu
 ## 1. Access Admin Dashboard (Admin User)
 **Given** the user has admin privileges (isAdmin: true)  
 **When** they navigate to /admin  
-**Then** they see the admin dashboard with tabs for Users, Flyers, Reports, and Chats
+**Then** they see the admin dashboard with seven tabs: Users, Flyers, Reports, Chats, Categories, Feature Flags, and Settings (`AdminDashboard.tsx:111-119`)
 
 ## 2. Access Admin Dashboard (Non-Admin User)
 **Given** the user does not have admin privileges  
 **When** they attempt to navigate to /admin  
-**Then** they see an "Access Denied" message
+**Then** `AdminDashboardPage.tsx:29-33` redirects them to `/` at the route level once `api.admin.isCurrentUserAdmin` resolves to `false`; the "Access Denied" state in `AdminDashboard.tsx:76-108` is now only a fallback if the component renders for a non-admin
+
+## 2a. Access Admin Dashboard (Unauthenticated User)
+**Given** the user is not logged in  
+**When** they attempt to navigate to /admin  
+**Then** `AdminDashboardPage.tsx:21-25` redirects them to `/`; the admin query is skipped until `isAuthenticated && !isSessionLoading && isUserSynced` (gated to avoid the "Not authenticated" user-sync race)
 
 ## 3. View Admin Badge
 **Given** the user is an admin viewing the dashboard  
@@ -275,4 +280,110 @@ This document captures all user journeys and flows for the Admin Dashboard featu
 ## 55. Deletion Cascade
 **Given** the admin deletes a user  
 **When** the deletion completes  
-**Then** all of that user's flyers are soft-deleted before the user is hard-deleted
+**Then** all of that user's flyers are soft-deleted (`isDeleted: true, isActive: false, deletedAt`) and the user row is hard-deleted (`convex/admin.ts:389-405`)
+
+---
+
+# Categories Tab (`CategoriesTab.tsx` → `convex/categories.ts`)
+
+## 56. View Categories
+**Given** the admin selects the "Categories" tab  
+**When** the tab loads  
+**Then** all categories are listed (public `api.categories.getCategories`) with their icon, name, and slug
+
+## 57. Add Category
+**Given** the admin clicks "Add Category"  
+**When** they enter a name (slug is auto-generated via `generateSlug`), pick an icon from the icon map, and save  
+**Then** `api.categories.createCategory` (admin-gated) inserts the category and a success toast shows
+
+## 58. Slug Auto-Generation
+**Given** the admin is typing a category name in the add form  
+**When** the name changes  
+**Then** the slug field is auto-derived (lowercased, hyphenated); admin can still override it before saving
+
+## 59. Edit Category
+**Given** the admin clicks edit on a category  
+**When** they change the name, slug, or icon and save  
+**Then** `api.categories.updateCategory` (admin-gated) patches the row
+
+## 60. Delete Category
+**Given** the admin clicks delete on a category  
+**When** they confirm  
+**Then** `api.categories.deleteCategory` (admin-gated) removes it and a success toast shows
+
+## 61. Category Form Validation
+**Given** the admin submits the category form  
+**When** name or slug is blank  
+**Then** an error toast ("Name and slug are required") blocks the save (`CategoriesTab.tsx:104`)
+
+---
+
+# Feature Flags Tab (`FeatureFlagsTab.tsx` → `convex/featureFlags.ts`)
+
+## 62. View Feature Flags
+**Given** the admin selects the "Feature Flags" tab  
+**When** the tab loads  
+**Then** all flags are listed via `api.featureFlags.getAllFeatureFlags` (admin-gated), each with an enabled/disabled state
+
+## 63. Toggle Feature Flag
+**Given** the admin views a flag  
+**When** they click the enable/disable toggle  
+**Then** `api.featureFlags.updateFeatureFlag` (admin-gated) flips `enabled` and a toast confirms
+
+## 64. Create Feature Flag
+**Given** the admin clicks "New flag"  
+**When** they enter a key + description and save  
+**Then** `api.featureFlags.createFeatureFlag` (admin-gated) inserts it; duplicate keys throw ("already exists"); blank key/description is blocked client-side
+
+## 65. Delete Feature Flag
+**Given** the admin clicks delete on a flag  
+**When** they confirm the native `confirm()` prompt  
+**Then** `api.featureFlags.deleteFeatureFlag` (admin-gated) removes it
+
+## 66. Seed Default Feature Flags
+**Given** the flags list is empty or missing defaults  
+**When** the admin clicks "seed defaults"  
+**Then** the tab loops `createFlag` over the default set and shows "Default feature flags created"
+
+---
+
+# Settings Tab (`SettingsTab.tsx` → `convex/appSettings.ts`)
+
+## 67. View App Settings
+**Given** the admin selects the "Settings" tab  
+**When** the tab loads  
+**Then** numeric settings are shown grouped by domain — Boost (cooldown days, daily cap), Bundle (max items), Sale (max items, expiry buffer days), Feed (sale member cap, bundle member cap), and Rate limits (per-operation) — sourced from `api.appSettings.getAllSettings` (admin-gated)
+
+## 68. Edit a Setting
+**Given** the admin edits a numeric field  
+**When** they save  
+**Then** `api.appSettings.updateSetting` (admin-gated) upserts the value after `isAppSettingInRange` validation, and a toast confirms
+
+## 69. Out-of-Range Rejection
+**Given** the admin enters a value outside the registry min/max  
+**When** they save  
+**Then** the server REJECTS (throws "Value X is out of range") rather than silently clamping; the client mirrors the bounds and shows an inline "Enter N–M" helper before save is allowed (`appSettings.ts:90-94`)
+
+## 70. Rate-Limit Override
+**Given** a rate-limit setting has no stored row (uses the built-in default)  
+**When** the admin saves a number  
+**Then** `updateSetting` creates the row from the registry spec (sparse override); the UI notes the built-in limit vs. the override
+
+## 71. Unlimited / No-Limit Member Cap
+**Given** a feed member-cap field supports a "no limit" sentinel  
+**When** the admin toggles it to unlimited  
+**Then** the sentinel value is saved instead of a raw number (every bundle/sale item shown as its own listing — commit #330)
+
+---
+
+# Cross-Cutting
+
+## 72. Admin Action Audit Logging
+**Given** any admin mutation runs (toggle/delete user, delete flyer/image, update report, toggle verification, update setting/flag)  
+**When** it completes  
+**Then** `logAdminAction(...)` records the admin id, target, and before/after values (`convex/admin.ts`, `convex/appSettings.ts`, `convex/lib/logger.ts`)
+
+## 73. Read-Only Chat Moderation
+**Given** the admin loads a chat by ID on the Chats tab  
+**When** the conversation displays via `api.admin.getChatForModeration` (admin-gated)  
+**Then** it is read-only ("Admins cannot send messages") — buyer, seller, flyer context, and messages in chronological order

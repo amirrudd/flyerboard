@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getDescopeUserId } from "./lib/auth";
-import { internal } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
+import { notifyChatMessage } from "./lib/chatNotifications";
 import { countUnreadForChat } from "./lib/unread";
 
 export const getAdChats = query({
@@ -111,6 +111,15 @@ export const sendMessage = mutation({
       throw new Error("Not authorized to send messages in this chat");
     }
 
+    // For single-listing chats, block sends once the flyer is soft-deleted.
+    // Sale/Bundle threads (no adId) are gated by the sale/bundle itself.
+    if (chat.adId) {
+      const ad = await ctx.db.get(chat.adId);
+      if (!ad || ad.isDeleted) {
+        throw new Error("Cannot send message - flyer no longer available");
+      }
+    }
+
     const timestamp = Date.now();
 
     // Create the message
@@ -126,44 +135,17 @@ export const sendMessage = mutation({
       lastMessageAt: timestamp,
     });
 
-    // Send push notification to recipient (if enabled). Covers both item-chats
-    // (chat.adId set) and Moving Sale threads (chat.saleEventId set) — exactly
-    // one of the two is set per chat.
-    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true' && (chat.adId || chat.saleEventId)) {
-      const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
-
-      // Schedule push notification
-      await ctx.scheduler.runAfter(
-        0,
-        internal.notifications.pushNotifications.notifyMessageReceived,
-        {
-          recipientId,
-          senderId: userId,
-          chatId: args.chatId,
-          adId: chat.adId,
-          saleEventId: chat.saleEventId,
-        }
-      );
-    }
-
-    // Queue email notification for batching (if feature is enabled). Covers both
-    // item-chats and Moving Sale threads.
-    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true' && (chat.adId || chat.saleEventId)) {
-      const recipientId = chat.buyerId === userId ? chat.sellerId : chat.buyerId;
-
-      // Queue notification instead of sending immediately
-      await ctx.runMutation(
-        internal.notifications.pendingEmailNotifications.queueEmailNotification,
-        {
-          recipientId,
-          senderId: userId,
-          chatId: args.chatId,
-          adId: chat.adId,
-          saleEventId: chat.saleEventId,
-          messageContent: args.content,
-        }
-      );
-    }
+    // Notify the other party — covers item-chats, Moving Sale threads, and
+    // Bundle threads (exactly one of adId/saleEventId/bundleId is set per chat).
+    await notifyChatMessage(ctx, {
+      recipientId: chat.buyerId === userId ? chat.sellerId : chat.buyerId,
+      senderId: userId,
+      chatId: args.chatId,
+      adId: chat.adId,
+      saleEventId: chat.saleEventId,
+      bundleId: chat.bundleId,
+      content: args.content,
+    });
 
     return { success: true };
   },

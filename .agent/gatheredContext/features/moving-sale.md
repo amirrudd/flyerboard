@@ -1,6 +1,13 @@
 # Moving Sale Mode
 
-**Last Updated**: 2026-07-05 (MovingSaleFlow chrome now uses shared `WizardShell`)
+**Last Updated**: 2026-07-20 (live-sale lifecycle shipped)
+
+## Live-sale lifecycle (2026-07-20)
+
+- **End = the single end-of-life concept** (no delete, per soft-delete rule + PO scoping): `saleEvents.endSaleEvent` (owner-only, idempotent `active → ended`). Ended: feed card gone (feed streams `status === "active"` only), public page stays up read-only ("Sale ended" badge, note replaces countdown, message/save footer hidden — `ended` prop on both view variants), threads stay open for pickup coordination.
+- **Auto-expiry**: daily cron `expire-sale-events` (09:15 UTC) runs `saleEvents.expireSaleEvents` — ends active sales past `expiresAt` (stamped at publish = pickupWindowEnd + buffer). Before this, `expiresAt` had NO consumer and stale sales sat in the feed forever.
+- **Editing a live sale**: all edit mutations always worked on active sales (`requireOwnedSale` never checked status) — only the wizard resume routing blocked it. `MovingSaleFlow` now resumes active sales at Review (was Share); `publishSaleEvent` is idempotent and doesn't re-bump active sales. Dashboard live card: View page / Share / Edit / End sale (confirm modal, primary-styled — ending is normal, not destructive).
+- **Owner mark-sold on the live page** (2026-07-19): owner taps an item on `/sale/:slug` to toggle sold ("Tap to mark sold" chip, both A/B variants) — suppressed once ended.
 
 ## Public sale page A/B test (2026-07-01)
 Two designs of the buyer-facing `/sale/:slug` page now coexist, both theme-matched
@@ -152,7 +159,7 @@ now reflected in the code:
   users are routed to Layout's `SmsOtpSignIn` via outlet context — the local `AuthModal` was a dead
   convex-auth password form, removed 2026-07-12; see features/authentication.md). **Gotcha:** making `chats.adId` optional broke 6 call
   sites that assumed it (adDetail/admin/messages) — all now guard `if (chat.adId)`; item-chat push/
-  email notifications only fire when `adId` is set (sale-thread notifications not wired yet).
+  email notifications only fire when `adId` is set (STALE→FIXED: sale-thread notifications wired 2026-07-05 via `saleChats.ts:93-115`, and `messages.sendMessage` covers ad/sale/bundle threads since 2026-07-19).
   `getSellerChats`/`getBuyerChats` now also return `sale`; the dashboard chats tab shows a 🏠 title
   and keeps the reply box enabled for sale threads.
 - **Feed integration:** sale items get a badge + tappable strip in `AdsGrid` (driven by an optional

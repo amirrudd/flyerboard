@@ -326,50 +326,58 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
           images: [], // Empty initially
         });
 
-        // Step 2: Upload compressed images directly to R2
-        setUploadProgress("Uploading images...");
-        const uploadedRefs: string[] = [];
+        try {
+          // Step 2: Upload compressed images directly to R2
+          setUploadProgress("Uploading images...");
+          const uploadedRefs: string[] = [];
 
-        for (let i = 0; i < compressedFiles.length; i++) {
-          try {
-            const baseProgress = 20 + (i / compressedFiles.length) * 60;
-            setUploadProgress(`Uploading image ${i + 1}/${compressedFiles.length}...`);
+          for (let i = 0; i < compressedFiles.length; i++) {
+            try {
+              const baseProgress = 20 + (i / compressedFiles.length) * 60;
+              setUploadProgress(`Uploading image ${i + 1}/${compressedFiles.length}...`);
 
-            // Get presigned URL for this image
-            const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: adId });
+              // Get presigned URL for this image
+              const { url: uploadUrl, key } = await generateListingUploadUrl({ postId: adId });
 
-            // Upload directly to R2 with progress tracking (already compressed)
-            await uploadImageToR2(
-              compressedFiles[i],
-              async () => uploadUrl,
-              async () => null, // No metadata sync needed
-              (percent) => setProgressPercent(Math.round(baseProgress + (percent / 100) * (60 / compressedFiles.length)))
-            );
+              // Upload directly to R2 with progress tracking (already compressed)
+              await uploadImageToR2(
+                compressedFiles[i],
+                async () => uploadUrl,
+                async () => null, // No metadata sync needed
+                (percent) => setProgressPercent(Math.round(baseProgress + (percent / 100) * (60 / compressedFiles.length)))
+              );
 
-            uploadedRefs.push(key);
-            setUploadProgress(`Uploaded ${i + 1}/${compressedFiles.length} images`);
-          } catch (error) {
-            console.error(`Failed to upload image ${i + 1}:`, error);
-            toast.error(`Failed to upload image ${i + 1}`);
-            throw error;
+              uploadedRefs.push(key);
+              setUploadProgress(`Uploaded ${i + 1}/${compressedFiles.length} images`);
+            } catch (error) {
+              // No toast here — the outermost catch already reports the failure
+              // (a toast here too meant two error toasts for one failure).
+              console.error(`Failed to upload image ${i + 1}:`, error);
+              throw error;
+            }
           }
+
+          setUploadProgress("Finalizing...");
+          setProgressPercent(90);
+
+          // Update flyer with images
+          await updateAd({
+            adId,
+            title: formData.title,
+            description: formData.description,
+            listingType: formData.listingType,
+            price: formData.price ? parseFloat(formData.price) : undefined,
+            exchangeDescription: formData.exchangeDescription || undefined,
+            location: formData.location,
+            categoryId: formData.categoryId as Id<"categories">,
+            images: uploadedRefs,
+          });
+        } catch (error) {
+          // The ad was created live (isActive) before uploads — soft-delete it
+          // so a failed upload doesn't leave an imageless orphan in the feed.
+          await deleteAd({ adId }).catch(() => {});
+          throw error;
         }
-
-        setUploadProgress("Finalizing...");
-        setProgressPercent(90);
-
-        // Update flyer with images
-        await updateAd({
-          adId,
-          title: formData.title,
-          description: formData.description,
-          listingType: formData.listingType,
-          price: formData.price ? parseFloat(formData.price) : undefined,
-          exchangeDescription: formData.exchangeDescription || undefined,
-          location: formData.location,
-          categoryId: formData.categoryId as Id<"categories">,
-          images: uploadedRefs,
-        });
 
         setProgressPercent(100);
         toast.success("Flyer posted successfully!");

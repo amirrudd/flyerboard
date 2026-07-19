@@ -39,6 +39,9 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     // Reports
     createReport: { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
 
+    // Support form
+    supportRequest: { maxRequests: 3, windowMs: 24 * 60 * 60 * 1000 }, // 3 per day
+
     // Ratings
     submitRating: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
 
@@ -137,6 +140,11 @@ export const RATE_LIMIT_OP_META: Record<string, RateLimitOpMeta> = {
         label: "Report a flyer",
         description: "How many flyers one user can report per hour.",
         noun: "reports",
+    },
+    supportRequest: {
+        label: "Support requests",
+        description: "How many support form requests one user can send per day.",
+        noun: "requests",
     },
     submitRating: {
         label: "Leave ratings",

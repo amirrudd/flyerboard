@@ -6,6 +6,8 @@ This index helps AI agents quickly locate relevant implementation context for an
 
 ---
 
+> **User journeys:** every route's flows are mapped in per-feature `src/features/*/USER_JOURNEYS.md` docs, indexed with a consolidated broken-flows list in [`docs/USER_JOURNEYS.md`](../../docs/USER_JOURNEYS.md). Read that before touching a user-facing flow.
+
 ## Quick Navigation
 
 ### By Task Type

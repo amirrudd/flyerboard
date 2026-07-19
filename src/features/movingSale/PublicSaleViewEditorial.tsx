@@ -29,8 +29,12 @@ interface PublicSaleViewEditorialProps {
   categoriesById: Record<string, { name: string }>;
   /** Blur + "Preview only" badge for the pre-payment paywall preview. */
   preview?: boolean;
+  /** Sale status === "ended": read-only record, no messaging/saving. */
+  ended?: boolean;
   onMessageSeller?: () => void;
   onItemClick?: (adId: string) => void;
+  /** Owner-only: when set, item taps toggle sold/unsold instead of messaging. */
+  onToggleSold?: (adId: string) => void;
   onShare?: () => void;
 }
 
@@ -54,8 +58,10 @@ export function PublicSaleViewEditorial({
   bundles,
   categoriesById,
   preview = false,
+  ended = false,
   onMessageSeller,
   onItemClick,
+  onToggleSold,
   onShare,
 }: PublicSaleViewEditorialProps) {
   const { fadeUp, staggerCard, reduced } = useMotionPrefs();
@@ -140,8 +146,12 @@ export function PublicSaleViewEditorial({
             </div>
           </div>
 
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-            <Package size={14} weight="fill" /> Moving sale
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+              ended ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+            }`}
+          >
+            <Package size={14} weight="fill" /> {ended ? "Sale ended" : "Moving sale"}
           </span>
 
           <h1 className="mt-3.5 max-w-xs font-display text-5xl font-semibold leading-[0.93] tracking-tight text-foreground">
@@ -184,7 +194,11 @@ export function PublicSaleViewEditorial({
         {/* 2. Live countdown to pickup window — inverted panel for contrast */}
         <m.section {...fadeUp(0.05)} className="mt-5 px-4">
           <div className="rounded-[22px] bg-neutral-900 p-5 text-center text-neutral-50 dark:bg-black">
-            {countdown.isLive ? (
+            {ended ? (
+              <p className="text-sm text-neutral-300">
+                This sale has ended. Items may still be listed individually on FlyerBoard.
+              </p>
+            ) : countdown.isLive ? (
               <p className="flex items-center justify-center gap-2 font-semibold text-emerald-400">
                 <Clock size={18} weight="fill" /> Pickup window is open now
               </p>
@@ -328,7 +342,11 @@ export function PublicSaleViewEditorial({
             <m.button
               type="button"
               {...fadeUp(0.12)}
-              onClick={() => !featured.isSold && onItemClick?.(featured._id)}
+              onClick={() =>
+                onToggleSold
+                  ? onToggleSold(featured._id)
+                  : !featured.isSold && onItemClick?.(featured._id)
+              }
               className="mb-3 block w-full overflow-hidden rounded-[22px] border border-border bg-card text-left"
             >
               <div className="relative aspect-[16/11] bg-muted">
@@ -362,7 +380,11 @@ export function PublicSaleViewEditorial({
                   type="button"
                   key={item._id}
                   {...staggerCard(index)}
-                  onClick={() => !item.isSold && onItemClick?.(item._id)}
+                  onClick={() =>
+                    onToggleSold
+                      ? onToggleSold(item._id)
+                      : !item.isSold && onItemClick?.(item._id)
+                  }
                   className="overflow-hidden rounded-2xl border border-border bg-card text-left"
                 >
                   <div className="relative aspect-square bg-muted">
@@ -373,6 +395,11 @@ export function PublicSaleViewEditorial({
                       className={`h-full w-full object-cover ${item.isSold ? "grayscale opacity-50" : ""}`}
                       size="card"
                     />
+                    {onToggleSold && (
+                      <span className="absolute right-2 top-2 z-10 rounded-full bg-background/85 px-2 py-0.5 text-xs font-semibold text-foreground ring-1 ring-border">
+                        {item.isSold ? "Tap to unmark" : "Tap to mark sold"}
+                      </span>
+                    )}
                     {item.isSold && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="-rotate-[9deg] rounded-md border-2 border-primary bg-background/75 px-3 py-0.5 font-display text-lg font-bold tracking-widest text-primary">
@@ -451,7 +478,7 @@ export function PublicSaleViewEditorial({
           container, whose `contain: layout style paint` (perf optimization)
           would otherwise make it a containing block for this fixed element.
           Same pattern as AdDetail's mobile FABs / PublicSaleView's footer. */}
-      {!preview && createPortal(
+      {!preview && !ended && createPortal(
         <div
           className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-border bg-card/95 backdrop-blur md:bottom-0"
           style={{ paddingBottom: "var(--safe-area-inset-bottom)" }}

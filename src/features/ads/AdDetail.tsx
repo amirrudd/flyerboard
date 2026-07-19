@@ -86,7 +86,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
 
   const saveAd = useMutation(api.adDetail.saveAd);
   const sendFirstMessage = useMutation(api.adDetail.sendFirstMessage);
-  const sendMessage = useMutation(api.adDetail.sendMessage);
+  const sendMessage = useMutation(api.messages.sendMessage);
   const batchIncrementViews = useMutation(api.adDetail.batchIncrementViews);
 
   // Owner-facing Boost CTA (flag-gated). Called unconditionally here (before the

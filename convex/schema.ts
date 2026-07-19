@@ -134,6 +134,13 @@ const applicationTables = {
     .index("by_status", ["status"])
     .index("by_type", ["reportType"]),
 
+  supportRequests: defineTable({
+    userId: v.id("users"),               // Signed-in submitter (support form requires auth)
+    email: v.string(),                   // Reply-to address (user's email or typed in)
+    subject: v.string(),
+    body: v.string(),
+  }).index("by_user", ["userId"]),
+
   ratings: defineTable({
     raterId: v.id("users"),              // User who submitted the rating
     ratedUserId: v.id("users"),          // User being rated

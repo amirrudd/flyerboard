@@ -413,7 +413,9 @@ export const getSellerChats = query({
 
         return {
           ...chat,
-          ad,
+          // Soft-deleted flyer → null, so the thread renders "No longer
+          // available" and the composer disables (same as a missing ad).
+          ad: ad && !ad.isDeleted ? ad : null,
           sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
           bundle: bundle ? { _id: bundle._id, label: bundle.label, status: bundle.status ?? "active" } : null,
           buyer: buyer ? {
@@ -465,7 +467,8 @@ export const getBuyerChats = query({
 
         return {
           ...chat,
-          ad,
+          // Soft-deleted flyer → null (see getSellerChats above).
+          ad: ad && !ad.isDeleted ? ad : null,
           sale: sale ? { _id: sale._id, title: sale.title, slug: sale.slug ?? null } : null,
           bundle: bundle ? { _id: bundle._id, label: bundle.label, status: bundle.status ?? "active" } : null,
           seller: seller ? {

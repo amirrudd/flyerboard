@@ -1,286 +1,362 @@
-# Layout Feature - User Journeys
+# Layout / Navigation & Static Pages — User Journeys
 
-This document captures all user journeys and flows for the Layout and Navigation feature package.
+Given/When/Then flows for the app shell (header, mobile nav, footer links, auth
+modal, providers, loading gate, routing + error boundaries) **and** the
+static/content pages (blog, terms, community guidelines, support, about, 404)
+plus PWA behaviour.
 
-## Header Component
+Grounded in code as of 2026-07-19. Key files: `src/App.tsx`,
+`src/features/layout/{Layout,Header,HeaderSlots,HeaderRightActions,BottomNav}.tsx`,
+`src/features/layout/Sidebar/*`, `src/pages/{Blog*,Terms,CommunityGuidelines,Support,AboutUs,NotFound}Page.tsx`,
+`middleware.ts`, `public/{manifest.json,sw.js}`, `src/main.tsx`.
 
-### 1. View Header
-**Given** the user is on any page  
-**When** the page loads  
-**Then** they see the header with logo, search bar, location selector, and action buttons
+> **Load-bearing architecture note.** There is ONE persistent `<Header>` instance
+> for every route under `<Layout>` (`Layout.tsx:84`). Pages customise it by
+> registering `leftNode`/`centerNode`/`rightNode` through `useHeaderSlots(...)`
+> (`HeaderSlots.tsx`). A page that registers nothing gets the **default header**
+> (logo + location + search + ThemeToggle + Pin/Sign-In actions). In practice
+> only `HomePage` uses the default header; every other page (blog, static, ad
+> detail, dashboard, messages, public sale/bundle) registers a Back-button slot.
+> The **Sidebar is NOT part of the Layout shell** — it is mounted by
+> `HomePage.tsx:322` only. So the header hamburger and the category sidebar are
+> effectively a home-page feature (see "Sidebar" section).
 
-### 2. View Logo
-**Given** the user is viewing the header  
-**When** the header renders  
-**Then** they see the "FlyerBoard" logo/brand name
+---
 
-### 3. Click Logo to Home
-**Given** the user is on any page  
-**When** they click the FlyerBoard logo  
-**Then** they navigate to the home page
+## Header (persistent shell)
 
-### 4. Search Flyers
-**Given** the user is on the header  
-**When** they type in the search bar  
-**Then** the search query is updated and flyers are filtered in real-time
+### 1. Persistent header across navigation
+**Given** the user navigates between routes under `<Layout>`
+**When** the route changes (including lazy-chunk loads)
+**Then** the single `<Header>` instance stays mounted — logo/actions do not
+flash or re-mount (`Layout.tsx` `PersistentHeader` + `useSyncExternalStore`).
 
-### 5. Clear Search
-**Given** the user has entered a search query  
-**When** they clear the search input  
-**Then** all flyers are displayed again
+### 2. Default header content (desktop)
+**Given** the user is on a page that registers no header slots (e.g. Home)
+**When** the desktop header renders
+**Then** they see: FlyerBoard logo + wordmark (left), location selector, a
+centered search bar, and on the right ThemeToggle + "Pin Your Flyer" + "Sign In"
+or "My Dashboard" (`Header.tsx:447`, `HeaderRightActions.tsx`).
 
-### 6. Mobile Search Icon
-**Given** the user is on mobile  
-**When** they view the header  
-**Then** they see a search icon instead of a full search bar
+### 3. Click logo → Home
+**Given** the user is viewing the default header
+**When** they click the logo/wordmark
+**Then** `navigate('/')` is called (`Header.tsx:459`; mobile `:352`).
 
-### 7. Open Mobile Search
-**Given** the user is on mobile  
-**When** they click the search icon  
-**Then** the search input expands or a search modal opens
+### 4. Search flyers (desktop)
+**Given** the default header is shown
+**When** the user types in the search bar
+**Then** the query is pushed to `MarketplaceContext` via a 500ms-debounced
+handler; if not already on `/`, the app navigates to `/` so results show
+(`Header.tsx:438`).
 
-### 8. Select Location
-**Given** the user is viewing the header  
-**When** they click on the location selector  
-**Then** a location search dropdown appears
+### 5. Search flyers (mobile, expandable)
+**Given** the user is on mobile with the default header
+**When** they tap the magnifier icon
+**Then** an expandable search overlay opens, auto-focuses, and closes on
+outside click; typing debounces (500ms) into `MarketplaceContext` and navigates
+to `/` when non-empty (`Header.tsx:MobileHeader`).
 
-### 9. Search Locations
-**Given** the location dropdown is open  
-**When** they type a suburb or postcode  
-**Then** matching location suggestions appear
+### 6. Header title swaps to "My dashboard" on dashboard (mobile)
+**Given** the user is on `/dashboard` on mobile with the default header
+**When** the mobile header renders
+**Then** the wordmark reads "My dashboard" and the right side shows a
+`SignOutButton` (icon only) instead of location + search (`Header.tsx:357,364`).
 
-### 10. Choose Location
-**Given** location suggestions are displayed  
-**When** they click on a location  
-**Then** that location is selected and flyers are filtered by location
+### 7. Select / detect location
+**Given** the user opens the location selector
+**When** they type a suburb/postcode (≥2 chars, 300ms debounce) or tap "Detect
+my location"
+**Then** matching AU localities appear (or geolocation → Nominatim reverse
+geocode resolves one), and the choice updates `selectedLocation` in
+`MarketplaceContext`; "All Locations" clears it (`Header.tsx:LocationSelector`).
+Opening the dropdown prefetches the ~1.9MB postcode dataset.
 
-### 11. Mobile Location Icon
-**Given** the user is on mobile  
-**When** they view the header  
-**Then** they see a location icon instead of full location text
+### 8. ThemeToggle
+**Given** the header is shown
+**When** the user clicks the theme toggle
+**Then** light/dark theme switches (`ThemeToggle`, present in both default and
+most custom `rightNode`s).
 
-### 12. View Right Actions
-**Given** the user is viewing the header  
-**When** the header renders  
-**Then** they see action buttons (sign in/dashboard, post flyer, etc.)
+### 9. Post CTA — "Pin Your Flyer"
+**Given** the user clicks "Pin Your Flyer" (desktop header)
+**When** they are authenticated
+**Then** `navigate('/post', { state: { from } })`; **when unauthenticated**, the
+auth modal opens (`Header.tsx:504`).
 
-### 13. Toggle Sidebar (Desktop)
-**Given** the user is on desktop  
-**When** they click the menu button  
-**Then** the sidebar collapses or expands
+### 10. Sign In / My Dashboard action
+**Given** the default header right actions render
+**When** the user is authenticated → "My Dashboard" → `navigate('/dashboard')`;
+**when** unauthenticated → "Sign In" → opens the auth modal
+(`HeaderRightActions.tsx`, `Header.tsx:511`).
 
-### 14. Toggle Sidebar (Mobile)
-**Given** the user is on mobile  
-**When** they click the menu button  
-**Then** the sidebar slides in or out
+### 11. Custom header slots per page
+**Given** a non-home page mounts (blog/static/ad/dashboard/messages)
+**When** it calls `useHeaderSlots({ leftNode, centerNode, rightNode })`
+**Then** the persistent header renders that page's Back button + title instead of
+the default; the previous registrant (or default) is restored on unmount. Config
+is rebuilt every render (no memoization) so slot JSX never goes stale
+(`HeaderSlots.tsx`).
 
-### 15. Responsive Header Layout
-**Given** the user resizes the browser window  
-**When** the viewport changes  
-**Then** the header adapts between mobile and desktop layouts
+### 12. Hidden header
+**Given** a full-screen sub-view registers `{ hidden: true }`
+**When** its slots are active
+**Then** `PersistentHeader` returns `null` (`Layout.tsx:42`) — reserved for views
+that never had a header (e.g. dashboard's AdMessages).
 
-## Sidebar Component
+---
 
-### 16. View Sidebar (Desktop)
-**Given** the user is on desktop  
-**When** the page loads  
-**Then** the sidebar is visible by default showing categories
+## Command palette
 
-### 17. View Sidebar (Mobile)
-**Given** the user is on mobile  
-**When** the page loads  
-**Then** the sidebar is hidden by default
+### 13. Open command palette (Cmd/Ctrl+K)
+**Given** the user is anywhere under `<Layout>`
+**When** they press ⌘K / Ctrl+K
+**Then** the `CommandPalette` overlay toggles open (global keydown listener in
+`Layout.tsx:69`); it closes via its own `onClose`.
 
-### 18. View Categories in Sidebar
-**Given** the sidebar is open  
-**When** the user views it  
-**Then** they see a list of all available categories
+---
 
-### 19. Select Category
-**Given** the user is viewing the sidebar  
-**When** they click on a category  
-**Then** flyers are filtered to show only that category
+## Sidebar (home-page category nav)
 
-### 20. View All Categories
-**Given** the user has selected a category  
-**When** they click "All Categories" or clear the filter  
-**Then** all flyers are displayed
+> The Sidebar is rendered by `HomePage`, not `Layout` (`HomePage.tsx:322`,
+> `Sidebar/index.tsx`). The header's mobile hamburger toggles
+> `sidebarCollapsed` in `MarketplaceContext`; that state only has a visible
+> effect on Home where the Sidebar is mounted.
 
-### 21. Category Icons
-**Given** the user is viewing categories  
-**When** categories are displayed  
-**Then** each category shows its associated icon
+### 14. Toggle sidebar (mobile hamburger)
+**Given** the user is on Home on mobile with the default header
+**When** they tap the List/hamburger icon
+**Then** `sidebarCollapsed` flips; `MobileSidebar` renders as a portal overlay
+with scroll lock (`Header.tsx:343`, `Sidebar/index.tsx:31`).
 
-### 22. Collapsed Sidebar (Desktop)
-**Given** the sidebar is collapsed on desktop  
-**When** the user views it  
-**Then** only category icons are shown without text
+### 15. Toggle sidebar (desktop)
+**Given** the user is on Home on desktop
+**When** the sidebar is not collapsed
+**Then** `DesktopSidebar` renders sticky with the category list; when collapsed it
+renders `null` (`Sidebar/index.tsx:36`).
 
-### 23. Expanded Sidebar (Desktop)
-**Given** the sidebar is expanded on desktop  
-**When** the user views it  
-**Then** category icons and names are both shown
+### 16. Select category / view all
+**Given** the sidebar is open
+**When** the user clicks a category (or clears)
+**Then** `selectedCategory` updates and the home feed filters; icons render per
+category (`SidebarContent.tsx`).
 
-### 24. Close Mobile Sidebar
-**Given** the sidebar is open on mobile  
-**When** the user clicks outside the sidebar or selects a category  
-**Then** the sidebar closes automatically
+### 17. Sidebar footer links
+**Given** the sidebar is open
+**When** the user views its fixed footer
+**Then** they see links to About Us, Blog, Support, Terms, Privacy
+(`/terms#privacy`), Guidelines, Contact (`/support`), plus "© 2026 FlyerBoard"
+(`SidebarContent.tsx:112`). **This footer is the app's only persistent
+site-nav-to-static-pages surface** (there is no global `<footer>` in Layout).
 
-## Bottom Navigation Component
+---
 
-### 25. View Bottom Nav (Mobile)
-**Given** the user is on mobile  
-**When** they view any page  
-**Then** they see a bottom navigation bar with 5 items
+## Bottom navigation (mobile)
 
-### 26. Hide Bottom Nav (Desktop)
-**Given** the user is on desktop  
-**When** they view any page  
-**Then** the bottom navigation is hidden
+### 18. View bottom nav
+**Given** the user is on mobile
+**When** they view a page under `<Layout>`
+**Then** a fixed 5-item bottom bar shows: Home, Saved, PIN (prominent center
+FAB), Messages, Dashboard/Sign In (`BottomNav.tsx`). Hidden on `md+`.
 
-### 27. Navigate to Home
-**Given** the user is on mobile  
-**When** they tap the "Home" button in bottom nav  
-**Then** they navigate to the home page
+### 19. Bottom nav hidden on blog and full-screen chat
+**Given** the path starts with `/blog`, or is a `/messages/:chatId` conversation
+(but not `/messages` or `/messages/archived`)
+**When** the bottom nav evaluates
+**Then** it returns `null` (`BottomNav.tsx:23,33`).
 
-### 28. Navigate to Saved (Authenticated)
-**Given** the user is authenticated and on mobile  
-**When** they tap the "Saved" button  
-**Then** they navigate to the dashboard saved flyers tab
+### 20. Home tab — tap-to-top
+**Given** the user is already on `/`
+**When** they tap Home
+**Then** it triggers a scroll-to-top of the feed instead of navigating
+(`BottomNav.tsx:56`, `homeScrollBridge`).
 
-### 29. Navigate to Saved (Unauthenticated)
-**Given** the user is not authenticated and on mobile  
-**When** they tap the "Saved" button  
-**Then** the authentication modal opens
+### 21. Auth-guarded tabs
+**Given** the user is unauthenticated
+**When** they tap Saved / PIN / Messages / Dashboard
+**Then** the auth modal opens instead of navigating; the Dashboard item also
+relabels to "Sign In" with a User icon (`BottomNav.tsx:48,127`).
 
-### 30. Navigate to Post Flyer (Authenticated)
-**Given** the user is authenticated and on mobile  
-**When** they tap the "PIN" button  
-**Then** they navigate to the post flyer page
+### 22. Authenticated tab navigation
+**Given** the user is authenticated
+**When** they tap Saved → `/dashboard?tab=saved`, PIN → `/post`, Messages →
+`/messages`, Dashboard → `/dashboard?tab=ads`
+**Then** they navigate there; the active item shows a dot + bold icon
+(`BottomNav.tsx:isActive`).
 
-### 31. Navigate to Post Flyer (Unauthenticated)
-**Given** the user is not authenticated and on mobile  
-**When** they tap the "PIN" button  
-**Then** the authentication modal opens
+### 23. Unread badge on Messages
+**Given** the user has unread messages
+**When** the bottom nav renders
+**Then** an `UnreadBadge` overlays the Messages icon (0 while signed out;
+`BottomNav.tsx:20,119`).
 
-### 32. Navigate to Messages (Authenticated)
-**Given** the user is authenticated and on mobile  
-**When** they tap the "Messages" button  
-**Then** they navigate to the dashboard messages tab
+---
 
-### 33. Navigate to Messages (Unauthenticated)
-**Given** the user is not authenticated and on mobile  
-**When** they tap the "Messages" button  
-**Then** the authentication modal opens
+## Layout shell, providers & auth modal
 
-### 34. Navigate to Dashboard (Authenticated)
-**Given** the user is authenticated and on mobile  
-**When** they tap the "Dashboard" button  
-**Then** they navigate to their dashboard
+### 24. Provider order & session loading gate
+**Given** the app boots
+**When** `useSession().isSessionLoading` is true
+**Then** `App` short-circuits to a full-screen `<PageLoader />` — **the whole app
+(including public static/blog pages) waits on the Descope session resolving**
+(`App.tsx:37`). Providers wrap outer→inner: `ErrorBoundary` → `UserSyncProvider`
+→ `MarketplaceProvider` → `LazyMotion` → `BrowserRouter` (`App.tsx:42`).
 
-### 35. Show Sign In (Unauthenticated)
-**Given** the user is not authenticated and on mobile  
-**When** they view the bottom nav  
-**Then** they see "Sign In" instead of "Dashboard"
+### 25. Global auth modal
+**Given** any shell surface calls `setShowAuthModal(true)` (header, bottom nav,
+or a page via `Outlet` context)
+**When** `showAuthModal` is true
+**Then** a single OTP sign-in modal renders from `Layout` — role="dialog",
+aria-modal, backdrop-click and X close **only when dismissable**; the
+`SmsOtpSignIn` step can lock dismissal via `onDismissableChange`
+(`Layout.tsx:93`). This is the ONE canonical auth modal; pages should use the
+`Outlet` context `setShowAuthModal`, not a second local modal.
 
-### 36. Open Auth Modal from Bottom Nav
-**Given** the user is not authenticated and on mobile  
-**When** they tap "Sign In"  
-**Then** the authentication modal opens
+### 26. Sticky header / bottom nav & safe areas
+**Given** the user scrolls on mobile
+**When** content exceeds the viewport
+**Then** only `<main>` scrolls; the header is `sticky top-0` inside the scroller
+and the bottom nav is `fixed` with `env(safe-area-inset-bottom)` padding; the
+shell uses `h-dynamic-screen` + `pt-safe` (`Layout.tsx:81`, `BottomNav.tsx:76`).
 
-### 37. Active Tab Indicator
-**Given** the user is on a specific page  
-**When** they view the bottom nav  
-**Then** the corresponding nav item is highlighted/active
+---
 
-### 38. PIN Button Styling
-**Given** the user is viewing the bottom nav  
-**When** they see the PIN button  
-**Then** it is prominently styled (larger, different color) as the primary action
+## Routing & error boundaries
 
-## Layout Component
+### 27. Lazy routes with per-route Suspense + ErrorBoundary
+**Given** the user navigates to any route except Home
+**When** the route element mounts
+**Then** it is individually wrapped in `<ErrorBoundary><Suspense fallback=
+{<PageLoader/>}>…` so a failed chunk load or render error is isolated to that
+route and shows the boundary fallback (`App.tsx:71`–`173`). Home is **eager and
+NOT individually wrapped** — it relies only on the app-level `ErrorBoundary`
+(`App.tsx:68`).
 
-### 39. Main Layout Structure
-**Given** the user is on any page  
-**When** the page renders  
-**Then** they see the header, sidebar (desktop), main content area, and bottom nav (mobile)
+### 28. Catch-all 404 inside the shell
+**Given** the user hits an unknown URL
+**When** the router matches `path="*"`
+**Then** `NotFoundPage` renders inside `<Layout>` (keeps header + bottom nav),
+wrapped in its own ErrorBoundary/Suspense (`App.tsx:167`).
 
-### 40. Content Area Padding
-**Given** the user is viewing content  
-**When** the layout renders  
-**Then** appropriate padding is applied using centralized layout tokens
+### 29. Immersive seller routes render OUTSIDE the shell
+**Given** the user opens `/sell/moving-sale` or `/sell/bundle`
+**When** the route matches
+**Then** the page renders full-screen with its own ErrorBoundary/Suspense but
+**outside** `<Layout>` — no persistent header, sidebar, or bottom nav
+(`App.tsx:52,59`). (Out of nav scope; noted for routing completeness.)
 
-### 41. Responsive Layout
-**Given** the user resizes the browser  
-**When** the viewport changes  
-**Then** the layout adapts between mobile and desktop configurations
+---
 
-### 42. Sidebar Overlay (Mobile)
-**Given** the sidebar is open on mobile  
-**When** the user views the page  
-**Then** a dark overlay appears behind the sidebar
+## Static / content pages
 
-### 43. Dismiss Sidebar Overlay
-**Given** the sidebar overlay is visible on mobile  
-**When** the user taps the overlay  
-**Then** the sidebar closes
+Each static page: scrolls to top on mount (Terms/Guidelines also handle a
+`#hash` smooth-scroll), and registers a header slot with a Back button
+(`navigate('/')`) + a page title in `centerNode` and an empty `rightNode`.
 
-### 44. Sticky Header
-**Given** the user scrolls down the page  
-**When** they scroll  
-**Then** the header remains fixed at the top
+### 30. Terms & Privacy
+**Given** the user opens `/terms` (optionally `#privacy`)
+**When** the page renders
+**Then** it shows Terms + Privacy markdown (`terms-and-conditions.md` +
+`privacy-policy.md` via `?raw`) under a "Terms & Privacy" header; a `#hash`
+smooth-scrolls to that section (`TermsPage.tsx`).
 
-### 45. Sticky Bottom Nav (Mobile)
-**Given** the user scrolls on mobile  
-**When** they scroll  
-**Then** the bottom navigation remains fixed at the bottom
+### 31. Community Guidelines
+**Given** the user opens `/community-guidelines`
+**When** the page renders
+**Then** it shows `community-guidelines.md` under a "Community Guidelines"
+header, with `#hash` smooth-scroll support (`CommunityGuidelinesPage.tsx`).
 
-### 46. Content Scroll
-**Given** the page content is longer than the viewport  
-**When** the user scrolls  
-**Then** only the main content area scrolls (header and nav stay fixed)
+### 32. About Us
+**Given** the user opens `/about`
+**When** the page renders
+**Then** it shows an editorial hero + `about-us.md` under an "About Us" header
+(`AboutUsPage.tsx`). ⚠️ The hero image is loaded from an **external
+Wikimedia URL** (`upload.wikimedia.org`), not a self-hosted/CDN asset.
 
-### 47. Sidebar Scroll (Desktop)
-**Given** there are many categories  
-**When** the user views the sidebar  
-**Then** the sidebar content is scrollable if it exceeds viewport height
+### 33. Support — contact form
+**Given** the user opens `/support`
+**When** they fill name/email/title/body and submit
+**Then** a success toast fires and the form resets — **but the submission is a
+stub**: it only `logDebug`s and never sends to any backend
+(`SupportPage.tsx:22`). The page also has its own in-content footer linking to
+Guidelines / Terms / Privacy.
 
-### 48. Z-Index Layering
-**Given** multiple UI elements are displayed  
-**When** they overlap  
-**Then** proper z-index ensures correct stacking (modals > header > sidebar > content)
+---
 
-### 49. Focus Management
-**Given** the user opens a modal or sidebar  
-**When** it opens  
-**Then** focus is trapped within that component for keyboard navigation
+## Blog
 
-### 50. Keyboard Navigation
-**Given** the user is using keyboard navigation  
-**When** they press Tab  
-**Then** focus moves through interactive elements in logical order
+### 34. Blog index
+**Given** the user opens `/blog`
+**When** the page renders
+**Then** it lists all posts newest-first as cards (`getAllPosts()`), with a
+Back-to-FlyerBoard header slot + ThemeToggle, an empty-state ("No posts yet"),
+and emits `<title>`/`<meta>`/canonical/OG + `Blog` JSON-LD (ItemList of posts)
+directly in JSX (React 19 head hoisting) (`BlogIndexPage.tsx`).
 
-### 51. Accessibility Labels
-**Given** the user is using a screen reader  
-**When** they navigate the layout  
-**Then** all interactive elements have appropriate aria-labels and roles
+### 35. Blog post
+**Given** the user opens `/blog/:slug` for an existing post
+**When** the page renders
+**Then** it shows hero image, category/author/date/reading-time meta, markdown
+body, up to 2 "Keep reading" related posts, and CTAs (All posts, Post an ad). It
+emits `BlogPosting` JSON-LD + FAQ JSON-LD (when the post has a FAQ section)
+(`BlogPostPage.tsx`).
 
-### 52. Mobile Viewport Meta
-**Given** the user is on a mobile device  
-**When** the page loads  
-**Then** the viewport is properly configured to prevent zooming and ensure responsive behavior
+### 36. Blog back-navigation state
+**Given** the user arrived at a post from within `/blog`
+**When** they tap Back
+**Then** it returns to `/blog` (label "Blog"); a direct/external entry (no
+`state.from`) falls back to `/` (label "FlyerBoard") (`BlogPostPage.tsx:24`).
 
-### 53. Safe Area Insets (Mobile)
-**Given** the user is on a device with notches or home indicators  
-**When** they view the layout  
-**Then** content respects safe area insets and doesn't overlap system UI
+### 37. Blog post not found (in-page, not the 404 route)
+**Given** the slug matches no post
+**When** the page renders
+**Then** `BlogPostPage` shows its own "Post not found" panel with a link back to
+`/blog` (it does NOT hit the `*` route, since `/blog/:slug` matched)
+(`BlogPostPage.tsx:63`).
 
-### 54. Theme Consistency
-**Given** the user is viewing any page  
-**When** the layout renders  
-**Then** consistent colors, spacing, and typography are applied throughout
+### 38. Social share cards (OG) — server-injected for crawlers
+**Given** a crawler/scraper requests `/blog/:slug`
+**When** `middleware.ts` intercepts it (matcher includes `/blog/:slug`)
+**Then** it injects real per-post `og:*` tags — title/description from
+`blog-meta.json` and a per-post `og:image` (`/blog-og/<slug>.png`, built by
+`scripts/generate-og-assets.ts`, re-encoded via Cloudflare Transformations)
+(`middleware.ts:111,133`).
+⚠️ **Client-side, `BlogPostPage.tsx:128` hardcodes `og:image = /og-preview.png`**
+(the generic brand card). This is intentional — the real per-post card comes
+from the middleware — but any preview path that bypasses the middleware gets the
+generic image. Posts with a non-SVG/external `heroImage` fall back to the brand
+card even in the middleware path.
 
-### 55. Loading States
-**Given** the page is loading  
-**When** initial data is being fetched  
-**Then** appropriate loading indicators are shown in the layout
+---
+
+## PWA
+
+### 39. Installability
+**Given** the user visits on a supported browser
+**When** the browser evaluates PWA criteria
+**Then** the app is installable via the browser's own "Add to Home Screen" /
+install affordance — there is **no custom `beforeinstallprompt` handler or
+in-app install prompt UI**; install is 100% browser-driven (`public/manifest.json`,
+`index.html` meta). `manifest.json` `theme_color` is `#ea580c` (orange) —
+diverges from the current brand primary `#dc3626`.
+
+### 40. Service worker — no offline
+**Given** the app loads
+**When** `main.tsx` registers `/sw.js` on window load
+**Then** the SW handles install/activate + push + notificationclick but has
+**no fetch handler** — every request goes to network (real-time by design; no
+offline mode, no asset caching) (`public/sw.js:14`, `main.tsx:45`).
+
+### 41. Push notifications
+**Given** the user (iOS 16.4+ must have installed the PWA) has granted
+permission
+**When** a push arrives
+**Then** the SW `push` handler shows a notification (ad title, not message
+body); `notificationclick` opens the app to the relevant chat (`public/sw.js`,
+`webPushService.ts`).
+
+### 42. Standalone launch
+**Given** the app was added to the home screen
+**When** launched from the icon
+**Then** it opens in `display: standalone` (no browser chrome), themed status
+bar (`manifest.json`).

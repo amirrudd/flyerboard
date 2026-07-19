@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError, logOperation } from "./lib/logger";
@@ -200,12 +200,26 @@ export const updateSaleEvent = mutation({
       });
     }
 
+    // Editing a LIVE sale's pickup window must move the auto-expiry with it,
+    // or the daily cron would end the sale mid-window (expiresAt is otherwise
+    // only stamped at publish).
+    let expiresAt: number | undefined;
+    if (sale.status === "active" && end !== sale.pickupWindowEnd) {
+      const rawBufferDays = await readSettingValue(ctx, SETTING_SALE_EXPIRY_BUFFER_DAYS);
+      const bufferDays =
+        rawBufferDays === null
+          ? DEFAULT_SALE_EXPIRY_BUFFER_DAYS
+          : clampAppSetting(SETTING_SALE_EXPIRY_BUFFER_DAYS, rawBufferDays);
+      expiresAt = end + bufferDays * MS_PER_DAY;
+    }
+
     await ctx.db.patch(args.saleEventId, {
       ...(args.title !== undefined ? { title: args.title.trim() || sale.title } : {}),
       ...(args.suburb !== undefined ? { suburb: args.suburb.trim() } : {}),
       ...(args.note !== undefined ? { note: args.note.trim() || undefined } : {}),
       pickupWindowStart: start,
       pickupWindowEnd: end,
+      ...(expiresAt !== undefined ? { expiresAt } : {}),
     });
     return args.saleEventId;
   },
@@ -458,6 +472,16 @@ export const publishSaleEvent = mutation({
       "publishSaleEvent"
     );
 
+    // Ended is final ("This can't be undone" in the end-sale confirm) — without
+    // this, end → wizard-resume → publish would resurrect the sale WITH a fresh
+    // bumpedAt, i.e. a free feed boost.
+    if (sale.status === "ended") {
+      throw createError("This sale has ended and can't be republished", {
+        operation: "publishSaleEvent",
+        saleEventId: args.saleEventId,
+      });
+    }
+
     // Slug is minted once and never regenerated (printed flyers encode it).
     let slug = sale.slug;
     if (!slug) {
@@ -492,6 +516,50 @@ export const publishSaleEvent = mutation({
 
     logOperation("Sale event published (free)", { saleEventId: args.saleEventId, slug });
     return { slug };
+  },
+});
+
+/**
+ * End an active sale. One concept — no separate delete: the public page stays
+ * up as a read-only "ended" record, the feed card disappears (feed streams
+ * status === "active" only), and open message threads stay usable so buyers
+ * can finish coordinating pickups. Idempotent.
+ */
+export const endSaleEvent = mutation({
+  args: { saleEventId: v.id("saleEvents") },
+  handler: async (ctx, args) => {
+    const { sale } = await requireOwnedSale(ctx, args.saleEventId, "endSaleEvent");
+    if (sale.status !== "ended") {
+      await ctx.db.patch(args.saleEventId, { status: "ended" });
+      logOperation("Sale event ended", { saleEventId: args.saleEventId });
+    }
+    return { success: true };
+  },
+});
+
+/**
+ * Daily cron: auto-end active sales past their `expiresAt` (pickup window end
+ * + admin-tunable buffer, stamped at publish). Without this, stale sales sit
+ * in the home feed forever.
+ */
+export const expireSaleEvents = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    // ponytail: full scan of active sales; add an expiresAt index if the table grows
+    const active = await ctx.db
+      .query("saleEvents")
+      .withIndex("by_status_and_bumped_at", (q) => q.eq("status", "active"))
+      .collect();
+    let ended = 0;
+    for (const sale of active) {
+      if (sale.expiresAt !== undefined && sale.expiresAt < now) {
+        await ctx.db.patch(sale._id, { status: "ended" });
+        ended++;
+      }
+    }
+    if (ended > 0) logOperation("Expired sale events auto-ended", { count: ended });
+    return { ended };
   },
 });
 

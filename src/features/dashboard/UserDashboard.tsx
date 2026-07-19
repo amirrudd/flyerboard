@@ -295,7 +295,9 @@ function MyAdCard({
                 </button>
               );
             }
-            const eligible = !ad.isSold && !ad.bundleId && !ad.saleEventId;
+            // Mirrors backend eligibility (bundles.createBundle / getEligibleAdsForBundle):
+            // trade-only (exchange) ads can't join a bundle.
+            const eligible = !ad.isSold && !ad.bundleId && !ad.saleEventId && ad.listingType !== "exchange";
             if (eligible) {
               return (
                 <button
@@ -423,7 +425,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const bundleModeEnabled = useFeatureFlag("bundleListing");
   const boostEnabled = useFeatureFlag("boostToTop");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [manageBundleId, setManageBundleId] = useState<string | null>(null);
   const [showAccountDeleteConfirm, setShowAccountDeleteConfirm] = useState(false);
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -590,7 +591,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
     { key: "identityVerification" }
   );
 
-  const deleteAd = useMutation(api.posts.deleteAd);
   const toggleAdStatus = useMutation(api.posts.toggleAdStatus);
   const generateProfileUploadUrl = useAction(api.upload_urls.generateProfileUploadUrl);
   const updateProfile = useMutation(api.users.updateProfile);
@@ -707,16 +707,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
 
     return () => clearTimeout(timeoutId);
   }, [profileData.email]);
-
-  const handleDeleteAd = async (adId: string) => {
-    try {
-      await deleteAd({ adId: adId as any });
-      toast.success("Flyer deleted successfully");
-      setShowDeleteConfirm(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete flyer");
-    }
-  };
 
   const handleToggleStatus = async (adId: string) => {
     try {
@@ -1462,44 +1452,6 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
           onClose={() => setManageBundleId(null)}
         />
       )}
-
-      {showDeleteConfirm && createPortal(
-        <div
-          className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setShowDeleteConfirm(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-flyer-title"
-        >
-          <div
-            className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover p-6 w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="delete-flyer-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-3">Delete Flyer</h2>
-            <p className="text-[15px] leading-relaxed text-foreground/75 mb-6 max-w-prose">
-              Are you sure you want to delete this flyer? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => { void handleDeleteAd(showDeleteConfirm); }}
-                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )
-      }
 
       {/* Delete Account Confirmation Modal */}
       {

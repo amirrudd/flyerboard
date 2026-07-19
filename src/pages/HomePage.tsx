@@ -1,5 +1,3 @@
-import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Sidebar } from "../features/layout/Sidebar/index";
 import { AdsGrid } from "../features/ads/AdsGrid";
@@ -12,7 +10,6 @@ import { AdsFilterBar } from "../features/ads/AdsFilterBar";
 import { useAdFilters } from "../hooks/useAdFilters";
 import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
-import { toast } from "sonner";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { registerHomeScroll, unregisterHomeScroll, HOME_SCROLL_KEY } from "../lib/homeScrollBridge";
@@ -106,18 +103,6 @@ export function HomePage() {
 
   // Handle location change and save to cookies
 
-
-  const updateCategories = useMutation(api.categories.updateCategories);
-
-  const handleUpdateCategories = useCallback(async () => {
-    try {
-      const result = await updateCategories();
-      toast.success(result.message);
-    } catch (error) {
-      toast.error("Failed to update categories");
-      console.error(error);
-    }
-  }, [updateCategories]);
 
   const handleSetSelectedCategory = useCallback((categoryId: Id<"categories"> | null) => {
     setSelectedCategory(categoryId);

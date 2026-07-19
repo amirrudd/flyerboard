@@ -1,6 +1,6 @@
 # Admin Patterns & Dashboard
 
-**Last Updated**: 2026-07-18
+**Last Updated**: 2026-07-19
 
 ## Overview
 
@@ -269,12 +269,11 @@ Consistent stats display across tabs:
 - Cannot delete own admin account
 - All mutations verify admin status
 
-### Audit Trail
-**Future Enhancement**: Consider adding audit logging for admin actions:
-- Who performed the action
-- What action was performed
-- When it was performed
-- Target user/flyer/report
+### Audit Trail (IMPLEMENTED)
+Every admin mutation calls `logAdminAction(label, {...})` from `convex/lib/logger.ts` — records the admin id, target id, and before/after values (e.g. `toggleUserStatus`, `deleteUserAccount`, `deleteFlyerAdmin`, `deleteFlyerImage`, `updateReportStatus`, `toggleUserVerification`, and `appSettings.updateSetting`). This is server-side logging, not a queryable audit table — an in-app audit-log *viewer* is still a future enhancement.
+
+### ⚠️ Ungated destructive mutation — `categories.updateCategories`
+**File**: `convex/categories.ts:264`. This is a **public `mutation` with NO `requireAdmin` gate** that **deletes ALL categories and reseeds a hardcoded 11-item list**. Any client (even unauthenticated) can call `api.categories.updateCategories` and wipe the category table. It is a leftover dev seeder — the only frontend reference is a dead, never-rendered `handleUpdateCategories` in `src/pages/HomePage.tsx:112`. **Fix: delete it, or convert to `internalMutation` + add `requireAdmin`.** (Same class of bug as the historical `reports.getAllReports` leak, which is now correctly gated in `convex/admin.ts:153`.)
 
 ## Common Patterns
 

@@ -1,243 +1,293 @@
 # Dashboard Feature - User Journeys
 
-This document captures all user journeys and flows for the User Dashboard feature package.
+This document captures all user journeys and flows for the User Dashboard feature package
+(`src/features/dashboard/`, entered via `src/pages/DashboardPage.tsx`).
 
-## 1. Access Dashboard (Authenticated)
-**Given** the user is authenticated  
-**When** they navigate to the dashboard  
-**Then** they see their personal dashboard with tabs for My Flyers, Messages, Saved Flyers, and Profile
+> Source of truth: `UserDashboard.tsx`, `BundlesTab.tsx`, `MovingSalesTab.tsx`, and the
+> backing Convex queries/mutations (`convex/posts.ts`, `convex/descopeAuth.ts`,
+> `convex/adDetail.ts`, `convex/bundles.ts`, `convex/saleEvents.ts`, `convex/users.ts`).
+> Verified Jul 2026. Chats/messages moved OFF the dashboard to the `/messages` route
+> (mobile chat redesign) — the dashboard keeps only a pointer link + unread badge.
 
-## 2. Access Dashboard (Unauthenticated)
-**Given** the user is not authenticated  
-**When** they navigate to the dashboard  
-**Then** they see a "Please sign in" message
+## Access & routing
 
-## 3. View My Flyers Tab
-**Given** the user is on the dashboard  
-**When** they select the "My Flyers" tab  
-**Then** they see a list of all their posted flyers (active and inactive)
+### 1. Access Dashboard (Authenticated)
+**Given** the user is authenticated (`useSession().isAuthenticated`, not `isSessionLoading`)
+**When** they navigate to `/dashboard`
+**Then** `DashboardPage` mounts `UserDashboard`, showing the profile summary sidebar and the
+My Flyers / Saved / (Moving sales) / (Bundles) / Profile tabs. A "Messages" sidebar entry is a
+link to `/messages`, not a tab.
 
-## 4. Empty Flyers State
-**Given** the user has not posted any flyers  
-**When** they view the My Flyers tab  
-**Then** they see "No Flyers Yet" with a "Pin Your First Flyer" button
+### 2. Access Dashboard (Unauthenticated)
+**Given** the user is not authenticated
+**When** they navigate to `/dashboard`
+**Then** `DashboardPage` redirects to `/` (`navigate('/', { replace: true })`) and renders
+`PageLoader` in the meantime. (The `UserDashboard` "Please sign in" fallback is effectively
+unreachable through the route because the page-level redirect fires first.)
 
-## 5. Post First Flyer
-**Given** the user has no flyers  
-**When** they click "Pin Your First Flyer"  
-**Then** the post flyer form is opened
+### 3. Legacy chats-tab URL redirect
+**Given** an old link of the form `/dashboard?tab=chats` (or archived-chats variant)
+**When** the user opens it
+**Then** `getLegacyChatsRedirect` maps it to the new `/messages` destination and `DashboardPage`
+redirects (`replace: true`) before `UserDashboard` mounts. Signed-out users hit the `/` auth
+redirect instead (the auth guard effect is declared last and wins).
 
-## 6. Post Additional Flyer
-**Given** the user has existing flyers  
-**When** they click "Pin Next Flyer"  
-**Then** the post flyer form is opened
+### 4. Deep link to / switch tabs via URL
+**Given** a dashboard URL with `?tab=<ads|saved|sales|bundles|profile>`
+**When** the user navigates to it or switches tabs in the UI
+**Then** `parseDashboardTab` selects the tab; unknown/legacy values fall back to `ads`. Tab
+switches write `?tab=` with `replace: true`. Inline `?ad=` / `?messages=` view params are
+URL-derived, so a tab switch that rewrites params implicitly closes any open inline view.
 
-## 7. View Flyer Statistics
-**Given** the user has posted flyers  
-**When** they view the My Flyers tab  
-**Then** they see statistics including total flyers, total views, and average rating
+### 5. Flag-gated tab bounce
+**Given** a bookmarked `?tab=sales` (or `?tab=bundles`) link but the `movingSaleMode`
+(resp. `bundleListing`) flag is OFF
+**When** the dashboard loads on that tab
+**Then** an effect pushes `?tab=ads` (URL-only write; the URL→activeTab sync effect is the sole
+writer of `activeTab`, avoiding the documented infinite effect ping-pong). The sidebar entry for
+that tab is also hidden.
 
-## 8. Edit Flyer
-**Given** the user is viewing their flyers  
-**When** they click the edit button on a flyer  
-**Then** the edit flyer form opens with pre-filled data
+## My Flyers tab
 
-## 9. Toggle Flyer Active Status
-**Given** the user has a flyer  
-**When** they click the activate/deactivate toggle  
-**Then** the flyer's active status is updated
+### 6. View My Flyers
+**Given** the user is on the `ads` tab
+**When** the tab renders
+**Then** `api.posts.getUserAds` runs (gated only on `activeTab === "ads"`) and returns the user's
+**non-deleted** ads (`.filter(isDeleted !== true)`), active and inactive alike. Deleted ads are
+NOT returned — the dashboard has no deleted-ads view. Loading shows `AdListingSkeleton` x3.
 
-## 10. Delete Flyer from Dashboard
-**Given** the user is viewing their flyers  
-**When** they click delete and confirm  
-**Then** the flyer is soft-deleted
+### 7. Empty Flyers state
+**Given** the user has no (non-deleted) flyers
+**When** they view My Flyers
+**Then** they see "No Flyers Yet" with a "Pin Your First Flyer" button that calls `onPostAd`
+(→ `/post`).
 
-## 11. View Flyer Details from Dashboard
-**Given** the user is viewing their flyers  
-**When** they click on a flyer card  
-**Then** the flyer detail view opens
+### 8. Post a flyer from the dashboard
+**Given** the user is on My Flyers
+**When** they click "Pin Next Flyer" (header) or "Pin Your First Flyer" (empty state)
+**Then** `onPostAd` navigates to `/post` with `state.from = '/dashboard'`.
 
-## 12. View Messages Tab
-**Given** the user is on the dashboard  
-**When** they select the "Messages" tab  
-**Then** they see all their chat conversations (as seller and buyer)
+### 9. Profile-summary statistics
+**Given** the user has data
+**When** the sidebar profile card renders
+**Then** `api.descopeAuth.getCurrentUserWithStats` supplies `totalAds`, `totalViews`,
+`averageRating`, `ratingCount` (all animated via `CountUp`). Stats **exclude soft-deleted ads**
+(`.filter(isDeleted !== true)` in the backend). Skeleton shown until `convexUser && userStats`.
 
-## 13. Seller Chats
-**Given** the user has flyers with messages  
-**When** they view the Messages tab  
-**Then** they see chats where they are the seller, grouped by flyer
+### 10. Per-card views + active/inactive badge
+**Given** the My Flyers list is loaded
+**When** each `MyAdCard` renders
+**Then** it shows the ad image, title, price (with strike-through `previousPrice` when higher),
+view count, and an Active/Inactive pill.
 
-## 14. Buyer Chats
-**Given** the user has messaged sellers  
-**When** they view the Messages tab  
-**Then** they see chats where they are the buyer
+### 11. Edit a flyer
+**Given** the user is viewing their flyers
+**When** they click the card body or its "Edit" button
+**Then** `onEditAd(ad)` navigates to `/post` with `state.editingAd = ad`, `from = '/dashboard'`
+(the edit form is where deletion also lives — see #14).
 
-## 15. Unread Message Counts
-**Given** the user has unread messages  
-**When** they view the Messages tab  
-**Then** unread counts are displayed on each chat
+### 12. Toggle active status
+**Given** the user owns a flyer
+**When** they click "Activate"/"Deactivate"
+**Then** `api.posts.toggleAdStatus` flips `isActive` (server verifies auth + ownership) and a
+success/error toast shows. Convex reactivity re-renders the badge.
 
-## 16. Open Chat Conversation
-**Given** the user is viewing their messages  
-**When** they click on a chat  
-**Then** the full conversation opens
+### 13. Open a flyer's messages
+**Given** the user owns a flyer
+**When** they click "Messages" on the card
+**Then** `navigate('/messages?flyer=<adId>')`. A red unread badge on the button reflects
+`api.messages.getUnreadCounts` (gated on `activeTab === "ads" && userAds`). Convex reactivity
+updates it live.
 
-## 17. Archive Chat
-**Given** the user has a chat conversation  
-**When** they click the archive button  
-**Then** the chat is moved to archived chats
+### 14. Delete a flyer — NOT wired from the dashboard (see BROKEN)
+**Given** the delete-confirm modal + `handleDeleteAd` (→ `api.posts.deleteAd`, soft-delete
+stamping `isDeleted/isActive/deletedAt` and detaching from any bundle) exist in `UserDashboard`
+**When** the user is on My Flyers
+**Then** there is **no control that opens the modal** — `MyAdCard` renders Boost / Messages /
+Toggle / Edit only, no delete button, and `setShowDeleteConfirm(<id>)` is never called. The
+modal and handler are orphaned; deletion is reachable only from the edit form at `/post`.
+(Backend `deleteAd` itself is correct and enforces ownership.)
 
-## 18. View Archived Chats (Desktop)
-**Given** the user is on desktop  
-**When** they select the "Archived" sub-tab in Messages  
-**Then** they see all archived conversations
+## Boost to top (flag: `boostToTop`)
 
-## 19. Unarchive Chat
-**Given** the user has archived chats  
-**When** they click unarchive on a chat  
-**Then** the chat is restored to active messages
+### 15. Boost a Flyer (eligible)
+**Given** `boostToTop` is on, and the user owns an active, unsold, un-bundled, non-sale flyer
+whose cooldown has elapsed
+**When** they click "Boost to top" and confirm in `BoostConfirmModal`
+**Then** `api.posts.boostAd` re-stamps `bumpedAt` (jumps to top of the shared feed) and increments
+`boostCount`; the launch FX play (card lift, ring pulse, floating arrow), a success toast shows,
+and the button settles into the disabled "Boost in {N}d" countdown. Server enforces flag +
+ownership + eligibility + cooldown + per-user daily cap (all fail-closed).
 
-## 20. Empty Messages State
-**Given** the user has no messages  
-**When** they view the Messages tab  
-**Then** they see an empty state message
+### 16. Boost during cooldown
+**Given** the user owns a flyer boosted/created less than the cooldown ago
+**When** they view it on the dashboard (or detail page)
+**Then** a disabled "Boost in Xd" ("Boost in Xh" in the final day) button shows; the countdown
+recomputes live if an admin changes the cooldown; a raced/rejected boost surfaces the server error
+toast with NO celebration FX.
 
-## 21. View Saved Flyers Tab
-**Given** the user is on the dashboard  
-**When** they select the "Saved Flyers" tab  
-**Then** they see all flyers they have saved/favorited
+### 17. Boost ineligible by state or flag
+**Given** a flyer is sold, inactive, in a bundle or a Moving Sale — or `boostToTop` is off
+**When** the owner views it
+**Then** no Boost control renders at all (`boost.state === "ineligible"` or `!boostEnabled`); the
+server also rejects `boostAd` for each state.
 
-## 22. Remove from Saved
-**Given** the user is viewing saved flyers  
-**When** they click the unsave button  
-**Then** the flyer is removed from their saved list
+## Bundles integration on My Flyers (flag: `bundleListing`)
 
-## 23. Empty Saved Flyers State
-**Given** the user has no saved flyers  
-**When** they view the Saved Flyers tab  
-**Then** they see an empty state message
+### 18. "Bundle ads" entry + In-bundle tag
+**Given** `bundleListing` is on
+**When** My Flyers renders
+**Then** a "Bundle ads" header button navigates to `/sell/bundle`. `api.bundles.getMyBundles`
+(gated on `ads` tab + flag) builds an adId→bundle map; a card already in a bundle shows an
+"In bundle: {label}" pill that opens `BundleManageModal`.
 
-## 24. View Profile Tab
-**Given** the user is on the dashboard  
-**When** they select the "Profile" tab  
-**Then** they see their profile information and statistics
+### 19. Add a flyer to a bundle
+**Given** a flyer that is unsold, not already bundled, and not in a sale
+**When** the owner clicks its "Add to a bundle" pill
+**Then** `navigate('/sell/bundle?preselect=<adId>')`.
 
-## 25. View Profile Statistics
-**Given** the user is viewing their profile  
-**When** the profile loads  
-**Then** they see total flyers posted, total views, average rating, and rating count
+## Moving Sale entry (flag: `movingSaleMode`)
 
-## 26. Upload Profile Picture
-**Given** the user is on the Profile tab  
-**When** they click on their profile picture and select a new image  
-**Then** the image is uploaded and their profile picture is updated
+### 20. Moving-sale promo banner
+**Given** `movingSaleMode` is on
+**When** My Flyers renders
+**Then** a "Moving house? Run a moving sale" banner navigates to `/sell/moving-sale`.
 
-## 27. View Verification Status
-**Given** the user is viewing their profile  
-**When** the profile loads  
-**Then** they see their verification status (verified or not verified)
+## Saved tab
 
-## 28. Identity Verification (Feature Flag)
-**Given** the identity verification feature is enabled  
-**When** the user views their profile  
-**Then** they see a "Verify Identity" button (if not verified)
+### 21. View Saved Ads
+**Given** the user is on the `saved` tab
+**When** it renders
+**Then** `api.adDetail.getSavedAds` (gated on `saved` tab) lists saved ads (skeleton while
+undefined; "No saved ads" empty state). Rows with a null `ad` (deleted target) are filtered out.
+Clicking a row opens `AdDetail` inline via `?ad=<id>`.
 
-## 29. View Email Notification Settings
-**Given** the user is on the Profile tab  
-**When** they scroll to notification settings  
-**Then** they see toggles for email notification preferences
+### 22. Saved Sales / Saved Bundles groups
+**Given** the relevant flag is on and the user saved sales/bundles
+**When** the Saved tab renders
+**Then** `api.saleEvents.getSavedSaleEvents` / `api.bundles.getSavedBundles` (each gated on tab +
+flag) render "Saved Sales" and "Saved Bundles" group rows above Saved Ads; clicking navigates to
+`/sale/<slug>` or `/bundle/<id>` ("no longer available" suffix for a partial bundle).
 
-## 30. Enable Email Notifications
-**Given** the user wants to receive email notifications  
-**When** they toggle on "Email Notifications"  
-**Then** email notifications are enabled for their account
+### 23. Remove from Saved — happens in AdDetail, not the Saved tab
+**Given** the Saved tab lists saved ads
+**When** the user wants to unsave one
+**Then** there is no unsave control in the Saved tab itself; they open the ad (`AdDetail`) and
+toggle save there. The list re-renders reactively once unsaved.
 
-## 31. Disable Email Notifications
-**Given** the user has email notifications enabled  
-**When** they toggle off "Email Notifications"  
-**Then** email notifications are disabled
+## Moving sales tab (flag: `movingSaleMode`)
 
-## 32. Configure Notification Frequency
-**Given** email notifications are enabled  
-**When** the user selects a frequency option (instant/daily/weekly)  
-**Then** their notification frequency preference is saved
+### 24. View / manage my moving sales
+**Given** the `sales` tab is active and `movingSaleMode` is on
+**When** it renders
+**Then** `MovingSalesTab` runs `api.saleEvents.getMySaleEvents` (skeleton / "no sales" empty state
+with a "Start a moving sale" CTA → `/sell/moving-sale`). Each sale row links to `/sale/<slug>`
+(view) and `/sell/moving-sale?sale=<id>` (edit).
 
-## 33. Mobile Tab Navigation
-**Given** the user is on mobile  
-**When** they view the dashboard  
-**Then** they see a bottom tab bar for navigation between sections
+## Bundles tab (flag: `bundleListing`)
 
-## 34. Desktop Tab Navigation
-**Given** the user is on desktop  
-**When** they view the dashboard  
-**Then** they see a horizontal tab bar at the top
+### 25. View / manage my bundles
+**Given** the `bundles` tab is active and `bundleListing` is on
+**When** it renders
+**Then** `BundlesTab` runs `api.bundles.getMyBundles` (skeleton / empty state with a "Create a
+bundle" CTA → `/sell/bundle`). A bundle row opens `BundleManageModal` (edit price / remove items /
+etc.).
 
-## 35. Mobile Profile Edit Navigation
-**Given** the user is on mobile viewing the dashboard  
-**When** they click the edit button next to their profile image  
-**Then** they navigate to the Profile tab
+## Profile tab
 
-## 36. Prevent Mobile Access to Desktop-Only Tabs
-**Given** the user is on mobile  
-**When** they try to access desktop-only tabs via URL (e.g., ?tab=archived)  
-**Then** they are redirected to the default tab (My Flyers)
+### 26. Edit name & email (validated)
+**Given** the user is on the Profile tab
+**When** they change Name/Email and submit
+**Then** client validation runs (name 2–15 chars, letters/space/hyphen/apostrophe; email optional,
+≤50 chars, regex + local-part length, 500 ms debounced live error). On pass,
+`api.users.updateProfile` saves; toast on success/error. If the Convex user hasn't synced yet
+(`_id === "temp-id"`) submit is blocked with "Please wait for profile sync to complete".
 
-## 37. URL Tab Parameter
-**Given** the user is on the dashboard  
-**When** they switch tabs  
-**Then** the URL updates with the ?tab parameter
+### 27. Upload profile picture
+**Given** the user is on Profile (or clicks the sidebar avatar)
+**When** they pick an image
+**Then** `generateProfileUploadUrl` → `uploadImageToR2` (compression + progress) →
+`updateProfile({ image: key })`; spinner during upload, success/error toast, input reset.
 
-## 38. Deep Link to Specific Tab
-**Given** the user has a dashboard URL with a tab parameter  
-**When** they navigate to that URL  
-**Then** the specified tab is automatically selected
+### 28. Email-collection banner
+**Given** the synced user has no email
+**When** any tab renders
+**Then** a "Get notified when buyers message you" banner shows on all tabs with an "Add email
+address" button that jumps to the Profile tab.
 
-## 39. View User Rating
-**Given** the user has received ratings  
-**When** they view their profile  
-**Then** they see their average rating and total number of ratings
+### 29. Identity verification (flag: `identityVerification`)
+**Given** `api.featureFlags.getFeatureFlag('identityVerification')` is enabled
+**When** Profile renders
+**Then** a verification card shows current status; an unverified user gets a "Verify Identity"
+button calling `api.users.verifyIdentity` (toast on success/error). Verified users show a badge in
+the sidebar and on their flyers.
 
-## 40. View Recent Activity
-**Given** the user is viewing their profile  
-**When** the profile loads  
-**Then** they see their recent activity summary
+### 30. Email notification toggle
+**Given** the synced user has an email
+**When** they toggle "Email notifications for new messages"
+**Then** `api.users.updateEmailNotificationPreference({ enabled })` saves; toast on success/error.
+(No email → the toggle is not rendered; the collection banner shows instead.)
 
-## 41. Sign Out from Dashboard
-**Given** the user is on the dashboard  
-**When** they click the sign-out button  
-**Then** they are signed out and redirected to the home page
+### 31. Browser (push) notifications card
+**Given** the browser supports push (`usePushNotifications().isSupported`)
+**When** Profile renders `BrowserNotificationsCard`
+**Then** the user can Enable (subscribe) / toggle off (unsubscribe); "Blocked in browser" state
+when permission is denied. Mount-time service-worker/pushManager work runs only when this card
+renders (own component).
 
-## 42. Responsive Layout
-**Given** the user is viewing the dashboard  
-**When** they resize the browser window  
-**Then** the layout adapts between mobile and desktop views
+### 32. Delete account (Danger Zone)
+**Given** the user is on Profile
+**When** they click "Delete Account" and confirm in the modal
+**Then** `api.users.deleteAccount` runs; on success a toast shows and `onBack()` leaves the
+dashboard. Permanently removes their data (ads, messages, saved items).
 
-## 43. Loading States
-**Given** dashboard data is being fetched  
-**When** the dashboard loads  
-**Then** appropriate loading indicators are shown
+## Chrome / navigation
 
-## 44. Error States
-**Given** an error occurs while fetching dashboard data  
-**When** the error is encountered  
-**Then** an appropriate error message is displayed
+### 33. Persistent header (back / title / sign-out / theme)
+**Given** the dashboard is open (not on the inline AdMessages or "please sign in" screens)
+**When** it renders
+**Then** `useHeaderSlots` registers a back button (on mobile off the `ads` tab it first returns to
+`ads`; otherwise `onBack()`), title, `ThemeToggle`, and `SignOutButton` (icon-only on mobile). The
+inline `AdDetail` stacks its own header on top while open.
 
-## 45. Refresh Dashboard Data
-**Given** the user is on the dashboard  
-**When** they perform actions (post, edit, delete flyers)  
-**Then** the dashboard data automatically refreshes via Convex reactivity
+### 34. Sign out
+**Given** the user is on the dashboard
+**When** they click Sign Out
+**Then** `SignOutButton` signs out (Descope) and `onSignOut` = `onBack()` returns to `/`.
 
-## 46. Boost a Flyer (Eligible)
-**Given** the `boostToTop` flag is on, the user owns an active, unsold, un-bundled flyer whose cooldown has elapsed  
-**When** they click "Boost to top" in the card's action row and confirm in the modal  
-**Then** the flyer's `bumpedAt` is re-stamped (it jumps to the top of the feed), the launch animation plays (card lift + ring pulse + floating arrow), a success toast shows, and the button settles into the disabled "Boost in {N}d" countdown
+### 35. Messages pointer link + unread badge
+**Given** the desktop sidebar
+**When** it renders
+**Then** the "Messages" entry navigates to `/messages` (not a tab) and shows a live total-unread
+badge from `useTotalUnreadCount()`.
 
-## 47. Boost During Cooldown
-**Given** the user owns a flyer boosted (or created) less than the cooldown period ago  
-**When** they view the flyer on the dashboard or its detail page  
-**Then** they see a disabled "Boost in Xd" (or "Boost in Xh" inside the final day) button; the countdown recomputes live if an admin changes the cooldown setting, and a raced/rejected boost shows the server error toast with NO celebration animation
+### 36. Desktop sidebar navigation
+**Given** desktop (`md:` and up)
+**When** the sidebar renders
+**Then** a sticky vertical nav lists the tabs (Messages as a link); the active tab is highlighted;
+clicking sets the tab, writes `?tab=`, and flags scroll-to-content.
 
-## 48. Boost Ineligible by State or Flag
-**Given** a flyer is sold, inactive, part of a bundle or Moving Sale — or the `boostToTop` feature flag is off  
-**When** the owner views it on the dashboard or detail page  
-**Then** no Boost control is rendered at all (the server also rejects `boostAd` for every one of these states, fail closed)
+### 37. Mobile tab navigation
+**Given** mobile
+**When** the dashboard renders
+**Then** the desktop sidebar is hidden (`hidden md:block`); tab switching comes from the global
+Layout bottom nav / URL `?tab=` and the profile-edit pencil. On a manual tab change the content
+section auto-scrolls into view (`shouldScrollToContent`), guarded against racing the back-button
+scroll-to-top intent.
+
+### 38. Inline drill-in views (legacy deep links)
+**Given** a URL with `?ad=<id>` or `?messages=<id>`
+**When** the dashboard mounts
+**Then** it renders `AdDetail` (resp. `AdMessages`) full-screen; back clears the param. Newer flows
+navigate to `/messages?flyer=<adId>` instead of using `?messages=`.
+
+### 39. Reactive refresh
+**Given** the user posts/edits/toggles/boosts a flyer or saves an item
+**When** the underlying Convex data changes
+**Then** the dashboard updates automatically via Convex query reactivity (no manual refetch).
+
+### 40. Loading & error states
+**Given** data is fetching or a mutation fails
+**When** it resolves
+**Then** skeletons cover loading (`UserProfileSkeleton`, `AdListingSkeleton`, `SavedAdSkeleton`);
+mutation failures surface a `sonner` toast with the server error message.

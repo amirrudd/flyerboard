@@ -2,6 +2,8 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError, logOperation } from "./lib/logger";
+import { checkRateLimit } from "./lib/rateLimit";
+import { notifyChatMessage } from "./lib/chatNotifications";
 
 export const getAdById = query({
   args: { adId: v.id("ads") },
@@ -198,6 +200,10 @@ export const sendFirstMessage = mutation({
       throw createError("Must be logged in to send messages", { operation: "startChat", adId: args.adId });
     }
 
+    // Every path inserts a message, so the message limit applies unconditionally
+    // (the createChat limit below only guards new-thread creation).
+    await checkRateLimit(ctx, userId, "sendMessage");
+
     const ad = await ctx.db.get(args.adId);
     if (!ad || ad.isDeleted) {
       throw createError("Flyer not found", { adId: args.adId, userId });
@@ -220,6 +226,9 @@ export const sendFirstMessage = mutation({
     if (existingChat) {
       chatId = existingChat._id;
     } else {
+      // Rate limit only applies to creating a new chat, not continuing one
+      await checkRateLimit(ctx, userId, "createChat");
+
       // Create new chat only when sending first message
       chatId = await ctx.db.insert("chats", {
         adId: args.adId,
@@ -242,55 +251,22 @@ export const sendFirstMessage = mutation({
       lastMessageAt: Date.now(),
     });
 
+    // Notify the seller — this send path was previously left un-notified.
+    await notifyChatMessage(ctx, {
+      recipientId: ad.userId,
+      senderId: userId,
+      chatId,
+      adId: args.adId,
+      content: args.content,
+    });
+
     return { chatId, success: true };
   },
 });
 
-export const sendMessage = mutation({
-  args: {
-    chatId: v.id("chats"),
-    content: v.string()
-  },
-  handler: async (ctx, args) => {
-    const userId = await getDescopeUserId(ctx);
-    if (!userId) {
-      throw createError("Must be logged in to send messages", { operation: "sendMessage", chatId: args.chatId });
-    }
-
-    const chat = await ctx.db.get(args.chatId);
-    if (!chat) {
-      throw createError("Chat not found", { chatId: args.chatId, userId });
-    }
-
-    if (chat.buyerId !== userId && chat.sellerId !== userId) {
-      throw createError("Not authorized to send messages in this chat", { chatId: args.chatId, userId, buyerId: chat.buyerId, sellerId: chat.sellerId });
-    }
-
-    // For single-listing chats, check the ad still exists. Sale threads (no adId)
-    // are gated by the sale itself, so skip this check.
-    if (chat.adId) {
-      const ad = await ctx.db.get(chat.adId);
-      if (!ad || ad.isDeleted) {
-        throw createError("Cannot send message - flyer no longer available", { chatId: args.chatId, adId: chat.adId });
-      }
-    }
-
-    // Insert message
-    await ctx.db.insert("messages", {
-      chatId: args.chatId,
-      senderId: userId,
-      content: args.content,
-      timestamp: Date.now(),
-    });
-
-    // Update chat last message time
-    await ctx.db.patch(args.chatId, {
-      lastMessageAt: Date.now(),
-    });
-
-    return { success: true };
-  },
-});
+// NOTE: the old adDetail.sendMessage duplicate was removed — continuing an
+// existing thread goes through messages.sendMessage (the single implementation
+// with rate limiting, soft-delete guard, and notifications).
 
 export const getChatMessages = query({
   args: { chatId: v.id("chats") },

@@ -362,3 +362,36 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
     return { processed: grouped.length };
   },
 });
+
+/**
+ * Forward a stored support request to the support inbox. Fire-and-forget from
+ * `support.submitSupportRequest` — the row is the source of truth; a failed
+ * send only loses the email, not the request.
+ */
+export const sendSupportRequestEmail = internalAction({
+  args: {
+    requestId: v.id("supportRequests"),
+    email: v.string(),
+    subject: v.string(),
+    body: v.string(),
+    userName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    try {
+      await resend.sendEmail(ctx, {
+        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+        to: "support@flyerboard.com.au",
+        replyTo: [args.email],
+        subject: `[Support] ${args.subject}`,
+        html: `<p><strong>From:</strong> ${esc(args.userName)} &lt;${esc(args.email)}&gt;</p><p style="white-space:pre-wrap">${esc(args.body)}</p><p style="color:#71717a;font-size:12px">Request ${args.requestId}</p>`,
+        text: `From: ${args.userName} <${args.email}>\n\n${args.body}\n\nRequest ${args.requestId}`,
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to send support request email:", error);
+      return { success: false };
+    }
+  },
+});

@@ -12,14 +12,7 @@ import { paginationOptsValidator } from "convex/server";
  * indexes don't cursor-paginate) — `paginationOpts` is accepted for
  * `usePaginatedQuery` compatibility but only shapes the response envelope.
  *
- * DEPLOY COMPAT (remove one release after the unified feed ships): `search` is
- * optional and `maxSortTime` is accepted because browser sessions opened before
- * the deploy still call the pre-unified-feed signature (Convex swaps functions
- * atomically; the stale bundle keeps calling until a refresh). Without the
- * legacy browse branch below, every open home-feed tab errors into its
- * ErrorBoundary at deploy time. New clients never hit the else-branch.
- *
- * @param args.search - Search term for title search (omitted only by stale clients)
+ * @param args.search - Search term for title search
  * @param args.categoryId - Filter by specific category (optional)
  * @param args.location - Filter by location string (optional, exact match)
  * @param args.paginationOpts - Pagination envelope (results are one page)
@@ -32,47 +25,16 @@ import { paginationOptsValidator } from "convex/server";
 export const getAds = query({
   args: {
     categoryId: v.optional(v.id("categories")),
-    search: v.optional(v.string()),
+    search: v.string(),
     location: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
-    // DEPLOY COMPAT: pre-unified-feed clients pass this. Only the legacy branch reads it.
-    maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    if (!args.search) {
-      // DEPLOY COMPAT — legacy browse branch for stale clients only (see doc above).
-      let q = ctx.db
-        .query("ads")
-        .withIndex("by_bumped_at", (qq) => qq.lte("bumpedAt", args.maxSortTime ?? Date.now()))
-        .order("desc");
-      if (args.categoryId) {
-        q = ctx.db
-          .query("ads")
-          .withIndex("by_category_and_bumped_at", (qq) =>
-            qq.eq("categoryId", args.categoryId!).lte("bumpedAt", args.maxSortTime ?? Date.now())
-          )
-          .order("desc");
-      }
-      const paginatedResult = await q
-        .filter((qq) =>
-          qq.and(
-            qq.eq(qq.field("isActive"), true),
-            qq.neq(qq.field("isDeleted"), true),
-            qq.neq(qq.field("isSold"), true)
-          )
-        )
-        .paginate(args.paginationOpts);
-      if (args.location) {
-        paginatedResult.page = paginatedResult.page.filter((ad) => ad.location === args.location);
-      }
-      return paginatedResult;
-    }
-
     // Search queries don't support pagination in the same way, return top results
     const ads = await ctx.db
       .query("ads")
       .withSearchIndex("search_ads", (q) => {
-        let searchQuery = q.search("title", args.search!);
+        let searchQuery = q.search("title", args.search);
 
         if (args.categoryId) {
           searchQuery = searchQuery.eq("categoryId", args.categoryId);

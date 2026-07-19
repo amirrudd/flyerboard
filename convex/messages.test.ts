@@ -294,6 +294,7 @@ describe("sendMessage notification scheduling", () => {
         status: "active",
         slug: "sellers-sale-richmond-abcd",
         createdAt: Date.now(),
+        bumpedAt: Date.now(),
       })
     );
     const chatId = await seedChat(t, {

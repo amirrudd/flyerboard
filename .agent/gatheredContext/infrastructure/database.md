@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-07-18
+**Last Updated**: 2026-07-19
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -79,17 +79,19 @@ takes the `location` filter server-side). **Future multi-table feeds should
 follow this pattern**, not a denormalized feed table (see
 `docs/architecture/design-decisions.md`, "Unified feed via mergedStream").
 
-- **Schema**: `saleBundles` and `saleEvents` gained `bumpedAt` (`v.optional(v.number())`,
-  mirrors `ads.bumpedAt`) + `boostCount` (optional, mirrors ads) + a
+- **Schema**: `saleBundles` and `saleEvents` gained `bumpedAt` (`v.number()`, mirrors
+  `ads.bumpedAt`) + `boostCount` (optional, mirrors ads) + a
   `by_status_and_bumped_at` index (`["status", "bumpedAt"]`). Bundles stamp `bumpedAt`
-  at insert; sales stamp at PUBLISH (draft → active), not draft creation.
-- **`bumpedAt` on the composites is still OPTIONAL** — widen→backfill→narrow rollout,
-  same as `ads.bumpedAt` (and same postmortem risk: don't narrow in the same deploy as
-  the backfill). Narrowing to `v.number()` is PENDING until
-  `migrations:backfillFeedBumpedAt` has run to completion on prod. Until then the
-  composite streams `filterWith(bumpedAt !== undefined)` so un-backfilled rows are
-  excluded rather than sinking to the feed bottom (Convex sorts `undefined` below all
-  numbers on desc).
+  at insert; sales stamp at insert AND re-stamp at PUBLISH (draft → active) — the
+  publish stamp is the one the feed ranks by.
+- **`bumpedAt` on the composites is REQUIRED (`v.number()`) since 2026-07-19** —
+  `migrations:backfillFeedBumpedAt` ran to completion on prod, then the validators were
+  narrowed and the migration + the streams' interim `filterWith(bumpedAt !== undefined)`
+  guards were deleted (widen→backfill→narrow, same as `ads.bumpedAt`; same postmortem
+  rule — never narrow in the same deploy as the backfill). Every
+  `insert("saleBundles")` / `insert("saleEvents")` MUST now set `bumpedAt` — including
+  test fixtures and sale DRAFT creation (`createSaleEvent` stamps it at insert; publish
+  re-stamps at draft → active so drafting time never feed-ranks).
 - **mergedStream gotcha**: the order-fields argument must be the FULL non-equality
   suffix of each stream's index — `["bumpedAt", "_creationTime", "_id"]`, NOT bare
   `["bumpedAt"]` (the implicit system tie-breakers count). All three indexes end in
@@ -109,7 +111,7 @@ const streams = [
     .withIndex("by_status_and_bumped_at", (q) =>
       q.eq("status", "active").lte("bumpedAt", maxSortTime))
     .order("desc")
-    .filterWith(async (b) => b.bumpedAt !== undefined && !b.saleEventId)
+    .filterWith(async (b) => !b.saleEventId)
     .map(async (doc) => ({ kind: "bundle" as const, doc })),
 ];
 // Full non-equality index suffix — NOT just ["bumpedAt"]

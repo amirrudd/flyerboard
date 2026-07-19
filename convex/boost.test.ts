@@ -272,6 +272,7 @@ describe("boostAd — state eligibility", () => {
         bundlePrice: 50,
         adIds: [bundled],
         status: "active",
+        bumpedAt: Date.now(),
       })
     );
     await t.run((ctx) => ctx.db.patch(bundled, { bundleId }));
@@ -292,6 +293,7 @@ describe("boostAd — state eligibility", () => {
         pickupWindowEnd: Date.now() + HOUR,
         status: "active",
         createdAt: Date.now(),
+        bumpedAt: Date.now(),
       })
     );
     await t.run((ctx) => ctx.db.patch(saleAd, { saleEventId: saleId }));

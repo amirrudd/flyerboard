@@ -113,7 +113,7 @@ async function insertSale(
   opts: {
     userId: Id<"users">;
     categoryId: Id<"categories">;
-    bumpedAt?: number;
+    bumpedAt: number;
     status?: "draft" | "active" | "ended";
     slug?: string | null; // null = omit slug (unpublished-looking row)
     expiresAt?: number;
@@ -129,7 +129,7 @@ async function insertSale(
       status: opts.status ?? "active",
       createdAt: T0,
       ...(opts.slug === null ? {} : { slug: opts.slug ?? `sale-${Math.random().toString(36).slice(2, 8)}` }),
-      ...(opts.bumpedAt !== undefined ? { bumpedAt: opts.bumpedAt } : {}),
+      bumpedAt: opts.bumpedAt,
       ...(opts.expiresAt !== undefined ? { expiresAt: opts.expiresAt } : {}),
     })
   );
@@ -387,13 +387,6 @@ describe("getFeed — exclusions", () => {
     const result = await getPage(t, { maxSortTime: T0 + 100 });
     const sales = result.page.filter((e) => e.kind === "sale");
     expect(sales.map((e) => (e.kind === "sale" ? e.card._id : null))).toEqual([live]);
-  });
-
-  test("a sale with undefined bumpedAt (pre-backfill row) is excluded", async () => {
-    const { t, userId, categoryId } = await fresh();
-    await insertSale(t, { userId, categoryId }); // no bumpedAt
-    const result = await getPage(t, { maxSortTime: T0 + 100 });
-    expect(result.page.filter((e) => e.kind === "sale")).toHaveLength(0);
   });
 
   test("a bundle whose live members drop below 2 is excluded from the page", async () => {

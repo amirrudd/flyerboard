@@ -42,8 +42,20 @@ jobs:
 
       - name: Start local Convex backend (this branch's functions)
         run: |
-          nohup npx convex dev > convex-dev.log 2>&1 &
-          for i in $(seq 1 60); do
+          # First run provisions the anonymous local deployment (downloads the
+          # backend binary) but its function push FAILS: auth.config.ts requires
+          # two env vars a fresh deployment doesn't have. Tolerate that, set the
+          # vars (public values, not secrets), then push for real.
+          npx convex dev --once > convex-dev.log 2>&1 || true
+          npx convex env set CONVEX_AUTH_ISSUER "https://api.descope.com/$VITE_DESCOPE_PROJECT_ID"
+          npx convex env set DESCOPE_PROJECT_ID "$VITE_DESCOPE_PROJECT_ID"
+          npx convex dev --once
+          # The backend binary normally outlives the CLI; if this CLI version
+          # reaps it on exit, relaunch it as a watcher and wait for the port.
+          if ! curl -sf http://127.0.0.1:3210/version > /dev/null; then
+            nohup npx convex dev >> convex-dev.log 2>&1 &
+          fi
+          for i in $(seq 1 30); do
             curl -sf http://127.0.0.1:3210/version > /dev/null && break
             sleep 2
           done

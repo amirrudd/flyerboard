@@ -27,7 +27,9 @@ import {
     RATE_LIMITS,
     OVERRIDABLE_RATE_LIMIT_OPS,
     RATE_LIMIT_OVERRIDE_MAX_MULTIPLIER,
+    RATE_LIMIT_OP_META,
     rateLimitSettingKey,
+    rateLimitWindowNoun,
 } from "./rateLimitConfig";
 
 // ── Setting keys ─────────────────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: BOOST_COOLDOWN_DAYS_MIN,
         max: BOOST_COOLDOWN_DAYS_MAX,
         description:
-            "Days an ad's owner must wait between boosts (since listing or last boost). Admin-tunable 1–30. Drives the client countdown and the server cooldown check.",
+            "How many days a flyer must wait before it can be boosted (re-pinned to the top of the feed) again. The wait counts from when the flyer was posted or last boosted.",
         seed: true,
     },
     {
@@ -70,7 +72,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: BOOST_DAILY_CAP_MIN,
         max: BOOST_DAILY_CAP_MAX,
         description:
-            "Max boosts one user may perform per rolling 24h window (anti-flooding). Admin-tunable 1–20; hard backstop ceiling is 20.",
+            "How many boosts one user can use per day (across all their flyers).",
         seed: true,
     },
     {
@@ -79,7 +81,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: 2,
         max: 10,
         description:
-            "Max ads in one standalone bundle. Admin-tunable 2–10. Enforced server-side in createBundle; the /sell/bundle picker reads the same value.",
+            "The most flyers a seller can group into a single bundle.",
         seed: true,
     },
     {
@@ -88,7 +90,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: 10,
         max: 500,
         description:
-            "Abuse ceiling: max items one Moving Sale can hold. Admin-tunable 10–500. Enforced server-side in addSaleItems.",
+            "The most items allowed in one Moving Sale.",
         seed: true,
     },
     {
@@ -97,7 +99,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: 0,
         max: 14,
         description:
-            "Days a published sale page stays up past the end of its pickup window. Admin-tunable 0–14. Applied when the sale is published.",
+            "How many days a sale's public page stays up after its pickup window ends.",
         seed: true,
     },
     {
@@ -106,7 +108,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: 0,
         max: 10,
         description:
-            "Max individual items of one Moving Sale shown in the home feed (the sale's composite card is always shown). Admin-tunable 0–10.",
+            "How many of a Moving Sale's individual items can appear in the home feed alongside the sale's own card (the sale's card always shows).",
         seed: true,
     },
     {
@@ -115,7 +117,7 @@ const SEEDED_SPECS: AppSettingSpec[] = [
         min: 0,
         max: 10,
         description:
-            "Max member ads of one Bundle shown in the home feed (the bundle's composite card is always shown). Admin-tunable 0–10.",
+            "How many of a bundle's individual items can appear in the home feed alongside the bundle's own card (the bundle's card always shows).",
         seed: true,
     },
 ];
@@ -123,13 +125,14 @@ const SEEDED_SPECS: AppSettingSpec[] = [
 // Rate-limit overrides: one spec per overridable op, clamped to [1, 4× static default].
 // seed: false — the sparse-row convention (missing row = static default).
 const RATE_LIMIT_SPECS: AppSettingSpec[] = OVERRIDABLE_RATE_LIMIT_OPS.map((op) => {
-    const staticDefault = RATE_LIMITS[op].maxRequests;
+    const { maxRequests: staticDefault, windowMs } = RATE_LIMITS[op];
+    const meta = RATE_LIMIT_OP_META[op];
     return {
         key: rateLimitSettingKey(op),
         defaultValue: staticDefault,
         min: 1,
         max: staticDefault * RATE_LIMIT_OVERRIDE_MAX_MULTIPLIER,
-        description: `Rate limit override for "${op}": max requests per window (static default ${staticDefault}). Admin-tunable 1–${staticDefault * RATE_LIMIT_OVERRIDE_MAX_MULTIPLIER}. Delete-proof: missing row = static default.`,
+        description: `${meta ? meta.description + " " : ""}Overrides the built-in limit of ${staticDefault} per ${rateLimitWindowNoun(windowMs)} for "${op}". Deleting this row restores the built-in limit.`,
         seed: false,
     };
 });

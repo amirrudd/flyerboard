@@ -1,8 +1,8 @@
 # Boost "Pins" — weekly free tier, composite-card boosting & paid-demand capture
 
-- **Status:** Decided (rules locked; implementation pending unified-feed work)
+- **Status:** Decided (rules locked; **unified-feed prerequisite SHIPPED 2026-07-19** — pins/payment layer not yet built)
 - **Created:** 2026-07-16
-- **Last touched:** 2026-07-16
+- **Last touched:** 2026-07-19
 - **Owner:** Amir
 
 ## Problem
@@ -113,10 +113,20 @@ defined above (see "Paid phase") plus majority "I'd use extra pins" taps.
 - `ResearchLab/ideas/bundle-listing-design.md`, `moving-sale-mode-design.md`
 - `ResearchLab/market-readiness-2026-07.md` — trust-first positioning that drove the
   no-cascade decision.
-- Unified-feed architecture brainstorm (in progress, 2026-07-16) — depends on every
-  card type carrying its own `bumpedAt`.
+- Unified feed — **SHIPPED 2026-07-19** (PRs #325/#327): every card type now carries
+  its own `bumpedAt` and the feed is one `mergedStream` query, so the card-only
+  boost semantics this doc assumes are now buildable. Spec:
+  `docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md`; rationale:
+  `docs/architecture/design-decisions.md` ("Unified feed via mergedStream").
+- Admin-configurable boost knobs — **SHIPPED 2026-07-19** (PR #326): `boostCooldownDays`
+  and `boostDailyCap` are live in the admin Settings tab (`convex/lib/appConfig.ts`);
+  the weekly-pin allowance + composite 2-pin weight this doc specifies would extend
+  that same registry.
 
 ## Log
+- 2026-07-19 — Unified-feed prerequisite shipped to prod (#325/#327); admin boost
+  config shipped (#326). Pins/weekly-cap/interest-capture layer still unbuilt but
+  now unblocked. Status/Related updated.
 - 2026-07-16 — Rules decided: card-only boost, permanent member ineligibility, 3
   pins/week (ad=1, composite=2), paid-bypass model deferred behind demand trigger,
   cap-hit interest capture. Analyst + designer agent reports reconciled with the

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Package, Plus, ShareNetwork, ArrowRight, PencilSimple } from "@phosphor-icons/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { AdListingSkeleton } from "../../components/ui/DashboardSkeleton";
 import { formatAUD, formatPickupShort } from "../movingSale/saleHelpers";
@@ -203,46 +203,17 @@ export function MovingSalesTab() {
         </ul>
       )}
 
-      {endConfirm && createPortal(
-        <div
-          className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => !ending && setEndConfirm(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="end-sale-title"
-        >
-          <div
-            className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover p-6 w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="end-sale-title" className="font-display text-2xl font-semibold tracking-tight text-foreground mb-3">
-              End this sale?
-            </h2>
-            <p className="text-sm leading-relaxed text-foreground/75 mb-6 max-w-prose">
-              Your sale page stays online and shows as ended, but buyers can no
-              longer message you about items. This can't be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                disabled={ending}
-                onClick={() => setEndConfirm(null)}
-                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={ending}
-                onClick={() => { void handleEndSale(endConfirm); }}
-                className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all disabled:opacity-50"
-              >
-                {ending ? "Ending…" : "End sale"}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {endConfirm && (
+        <ConfirmDialog
+          open
+          title="End this sale?"
+          body="Your sale page stays online and shows as ended, but buyers can no longer message you about items. This can't be undone."
+          confirmLabel="End sale"
+          busyLabel="Ending…"
+          busy={ending}
+          onConfirm={() => { void handleEndSale(endConfirm); }}
+          onCancel={() => setEndConfirm(null)}
+        />
       )}
     </section>
   );

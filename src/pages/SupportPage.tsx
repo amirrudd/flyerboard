@@ -1,30 +1,67 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Envelope, ChatText, User, FileText, CaretLeft } from '@phosphor-icons/react';
-import { toast } from "sonner";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
+import { useSession } from "@descope/react-sdk";
+import { useQuery, useMutation } from "convex/react";
+import { Envelope, ChatText, FileText, CaretLeft, CheckCircle } from '@phosphor-icons/react';
+import { api } from "../../convex/_generated/api";
+import { useUserSync } from "../context/UserSyncContext";
 import { useHeaderSlots } from "../features/layout/HeaderSlots";
-import { logDebug } from "../lib/logger";
 
 export default function SupportPage() {
     const navigate = useNavigate();
+    const { isAuthenticated, isSessionLoading } = useSession();
+    const { isUserSynced } = useUserSync();
+    const ready = isAuthenticated && !isSessionLoading && isUserSynced;
+    const currentUser = useQuery(api.descopeAuth.getCurrentUser, ready ? {} : "skip");
+    const submitSupportRequest = useMutation(api.support.submitSupportRequest);
+    // Layout owns the single SmsOtpSignIn modal; null when rendered outside the router (tests).
+    const layoutCtx = useOutletContext<{ setShowAuthModal: (show: boolean) => void } | null>();
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
     const [formData, setFormData] = useState({
-        name: "",
         email: "",
         title: "",
         body: "",
     });
+    const [sending, setSending] = useState(false);
+    const [sent, setSent] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Account email (SMS OTP signups may not have one — then we ask inline).
+    const accountEmail = currentUser?.email?.trim() || "";
+    const needsEmailField = ready && currentUser !== undefined && !accountEmail;
+    const replyTo = accountEmail || formData.email.trim();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, this would send data to a backend
-        logDebug("Support request submitted:", formData);
-        toast.success("Support request submitted successfully! We'll get back to you soon.");
-        setFormData({ name: "", email: "", title: "", body: "" });
+        if (!isAuthenticated) {
+            layoutCtx?.setShowAuthModal(true);
+            return;
+        }
+        if (formData.body.trim().length < 10) {
+            setError("Please add a bit more detail so we can help.");
+            return;
+        }
+        setError(null);
+        setSending(true);
+        submitSupportRequest({
+            subject: formData.title.trim(),
+            body: formData.body.trim(),
+            email: needsEmailField ? formData.email.trim() : undefined,
+        })
+            .then(() => setSent(true))
+            .catch((err: unknown) => {
+                const msg = err instanceof Error ? err.message : "";
+                setError(
+                    /rate limit/i.test(msg)
+                        ? "You've sent a few requests recently. Please wait a bit before sending another, or email support@flyerboard.com.au."
+                        : "Something went wrong and your request wasn't sent. Please try again, or email us directly at support@flyerboard.com.au."
+                );
+            })
+            .finally(() => setSending(false));
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -108,25 +145,29 @@ export default function SupportPage() {
                                 </h2>
                             </header>
 
+                            {sent ? (
+                                <div className="p-8 flex flex-col items-center text-center gap-3">
+                                    <CheckCircle size={32} weight="fill" className="text-primary" aria-hidden="true" />
+                                    <h3 tabIndex={-1} className="font-display text-xl font-semibold text-foreground">
+                                        Request sent
+                                    </h3>
+                                    <p className="text-sm text-foreground/80 max-w-sm">
+                                        We've got it — expect a reply at {replyTo} within 1–2 business days.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSent(false); setFormData({ email: "", title: "", body: "" }); }}
+                                        className="mt-2 inline-flex items-center justify-center h-11 px-5 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 active:scale-[0.98] transition-all"
+                                    >
+                                        Send another request
+                                    </button>
+                                </div>
+                            ) : (
                             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label htmlFor="name" className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                                            <User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                                            Name <span className="text-destructive" aria-hidden="true">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="name"
-                                            name="name"
-                                            required
-                                            value={formData.name}
-                                            onChange={handleChange}
-                                            className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70"
-                                            placeholder="Your full name"
-                                        />
-                                    </div>
-
+                                {isAuthenticated && accountEmail && (
+                                    <p className="text-xs text-muted-foreground">We'll reply to {accountEmail}</p>
+                                )}
+                                {needsEmailField && (
                                     <div className="space-y-2">
                                         <label htmlFor="email" className="text-sm font-medium text-foreground/80 flex items-center gap-2">
                                             <Envelope className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -137,13 +178,14 @@ export default function SupportPage() {
                                             id="email"
                                             name="email"
                                             required
+                                            disabled={sending}
                                             value={formData.email}
                                             onChange={handleChange}
                                             className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70"
                                             placeholder="your@email.com"
                                         />
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <label htmlFor="title" className="text-sm font-medium text-foreground/80 flex items-center gap-2">
@@ -155,6 +197,7 @@ export default function SupportPage() {
                                         id="title"
                                         name="title"
                                         required
+                                        disabled={sending}
                                         value={formData.title}
                                         onChange={handleChange}
                                         className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70"
@@ -170,6 +213,7 @@ export default function SupportPage() {
                                         id="body"
                                         name="body"
                                         required
+                                        disabled={sending}
                                         rows={5}
                                         value={formData.body}
                                         onChange={handleChange}
@@ -178,15 +222,29 @@ export default function SupportPage() {
                                     />
                                 </div>
 
+                                {error && (
+                                    <p role="alert" className="bg-destructive/10 text-destructive rounded-xl p-3 text-sm">
+                                        {error}
+                                    </p>
+                                )}
+
                                 <div className="pt-2">
                                     <button
                                         type="submit"
-                                        className="w-full h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                        disabled={sending}
+                                        aria-busy={sending}
+                                        className="w-full h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
                                     >
-                                        Submit Request
+                                        {sending ? "Sending…" : isAuthenticated ? "Submit Request" : "Sign in to send"}
                                     </button>
+                                    {!isAuthenticated && (
+                                        <p className="mt-2 text-center text-xs text-muted-foreground">
+                                            No account? Email us at support@flyerboard.com.au instead.
+                                        </p>
+                                    )}
                                 </div>
                             </form>
+                            )}
                         </section>
 
                         {/* Footer Links */}

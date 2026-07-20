@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
-import { internal } from "./_generated/api";
+import { notifyChatMessage } from "./lib/chatNotifications";
 
 /**
  * Sale-level messaging (v2).
@@ -68,6 +68,15 @@ export const sendSaleMessage = mutation({
       )
       .unique();
 
+    // An ended sale accepts no NEW threads (backend enforcement of the end-sale
+    // promise); existing threads stay open so pickups can be coordinated.
+    if (!existing && sale.status === "ended") {
+      throw createError("This sale has ended", {
+        operation: "sendSaleMessage",
+        saleEventId: args.saleEventId,
+      });
+    }
+
     const chatId = existing
       ? existing._id
       : await ctx.db.insert("chats", {
@@ -88,35 +97,13 @@ export const sendSaleMessage = mutation({
 
     // Buyer is always the sender here (sellers can't message their own sale),
     // so the recipient is always the seller.
-    const recipientId = sale.userId;
-
-    // Send push notification to the seller (if enabled).
-    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true') {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.notifications.pushNotifications.notifyMessageReceived,
-        {
-          recipientId,
-          senderId: userId,
-          chatId,
-          saleEventId: args.saleEventId,
-        }
-      );
-    }
-
-    // Queue email notification for batching (if feature is enabled).
-    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
-      await ctx.runMutation(
-        internal.notifications.pendingEmailNotifications.queueEmailNotification,
-        {
-          recipientId,
-          senderId: userId,
-          chatId,
-          saleEventId: args.saleEventId,
-          messageContent: content,
-        }
-      );
-    }
+    await notifyChatMessage(ctx, {
+      recipientId: sale.userId,
+      senderId: userId,
+      chatId,
+      saleEventId: args.saleEventId,
+      content,
+    });
 
     return { chatId, success: true };
   },

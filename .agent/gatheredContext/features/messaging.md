@@ -1,6 +1,6 @@
 # Messaging / Chat
 
-**Last Updated**: 2026-07-11
+**Last Updated**: 2026-07-19
 
 Map of the item + sale messaging system as it exists in code, plus known UX/functional gaps found in the 2026-07-05 UX audit. The unified inbox shipped 2026-07-05 (dashboard chats tab + shared `src/features/messages/` library); AdDetail and AdMessages render through the same components.
 
@@ -16,7 +16,7 @@ Map of the item + sale messaging system as it exists in code, plus known UX/func
 - **Mark-as-read** is gated on the conversation being FOUND (never for foreign ids) and re-fires on the newest message timestamp while the thread is open (`markChatAsRead` only patches `lastReadBy*` — not a dep, no loop).
 - **Day separators + iOS keyboard-settle scroll** live inside `ConversationThread` (so AdMessages gets both); `daySeparators.ts` uses date-fns for day math but `Intl` en-AU for the label (en-AU ICU "short" month renders "5 July" — date-fns "d MMM" gives "5 Jul" and fails the locale test).
 - **useInbox `isLoading`** covers the pre-sync window (`isAuthenticated && !isUserSynced`) — previously flashed "No messages yet" on every cold load.
-- **Known gaps** (task chips exist): bundle-thread replies send zero push/email (sendMessage gates on `adId || saleEventId` only). (`deleteArchivedChats` two-sided hard-delete RESOLVED 2026-07-11 — now one-sided, see Data model + gap #6.)
+- **Known gaps**: ~~bundle-thread replies send zero push/email~~ **Fixed 2026-07-19** (gate + args now include `bundleId`; both notification handlers already accepted it). (`deleteArchivedChats` two-sided hard-delete RESOLVED 2026-07-11 — now one-sided, see Data model + gap #6.) `posts.getSellerChats`/`getBuyerChats` also null out soft-deleted ads since 2026-07-19, so dead flyers render "No longer available" with a disabled composer.
 - **e2e coverage gap (Phase 6, deliberate)**: `e2e/messages.spec.ts` covers only what is testable signed-out — `/messages` + `/messages/:chatId` auth-gate redirects home, the legacy `?tab=chats[&chat=]` URL rewrite (observable as a transient replaceState before the auth guard bounces home), and the mobile BottomNav Messages item. Auth is Descope SMS OTP and cannot be automated, so **inbox rendering, thread open/back, composer/send, mark-as-read, archive, and desktop two-pane have NO e2e coverage** — they're covered by unit tests (MessagesPage.test.tsx et al.) only. If Descope ever grows a test-user/session-injection path, build the authed harness then; do not fake auth by stubbing Convex in e2e.
 
 ### Phase 5 polish (2026-07-11, commit 070f496) — gotchas that took review rounds
@@ -42,14 +42,14 @@ Map of the item + sale messaging system as it exists in code, plus known UX/func
 |---|---|---|
 | `messages.getAdChats` | Seller: all chats for ONE ad | Ownership-checked; does NOT filter archived |
 | `messages.getChatMessages` | Thread messages, asc | Participant-checked; no pagination (`collect()`) |
-| `messages.sendMessage` | Send in existing chat | Rate-limited 60/min; push+email notifications now fire for **both item-chats and sale threads** (gate changed from `chat.adId` to `chat.adId \|\| chat.saleEventId`) |
+| `messages.sendMessage` | Send in existing chat | Rate-limited 60/min; push+email notifications fire for **item-chats, sale threads AND bundle threads** (gate widened to `chat.adId \|\| chat.saleEventId \|\| chat.bundleId`, 2026-07-19). Also blocks sends when the chat's flyer is soft-deleted (same guard as `adDetail.sendMessage`) |
 | `messages.getUnreadCounts` | Seller per-ad unread map | N+1 (loops ads→chats→messages); OK at current scale |
 | `messages.getTotalUnreadCount` | **NEW.** Total unread across ALL chats where user is seller or buyer (sums both roles), excluding chats archived for that role | args `{}`, returns `v.number()`. Never throws — returns `0` when unauthenticated. Feeds the always-mounted nav badge. See "New unread badge query" below. |
 | `posts.getSellerChats` | ALL chats where user is seller (items + sales) | Still queried in UserDashboard but not yet rendered (frontend work, not in this backend pass). **Now sorted by `lastMessageAt` desc** server-side (previously index/creation order) and **now returns `latestMessage`** (newest message doc or `null`, same pattern as `getAdChats`) — the dashboard rendered `chat.latestMessage` but the field was never returned, so snippets silently never displayed |
 | `posts.getBuyerChats` | ALL chats where user is buyer | Powers the dashboard "Messages" tab. **Now sorted by `lastMessageAt` desc** server-side (was the last known gap vs. `getArchivedChats`, which was already sorted) and **now returns `latestMessage`** (see above) |
 | `messages.getArchivedChats` | Buyer-archived only (`by_buyer_archived`) | Seller-archived chats are unreachable (no UI archives as seller either) |
 | `messages.deleteArchivedChats` | Role-symmetric one-sided delete of archived chats | Sets caller's `deletedBy{Buyer,Seller}` flag; hard-deletes chat + messages ONLY when the other side already deleted. Skips non-participants and non-archived chats. The other party keeps their copy until they also delete |
-| `adDetail.sendFirstMessage` | Buyer: create chat + first message atomically | Chat only created on first send — no empty chats. Good pattern |
+| `adDetail.sendFirstMessage` / `adDetail.sendMessage` | Buyer: create chat + first message atomically; follow-ups from the ad page | Chat only created on first send — no empty chats. **2026-07-19: brought to parity with `messages.sendMessage`** — now rate-limited (`createChat` on new chat, `sendMessage` on sends) and schedules push + queues email to the other party (was a silent path: buyers' first contact never notified the seller). If these ever drift from `messages.ts` again, consolidate instead of re-patching |
 | `saleChats.sendSaleMessage` / `getSaleThread` | Sale-level thread (one per buyer per sale), item chips via `referencedAdIds` | Buyer-side only. **Now schedules push + queues email to the seller** on send (previously sent nothing) |
 
 ## Unified messaging backend (2026-07-05, backend-only pass)

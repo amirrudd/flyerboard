@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { createError } from "./lib/logger";
 import { checkRateLimit } from "./lib/rateLimit";
-import { internal } from "./_generated/api";
+import { notifyChatMessage } from "./lib/chatNotifications";
 
 /**
  * Bundle-level messaging (bundle v2) — mirrors saleChats.ts.
@@ -84,35 +84,13 @@ export const sendBundleMessage = mutation({
 
     // Buyer is always the sender here (sellers can't message their own bundle),
     // so the recipient is always the seller.
-    const recipientId = sellerId;
-
-    // Send push notification to the seller (if enabled).
-    if (process.env.ENABLE_PUSH_NOTIFICATIONS === 'true') {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.notifications.pushNotifications.notifyMessageReceived,
-        {
-          recipientId,
-          senderId: userId,
-          chatId,
-          bundleId: args.bundleId,
-        }
-      );
-    }
-
-    // Queue email notification for batching (if feature is enabled).
-    if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
-      await ctx.runMutation(
-        internal.notifications.pendingEmailNotifications.queueEmailNotification,
-        {
-          recipientId,
-          senderId: userId,
-          chatId,
-          bundleId: args.bundleId,
-          messageContent: content,
-        }
-      );
-    }
+    await notifyChatMessage(ctx, {
+      recipientId: sellerId,
+      senderId: userId,
+      chatId,
+      bundleId: args.bundleId,
+      content,
+    });
 
     return { chatId, success: true };
   },

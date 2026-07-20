@@ -65,11 +65,26 @@ export function MovingSaleFlow({ initialSaleId = null }: MovingSaleFlowProps) {
   // When resuming a draft, jump to the right step once data loads. Adjusting state
   // during render (guarded by `resumeHandled` so it runs once) is the React-endorsed
   // "adjust state when inputs change" pattern — no effect, no ref access in render.
-  if (!resumeHandled && editor) {
+  // Ended is final — publish rejects ended sales, so the wizard would be a dead
+  // end. Bounce to the dashboard (stale deep links only; the dashboard shows no
+  // wizard entry for ended sales). Effect, not render: navigation during render
+  // is a Router error — same pattern as saleUnavailable above.
+  const saleEnded = ready && editor?.sale.status === "ended";
+  useEffect(() => {
+    if (saleEnded) {
+      toast.error("That sale has ended and can no longer be edited.");
+      void navigate("/dashboard", { replace: true });
+    }
+  }, [saleEnded, navigate]);
+
+  if (!resumeHandled && editor && !saleEnded) {
     setResumeHandled(true);
     if (editor.sale.status === "active" && editor.sale.slug) {
+      // Live sale: land on Review so the seller can edit items/details (every
+      // editing mutation already works on active sales — only this routing
+      // blocked it). Share stays reachable via the wizard's normal forward path.
       setPublishedSlug(editor.sale.slug);
-      setStep("share");
+      setStep("review");
     } else {
       setStep(editor.items.length === 0 ? "upload" : "review");
     }

@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useSession } from "@descope/react-sdk";
+import { useQuery, useMutation } from "convex/react";
+import { useUserSync } from "../context/UserSyncContext";
+import { toast } from "sonner";
 import { CaretLeft, Package } from "@phosphor-icons/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -19,6 +22,13 @@ export function PublicSalePage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const data = useQuery(api.saleEvents.getSaleBySlug, slug ? { slug } : "skip");
+  // Owner check only — gate on the canonical auth+sync flags so anonymous
+  // visitors (the common case for a shared sale link) skip the query entirely.
+  const { isAuthenticated, isSessionLoading } = useSession();
+  const { isUserSynced } = useUserSync();
+  const authReady = isAuthenticated && !isSessionLoading && isUserSynced;
+  const me = useQuery(api.descopeAuth.getCurrentUser, authReady ? {} : "skip");
+  const setItemSold = useMutation(api.saleEvents.setItemSold);
   const movingSaleModeEnabled = useFeatureFlag("movingSaleMode");
   const [msgOpen, setMsgOpen] = useState(false);
   const [preselectedAdId, setPreselectedAdId] = useState<Id<"ads"> | null>(null);
@@ -104,6 +114,22 @@ export function PublicSalePage() {
     setMsgOpen(true);
   }
 
+  // Ended sale: read-only record — badge swaps, countdown becomes a note, the
+  // message/save footer disappears, item taps do nothing.
+  const ended = data.sale.status === "ended";
+
+  // Owner viewing their own live sale: item taps toggle sold/unsold instead of
+  // opening the (self-)message modal.
+  const isOwner = !ended && !!me && !!data.seller && me._id === data.seller._id;
+
+  function toggleItemSold(adId: string) {
+    const item = items.find((i) => i._id === adId);
+    if (!item) return;
+    setItemSold({ adId: adId as Id<"ads">, isSold: !item.isSold })
+      .then(() => toast.success(item.isSold ? "Marked as available" : "Marked as sold"))
+      .catch(() => toast.error("Couldn't update item"));
+  }
+
 
   return (
     <div className="min-h-[100dvh] bg-background pb-6">
@@ -116,8 +142,10 @@ export function PublicSalePage() {
           items={items}
           bundles={data.bundles}
           categoriesById={categoriesById}
-          onMessageSeller={messageSeller}
-          onItemClick={openItem}
+          ended={ended}
+          onMessageSeller={ended ? undefined : messageSeller}
+          onItemClick={ended ? undefined : openItem}
+          onToggleSold={isOwner ? toggleItemSold : undefined}
           onShare={() => { void sharePage(data.sale.title); }}
         />
       ) : (
@@ -128,8 +156,10 @@ export function PublicSalePage() {
           items={items}
           bundles={data.bundles}
           categoriesById={categoriesById}
-          onMessageSeller={messageSeller}
-          onItemClick={openItem}
+          ended={ended}
+          onMessageSeller={ended ? undefined : messageSeller}
+          onItemClick={ended ? undefined : openItem}
+          onToggleSold={isOwner ? toggleItemSold : undefined}
           onShare={() => { void sharePage(data.sale.title); }}
         />
       )}

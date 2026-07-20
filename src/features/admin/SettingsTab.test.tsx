@@ -135,8 +135,8 @@ describe('SettingsTab', () => {
         for (const heading of ['Boost', 'Bundles', 'Moving Sales', 'Feed', 'Rate limits']) {
             expect(screen.getByText(heading)).toBeInTheDocument();
         }
-        // 7 seeded knobs + 11 overridable rate-limit ops.
-        expect(screen.getByText('18 settings')).toBeInTheDocument();
+        // 7 seeded knobs + 12 overridable rate-limit ops.
+        expect(screen.getByText('19 settings')).toBeInTheDocument();
     });
 
     it('shows the built-in limit for a rate-limit field with no row and saves an override', async () => {

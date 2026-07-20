@@ -28,8 +28,12 @@ interface PublicSaleViewProps {
   categoriesById: Record<string, { name: string }>;
   /** Blur + "Preview only" badge for the pre-payment paywall preview. */
   preview?: boolean;
+  /** Sale status === "ended": read-only record, no messaging/saving. */
+  ended?: boolean;
   onMessageSeller?: () => void;
   onItemClick?: (adId: string) => void;
+  /** Owner-only: when set, item taps toggle sold/unsold instead of messaging. */
+  onToggleSold?: (adId: string) => void;
   onShare?: () => void;
 }
 
@@ -53,8 +57,10 @@ export function PublicSaleView({
   bundles,
   categoriesById,
   preview = false,
+  ended = false,
   onMessageSeller,
   onItemClick,
+  onToggleSold,
   onShare,
 }: PublicSaleViewProps) {
   const { fadeUp, staggerCard, reduced } = useMotionPrefs();
@@ -104,8 +110,12 @@ export function PublicSaleView({
       <div className={preview ? "pointer-events-none blur-[3px]" : ""}>
         {/* 1. Named hero */}
         <m.header {...fadeUp(0)} className="px-4 pt-6 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-            <Package size={14} weight="fill" /> Moving sale
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+              ended ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+            }`}
+          >
+            <Package size={14} weight="fill" /> {ended ? "Sale ended" : "Moving sale"}
           </span>
           <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
             {sale.title}
@@ -120,10 +130,14 @@ export function PublicSaleView({
           )}
         </m.header>
 
-        {/* 2. Live countdown to pickup window */}
+        {/* 2. Live countdown to pickup window (ended: read-only note instead) */}
         <m.section {...fadeUp(0.05)} className="mt-6 px-4">
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
-            {countdown.isLive ? (
+            {ended ? (
+              <p className="text-sm text-muted-foreground">
+                This sale has ended. Items may still be listed individually on FlyerBoard.
+              </p>
+            ) : countdown.isLive ? (
               <p className="flex items-center justify-center gap-2 font-semibold text-emerald-600">
                 <Clock size={18} weight="fill" /> Pickup window is open now
               </p>
@@ -273,7 +287,11 @@ export function PublicSaleView({
                   type="button"
                   key={item._id}
                   {...staggerCard(index)}
-                  onClick={() => !item.isSold && onItemClick?.(item._id)}
+                  onClick={() =>
+                    onToggleSold
+                      ? onToggleSold(item._id)
+                      : !item.isSold && onItemClick?.(item._id)
+                  }
                   className="group relative overflow-hidden rounded-xl border border-border bg-card text-left"
                 >
                   <div className="relative aspect-square bg-muted">
@@ -289,6 +307,11 @@ export function PublicSaleView({
                     {item.isSold && (
                       <span className="absolute left-2 top-2 rounded-full bg-neutral-800 px-2 py-0.5 text-xs font-semibold text-white">
                         Sold
+                      </span>
+                    )}
+                    {onToggleSold && (
+                      <span className="absolute right-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-xs font-semibold text-foreground ring-1 ring-border">
+                        {item.isSold ? "Tap to unmark" : "Tap to mark sold"}
                       </span>
                     )}
                   </div>
@@ -340,7 +363,7 @@ export function PublicSaleView({
           makes it a containing block for `position: fixed` descendants — so a
           plain fixed div here would pin to <main>'s content height instead of
           the viewport. Same escape hatch as AdDetail's mobile FABs. */}
-      {!preview && createPortal(
+      {!preview && !ended && createPortal(
         <div
           className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] md:bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur"
           style={{ paddingBottom: "var(--safe-area-inset-bottom)" }}

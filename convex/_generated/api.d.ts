@@ -51,6 +51,7 @@ import type * as saleEvents from "../saleEvents.js";
 import type * as sampleData from "../sampleData.js";
 import type * as seed from "../seed.js";
 import type * as seedTestAd from "../seedTestAd.js";
+import type * as support from "../support.js";
 import type * as updateRentHireIcon from "../updateRentHireIcon.js";
 import type * as upload_urls from "../upload_urls.js";
 import type * as users from "../users.js";
@@ -105,6 +106,7 @@ declare const fullApi: ApiFromModules<{
   sampleData: typeof sampleData;
   seed: typeof seed;
   seedTestAd: typeof seedTestAd;
+  support: typeof support;
   updateRentHireIcon: typeof updateRentHireIcon;
   upload_urls: typeof upload_urls;
   users: typeof users;

@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { m, useMotionValue, useTransform, animate } from "framer-motion";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
-import { createPortal } from "react-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { Id } from "../../../convex/_generated/dataModel";
 import { AdDetail } from "../ads/AdDetail";
@@ -1454,44 +1454,15 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
       )}
 
       {/* Delete Account Confirmation Modal */}
-      {
-        showAccountDeleteConfirm && createPortal(
-          <div
-            className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-            onClick={() => setShowAccountDeleteConfirm(false)}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-account-title"
-          >
-            <div
-              className="bg-card ring-1 ring-border/70 rounded-2xl shadow-card-hover p-6 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 id="delete-account-title" className="font-display text-2xl font-semibold tracking-tight text-destructive mb-3">Delete Account</h2>
-              <p className="text-[15px] leading-relaxed text-foreground/75 mb-6 max-w-prose">
-                Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAccountDeleteConfirm(false)}
-                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-muted/40 ring-1 ring-border text-foreground font-medium hover:bg-muted/70 hover:ring-foreground/15 active:scale-[0.98] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void handleDeleteAccount(); }}
-                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-full bg-destructive text-destructive-foreground font-semibold shadow-sm shadow-destructive/25 hover:bg-destructive/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all"
-                >
-                  Delete Account
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      }
+      <ConfirmDialog
+        open={showAccountDeleteConfirm}
+        title="Delete Account"
+        body="Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone."
+        confirmLabel="Delete Account"
+        danger
+        onConfirm={() => { void handleDeleteAccount(); }}
+        onCancel={() => setShowAccountDeleteConfirm(false)}
+      />
     </>
   );
 }

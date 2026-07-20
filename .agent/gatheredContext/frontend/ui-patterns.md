@@ -1,6 +1,6 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-07-16
+**Last Updated**: 2026-07-20
 
 ## Icon library policy (2026-07-16)
 Phosphor (`@phosphor-icons/react`) is the app-wide icon library — 16/20/24px. lucide-react survives in exactly one place: category icons, because the DB stores category `icon` as a Lucide PascalCase slug (e.g. `"Car"`). Two files:
@@ -342,17 +342,21 @@ Pages that register nothing (HomePage) get the default header — search / locat
 - Animations: Fade in/out with transitions
 
 ### Confirmation Dialogs
-**Pattern**: Two-button layout with clear actions
+**Pattern (since 2026-07-20)**: use the shared `ConfirmDialog` (`src/components/ConfirmDialog.tsx`) — do NOT hand-roll the portal/backdrop/card shell again. It owns the `createPortal(document.body)` + `role="dialog" aria-modal aria-labelledby` wiring, blurred backdrop (click cancels unless `busy`), rounded-2xl card, and the Cancel/confirm button pair. `danger` switches the confirm button (and title) to destructive red; `busy` disables both buttons + backdrop-cancel and swaps in `busyLabel`. Deliberately no focus trap (parity with the modals it replaced — don't add one unilaterally).
 ```typescript
-<div className="flex gap-3">
-  <button onClick={onCancel} className="flex-1 border">
-    Cancel
-  </button>
-  <button onClick={onConfirm} className="flex-1 bg-red-600">
-    Delete
-  </button>
-</div>
+<ConfirmDialog
+  open={confirming}
+  title="End this sale?"
+  body="…"                    // ReactNode — inline JSX fine
+  confirmLabel="End sale"
+  busyLabel="Ending…"          // optional; shown while busy
+  busy={ending}
+  danger                       // destructive styling (e.g. account delete)
+  onConfirm={...}
+  onCancel={...}
+/>
 ```
+Migrated call sites: MovingSalesTab end-sale, UserDashboard delete-account, and `BoostConfirmModal` (kept as a thin domain wrapper so its copy/JSDoc rationale and two call sites stayed put).
 
 ## Form Patterns
 

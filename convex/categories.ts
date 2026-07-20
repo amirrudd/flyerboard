@@ -1,8 +1,7 @@
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { requireAdmin } from "./lib/adminAuth";
-import { Id } from "./_generated/dataModel";
-import { createError, logAdminAction } from "./lib/logger";
+import { createError } from "./lib/logger";
 
 // ============================================================================
 // PUBLIC QUERIES

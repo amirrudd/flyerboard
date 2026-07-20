@@ -192,9 +192,8 @@ export const sendBatchedNotifications = internalAction({
         const messageCount = notifications.length;
         const appUrl = process.env.VITE_APP_URL || "http://localhost:5173";
 
-        // Get unique chats and ads
+        // Get unique chats
         const uniqueChats = [...new Set(notifications.map((n: any) => n.chatId))];
-        const uniqueAds = [...new Set(notifications.map((n: any) => n.adId))];
 
         // Build email based on count
         let subject: string;

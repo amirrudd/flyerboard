@@ -5,7 +5,7 @@ description: Rules and architecture for Authentication (Descope + Convex)
 
 # Authentication Architecture & Rules
 
-**Last Updated**: 2026-07-12
+**Last Updated**: 2026-07-20
 
 This project uses a **Hybrid Authentication** approach:
 - **Identity Provider**: [Descope](https://descope.com) handles user identity, OTP verification, and session management.
@@ -86,6 +86,13 @@ So: auth happens at Descope, verification inside Convex's runtime, authorization
 
 ### ✅ FIXED (2026-07-12): `AuthModal`/`SignInForm` password path deleted
 `AuthModal.tsx`/`SignInForm.tsx` used `useAuthActions()` from `@convex-dev/auth/react`, but main.tsx mounts `ConvexProviderWithAuth` (Descope) — no `ConvexAuthProvider` existed in the tree, so the form was dead. `SaleMessageModal` and `BundleMessageModal` now open Layout's `SmsOtpSignIn` via `useOutletContext<{ setShowAuthModal }>()` (returns null outside a router, so tests render without a wrapper). **The only sign-in surface is `SmsOtpSignIn`** — never re-introduce a convex-auth form without adding its provider.
+
+### ✅ POLISHED (2026-07-20): `SmsOtpSignIn` modal details worth preserving
+- First OTP box has `autoComplete="one-time-code"` (iOS/Android SMS autofill); the paste handler in `handleOtpChange` distributes multi-digit input across boxes — keep both if refactoring.
+- Name-input filter regex gotcha: `[^a-zA-ZÀ-ſ\s'-.]` was a **character range** `'` → `.` (allowed `()*+,`); the hyphen must be last: `[^a-zA-ZÀ-ſ\s'.-]`.
+- Layout's auth modal: Escape closes only when `isModalDismissable` (step 3 name collection is non-dismissable), panel gets `tabIndex={-1} outline-none` + focus-on-open (without `outline-none` the programmatic focus draws a default blue ring around the panel).
+- Modal shell is a **bottom sheet on mobile, centered card on sm+**: overlay `items-end sm:items-center`, panel `rounded-t-2xl sm:rounded-2xl`, `pb-[max(1.5rem,env(safe-area-inset-bottom))]`, entrance via `.animate-modal-in` in index.css (slideUp <640px, scaleIn above; reduced-motion zeroed). Close button is absolutely positioned (`top-4 right-4`) with panel `pt-16`; SmsOtpSignIn's back button offsets `-top-12` to align with it — keep these three values in sync.
+- Step slider uses a **grid stack** (all steps `col-start-1 row-start-1`, inactive = `opacity-0 invisible pointer-events-none`): height auto-sizes to the tallest step, nothing clips on small screens, and `invisible` keeps hidden steps out of the tab order. Don't reintroduce a fixed-height `absolute inset-0` slider.
 
 ### ✅ FIXED (2026-07-12): tokenIdentifier lookups use the index
 `convex/lib/auth.ts`, `convex/descopeAuth.ts`, and `convex/users.ts` now use `.withIndex("tokenIdentifier", ...)` instead of `.filter(...)` (was a full users scan on every authed request). Keep any new tokenIdentifier lookup on the index.

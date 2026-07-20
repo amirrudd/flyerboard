@@ -102,6 +102,10 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
         return `+61${cleaned}`;
     };
 
+    // Display-format a local number: 0412345678 -> 0412 345 678
+    const formatLocalPhone = (phone: string): string =>
+        phone.length === 10 ? `${phone.slice(0, 4)} ${phone.slice(4, 7)} ${phone.slice(7)}` : phone;
+
     const handleSendOtp = async () => {
         if (!isValidPhoneNumber(phoneNumber)) {
             toast.error("Please enter a valid Australian mobile number");
@@ -188,6 +192,12 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
     const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
+        } else if (e.key === "ArrowLeft" && index > 0) {
+            e.preventDefault();
+            inputRefs.current[index - 1]?.focus();
+        } else if (e.key === "ArrowRight" && index < 5) {
+            e.preventDefault();
+            inputRefs.current[index + 1]?.focus();
         }
     };
 
@@ -289,11 +299,6 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
         setOtpDigits(["", "", "", "", "", ""]);
     };
 
-    const handleBackToOtp = () => {
-        setStep(2);
-        setUserName("");
-    };
-
     const canSubmit = step === 1
         ? phoneNumber && isValidPhoneNumber(phoneNumber)
         : step === 2
@@ -304,12 +309,9 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
     const inputPillClass =
         "w-full h-11 pl-11 pr-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground";
     const stepHeadingClass =
-        "font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-1";
+        "font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-1.5";
     const stepSubClass =
         "text-xs sm:text-sm text-muted-foreground leading-relaxed";
-
-    // Step 3 back button is intentionally disabled - user must complete name collection
-    const showStep3BackButton = false;
 
     return (
         <section className="w-full relative">
@@ -318,23 +320,13 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 <button
                     type="button"
                     onClick={handleBackToPhone}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors active:scale-[0.98] z-50"
+                    className="absolute -top-12 left-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors active:scale-[0.98] z-10"
                     aria-label="Go back to phone number"
                 >
                     <ArrowLeft className="w-6 h-6" aria-hidden="true" />
                 </button>
             )}
             {/* Step 3 has no back button - user must complete name collection */}
-            {step === 3 && showStep3BackButton && (
-                <button
-                    type="button"
-                    onClick={handleBackToOtp}
-                    className="absolute -top-[3.25rem] left-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors active:scale-[0.98] z-50"
-                    aria-label="Go back to verification code"
-                >
-                    <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-                </button>
-            )}
 
             <form
                 onSubmit={(e) => {
@@ -347,18 +339,19 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                         void handleCompleteSignup(e);
                     }
                 }}
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-5"
             >
-                {/* Sliding content container - needs overflow hidden for the slide effect */}
-                <div className="relative h-[215px] overflow-hidden">
+                {/* Sliding content container — steps stack in one grid cell so the
+                    tallest step sets the height (no fixed height, nothing clips) */}
+                <div className="relative grid overflow-hidden">
                     {/* Step 1: Phone Number */}
                     <div
-                        className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 1
-                            ? 'translate-x-0 opacity-100'
-                            : '-translate-x-full opacity-0 pointer-events-none'
+                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 1
+                            ? 'translate-x-0 opacity-100 visible'
+                            : '-translate-x-full opacity-0 invisible pointer-events-none'
                             }`}
                     >
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <header>
                                 <h3 className={stepHeadingClass}>
                                     Verify Your Australian Phone Number
@@ -418,19 +411,19 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
 
                     {/* Step 2: OTP Input */}
                     <div
-                        className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 2
-                            ? 'translate-x-0 opacity-100'
-                            : 'translate-x-full opacity-0 pointer-events-none'
+                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 2
+                            ? 'translate-x-0 opacity-100 visible'
+                            : 'translate-x-full opacity-0 invisible pointer-events-none'
                             }`}
                     >
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <header>
                                 <h3 className={stepHeadingClass}>
                                     Enter Your Verification Code
                                 </h3>
                                 <p className={stepSubClass}>
                                     We just sent a 6-digit code to{" "}
-                                    <span className="tabular-nums font-medium text-foreground">{phoneNumber}</span>.
+                                    <span className="tabular-nums font-medium text-foreground">{formatLocalPhone(phoneNumber)}</span>.
                                 </p>
                             </header>
 
@@ -447,6 +440,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         type="text"
                                         inputMode="numeric"
                                         maxLength={6}
+                                        autoComplete={index === 0 ? "one-time-code" : "off"}
                                         value={digit}
                                         onChange={(e) => handleOtpChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
@@ -476,12 +470,12 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
 
                     {/* Step 3: Name Collection (New Users Only) */}
                     <div
-                        className={`absolute inset-0 transition-all duration-300 ease-in-out ${step === 3
-                            ? 'translate-x-0 opacity-100'
-                            : 'translate-x-full opacity-0 pointer-events-none'
+                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 3
+                            ? 'translate-x-0 opacity-100 visible'
+                            : 'translate-x-full opacity-0 invisible pointer-events-none'
                             }`}
                     >
-                        <div className="space-y-3" style={{ transform: 'translateZ(0)' }}>
+                        <div className="space-y-4" style={{ transform: 'translateZ(0)' }}>
                             <header>
                                 <h3 className={stepHeadingClass}>
                                     What's Your Name?
@@ -512,7 +506,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                                         value={userName}
                                         onChange={(e) => {
                                             // Only allow letters (including accented), spaces, hyphens, apostrophes, and periods
-                                            const value = e.target.value.replace(/[^a-zA-ZÀ-ſ\s'-.]/g, '');
+                                            const value = e.target.value.replace(/[^a-zA-ZÀ-ſ\s'.-]/g, '');
                                             setUserName(value);
                                         }}
                                         required={step === 3}

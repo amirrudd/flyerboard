@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { X } from '@phosphor-icons/react';
 import { SmsOtpSignIn } from "../auth/SmsOtpSignIn";
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Header } from "./Header";
 import { HeaderSlotsContext, HeaderSlotsStore } from "./HeaderSlots";
@@ -77,6 +77,24 @@ export function Layout() {
         return () => document.removeEventListener("keydown", handleKey);
     }, []);
 
+    // Move keyboard focus into the auth modal when it opens
+    const authModalRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (showAuthModal) authModalRef.current?.focus();
+    }, [showAuthModal]);
+
+    // Escape closes the auth modal (when dismissable)
+    useEffect(() => {
+        if (!showAuthModal) return;
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && isModalDismissable) {
+                setShowAuthModal(false);
+            }
+        };
+        document.addEventListener("keydown", handleEscape);
+        return () => document.removeEventListener("keydown", handleEscape);
+    }, [showAuthModal, isModalDismissable]);
+
     return (
         <div className="flex flex-col h-dynamic-screen overflow-hidden pt-safe bg-background">
             <main className="flex-1 overflow-y-auto md:overflow-hidden mobile-scroll-container scrollbar-hide">
@@ -92,27 +110,27 @@ export function Layout() {
             {/* OTP Sign-In Modal */}
             {showAuthModal && (
                 <div
-                    className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in overflow-y-auto modal-scroll-lock"
+                    className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in overflow-y-auto modal-scroll-lock"
                     onClick={() => isModalDismissable && setShowAuthModal(false)}
                     role="dialog"
                     aria-modal="true"
                     aria-label="Sign in"
                 >
                     <div
-                        className="bg-card ring-1 ring-border/70 rounded-2xl p-4 sm:p-6 w-full max-w-md shadow-2xl transform transition-all my-8 max-h-[90vh] overflow-y-auto"
+                        className="relative bg-card ring-1 ring-border/70 rounded-t-2xl rounded-b-none sm:rounded-2xl px-5 pt-16 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pb-7 w-full max-w-md shadow-2xl animate-modal-in sm:my-8 max-h-[90dvh] overflow-y-auto outline-none"
                         onClick={(e) => e.stopPropagation()}
+                        tabIndex={-1}
+                        ref={authModalRef}
                     >
                         {isModalDismissable && (
-                            <div className="flex justify-end mb-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAuthModal(false)}
-                                    className="p-2 rounded-full hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                                    aria-label="Close sign in"
-                                >
-                                    <X className="w-6 h-6" aria-hidden="true" />
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAuthModal(false)}
+                                className="absolute top-4 right-4 p-2 rounded-full hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                aria-label="Close sign in"
+                            >
+                                <X className="w-6 h-6" aria-hidden="true" />
+                            </button>
                         )}
                         <SmsOtpSignIn
                             onClose={() => setShowAuthModal(false)}

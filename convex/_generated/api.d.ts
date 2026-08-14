@@ -28,6 +28,7 @@ import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_appConfig from "../lib/appConfig.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_boost from "../lib/boost.js";
+import type * as lib_chatNotifications from "../lib/chatNotifications.js";
 import type * as lib_emailUtils from "../lib/emailUtils.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "lib/appConfig": typeof lib_appConfig;
   "lib/auth": typeof lib_auth;
   "lib/boost": typeof lib_boost;
+  "lib/chatNotifications": typeof lib_chatNotifications;
   "lib/emailUtils": typeof lib_emailUtils;
   "lib/logger": typeof lib_logger;
   "lib/rateLimit": typeof lib_rateLimit;

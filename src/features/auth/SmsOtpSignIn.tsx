@@ -312,6 +312,14 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
         "font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-1.5";
     const stepSubClass =
         "text-xs sm:text-sm text-muted-foreground leading-relaxed";
+    // Step panes stack in one grid cell (col/row-start-1) and cross-fade+slide.
+    // duration-300 must match the setTimeout(…, 300) focus delays above.
+    // px-1 keeps focus rings clear of the slider's overflow-hidden clip.
+    const stepPaneClass = (isActive: boolean, fromLeft: boolean) =>
+        `col-start-1 row-start-1 px-1 transition-all duration-300 ease-in-out ${isActive
+            ? "translate-x-0 opacity-100 visible"
+            : `${fromLeft ? "-translate-x-full" : "translate-x-full"} opacity-0 invisible pointer-events-none`
+        }`;
 
     return (
         <section className="w-full relative">
@@ -341,16 +349,14 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                 }}
                 className="flex flex-col gap-5"
             >
-                {/* Sliding content container — steps stack in one grid cell so the
-                    tallest step sets the height (no fixed height, nothing clips) */}
-                <div className="relative grid overflow-hidden">
+                {/* Sliding content container — steps stack in one grid cell (see
+                    stepPaneClass) so the tallest sets the height. grid-cols-1 is
+                    load-bearing: it caps the track at the container width so a
+                    wide step (the 6-box OTP row) can't blow out the grid and drag
+                    the others past the panel edge on narrow viewports. */}
+                <div className="relative grid grid-cols-1 overflow-hidden">
                     {/* Step 1: Phone Number */}
-                    <div
-                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 1
-                            ? 'translate-x-0 opacity-100 visible'
-                            : '-translate-x-full opacity-0 invisible pointer-events-none'
-                            }`}
-                    >
+                    <div className={stepPaneClass(step === 1, true)}>
                         <div className="space-y-4">
                             <header>
                                 <h3 className={stepHeadingClass}>
@@ -410,12 +416,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     </div>
 
                     {/* Step 2: OTP Input */}
-                    <div
-                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 2
-                            ? 'translate-x-0 opacity-100 visible'
-                            : 'translate-x-full opacity-0 invisible pointer-events-none'
-                            }`}
-                    >
+                    <div className={stepPaneClass(step === 2, false)}>
                         <div className="space-y-4">
                             <header>
                                 <h3 className={stepHeadingClass}>
@@ -469,12 +470,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
                     </div>
 
                     {/* Step 3: Name Collection (New Users Only) */}
-                    <div
-                        className={`col-start-1 row-start-1 transition-all duration-300 ease-in-out ${step === 3
-                            ? 'translate-x-0 opacity-100 visible'
-                            : 'translate-x-full opacity-0 invisible pointer-events-none'
-                            }`}
-                    >
+                    <div className={stepPaneClass(step === 3, false)}>
                         <div className="space-y-4" style={{ transform: 'translateZ(0)' }}>
                             <header>
                                 <h3 className={stepHeadingClass}>
@@ -522,7 +518,7 @@ export function SmsOtpSignIn({ onClose, onDismissableChange }: SmsOtpSignInProps
 
                 {/* Fixed button - only label changes */}
                 <button
-                    className="h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 group relative"
+                    className="mx-1 h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25 hover:bg-primary/90 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 group relative"
                     type="submit"
                     disabled={!canSubmit || isSendingOtp || isVerifying || isCompletingSignup}
                 >

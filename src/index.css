@@ -583,16 +583,6 @@ select:focus {
   animation: scaleIn 0.2s ease-out forwards;
 }
 
-/* Modal entrance: bottom-sheet slide on mobile, gentle scale on larger screens */
-.animate-modal-in {
-  animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-}
-
-@media (min-width: 640px) {
-  .animate-modal-in {
-    animation: scaleIn 0.2s ease-out forwards;
-  }
-}
 /* View Transitions API — smooth crossfade on SPA route changes (Chrome) */
 @view-transition {
   navigation: auto;
@@ -624,8 +614,7 @@ select:focus {
   ::view-transition-old(root),
   ::view-transition-new(root),
   .animate-fade-in,
-  .animate-scale-in,
-  .animate-modal-in {
+  .animate-scale-in {
     animation-duration: 0ms;
   }
 }

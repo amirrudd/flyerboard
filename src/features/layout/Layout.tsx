@@ -110,14 +110,14 @@ export function Layout() {
             {/* OTP Sign-In Modal */}
             {showAuthModal && (
                 <div
-                    className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in overflow-y-auto modal-scroll-lock"
+                    className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in overflow-y-auto modal-scroll-lock"
                     onClick={() => isModalDismissable && setShowAuthModal(false)}
                     role="dialog"
                     aria-modal="true"
                     aria-label="Sign in"
                 >
                     <div
-                        className="relative bg-card ring-1 ring-border/70 rounded-t-2xl rounded-b-none sm:rounded-2xl px-5 pt-16 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pb-7 w-full max-w-md shadow-2xl animate-modal-in sm:my-8 max-h-[90dvh] overflow-y-auto outline-none"
+                        className="relative bg-card ring-1 ring-border/70 rounded-2xl px-4 pt-16 pb-6 sm:px-6 sm:pb-7 w-full max-w-md shadow-2xl animate-scale-in my-8 max-h-[90dvh] overflow-y-auto outline-none"
                         onClick={(e) => e.stopPropagation()}
                         tabIndex={-1}
                         ref={authModalRef}

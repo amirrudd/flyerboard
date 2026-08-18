@@ -24,8 +24,8 @@ export function BlogPostPage() {
     const from = (location.state as { from?: string } | null)?.from;
     const cameFromBlog = from === "/blog";
     const backTo = from ?? "/";
-    const backLabel = cameFromBlog ? "Blog" : "FlyerBoard";
-    const backAria = cameFromBlog ? "Back to blog" : "Go to FlyerBoard home";
+    const backLabel = cameFromBlog ? "Guides" : "FlyerBoard";
+    const backAria = cameFromBlog ? "Back to guides" : "Go to FlyerBoard home";
     const backButton = (
         <button
             type="button"
@@ -49,13 +49,13 @@ export function BlogPostPage() {
             ? {
                 leftNode: backButton,
                 centerNode: (
-                    <span className="font-display text-lg font-semibold tracking-tight text-foreground truncate">Blog</span>
+                    <span className="font-display text-lg font-semibold tracking-tight text-foreground truncate">Guides</span>
                 ),
                 rightNode: <ThemeToggle />,
             }
             : {
                 leftNode: backButton,
-                centerNode: <span className="font-display text-lg font-semibold text-foreground">Blog</span>,
+                centerNode: <span className="font-display text-lg font-semibold text-foreground">Guides</span>,
                 rightNode: <div />,
             }
     );
@@ -63,7 +63,7 @@ export function BlogPostPage() {
     if (!post) {
         return (
             <>
-                <title>Post not found — FlyerBoard Blog</title>
+                <title>Post not found — FlyerBoard Guides</title>
                 <section className="min-h-screen bg-background flex items-center justify-center container-padding">
                     <div className="text-center">
                         <h1 className="font-display text-2xl font-semibold text-foreground mb-2">Post not found</h1>
@@ -116,7 +116,7 @@ export function BlogPostPage() {
 
     return (
         <>
-            <title>{`${post.title} — FlyerBoard Blog`}</title>
+            <title>{`${post.title} — FlyerBoard Guides`}</title>
             <meta name="description" content={post.description} />
             <meta name="keywords" content={keywordsContent} />
             <meta name="author" content={post.author} />

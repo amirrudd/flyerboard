@@ -32,7 +32,7 @@ export function BlogIndexPage() {
             </button>
         ),
         centerNode: (
-            <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Blog</span>
+            <span className="font-display text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">Guides</span>
         ),
         rightNode: <ThemeToggle />,
     });
@@ -42,7 +42,7 @@ export function BlogIndexPage() {
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Blog",
-        name: "FlyerBoard Blog",
+        name: "FlyerBoard Guides",
         description:
             "Practical guides on buying and selling safely on Australia's local marketplace.",
         url: `${SITE_URL}/blog`,
@@ -59,13 +59,13 @@ export function BlogIndexPage() {
 
     return (
         <>
-            <title>Blog — FlyerBoard</title>
+            <title>Guides — FlyerBoard</title>
             <meta
                 name="description"
                 content="Practical guides on buying and selling safely on FlyerBoard, Australia's local classified marketplace."
             />
             <link rel="canonical" href={`${SITE_URL}/blog`} />
-            <meta property="og:title" content="FlyerBoard Blog" />
+            <meta property="og:title" content="FlyerBoard Guides" />
             <meta
                 property="og:description"
                 content="Practical guides on buying and selling safely on FlyerBoard, Australia's local marketplace."
@@ -82,9 +82,9 @@ export function BlogIndexPage() {
 
                     {/* Hero */}
                     <m.header {...fadeUp()} className="py-10 sm:py-14 max-w-2xl">
-                        <span className="kicker text-primary/80">FlyerBoard Blog</span>
+                        <span className="kicker text-primary/80">FlyerBoard Guides</span>
                         <h1 className="font-display font-display-var text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground leading-[1.05] tracking-[-0.02em] mt-3">
-                            Guides for buying &amp; selling locally
+                            Buying &amp; selling, made simple
                         </h1>
                         <p className="text-base text-muted-foreground leading-relaxed mt-4">
                             Practical, no-nonsense tips on selling faster, buying smarter, and staying safe on Australia's local marketplace.

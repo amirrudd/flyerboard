@@ -3,7 +3,7 @@
 - **Date:** 2026-07-16
 - **Status:** Approved (Amir, 2026-07-16)
 - **Approach:** Option B — single merged paginated query via `convex-helpers` `mergedStream`
-- **Companion decisions:** `ResearchLab/ideas/boost-pins-monetisation.md` (boost semantics that fixed the shared sort key)
+- **Companion decisions:** `ResearchLab/ideas/boost-monetisation.md` (boost semantics that fixed the shared sort key)
 
 ## Problem
 
@@ -150,7 +150,7 @@ Public paginated query replacing the feed's three data sources.
   instead of a denormalized feed table — why, and the trigger for upgrading to one".
 - `.agent/plans/boost-to-top-feature.md` — amendment note: boost surface extends to
   composite cards; eligibility/cooldown unchanged for ads; pins model in
-  `ResearchLab/ideas/boost-pins-monetisation.md`.
+  `ResearchLab/ideas/boost-monetisation.md`.
 - `CLAUDE.md` — update the Architecture bullet describing the feed queries.
 
 ## Out of scope

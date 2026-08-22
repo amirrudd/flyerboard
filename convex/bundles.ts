@@ -9,8 +9,21 @@ import {
   DEFAULT_BUNDLE_MAX_ITEMS,
   clampAppSetting,
 } from "./lib/appConfig";
+import {
+  adIsVisible,
+  autoLabel,
+  deriveFromMembers,
+  hydrateBundleItems,
+  refreshCompositeDerived,
+  refreshOwningComposites,
+} from "./lib/derive";
 import type { Id, Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+
+// Member loading + the "does this ad count?" predicate live next to derivation now
+// (convex/lib/derive.ts) — derivation used to re-implement this and assert in a
+// comment that the two agreed. Re-exported here for the existing importers.
+export { hydrateBundleItems };
 
 /**
  * Bundle Listing backend.
@@ -73,14 +86,6 @@ async function requireOwnedBundle(
   return { userId, bundle };
 }
 
-/** Auto-name a bundle from its first couple of item titles ("Sofa + Dining table"). */
-function autoLabel(titles: string[]): string {
-  const clean = titles.map((t) => t.trim()).filter(Boolean);
-  if (clean.length === 0) return "Bundle";
-  if (clean.length <= 2) return clean.join(" + ");
-  return `${clean[0]} + ${clean.length - 1} more`;
-}
-
 /** Sum of the individual list prices of a set of ads. Exported for feed.ts card hydration. */
 export function separatelyTotal(items: Doc<"ads">[]): number {
   return items.reduce((sum, a) => sum + (a.price ?? 0), 0);
@@ -90,22 +95,6 @@ export function separatelyTotal(items: Doc<"ads">[]): number {
 export function computeSavings(total: number, bundlePrice: number): { savings: number; savingsPct: number } {
   const savings = Math.max(0, total - bundlePrice);
   return { savings, savingsPct: total > 0 ? Math.round((savings / total) * 100) : 0 };
-}
-
-/**
- * Resolve a bundle's `adIds` into live ad docs (concurrently), dropping deleted/
- * missing ones — optionally sold ones too (the feed card needs a real deal).
- * Exported for feed.ts card hydration.
- */
-export async function hydrateBundleItems(
-  ctx: QueryCtx | MutationCtx,
-  adIds: Id<"ads">[],
-  opts: { excludeSold?: boolean } = {}
-): Promise<Doc<"ads">[]> {
-  const ads = await Promise.all(adIds.map((id) => ctx.db.get(id)));
-  return ads.filter(
-    (a): a is Doc<"ads"> => a !== null && !a.isDeleted && !(opts.excludeSold && a.isSold)
-  );
 }
 
 /** Clear `bundleId` (concurrently) on every ad in `adIds` that still points at `bundleId`. */
@@ -124,6 +113,12 @@ async function freeAdsFromBundle(
  * individually). Removes the ad from `adIds`, clears its `bundleId`, and moves the
  * bundle to `partial` (deal gone, grouping remembered) — or `cancelled` if fewer
  * than the minimum remain. Shared with `posts.deleteAd`. No-op for Sale bundles.
+ *
+ * Deliberately does NOT re-derive: every caller already follows with
+ * `refreshOwningComposites(ctx, ad)` on the pre-detach ad doc, whose `bundleId`
+ * still names this bundle. Re-deriving here as well repeated the whole
+ * bundle+members read for identical values. `refreshOwningComposites` is the one
+ * owner of re-derivation on the ad write path (see convex/lib/derive.ts).
  */
 export async function detachAdFromBundle(
   ctx: MutationCtx,
@@ -224,15 +219,21 @@ export const createBundle = mutation({
       items.push(ad);
     }
 
-    const label = (args.label?.trim() || autoLabel(items.map((i) => i.title))).slice(0, 80);
+    // Only an auto-generated label may be regenerated later (see lib/derive.ts).
+    const custom = args.label?.trim();
+    const label = custom ? custom.slice(0, 80) : autoLabel(items.map((i) => i.title));
 
     const bundleId = await ctx.db.insert("saleBundles", {
       sellerId: userId,
       adIds,
       bundlePrice: args.bundlePrice,
       label,
+      labelIsAuto: !custom,
       status: "active",
       bumpedAt: Date.now(), // unified-feed sort key
+      // Members are already validated and in hand — derive inline rather than
+      // re-reading the bundle and all N ads back out through refreshCompositeDerived.
+      ...deriveFromMembers(items.filter(adIsVisible), label),
       // saleEventId intentionally omitted — standalone bundle.
     });
     for (const adId of adIds) {
@@ -285,10 +286,12 @@ export const removeBundleItem = mutation({
     if (remaining.length < BUNDLE_MIN_ITEMS) {
       await freeAdsFromBundle(ctx, remaining, bundle._id);
       await ctx.db.patch(bundle._id, { adIds: remaining, status: "cancelled" });
+      await refreshCompositeDerived(ctx, { bundleId: bundle._id });
       logOperation("Bundle cancelled (dropped below minimum)", { bundleId: bundle._id });
       return { status: "cancelled" as const };
     }
     await ctx.db.patch(bundle._id, { adIds: remaining });
+    await refreshCompositeDerived(ctx, { bundleId: bundle._id });
     return { status: bundleStatus(bundle) };
   },
 });
@@ -344,6 +347,9 @@ export const markBundleSold = mutation({
     }
     await Promise.all(items.map((ad) => ctx.db.patch(ad._id, { isSold: true })));
     await ctx.db.patch(bundle._id, { status: "sold" });
+    // Every member just stopped counting (`adIsVisible`) — re-derive ONCE, not per
+    // member: the composite is the same row N times over.
+    await refreshCompositeDerived(ctx, { bundleId: bundle._id });
     logOperation("Bundle sold as a set", { bundleId: bundle._id, count: items.length });
     return args.bundleId;
   },
@@ -366,6 +372,9 @@ export const markBundleItemSold = mutation({
 
     const sold = args.isSold ?? true;
     await ctx.db.patch(args.adId, { isSold: sold });
+    // `isSold` is a derived input (adIsVisible) — the owning composite's
+    // searchText/categoryIds/location go stale the instant it flips.
+    await refreshOwningComposites(ctx, ad);
 
     if (sold && ad.bundleId) {
       const bundle = await ctx.db.get(ad.bundleId);

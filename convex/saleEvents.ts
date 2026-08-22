@@ -12,8 +12,18 @@ import {
   clampAppSetting,
 } from "./lib/appConfig";
 import { MS_PER_DAY } from "./lib/boost";
+import {
+  deriveFromMembers,
+  refreshCompositeDerived,
+  refreshOwningComposites,
+  saleItems,
+} from "./lib/derive";
 import type { Id, Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+
+// Member loading lives next to derivation now (convex/lib/derive.ts), so the
+// derivation and the card hydration cannot drift. Re-exported for existing importers.
+export { saleItems };
 
 /**
  * Moving Sale Mode backend.
@@ -119,19 +129,6 @@ async function requireOwnedSale(
   return { userId, sale };
 }
 
-/** Non-deleted ads belonging to a sale event. Exported for feed.ts card hydration. */
-export async function saleItems(
-  ctx: QueryCtx | MutationCtx,
-  saleEventId: Id<"saleEvents">
-): Promise<Doc<"ads">[]> {
-  const items = await ctx.db
-    .query("ads")
-    .withIndex("by_sale_event", (q) => q.eq("saleEventId", saleEventId))
-    .filter((q) => q.neq(q.field("isDeleted"), true))
-    .collect();
-  return items;
-}
-
 // ──────────────────────────────────────────────────────────────────────────
 // Mutations — seller flow
 // ──────────────────────────────────────────────────────────────────────────
@@ -160,9 +157,10 @@ export const createSaleEvent = mutation({
       });
     }
 
+    const title = args.title.trim() || "My Moving Sale";
     const saleEventId = await ctx.db.insert("saleEvents", {
       userId,
-      title: args.title.trim() || "My Moving Sale",
+      title,
       suburb: args.suburb.trim(),
       note: args.note?.trim() || undefined,
       pickupWindowStart: args.pickupWindowStart,
@@ -172,6 +170,9 @@ export const createSaleEvent = mutation({
       // Required field; drafts never feed (status gates them), and publish
       // re-stamps this at the draft → active transition.
       bumpedAt: Date.now(),
+      // A brand-new sale has zero members by definition — derive inline instead of
+      // re-reading the row back out to compute values already known here.
+      ...deriveFromMembers([], title),
     });
 
     logOperation("Sale event created", { saleEventId, userId });
@@ -221,14 +222,17 @@ export const updateSaleEvent = mutation({
       pickupWindowEnd: end,
       ...(expiresAt !== undefined ? { expiresAt } : {}),
     });
+    // The sale's title is part of its derived searchText.
+    await refreshCompositeDerived(ctx, { saleEventId: args.saleEventId });
     return args.saleEventId;
   },
 });
 
 /**
- * Step 3: bulk-add items from already-uploaded photos. Each item becomes a draft
- * ad (isActive=false until the sale is published). Title/price/condition start as
- * AI-stub defaults and are refined in batch review.
+ * Step 3: bulk-add items from already-uploaded photos. On a draft sale each item
+ * becomes a draft ad (isActive=false until publish); on an already-published sale
+ * it is born active, since nothing would ever flip it. Title/price/condition start
+ * as AI-stub defaults and are refined in batch review.
  *
  * Images must already be uploaded via `upload_urls.generateListingUploadUrl`
  * (pass the saleEventId as the postId so they group under flyers/{saleEventId}/).
@@ -295,7 +299,13 @@ export const addSaleItems = mutation({
         categoryId: item.categoryId ?? defaultCategoryId,
         images: [item.imageKey],
         userId,
-        isActive: false, // draft — goes live on publish
+        // Born active iff the sale is already published. `publishSaleEvent` only
+        // flips items that existed at publish time, and the wizard resumes a LIVE
+        // sale straight at "review" — from which upload is reachable — so an item
+        // added afterwards used to stay isActive:false forever: it rendered on the
+        // public page and counted towards itemCount while contributing no
+        // category, search text or location to the sale (rule 4).
+        isActive: sale.status === "active",
         isSold: false,
         saleEventId: args.saleEventId,
         condition: item.condition,
@@ -305,6 +315,8 @@ export const addSaleItems = mutation({
       });
       createdIds.push(adId);
     }
+
+    await refreshCompositeDerived(ctx, { saleEventId: args.saleEventId });
 
     logOperation("Sale items added", {
       saleEventId: args.saleEventId,
@@ -344,6 +356,7 @@ export const updateSaleItem = mutation({
       ...(args.condition !== undefined ? { condition: args.condition } : {}),
       ...(args.categoryId !== undefined ? { categoryId: args.categoryId } : {}),
     });
+    await refreshOwningComposites(ctx, ad);
     return args.adId;
   },
 });
@@ -367,6 +380,7 @@ export const removeSaleItem = mutation({
       });
     }
     await ctx.db.patch(args.adId, { isDeleted: true, isActive: false, deletedAt: Date.now() });
+    await refreshOwningComposites(ctx, ad);
     return args.adId;
   },
 });
@@ -393,6 +407,9 @@ export const setItemSold = mutation({
       });
     }
     await ctx.db.patch(args.adId, { isSold: args.isSold });
+    // `isSold` is a derived input (adIsVisible) — the sale's searchText /
+    // categoryIds / location go stale the instant it flips.
+    await refreshOwningComposites(ctx, ad);
     return args.adId;
   },
 });
@@ -449,6 +466,11 @@ export const setBundles = mutation({
       for (const adId of adIds) {
         await ctx.db.patch(adId, { bundleId });
       }
+      // No derivation for a sale-scoped bundle: `cards.bundleIsLive` rejects every
+      // bundle with a `saleEventId`, so nothing can read the values — but
+      // `search_composite` filters only on `status`, so an indexed one would still
+      // be returned by search and burn the candidate budget before being discarded
+      // in JS. Leaving `searchText` undefined keeps it out of the index entirely.
       created.push(bundleId);
     }
     return created;
@@ -513,6 +535,10 @@ export const publishSaleEvent = mutation({
         await ctx.db.patch(item._id, { isActive: true });
       }
     }
+    // `isActive` is a derived input (adIsVisible): a draft's items count for
+    // nothing, so the sale only inherits its members' categories, search text and
+    // location here. Once, after the loop.
+    await refreshCompositeDerived(ctx, { saleEventId: args.saleEventId });
 
     logOperation("Sale event published (free)", { saleEventId: args.saleEventId, slug });
     return { slug };

@@ -3,7 +3,7 @@
 import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
 import schema from "./schema";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
 // Load all Convex modules (functions, helpers) so convex-test can run them.
@@ -61,6 +61,19 @@ async function freshWithUser() {
 }
 
 /** Create a draft sale owned by asUser with a valid pickup window. */
+/** Run the batched backfill to completion; returns total rows processed. */
+async function drainBackfill(t: ReturnType<typeof convexTest>): Promise<number> {
+  let args: { table?: "saleEvents" | "saleBundles"; cursor?: string } = {};
+  let total = 0;
+  for (let i = 0; i < 100; i++) {
+    const r = await t.mutation(internal.migrations.backfillCompositeDerived, args);
+    total += r.processed;
+    if (r.done) return total;
+    args = { table: r.table!, ...(r.cursor ? { cursor: r.cursor } : {}) };
+  }
+  throw new Error("backfill did not finish");
+}
+
 async function createDraft(
   asUser: ReturnType<ReturnType<typeof convexTest>["withIdentity"]>,
   overrides: Partial<{
@@ -643,3 +656,192 @@ describe("getSaleBannerForAd", () => {
   });
 });
 
+
+// ──────────────────────────────────────────────────────────────────────────
+// Derived fields (rule 1 — an aggregation inherits from its members)
+// ──────────────────────────────────────────────────────────────────────────
+describe("composite derivation", () => {
+  test("adding items stamps categoryIds and searchText on the sale", async () => {
+    const { t, categoryId, asUser } = await freshWithUser();
+    const tools = await t.run((ctx) =>
+      ctx.db.insert("categories", { name: "Tools", slug: "tools" })
+    );
+    const saleEventId = await createDraft(asUser, { title: "Amir's Moving Sale" });
+
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [
+        { imageKey: "r2:a", title: "Oak desk" },
+        { imageKey: "r2:b", title: "Drill", categoryId: tools },
+      ],
+    });
+    // Items are inactive while the sale is a draft, and an inactive ad is not a
+    // live member (`adIsVisible`) — publishing is what makes them count.
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.categoryIds!.slice().sort()).toEqual([categoryId, tools].sort());
+    expect(sale!.searchText).toContain("Oak desk");
+    expect(sale!.searchText).toContain("Drill");
+    expect(sale!.searchText).toContain("Amir's Moving Sale");
+  });
+
+  test("removing an item drops its category and title from the sale", async () => {
+    const { t, categoryId, asUser } = await freshWithUser();
+    const tools = await t.run((ctx) =>
+      ctx.db.insert("categories", { name: "Tools", slug: "tools" })
+    );
+    const saleEventId = await createDraft(asUser);
+    const [, drill] = await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [
+        { imageKey: "r2:a", title: "Oak desk" },
+        { imageKey: "r2:b", title: "Drill", categoryId: tools },
+      ],
+    });
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+
+    await asUser.mutation(api.saleEvents.removeSaleItem, { adId: drill });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.categoryIds).toEqual([categoryId]);
+    expect(sale!.searchText).not.toContain("Drill");
+  });
+
+  test("editing an item's title and category re-derives the sale", async () => {
+    const { t, asUser } = await freshWithUser();
+    const tools = await t.run((ctx) =>
+      ctx.db.insert("categories", { name: "Tools", slug: "tools" })
+    );
+    const saleEventId = await createDraft(asUser);
+    const [adId] = await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:a", title: "Oak desk" }],
+    });
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+
+    await asUser.mutation(api.saleEvents.updateSaleItem, {
+      adId,
+      title: "Teak sideboard",
+      categoryId: tools,
+    });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.categoryIds).toEqual([tools]);
+    expect(sale!.searchText).toContain("Teak sideboard");
+    expect(sale!.searchText).not.toContain("Oak desk");
+  });
+
+  test("renaming the sale updates its searchText", async () => {
+    const { t, asUser } = await freshWithUser();
+    const saleEventId = await createDraft(asUser, { title: "Old name" });
+    await asUser.mutation(api.saleEvents.updateSaleEvent, { saleEventId, title: "Garage clear-out" });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.searchText).toContain("Garage clear-out");
+    expect(sale!.searchText).not.toContain("Old name");
+  });
+
+  test("setBundles does NOT derive sale-scoped bundles (they never feed or search)", async () => {
+    const { t, asUser } = await freshWithUser();
+    const saleEventId = await createDraft(asUser);
+    const [a, b] = await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [
+        { imageKey: "r2:a", title: "Oak desk" },
+        { imageKey: "r2:b", title: "Office chair" },
+      ],
+    });
+
+    const [bundleId] = await asUser.mutation(api.saleEvents.setBundles, {
+      saleEventId,
+      bundles: [{ label: "Desk set", bundlePrice: 200, adIds: [a, b] }],
+    });
+
+    // `cards.bundleIsLive` rejects every bundle with a `saleEventId`, so nothing
+    // can read these values — but `search_composite` filters only on `status`, so
+    // an indexed one would still be returned by search and burn candidate budget.
+    // Leaving searchText undefined keeps it out of the index.
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.searchText).toBeUndefined();
+    expect(bundle!.categoryIds).toBeUndefined();
+    expect(bundle!.locations).toBeUndefined();
+  });
+
+  test("a sale's items only count once the sale is published", async () => {
+    const { t, asUser } = await freshWithUser();
+    const saleEventId = await createDraft(asUser, { title: "Amir's Moving Sale" });
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:a", title: "Oak desk" }],
+    });
+
+    // Draft items are isActive:false — dropped from search as ads, so dropped
+    // from the composite too (rule 1 read in both directions).
+    const draft = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(draft!.searchText).not.toContain("Oak desk");
+    expect(draft!.categoryIds).toEqual([]);
+    expect(draft!.locations).toEqual([]);
+
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+    const live = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(live!.searchText).toContain("Oak desk");
+    expect(live!.locations).toEqual(["Richmond, VIC"]);
+  });
+
+  test("an item added to a LIVE sale is born active and counts immediately", async () => {
+    // The wizard resumes a published sale straight at "review", from which the
+    // upload step is reachable without ever passing through publish — so an
+    // item born isActive:false there would stay that way forever: rendered on
+    // the public page, counted in itemCount, contributing no category, search
+    // text or location (rule 4).
+    const { t, asUser } = await freshWithUser();
+    const saleEventId = await createDraft(asUser, { title: "Amir's Moving Sale" });
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:a", title: "Oak desk" }],
+    });
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:b", title: "Brass lamp" }],
+    });
+
+    const lamp = await t.run(async (ctx) =>
+      ctx.db
+        .query("ads")
+        .filter((q) => q.eq(q.field("title"), "Brass lamp"))
+        .first()
+    );
+    expect(lamp!.isActive).toBe(true);
+    const live = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(live!.searchText).toContain("Brass lamp");
+  });
+
+  test("backfillCompositeDerived is idempotent and fixes legacy rows", async () => {
+    const { t, categoryId, asUser } = await freshWithUser();
+    const saleEventId = await createDraft(asUser);
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:a", title: "Oak desk" }],
+    });
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+
+    // Simulate a row written before derivation existed.
+    await t.run((ctx) =>
+      ctx.db.patch(saleEventId, { categoryIds: undefined, searchText: undefined })
+    );
+
+    const first = await drainBackfill(t);
+    const after = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(first).toBe(1); // one saleEvent processed across the batches
+    expect(after!.categoryIds).toEqual([categoryId]);
+    expect(after!.searchText).toContain("Oak desk");
+
+    await drainBackfill(t);
+    const again = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(again!.categoryIds).toEqual(after!.categoryIds);
+    expect(again!.searchText).toBe(after!.searchText);
+  });
+});

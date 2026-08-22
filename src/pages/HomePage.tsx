@@ -11,7 +11,7 @@ import { useAdFilters } from "../hooks/useAdFilters";
 import { ScrollToTopButton } from "../components/ui/ScrollToTopButton";
 
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { useMarketplace } from "../context/MarketplaceContext";
+import { useMarketplace, type FeedEntry } from "../context/MarketplaceContext";
 import { registerHomeScroll, unregisterHomeScroll, HOME_SCROLL_KEY } from "../lib/homeScrollBridge";
 import { useAppSetting } from "../hooks/useAppSetting";
 import {
@@ -21,6 +21,62 @@ import {
   DEFAULT_FEED_BUNDLE_MEMBER_CAP,
   isUnlimitedCap,
 } from "../../convex/lib/appConfig";
+
+/**
+ * One pass over the server-interleaved feed page (order preserved):
+ *
+ * 1. The price range applies to EVERY ad type (rule 4 — there is no filter some
+ *    ad types are exempt from). A Bundle answers with its `bundlePrice`, a
+ *    Moving Sale when ANY of its members' prices matches. An entry with no
+ *    usable price is dropped while a range is set, exactly as a priceless ad
+ *    already is — "can't answer the filter" is not a licence to ignore it.
+ * 2. Member caps (Moving Sale v3.1 / Bundle v2): individual sale items render
+ *    exactly like single listings, so cap how many members of one Sale
+ *    (default 3) or Bundle (default 2) show — a 4-item bundle would otherwise
+ *    yield 5 cards from one seller. Caps are admin-tunable via Admin >
+ *    Settings (appSettings feedSaleMemberCap / feedBundleMemberCap); -1 =
+ *    unlimited (every member shows), 0 = only the composite card. They apply on
+ *    every path, browse and search alike.
+ */
+export function filterFeedForDisplay(
+  feed: FeedEntry[],
+  opts: {
+    minPrice?: number;
+    maxPrice?: number;
+    saleMemberCap: number;
+    bundleMemberCap: number;
+  }
+): FeedEntry[] {
+  const { minPrice, maxPrice, saleMemberCap, bundleMemberCap } = opts;
+  const counts = new Map<string, number>();
+  const underCap = (key: string, max: number) => {
+    if (isUnlimitedCap(max)) return true; // Unlimited — every member shows as its own listing.
+    const n = (counts.get(key) ?? 0) + 1;
+    counts.set(key, n);
+    return n <= max;
+  };
+  // Every kind answers the price filter with the PRICES A BUYER CAN PAY: one for
+  // an ad or a Bundle, one per member for a Sale (it sells its members
+  // individually). "No usable price" survives only while no range is set.
+  //
+  // Any-member, not range-overlap: a Sale holding a $5 mug and a $5000 couch
+  // overlaps $100–$200 while containing nothing in it — rule 5, "showing
+  // non-matching items to pad a search". Only a real member price counts.
+  const noRange = minPrice === undefined && maxPrice === undefined;
+  const inRange = (p: number) =>
+    (minPrice === undefined || p >= minPrice) && (maxPrice === undefined || p <= maxPrice);
+  const anyInRange = (prices: number[]) =>
+    prices.length === 0 ? noRange : prices.some(inRange);
+  return feed.filter((entry) => {
+    if (entry.kind === "bundle") return anyInRange([entry.card.bundlePrice]);
+    if (entry.kind === "sale") return anyInRange(entry.card.prices);
+    const ad = entry.ad;
+    if (!anyInRange(ad.price === undefined ? [] : [ad.price])) return false;
+    if (ad.saleEventId) return underCap(`sale:${ad.saleEventId}`, saleMemberCap);
+    if (ad.bundleId) return underCap(`bundle:${ad.bundleId}`, bundleMemberCap);
+    return true;
+  });
+}
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -55,41 +111,14 @@ export function HomePage() {
   // undercut the model. Filtering by min/max never changes the order.
   const { minPrice, maxPrice } = useAdFilters();
 
-  // One pass over the server-interleaved feed page (order preserved):
-  // 1. Price range applies to ad entries only — composite cards are never
-  //    price-filtered (they weren't before unification either).
-  // 2. Member caps (Moving Sale v3.1 / Bundle v2): individual sale items
-  //    render exactly like single listings, so cap how many members of one
-  //    Sale (default 3) or Bundle (default 2) show — a 4-item bundle would
-  //    otherwise yield 5 cards from one seller. Caps are admin-tunable via
-  //    Admin > Settings (appSettings feedSaleMemberCap / feedBundleMemberCap);
-  //    -1 = unlimited (every member shows), 0 = only the composite card.
-  //    Category/search results stay uncapped — "members look like plain
-  //    listings in search" is a deliberate design decision (see
-  //    bundle-listing-design.md).
   const saleMemberCap =
     useAppSetting(SETTING_FEED_SALE_MEMBER_CAP) ?? DEFAULT_FEED_SALE_MEMBER_CAP;
   const bundleMemberCap =
     useAppSetting(SETTING_FEED_BUNDLE_MEMBER_CAP) ?? DEFAULT_FEED_BUNDLE_MEMBER_CAP;
-  const displayFeed = useMemo(() => {
-    if (!feed) return feed;
-    const counts = new Map<string, number>();
-    const underCap = (key: string, max: number) => {
-      if (isUnlimitedCap(max)) return true; // Unlimited — every member shows as its own listing.
-      const n = (counts.get(key) ?? 0) + 1;
-      counts.set(key, n);
-      return n <= max;
-    };
-    return feed.filter((entry) => {
-      if (entry.kind !== "ad") return true;
-      const a = entry.ad;
-      if (minPrice !== undefined && !(a.price !== undefined && a.price >= minPrice)) return false;
-      if (maxPrice !== undefined && !(a.price !== undefined && a.price <= maxPrice)) return false;
-      if (a.saleEventId) return underCap(`sale:${a.saleEventId}`, saleMemberCap);
-      if (a.bundleId) return underCap(`bundle:${a.bundleId}`, bundleMemberCap);
-      return true;
-    });
-  }, [feed, minPrice, maxPrice, saleMemberCap, bundleMemberCap]);
+  const displayFeed = useMemo(
+    () => (feed ? filterFeedForDisplay(feed, { minPrice, maxPrice, saleMemberCap, bundleMemberCap }) : feed),
+    [feed, minPrice, maxPrice, saleMemberCap, bundleMemberCap]
+  );
 
   // Stable identity so AdsGrid's memo isn't broken every render. Navigates to
   // the bundle's own detail page (the "Deal Ticket", bundle v2) — the bundle

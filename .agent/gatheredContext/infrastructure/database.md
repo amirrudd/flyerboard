@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-07-19
+**Last Updated**: 2026-08-22
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -123,6 +123,111 @@ Feature flags (`bundleListing`, `movingSaleMode`) are read server-side; a disabl
 simply omits its stream. Composites are hydrated per page only; a bundle with <2 live
 members is dropped from the page (can shrink a page by a card — accepted).
 
+## Composites are ads — derived fields (Aug 2026) — READ before touching search or filters
+
+`.agent/PRODUCT-RULES.md` rule 1: **an aggregation inherits from its members.** A
+Bundle (`saleBundles`) or Moving Sale (`saleEvents`) has whatever its member ads
+have. Rule 4: no ad type is exempt from any filter.
+
+Until Aug 2026 both were excluded from the category filter and from search
+entirely, and search returned Convex relevance order rather than `bumpedAt`. All
+three were rule violations, not decisions — the `feed.ts` comment calling the
+exclusion a "documented decision" described behaviour inherited from missing data.
+
+### The mechanism
+
+Composites carry **denormalised copies** of what their members have:
+
+```ts
+// on BOTH saleEvents and saleBundles
+categoryIds: v.optional(v.array(v.id("categories"))),
+searchText:  v.optional(v.string()),   // own label/title + every member title
+locations:   v.optional(v.array(v.string())), // distinct canonical strings of the live members
+```
+
+Denormalisation rather than query-time derivation is forced, not chosen: **a search
+index needs its text at index time.** There is no way to find a bundle by its
+members' titles without those titles being on the bundle row. Given the field must
+exist for search anyway, reusing the row for category and location is the smaller
+diff, not a second mechanism.
+
+`convex/lib/derive.ts` owns it — `deriveFromMembers(members, label?)` is pure and
+unit-tested without a DB; `refreshCompositeDerived(ctx, target)` re-derives and
+patches.
+
+### The drift risk — this is the part that will bite
+
+The derived fields are correct only if **every** mutation that changes membership,
+or changes a member's `title` / `categoryId` / `location` / `isSold` / `isActive`,
+calls `refreshCompositeDerived`. The PR that introduced the contract **missed four
+sites** (`markBundleItemSold`, `markBundleSold`, `setItemSold`, `toggleAdStatus`) —
+so treat "I'll remember" as already disproven.
+
+Adding a mutation that writes to `ads`? Refresh the owning composites, and extend
+the enumeration test that asserts derived fields match a fresh `deriveFromMembers`
+after every such mutation. That test is the guard; keep it exhaustive.
+
+### Gotchas worth the reading
+
+- **`locations` is a LIST, like `categoryIds`** — a composite matches a location as
+  soon as ANY member is there. It was a single string ("the first live member's")
+  on the premise that a bundle's members share an address; nothing enforces that
+  (`createBundle` takes any of the seller's ads), so the card was invisible to the
+  second member's suburb while the member itself was not. Same shape, same
+  any-member test, for both fields now.
+- **`saleEvents.suburb` IS canonical since 2026-08-22.** The Moving Sale setup step
+  used a bare free-text input, so `suburb` — copied onto every sale item as its
+  `location` — could never equal a `formatLocation()` string, and Moving Sales were
+  excluded from every location-filtered view. `SetupStep` now uses
+  `src/components/ui/LocationPicker`; `migrations:backfillSaleSuburbLocations`
+  resolves historical rows (an internalAction: the postcode dataset lives in
+  `public/`, which a Convex function cannot read off disk, so it fetches the same
+  file over HTTP and reports anything ambiguous rather than guessing). Display drops
+  the postcode via `displayLocation()` — a view, never stored.
+- **`categoryIds` is an array, so Convex cannot index it.** `filterFields` are
+  equality-only over the whole value; array-contains is not expressible. Composite
+  category/location narrowing is therefore a JS predicate, which must run *below*
+  the per-table cap or out-of-scope rows consume the budget. Upgrade path if the
+  tables ever grow: denormalise a scalar filter field and push it into the index.
+- **Filters must run before hydration.** `hydrateBundleCard`/`hydrateSaleCard` read
+  once per member ad, so hydrating an over-fetched candidate set is very expensive.
+  Narrow, sort, slice, *then* hydrate.
+- **A composite with no live members derives to empty** — no `categoryIds`, no
+  `locations`. It drops out of every filtered view while still carrying its own
+  title in `searchText`. That follows rule 1 literally.
+- **"Live member" has ONE definition: `adIsVisible`.** Hydration and derivation must
+  agree, or a card renders in the unfiltered feed and matches no filter. That was
+  real: `hydrateSaleCard` counted every non-deleted item and had no despawn guard,
+  so an all-sold sale rendered "12 items" with empty derived fields. Both hydrators
+  now filter on `adIsVisible`, and both return `null` when nothing is left (a bundle
+  below `BUNDLE_MIN_ITEMS`, a sale at zero) — `hydrateEntries` is the single
+  enforcement site. `itemCount`, `photoCount`, prices and covers count visible
+  members only.
+- **A sale item is born `isActive: sale.status === "active"`.** `publishSaleEvent`
+  only flips items that exist at publish time, and the wizard resumes a live sale at
+  "review", from which upload is reachable — an unconditional `isActive: false` left
+  those items rendering on the public page while contributing nothing derived.
+- **The Sale feed card carries `prices: number[]`, not a min/max range.** A range
+  overlap test admitted a sale holding a $5 mug and a $5000 couch into a $100–$200
+  filter with nothing in the band (rule 5). `src/pages/HomePage.filterFeedForDisplay`
+  asks "does any member price match?"; `minPrice` survives only as the "from $X"
+  display floor.
+- **A missing derived field never matches a filter.** `[].includes(x)` is `false`
+  and an unset `searchText` is simply not indexed. So the read-path change is
+  inert for un-backfilled rows — which makes deploy order load-bearing:
+  **deploy schema + write path → run `migrations:backfillCompositeDerived` on
+  `resilient-pheasant-112` → verify zero rows lack the fields → deploy the read
+  path.** Same widen → backfill → narrow rollout `ads.bumpedAt` used.
+
+### Search: relevance selects, date orders
+
+Rule 2 is absolute — `bumpedAt` desc is the only thing that ever *orders* ads. But
+a search index returns candidates by relevance, and the per-table `.take(n)` cap
+cuts on relevance before the date sort ever runs. So a very old exact match can
+fall out of the candidate pool entirely. Accepted knowingly (founder, Aug 2026) as
+a ceiling at current inventory, not as a design goal — the `ponytail:` comments in
+`convex/ads.ts` name it. Revisit when search feels lossy.
+
 ## Schema Overview
 
 ### Core Tables
@@ -156,7 +261,10 @@ members is dropped from the page (can shrink a page by a card — accepted).
 - `by_user`: For user's listings
 - `by_category`: For category filtering
 - `by_deleted`: For excluding deleted ads
-- `by_location_category`: Search index
+- `by_location`, `by_bumped_at`, `by_category_and_bumped_at`, `by_active`, `by_sale_event`
+- `search_ads`: the search index (searchField `title`; filterFields `categoryId`,
+  `location`, `isActive`, `isDeleted`). There is no `by_location_category` index —
+  that entry was wrong and is corrected here.
 
 #### users
 ```typescript
@@ -221,13 +329,15 @@ return {
 ### Search
 **Pattern**: Use search indexes for text search
 ```typescript
+// The index is `search_ads`, not `search_title`, and search results are
+// CAPPED, never `.collect()`ed — a search index can't cursor-paginate.
 const results = await ctx.db
   .query("ads")
-  .withSearchIndex("search_title", q => 
-    q.search("title", args.searchTerm)
+  .withSearchIndex("search_ads", q =>
+    q.search("title", args.searchTerm).eq("isActive", true)
   )
   .filter(q => q.neq(q.field("isDeleted"), true))
-  .collect();
+  .take(50);
 ```
 
 ## Mutation Patterns

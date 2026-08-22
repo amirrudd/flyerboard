@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product rules — read before planning any user-facing change
+
+**`.agent/PRODUCT-RULES.md` is the product's constitution** — a short, numbered list of
+what FlyerBoard *is*.
+
+It is the **single source of truth**. Do not restate, summarise, or paraphrase the rules
+anywhere else — not here, not in `.agent/gatheredContext/`, not in code comments. A copy
+is a copy that will drift. Link to the file; let readers open it.
+
+- **Read it before planning** any change to the feed, search, filtering, ad types
+  (Bundle / Moving Sale), or Boost. It takes a minute.
+- **If your plan contradicts a rule, stop and flag it to Amir.** Do not design around
+  it, do not soften it, do not treat it as a trade-off to balance.
+- **A "documented decision" in a code comment is not a product decision.** Several
+  comments in this repo describe behaviour inherited from a data limitation and later
+  labelled as a choice. The rules file is the authority; comments are not.
+- Run the `product-guardian` agent (or `/check-vision`) on any non-trivial plan before
+  finalising it, and again before merging. It reports contradictions only.
+
+Rules change only when Amir changes them.
+
 ## Required session protocol
 
 The `.agent/gatheredContext/` system is the project's accumulated technical memory. **Treat reading and updating it as part of every task — not optional.** Skipping the read step is the most likely cause of regressions; skipping the write step is what causes future sessions to repeat the same investigations.

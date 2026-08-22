@@ -65,6 +65,15 @@ async function insertAd(
   );
 }
 
+/**
+ * Composite members sort ABOVE every `maxSortTime` these tests pass, which keeps
+ * them out of the ads stream (`.lte("bumpedAt", maxSortTime)`) without making
+ * them invisible. They used to be `isActive: false` instead — but a card now
+ * hydrates from `adIsVisible` members only, so an inactive member is no member
+ * at all and every composite here would despawn.
+ */
+const MEMBER_BUMPED = Number.MAX_SAFE_INTEGER;
+
 /** Insert a standalone bundle + its member ads. Returns the bundle id. */
 async function insertBundle(
   t: T,
@@ -76,22 +85,21 @@ async function insertBundle(
     isDeleted?: boolean;
     saleEventId?: Id<"saleEvents">;
     soldMembers?: number; // how many of the 2 member ads are sold
+    categoryIds?: Id<"categories">[]; // derived-from-members copy (wave 1)
+    locations?: string[] | null; // derived-from-members copy; null = omit (no live members)
   }
 ): Promise<Id<"saleBundles">> {
-  const memberBumped = 1; // far below T0 — members shouldn't interfere with order assertions
   const a = await insertAd(t, {
     userId: opts.userId,
     categoryId: opts.categoryId,
-    bumpedAt: memberBumped,
+    bumpedAt: MEMBER_BUMPED,
     isSold: (opts.soldMembers ?? 0) >= 1,
-    isActive: false, // keep members out of the ads stream entirely
   });
   const b = await insertAd(t, {
     userId: opts.userId,
     categoryId: opts.categoryId,
-    bumpedAt: memberBumped,
+    bumpedAt: MEMBER_BUMPED,
     isSold: (opts.soldMembers ?? 0) >= 2,
-    isActive: false,
   });
   return t.run(async (ctx) =>
     ctx.db.insert("saleBundles", {
@@ -103,6 +111,10 @@ async function insertBundle(
       bumpedAt: opts.bumpedAt,
       ...(opts.isDeleted !== undefined ? { isDeleted: opts.isDeleted } : {}),
       ...(opts.saleEventId ? { saleEventId: opts.saleEventId } : {}),
+      ...(opts.categoryIds ? { categoryIds: opts.categoryIds } : {}),
+      ...(opts.locations === null || opts.locations === undefined
+        ? {}
+        : { locations: opts.locations }),
     })
   );
 }
@@ -117,6 +129,8 @@ async function insertSale(
     status?: "draft" | "active" | "ended";
     slug?: string | null; // null = omit slug (unpublished-looking row)
     expiresAt?: number;
+    categoryIds?: Id<"categories">[]; // derived-from-members copy (wave 1)
+    locations?: string[] | null; // derived-from-members copy; null = omit (no live members)
   }
 ): Promise<Id<"saleEvents">> {
   const saleId = await t.run(async (ctx) =>
@@ -131,13 +145,16 @@ async function insertSale(
       ...(opts.slug === null ? {} : { slug: opts.slug ?? `sale-${Math.random().toString(36).slice(2, 8)}` }),
       bumpedAt: opts.bumpedAt,
       ...(opts.expiresAt !== undefined ? { expiresAt: opts.expiresAt } : {}),
+      ...(opts.categoryIds ? { categoryIds: opts.categoryIds } : {}),
+      ...(opts.locations === null || opts.locations === undefined
+        ? {}
+        : { locations: opts.locations }),
     })
   );
   await insertAd(t, {
     userId: opts.userId,
     categoryId: opts.categoryId,
-    bumpedAt: 1,
-    isActive: false, // sale items stay out of the ads stream for order assertions
+    bumpedAt: MEMBER_BUMPED,
     saleEventId: saleId,
   });
   return saleId;
@@ -322,22 +339,97 @@ describe("getFeed — feature flags", () => {
   });
 });
 
-describe("getFeed — category branch", () => {
-  test("returns ads only, filtered to the category; composites never appear", async () => {
+describe("getFeed — category filter", () => {
+  // Rule 4 (.agent/PRODUCT-RULES.md): all three ad types are eligible for every
+  // filter. Rule 1: a composite is in a category when any member ad is.
+  test("filters ads to the category and keeps composites whose members match", async () => {
     const { t, userId, categoryId } = await fresh();
     const otherCategoryId = await t.run(async (ctx) =>
       ctx.db.insert("categories", { name: "Books", slug: "books" })
     );
     const inCat = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
     await insertAd(t, { userId, categoryId: otherCategoryId, bumpedAt: T0 + 20 });
-    await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30 });
-    await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40 });
+    const bundleId = await insertBundle(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 30,
+      categoryIds: [categoryId],
+    });
+    const saleId = await insertSale(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 40,
+      categoryIds: [categoryId],
+    });
+
+    const result = await getPage(t, { categoryId, maxSortTime: T0 + 100 });
+    expect(result.page.map(entryKey)).toEqual([
+      `sale:${saleId}`,
+      `bundle:${bundleId}`,
+      `ad:${inCat}`,
+    ]);
+  });
+
+  test("composites whose members are in another category do not appear", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const otherCategoryId = await t.run(async (ctx) =>
+      ctx.db.insert("categories", { name: "Books", slug: "books" })
+    );
+    const inCat = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    await insertBundle(t, {
+      userId,
+      categoryId: otherCategoryId,
+      bumpedAt: T0 + 30,
+      categoryIds: [otherCategoryId],
+    });
+    await insertSale(t, {
+      userId,
+      categoryId: otherCategoryId,
+      bumpedAt: T0 + 40,
+      categoryIds: [otherCategoryId],
+    });
 
     const result = await getPage(t, { categoryId, maxSortTime: T0 + 100 });
     expect(result.page.map(entryKey)).toEqual([`ad:${inCat}`]);
   });
 
-  test("category branch applies the getAds predicate set", async () => {
+  test("a legacy composite with no categoryIds is skipped, not crashed on", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const inCat = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30 }); // field absent
+    await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40 }); // field absent
+
+    const result = await getPage(t, { categoryId, maxSortTime: T0 + 100 });
+    expect(result.page.map(entryKey)).toEqual([`ad:${inCat}`]);
+  });
+
+  test("composites and ads interleave strictly by bumpedAt desc within a category", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const ad1 = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20 });
+    const bundleId = await insertBundle(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 30,
+      categoryIds: [categoryId],
+    });
+    const ad2 = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 40 });
+    const saleId = await insertSale(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 50,
+      categoryIds: [categoryId],
+    });
+
+    const result = await getPage(t, { categoryId, maxSortTime: T0 + 100 });
+    expect(result.page.map(entryKey)).toEqual([
+      `sale:${saleId}`,
+      `ad:${ad2}`,
+      `bundle:${bundleId}`,
+      `ad:${ad1}`,
+    ]);
+  });
+
+  test("the category feed applies the same ad predicate set", async () => {
     const { t, userId, categoryId } = await fresh();
     const live = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
     await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, isDeleted: true });
@@ -401,12 +493,22 @@ describe("getFeed — exclusions", () => {
 });
 
 describe("getFeed — location", () => {
-  test("location filters ads server-side; composites are unaffected", async () => {
+  test("the location filter applies to every ad type (rule 4)", async () => {
     const { t, userId, categoryId } = await fresh();
     const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 }); // "Richmond, VIC"
     const elsewhere = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
-    const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30 });
-    const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40 });
+    const localBundle = await insertBundle(t, {
+      userId, categoryId, bumpedAt: T0 + 30, locations: ["Richmond, VIC"],
+    });
+    const remoteBundle = await insertBundle(t, {
+      userId, categoryId, bumpedAt: T0 + 35, locations: ["Perth, WA"],
+    });
+    const localSale = await insertSale(t, {
+      userId, categoryId, bumpedAt: T0 + 40, locations: ["Richmond, VIC"],
+    });
+    const remoteSale = await insertSale(t, {
+      userId, categoryId, bumpedAt: T0 + 45, locations: ["Perth, WA"],
+    });
 
     const result = await t.query(api.feed.getFeed, {
       paginationOpts: { numItems: 20, cursor: null },
@@ -415,13 +517,31 @@ describe("getFeed — location", () => {
     });
     const keys = result.page.map(entryKey);
     expect(keys).toContain(`ad:${richmond}`);
+    expect(keys).toContain(`bundle:${localBundle}`);
+    expect(keys).toContain(`sale:${localSale}`);
     expect(keys).not.toContain(`ad:${elsewhere}`);
-    // Composite cards were never location-filtered — they stay.
-    expect(keys).toContain(`bundle:${bundleId}`);
-    expect(keys).toContain(`sale:${saleId}`);
+    expect(keys).not.toContain(`bundle:${remoteBundle}`);
+    expect(keys).not.toContain(`sale:${remoteSale}`);
   });
 
-  test("category branch applies the location filter to its page", async () => {
+  test("a composite with no derived location does not match a location filter", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30, locations: null });
+    const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40, locations: null });
+
+    const filtered = await t.query(api.feed.getFeed, {
+      paginationOpts: { numItems: 20, cursor: null },
+      location: "Richmond, VIC",
+      maxSortTime: T0 + 100,
+    });
+    expect(filtered.page.map(entryKey)).toEqual([]);
+
+    // ...but an unfiltered feed still shows them (no location set = no filter).
+    const unfiltered = await getPage(t, { maxSortTime: T0 + 100 });
+    expect(unfiltered.page.map(entryKey)).toEqual([`sale:${saleId}`, `bundle:${bundleId}`]);
+  });
+
+  test("the category feed applies the location filter to ads", async () => {
     const { t, userId, categoryId } = await fresh();
     const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
     await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
@@ -433,6 +553,81 @@ describe("getFeed — location", () => {
       maxSortTime: T0 + 100,
     });
     expect(result.page.map(entryKey)).toEqual([`ad:${richmond}`]);
+  });
+});
+
+describe("getFeed — a composite card never outlives its members", () => {
+  test("an all-sold Moving Sale renders no card at all (rule 4)", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const saleId = await insertSale(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 10,
+      locations: ["Richmond, VIC"],
+    });
+    // Sell the sale's only item. Derivation already discounts it, so the row's
+    // locations/categoryIds go empty — the card must go with them, or it shows
+    // in the unfiltered feed and in no filtered one.
+    await t.run(async (ctx) => {
+      const item = await ctx.db
+        .query("ads")
+        .filter((q) => q.eq(q.field("saleEventId"), saleId))
+        .first();
+      await ctx.db.patch(item!._id, { isSold: true });
+    });
+
+    const unfiltered = await getPage(t, { maxSortTime: T0 + 100 });
+    expect(unfiltered.page.map(entryKey)).toEqual([]);
+  });
+
+  test("a Bundle whose members were deactivated despawns like a sold one", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    await t.run(async (ctx) => {
+      const bundle = await ctx.db.get(bundleId);
+      for (const adId of bundle!.adIds) await ctx.db.patch(adId, { isActive: false });
+    });
+
+    const result = await getPage(t, { maxSortTime: T0 + 100 });
+    expect(result.page.map(entryKey)).toEqual([]);
+  });
+
+  test("itemCount counts only the members the card still stands for", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    // Two more items, one of them sold.
+    await insertAd(t, { userId, categoryId, bumpedAt: MEMBER_BUMPED, saleEventId: saleId });
+    await insertAd(t, {
+      userId,
+      categoryId,
+      bumpedAt: MEMBER_BUMPED,
+      saleEventId: saleId,
+      isSold: true,
+    });
+
+    const result = await getPage(t, { maxSortTime: T0 + 100 });
+    const entry = result.page[0];
+    expect(entry.kind).toBe("sale");
+    expect(entry.kind === "sale" && entry.card.itemCount).toBe(2);
+  });
+
+  test("a composite matches ANY member's suburb, not just the first (rule 1)", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const bundleId = await insertBundle(t, {
+      userId,
+      categoryId,
+      bumpedAt: T0 + 10,
+      locations: ["Richmond, VIC", "Bondi, NSW"],
+    });
+
+    for (const location of ["Richmond, VIC", "Bondi, NSW"]) {
+      const result = await t.query(api.feed.getFeed, {
+        paginationOpts: { numItems: 20, cursor: null },
+        location,
+        maxSortTime: T0 + 100,
+      });
+      expect(result.page.map(entryKey), location).toEqual([`bundle:${bundleId}`]);
+    }
   });
 });
 

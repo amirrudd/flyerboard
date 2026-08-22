@@ -6,6 +6,8 @@ import { m } from "framer-motion";
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../../lib/priceFormatter";
+import { entryKey } from "../../context/freshAdsMerge";
+import { displayLocation } from "../../lib/locationService";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -61,11 +63,56 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   );
 
   const handleSelectListing = useCallback(
-    (id: string, listing?: unknown) => {
-      void navigate(`/ad/${id}`, listing ? { state: { initialAd: listing } } : undefined);
+    (to: string, initialAd?: unknown) => {
+      void navigate(to, initialAd ? { state: { initialAd } } : undefined);
       onClose();
     },
     [navigate, onClose]
+  );
+
+  /**
+   * One row per search entry. Search returns all three ad types (rules 1/4),
+   * so a Bundle or Moving Sale matched by a member's title is reachable from
+   * here too — it just links to its own page instead of /ad/:id.
+   */
+  const rows = useMemo(
+    () =>
+      (listings ?? []).map((entry) => {
+        if (entry.kind === "bundle") {
+          const c = entry.card;
+          return {
+            key: entryKey(entry),
+            title: c.label,
+            subtitle: [`Bundle · ${c.itemCount} items`, c.location].filter(Boolean).join(" · "),
+            trailing: formatPrice(c.bundlePrice),
+            select: () => handleSelectListing(`/bundle/${c._id}`),
+          };
+        }
+        if (entry.kind === "sale") {
+          const c = entry.card;
+          return {
+            key: entryKey(entry),
+            title: c.title,
+            subtitle: [`Moving Sale · ${c.itemCount} items`, displayLocation(c.suburb)].filter(Boolean).join(" · "),
+            trailing: c.minPrice > 0 ? `From ${formatPrice(c.minPrice)}` : null,
+            select: () => handleSelectListing(`/sale/${c.slug}`),
+          };
+        }
+        const ad = entry.ad;
+        return {
+          key: entryKey(entry),
+          title: ad.title,
+          subtitle: ad.location,
+          trailing:
+            ad.listingType === "exchange"
+              ? "Trade"
+              : ad.price != null
+              ? formatPrice(ad.price)
+              : null,
+          select: () => handleSelectListing(`/ad/${ad._id}`, ad),
+        };
+      }),
+    [listings, handleSelectListing]
   );
 
   const handleSelectCategory = useCallback(
@@ -76,8 +123,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     [navigate, onClose]
   );
 
-  const hasResults =
-    matchedCategories.length > 0 || (listings && listings.length > 0);
+  const hasResults = matchedCategories.length > 0 || rows.length > 0;
   const showEmptyState = debouncedQuery && !hasResults;
 
   if (!open) return null;
@@ -148,35 +194,31 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             </section>
           )}
 
-          {listings && listings.length > 0 && (
+          {rows.length > 0 && (
             <section>
               <p className="kicker px-4 pt-3 pb-1 text-muted-foreground">
                 Listings
               </p>
               <ul>
-                {listings.map((listing) => (
-                  <li key={listing._id}>
+                {rows.map((row) => (
+                  <li key={row.key}>
                     <button
                       type="button"
                       className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-4 hover:bg-accent transition-colors"
-                      onClick={() => handleSelectListing(listing._id, listing)}
+                      onClick={row.select}
                     >
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-foreground line-clamp-1">
-                          {listing.title}
+                          {row.title}
                         </span>
-                        {listing.location && (
+                        {row.subtitle && (
                           <span className="block text-xs text-muted-foreground truncate">
-                            {listing.location}
+                            {row.subtitle}
                           </span>
                         )}
                       </span>
                       <span className="shrink-0 text-sm font-medium text-foreground">
-                        {listing.listingType === "exchange"
-                          ? "Trade"
-                          : listing.price != null
-                          ? formatPrice(listing.price)
-                          : null}
+                        {row.trailing}
                       </span>
                     </button>
                   </li>

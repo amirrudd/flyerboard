@@ -18,6 +18,7 @@ import {
   formatPickupRange,
 } from "./saleHelpers";
 import type { SaleBundle, SaleEventCore, SaleItem } from "./types";
+import { displayLocation } from "../../lib/locationService";
 
 interface PublicSaleViewProps {
   sale: SaleEventCore;
@@ -121,7 +122,7 @@ export function PublicSaleView({
             {sale.title}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {sale.suburb} · {items.length} {items.length === 1 ? "item" : "items"}
+            {displayLocation(sale.suburb)} · {items.length} {items.length === 1 ? "item" : "items"}
             {bundles.length > 0 &&
               ` · ${bundles.length} ${bundles.length === 1 ? "bundle" : "bundles"}`}
           </p>
@@ -338,7 +339,7 @@ export function PublicSaleView({
                 <MapPin size={20} weight="fill" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">{sale.suburb}</p>
+                <p className="font-semibold text-foreground">{displayLocation(sale.suburb)}</p>
                 <p className="text-sm text-muted-foreground">
                   Exact address shared after you message {sellerFirstName}.
                 </p>

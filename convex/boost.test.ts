@@ -369,11 +369,11 @@ describe("feed ordering by bumpedAt (Phase 1B)", () => {
 
     // Before boosting: bumpedAt (now-10d) is below the watermark → not returned.
     const before = await asUser.query(api.ads.getLatestAds, { sinceTimestamp: since });
-    expect(before.find((a) => a._id === adId)).toBeUndefined();
+    expect(before.find((e) => e.kind === "ad" && e.ad._id === adId)).toBeUndefined();
 
     // Boost → bumpedAt jumps to now (> since) → now returned.
     await asUser.mutation(api.posts.boostAd, { adId });
     const after = await asUser.query(api.ads.getLatestAds, { sinceTimestamp: since });
-    expect(after.find((a) => a._id === adId)).toBeDefined();
+    expect(after.find((e) => e.kind === "ad" && e.ad._id === adId)).toBeDefined();
   });
 });

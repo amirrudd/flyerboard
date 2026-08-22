@@ -134,7 +134,18 @@ being repealed quietly.
 
 | Rule | Exception | Accepted | Ends when |
 |---|---|---|---|
-| 5 | The proximity feed ships behind the `proximityFeed` feature flag, off by default, so the hard location filter stays live until the flag is turned on. | 2026-08-15 | The flag is deleted and the behaviour becomes unconditional. Planned — the flag is a temporary rollout lever, not a permanent setting. |
+| 5 | The location filter is a **hard** filter — it hides out-of-area ads instead of grouping them below a divider. Applies to all three ad types. | 2026-08-15, **widened 2026-08-22** | Grouping ships (in-area newest, then out-of-area newest) and the filter stops hiding anything. |
+
+**Note on the 2026-08-22 widening.** As accepted on 2026-08-15 this exception covered
+ads only — Bundles and Moving Sales were simply exempt from the location filter, which
+was itself a rule 4 violation. Making them participate (rule 4) necessarily makes them
+hideable (rule 5). Amir chose consistency: location now means the same thing for every
+ad type, and grouping will fix all three at once rather than one.
+
+The original wording named a `proximityFeed` feature flag as the thing that would end
+this. **No such flag exists in the codebase** — nothing was ever shipped behind it. The
+condition above is written in terms of the behaviour instead, so it cannot be satisfied
+by deleting a flag that was never created.
 
 ## Notes
 

@@ -6,10 +6,10 @@ import { useQuery, useConvex } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
 import { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
-import { Doc, Id } from "../../convex/_generated/dataModel";
+import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
-import { classifyLatestAds, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey } from "./freshAdsMerge";
+import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey } from "./freshAdsMerge";
 
 /** One unified-feed page entry (ad | bundle card | sale card), server-interleaved on `bumpedAt` desc; rendered verbatim. */
 export type FeedEntry = FunctionReturnType<typeof api.feed.getFeed>["page"][number];
@@ -79,18 +79,23 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // The lazy `useState` initializer runs once at mount (keeping render pure),
     // and seeds the per-filter refresh watermarks below.
     const [initialRefreshTimestamp] = useState(() => Date.now() - 5 * 60 * 1000);
-    // Ads fetched via refreshAds that the frozen paginated query (bounded by
-    // maxSortTime at mount) can never return. Keyed by filter cacheKey and
-    // merged ahead of the query results wherever the display list is rebuilt —
-    // otherwise a later refresh or query re-emit rebuilds the list from the raw
-    // results and silently drops previously merged new ads.
+    // Feed entries fetched via refreshAds that the frozen paginated query
+    // (bounded by maxSortTime at mount) can never return. Keyed by filter
+    // cacheKey and merged ahead of the query results wherever the display list
+    // is rebuilt — otherwise a later refresh or query re-emit rebuilds the list
+    // from the raw results and silently drops previously merged arrivals.
     //
     // Boost (Jul 2026): the sort key (`bumpedAt`) is now MUTABLE. A boost moves
     // an ad above the frozen bound, so the reactive paginated query ejects it
     // from open sessions; this rail is its only way back (as a replacement
-    // entry that shadows the stale copy by _id — see freshAdsMerge.ts).
-    // Unified feed: the rail stays ads-only (live arrivals are ads-only in
-    // v1, spec §4); a composite published mid-session appears on refresh.
+    // entry that shadows the stale copy by kind+id — see freshAdsMerge.ts).
+    //
+    // Unified feed (Aug 2026): the rail carries the WHOLE union. The frozen
+    // query can't return a Bundle or Moving Sale published after mount either,
+    // so an ads-only rail gave "newest on top" to one ad type and withheld it
+    // from two (rules 1, 2 and 4). Search takes the same path: ads.getAds is
+    // live so the rail is redundant there, but the kind+id dedupe makes it
+    // harmless — one code path beats two kept in sync.
     //
     // Known accepted limitations (plan 2-2.6, revisit only if reports surface):
     // - Entries here are one-shot snapshots: a boosted ad that is then
@@ -100,7 +105,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     //   (≤60s), the boosted ad is transiently absent from open feeds. The
     //   watermark rule + interval tick guarantee recovery; only *permanent*
     //   disappearance (the 8cf9b00 bug class) is designed against.
-    const freshAdsRef = useRef<Map<string, Doc<"ads">[]>>(new Map());
+    const freshAdsRef = useRef<Map<string, FeedEntry[]>>(new Map());
     // Per-filter "fetched up to" watermark for getLatestAds. Per-key (not
     // global) so a refresh under one filter doesn't advance the watermark past
     // ads another filter's view hasn't merged yet.
@@ -120,9 +125,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const [initialLoadTimestamp] = useState(() => Date.now());
 
     // The unified feed: one paginated query interleaving ads + Bundle + Sale
-    // cards, feature flags handled server-side. Search still routes through
-    // ads.getAds' search-index branch (composites never appear in search —
-    // documented decision), so exactly one of these two hooks is live.
+    // cards, feature flags handled server-side. Search routes through
+    // ads.getAds' search-index branch, which returns the SAME entry union over
+    // all three ad types (rules 1/2/4), so exactly one of these two hooks is
+    // live and both feed AdsGrid unchanged.
     const isSearching = searchQuery !== "";
     const feedQuery = usePaginatedQuery(
         api.feed.getFeed,
@@ -149,11 +155,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const { status, loadMore } = isSearching ? searchQueryResult : feedQuery;
 
     // Normalise both sources to FeedEntry[]. Location is applied server-side
-    // on both paths (getFeed filters its ads stream; composite cards were
-    // never location-filtered — documented decision).
+    // on both paths, to every ad type (rule 4).
     const feedEntries = useMemo<FeedEntry[] | undefined>(() => {
         if (isSearching) {
-            return searchQueryResult.results?.map((ad) => ({ kind: "ad" as const, ad }));
+            return searchQueryResult.results;
         }
         return feedQuery.results;
     }, [isSearching, searchQueryResult.results, feedQuery.results]);
@@ -183,7 +188,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
         try {
             // Fetch latest ads on-demand (not subscription)
-            const latestAds = await convex.query(api.ads.getLatestAds, {
+            const latest = await convex.query(api.ads.getLatestAds, {
                 categoryId: selectedCategory ?? undefined,
                 search: searchQuery || undefined,
                 location: selectedLocation || undefined,
@@ -191,42 +196,42 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 limit: 50,
             });
 
-            if (!latestAds || latestAds.length === 0) {
+            if (latest.length === 0) {
                 return;
             }
 
             const fresh = freshAdsRef.current.get(cacheKey) ?? [];
-            const heldAds = (feedEntries ?? [])
-                .filter((e): e is Extract<FeedEntry, { kind: "ad" }> => e.kind === "ad")
-                .map((e) => e.ad);
-
-            // Replacement-aware dedupe (Boost, Jul 2026): an unknown _id is a
-            // brand-new ad; a known _id whose bumpedAt is newer than the held
-            // copy is a BOOST replacement (an _id-only dedupe would drop it —
-            // the 8cf9b00 vanishing-ads bug class); a known, unchanged _id is
-            // a plain duplicate and is dropped. Fresh rail first: its copy is
-            // always at least as new as the paginated query's.
-            const { brandNew, boosted } = classifyLatestAds(latestAds, [...fresh, ...heldAds]);
+            // Replacement-aware dedupe (Boost, Jul 2026): an unknown kind+id
+            // is a brand-new arrival; a known one whose bumpedAt is newer than
+            // the held copy is a BOOST replacement (an id-only dedupe would
+            // drop it — the 8cf9b00 vanishing-ads bug class); a known,
+            // unchanged one is a plain duplicate and is dropped. Fresh rail
+            // first: its copy is always at least as new as the query's.
+            const { brandNew, boosted } = classifyLatestEntries(latest, [...fresh, ...(feedEntries ?? [])]);
             const merged = [...brandNew, ...boosted];
 
             if (merged.length > 0) {
-                if (brandNew.length > 0) {
-                    // Mark only genuinely new ads for the "New" badge.
-                    setNewAdIds(new Set(brandNew.map(ad => ad._id)));
+                // The "New" badge and the pin-drop entrance are ad-card
+                // affordances (AdsGrid keys both off the ad's _id); composite
+                // cards render neither, so only ad entries feed these sets.
+                const brandNewAds = brandNew.filter((e) => e.kind === "ad");
+                const boostedAds = boosted.filter((e) => e.kind === "ad");
+                if (brandNewAds.length > 0) {
+                    setNewAdIds(new Set(brandNewAds.map((e) => e.ad._id)));
                 }
-                if (boosted.length > 0) {
+                if (boostedAds.length > 0) {
                     // Boost arrivals get the pin-drop entrance instead of the
                     // badge — keyed on `${_id}:${bumpedAt}` (one-shot per boost).
-                    setBoostedAdKeys(new Set(boosted.map(boostArrivalKey)));
+                    setBoostedAdKeys(new Set(boostedAds.map((e) => boostArrivalKey(e.ad))));
                 }
 
-                // Accumulate — earlier fresh ads must survive later refreshes,
+                // Accumulate — earlier arrivals must survive later refreshes,
                 // since the paginated query will never return them. Boost
-                // replacements shadow their stale prior copies by _id.
+                // replacements shadow their stale prior copies by kind+id.
                 const updatedFresh = mergeFreshRail(fresh, brandNew, boosted);
                 freshAdsRef.current.set(cacheKey, updatedFresh);
 
-                // Merge fresh ads at the beginning of the feed page (the fresh
+                // Merge the rail at the beginning of the feed page (the fresh
                 // copy wins by kind+id, dropping any stale paginated copy).
                 const mergedFeed = mergeAheadOfQuery(updatedFresh, feedEntries ?? []);
                 setCachedFeed(mergedFeed);
@@ -275,9 +280,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         return () => clearInterval(intervalId);
     }, [refreshAds]);
 
-    // Update cache when a new feed page loads. Fresh ads merged via refreshAds
-    // are prepended here too — the paginated query can't see them (created or
-    // boosted past its frozen maxSortTime), so rebuilding from the query alone
+    // Update cache when a new feed page loads. Rail entries merged via
+    // refreshAds are prepended here too — the paginated query can't see them
+    // (created or boosted past its frozen maxSortTime), so rebuilding alone
     // would drop them whenever it re-emits. The fresh copy wins by kind+id,
     // which also drops the stale paginated copy of a boosted ad.
     useEffect(() => {

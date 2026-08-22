@@ -18,6 +18,7 @@ import { useCountdown } from "./useCountdown";
 import { useSaveSaleEvent } from "./useSaveSaleEvent";
 import { formatAUD, formatPickupRange } from "./saleHelpers";
 import type { SaleBundle, SaleEventCore, SaleItem } from "./types";
+import { displayLocation } from "../../lib/locationService";
 
 interface PublicSaleViewEditorialProps {
   sale: SaleEventCore;
@@ -180,7 +181,7 @@ export function PublicSaleViewEditorial({
                   <img src="/verified-badge.svg" alt="Verified Seller" className="h-4 w-4 shrink-0 dark:brightness-125 dark:contrast-125" />
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">{sale.suburb}</p>
+              <p className="text-sm text-muted-foreground">{displayLocation(sale.suburb)}</p>
             </div>
           </div>
 
@@ -443,7 +444,7 @@ export function PublicSaleViewEditorial({
               </span>
             </div>
             <div className="p-4">
-              <p className="font-bold text-foreground">{sale.suburb}</p>
+              <p className="font-bold text-foreground">{displayLocation(sale.suburb)}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 Exact address shared after you message {sellerFirstName}.
               </p>

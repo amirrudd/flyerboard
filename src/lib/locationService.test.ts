@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchLocations, searchLocations, formatLocation, type LocationData } from './locationService';
+import { fetchLocations, searchLocations, formatLocation, displayLocation, type LocationData } from './locationService';
 import { toast } from 'sonner';
 
 // Mock sonner toast
@@ -100,6 +100,16 @@ describe('locationService', () => {
         it('should format location string correctly', () => {
             const loc = mockLocations[0];
             expect(formatLocation(loc)).toBe('SYDNEY, NSW 2000');
+        });
+    });
+
+    describe('displayLocation', () => {
+        it('drops the postcode for prose, keeps the locality and state', () => {
+            expect(displayLocation('SYDNEY, NSW 2000')).toBe('SYDNEY, NSW');
+        });
+
+        it('passes through a location that has no postcode', () => {
+            expect(displayLocation('Richmond, VIC')).toBe('Richmond, VIC');
         });
     });
 });

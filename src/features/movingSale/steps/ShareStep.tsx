@@ -21,6 +21,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { QrCode } from "../QrCode";
 import { formatAUD, formatPickupRange, formatPickupShort } from "../saleHelpers";
 import type { SaleEventCore, SaleItem } from "../types";
+import { displayLocation } from "../../../lib/locationService";
 
 interface ShareStepProps {
   saleEventId: Id<"saleEvents">;
@@ -88,12 +89,12 @@ hr { border: none; border-top: 2px solid #242428; margin: 26px 0 10px; }
     <div>
       <div class="eyebrow">Moving Sale</div>
       <h1>${escapeHtml(sale.title)}</h1>
-      <p class="suburb">${escapeHtml(sale.suburb)}</p>
+      <p class="suburb">${escapeHtml(displayLocation(sale.suburb))}</p>
     </div>
     <div class="qr"><img src="${qrDataUrl}" alt="QR"/>Scan to see<br/>all items</div>
   </div>
   <div class="section"><div class="label">Pickup</div><div class="big">${escapeHtml(formatPickupRange(sale.pickupWindowStart, sale.pickupWindowEnd))}</div></div>
-  <div class="section"><div class="label">Location</div><div class="big">${escapeHtml(sale.suburb)}</div><div class="more">Address on request</div></div>
+  <div class="section"><div class="label">Location</div><div class="big">${escapeHtml(displayLocation(sale.suburb))}</div><div class="more">Address on request</div></div>
   <div class="section"><div class="label">Items include</div><table>${rows}</table>${more ? `<div class="more">${more}</div>` : ""}</div>
   <hr/>
   <div class="foot">${escapeHtml(url)}<br/><span class="brand">Powered by FlyerBoard</span></div>
@@ -118,7 +119,7 @@ export function ShareStep({
   const flyerUnlocked = unlockedAddons.includes("flyer");
   const pinned = unlockedAddons.includes("pin");
 
-  const shareText = `🏠 ${sale.title} — ${sale.suburb}. ${itemCount} items, pickup ${formatPickupShort(
+  const shareText = `🏠 ${sale.title} — ${displayLocation(sale.suburb)}. ${itemCount} items, pickup ${formatPickupShort(
     sale.pickupWindowStart
   )}. See everything: ${url}`;
 
@@ -196,7 +197,7 @@ export function ShareStep({
           {sale.title} is live
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {itemCount} items · {sale.suburb} · {formatPickupShort(sale.pickupWindowStart)}
+          {itemCount} items · {displayLocation(sale.suburb)} · {formatPickupShort(sale.pickupWindowStart)}
         </p>
       </div>
 

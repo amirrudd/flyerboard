@@ -49,6 +49,7 @@ import { BundleManageModal } from "../bundles/BundleManageModal";
 import { StarRating } from "../../components/ui/StarRating";
 import { UserProfileSkeleton, AdListingSkeleton, SavedAdSkeleton } from "../../components/ui/DashboardSkeleton";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import { displayLocation } from "../../lib/locationService";
 
 // Feature flags removed - now using database-driven flags
 
@@ -1219,7 +1220,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                             key={saved._id}
                             tintClass="bg-primary/10 text-primary"
                             title={saved.sale.title}
-                            subtitle={`${saved.sale.suburb} · ${saved.sale.itemCount} items`}
+                            subtitle={`${displayLocation(saved.sale.suburb)} · ${saved.sale.itemCount} items`}
                             onClick={() => { void navigate(`/sale/${saved.sale.slug}`); }}
                           />
                         ))}

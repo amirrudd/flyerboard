@@ -336,9 +336,11 @@ describe('AdsGrid - moving sale feed (v3.1)', () => {
         title: "Jane's Moving Sale",
         suburb: 'Carlton, VIC',
         createdAt: 1000,
+        bumpedAt: 1000,
         itemCount: 9,
         photoCount: 9,
         minPrice: 15,
+        prices: [15, 40, 90],
         covers: ['c1.jpg', 'c2.jpg', 'c3.jpg'],
     };
 
@@ -400,6 +402,7 @@ describe('AdsGrid - bundle listing feed', () => {
         _id: 'bundle1' as Id<'saleBundles'>,
         label: 'Kitchen Starter Bundle',
         createdAt: 2000,
+        bumpedAt: 2000,
         itemCount: 3,
         location: 'Fitzroy, VIC',
         bundlePrice: 80,
@@ -457,15 +460,15 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
                 kind: 'sale',
                 card: {
                     _id: 'sale1' as Id<'saleEvents'>, slug: 'janes-sale', title: "Jane's Moving Sale",
-                    suburb: 'Carlton, VIC', createdAt: 1000, itemCount: 9,
-                    photoCount: 9, minPrice: 15, covers: ['c1.jpg'],
+                    suburb: 'Carlton, VIC', createdAt: 1000, bumpedAt: 1000, itemCount: 9,
+                    photoCount: 9, minPrice: 15, prices: [15, 90], covers: ['c1.jpg'],
                 },
             },
             {
                 kind: 'bundle',
                 card: {
                     _id: 'bundle1' as Id<'saleBundles'>, label: 'Kitchen Starter Bundle', createdAt: 2000,
-                    itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
+                    bumpedAt: 2000, itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
                     separatelyTotal: 120, savings: 40, covers: ['b1.jpg'],
                     adIds: ['adB1'] as Id<'ads'>[],
                 },

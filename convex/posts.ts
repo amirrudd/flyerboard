@@ -8,6 +8,7 @@ import { internal } from "./_generated/api";
 import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit, checkRateLimitDynamic, RATE_LIMITS } from "./lib/rateLimit";
 import { detachAdFromBundle } from "./bundles";
+import { refreshOwningComposites } from "./lib/derive";
 import { readSettingValue } from "./appSettings";
 import {
   FLAG_BOOST_TO_TOP,
@@ -173,6 +174,13 @@ export const updateAd = mutation({
       images: args.images,
     });
 
+    // A composite inherits its category, search text AND location from its members,
+    // so any edit here has to be pushed onto the owning Bundle / Moving Sale.
+    // Unconditional: the old guard omitted `location`, so editing a member's suburb
+    // left the composite matching the old location filter forever. Re-deriving is
+    // idempotent — a guard buys nothing worth that class of bug.
+    await refreshOwningComposites(ctx, existingAd);
+
     logOperation("Flyer updated", { adId: args.adId, userId, listingType });
     return args.adId;
   },
@@ -324,6 +332,10 @@ export const deleteAd = mutation({
       deletedAt: Date.now(),
     });
 
+    // A soft-deleted ad stops counting as a member (detach above already removed it
+    // from a standalone bundle; this covers the Moving Sale side).
+    await refreshOwningComposites(ctx, existingAd);
+
     logOperation("Flyer soft-deleted", { adId: args.adId, userId });
     return args.adId;
   },
@@ -352,6 +364,10 @@ export const toggleAdStatus = mutation({
     await ctx.db.patch(args.adId, {
       isActive: newStatus,
     });
+    // `isActive` is a derived input (adIsVisible): a deactivated ad is dropped from
+    // search as an ad, so it must stop contributing its title and category to the
+    // composite that contains it.
+    await refreshOwningComposites(ctx, existingAd);
 
     logOperation("Flyer status toggled", { adId: args.adId, userId, newStatus });
     return { adId: args.adId, isActive: newStatus };

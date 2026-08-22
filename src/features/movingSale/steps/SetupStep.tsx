@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CircleNotch, Check } from "@phosphor-icons/react";
 import { getPickupPresets, toDateTimeLocal } from "../saleHelpers";
+import { LocationPicker } from "../../../components/ui/LocationPicker";
 
 export interface SetupValues {
   title: string;
@@ -48,7 +49,10 @@ export function SetupStep({
 
   function handleSubmit() {
     if (!suburb.trim()) {
-      setError("Add the suburb so buyers know where to come.");
+      // The picker only ever emits a canonical formatLocation() string, so an
+      // empty value means the seller typed without choosing. Free text here used
+      // to be stored verbatim and never matched the location filter (rule 4).
+      setError("Pick the suburb from the list so buyers can find your sale.");
       return;
     }
     const { start, end } = resolveWindow();
@@ -92,14 +96,15 @@ export function SetupStep({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
+          <label htmlFor="sale-suburb" className="mb-1.5 block text-sm font-medium text-foreground">
             Suburb
           </label>
-          <input
-            className={inputClass}
+          <LocationPicker
+            id="sale-suburb"
             value={suburb}
-            onChange={(e) => setSuburb(e.target.value)}
-            placeholder="Richmond, VIC"
+            onChange={setSuburb}
+            inputClassName={inputClass}
+            placeholder="Enter suburb or postcode"
           />
         </div>
 

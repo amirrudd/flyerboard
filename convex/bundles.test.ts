@@ -5,6 +5,7 @@ import { expect, test, describe } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { refreshCompositeDerived } from "./lib/derive";
 
 // Load all Convex modules so convex-test can run them (same loader as saleEvents.test.ts).
 const modules = loadConvexModules();
@@ -114,6 +115,7 @@ describe("createBundle", () => {
     expect(bundle!.saleEventId).toBeUndefined();
     expect(bundle!.adIds).toEqual([a, b]);
     expect(bundle!.label).toBe("Sofa + Table"); // auto-generated
+    expect(bundle!.labelIsAuto).toBe(true);
 
     const adA = await t.run((ctx) => ctx.db.get(a));
     const adB = await t.run((ctx) => ctx.db.get(b));
@@ -240,6 +242,7 @@ describe("createBundle", () => {
     });
     const bundle = await t.run((ctx) => ctx.db.get(bundleId));
     expect(bundle!.label).toBe("Living room set");
+    expect(bundle!.labelIsAuto).toBe(false); // seller-authored — derivation must never rewrite it
   });
 });
 
@@ -696,5 +699,157 @@ describe("saved bundles", () => {
     await asBuyer.mutation(api.bundles.saveBundle, { bundleId });
     await asUser.mutation(api.bundles.cancelBundle, { bundleId });
     expect(await asBuyer.query(api.bundles.getSavedBundles, {})).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Derived fields (rule 1 — an aggregation inherits from its members)
+// ──────────────────────────────────────────────────────────────────────────
+describe("composite derivation", () => {
+  async function secondCategory(t: ReturnType<typeof convexTest>): Promise<Id<"categories">> {
+    return t.run(async (ctx) => ctx.db.insert("categories", { name: "Tools", slug: "tools" }));
+  }
+
+  test("createBundle stamps categoryIds and searchText from its members", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const tools = await secondCategory(t);
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId: tools, title: "Drill" });
+
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 200,
+    });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.categoryIds!.slice().sort()).toEqual([categoryId, tools].sort());
+    expect(bundle!.searchText).toContain("Oak desk");
+    expect(bundle!.searchText).toContain("Drill");
+    expect(bundle!.searchText).toContain(bundle!.label);
+    expect(bundle!.locations).toEqual(["Richmond, VIC"]); // rule 4 — reachable by the location filter
+  });
+
+  test("locations lists EVERY member's suburb, not just the first (rule 1)", async () => {
+    // Nothing forces a bundle's members to share an address — `createBundle`
+    // takes any of the seller's ads. Keeping only the first member's location
+    // made the card invisible to the second member's suburb filter, while the
+    // member itself was not.
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId, title: "Drill", location: "Bondi, NSW" });
+
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 200,
+    });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.locations!.slice().sort()).toEqual(["Bondi, NSW", "Richmond, VIC"]);
+  });
+
+  test("removing a member drops its category from the bundle", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const tools = await secondCategory(t);
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId, title: "Office chair" });
+    const c = await insertAd(t, { userId, categoryId: tools, title: "Drill" });
+
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b, c],
+      bundlePrice: 300,
+    });
+    await asUser.mutation(api.bundles.removeBundleItem, { bundleId, adId: c });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.categoryIds).toEqual([categoryId]);
+    expect(bundle!.searchText).not.toContain("Drill");
+  });
+
+  test("editing a member's title updates the bundle's searchText", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId, title: "Office chair" });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 200,
+    });
+
+    await asUser.mutation(api.posts.updateAd, {
+      adId: a,
+      title: "Teak sideboard",
+      description: "desc",
+      location: "Richmond, VIC",
+      categoryId,
+      images: ["r2:flyers/x/1.jpg"],
+      price: 100,
+    });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.searchText).toContain("Teak sideboard");
+    // The auto label follows its members, so the old title survives nowhere —
+    // not in searchText and not on the card.
+    expect(bundle!.label).toBe("Teak sideboard + Office chair");
+    expect(bundle!.searchText).not.toContain("Oak desk");
+  });
+
+  test("selling a member removes it from the bundle's derived fields and auto label", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const tools = await secondCategory(t);
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId: tools, title: "Drill" });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 200,
+    });
+
+    await t.run((ctx) => ctx.db.patch(a, { isSold: true }));
+    await t.run((ctx) => refreshCompositeDerived(ctx, { bundleId }));
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.categoryIds).toEqual([tools]);
+    expect(bundle!.searchText).not.toContain("Oak desk");
+    expect(bundle!.label).toBe("Drill");
+  });
+
+  test("editing a member's category updates the bundle's categoryIds", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const tools = await secondCategory(t);
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId, title: "Office chair" });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b],
+      bundlePrice: 200,
+    });
+
+    await asUser.mutation(api.posts.updateAd, {
+      adId: a,
+      title: "Oak desk",
+      description: "desc",
+      location: "Richmond, VIC",
+      categoryId: tools,
+      images: ["r2:flyers/x/1.jpg"],
+      price: 100,
+    });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.categoryIds!.slice().sort()).toEqual([categoryId, tools].sort());
+  });
+
+  test("deleting a member re-derives the bundle it detaches from", async () => {
+    const { t, userId, categoryId, asUser } = await fresh();
+    const tools = await secondCategory(t);
+    const a = await insertAd(t, { userId, categoryId, title: "Oak desk" });
+    const b = await insertAd(t, { userId, categoryId, title: "Office chair" });
+    const c = await insertAd(t, { userId, categoryId: tools, title: "Drill" });
+    const bundleId = await asUser.mutation(api.bundles.createBundle, {
+      adIds: [a, b, c],
+      bundlePrice: 300,
+    });
+
+    await asUser.mutation(api.posts.deleteAd, { adId: c });
+
+    const bundle = await t.run((ctx) => ctx.db.get(bundleId));
+    expect(bundle!.categoryIds).toEqual([categoryId]);
+    expect(bundle!.searchText).not.toContain("Drill");
   });
 });

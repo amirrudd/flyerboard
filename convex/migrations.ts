@@ -781,10 +781,16 @@ export const saleSuburbPage = internalQuery({
  * Write the resolved location onto a batch of sales AND their member ads. Both:
  * sale items are born with `location: sale.suburb`, so a free-text suburb left
  * every item unfilterable too. Re-derives each sale afterwards.
+ *
+ * `dryRun` counts exactly what a real run would change and writes nothing. It
+ * shares this traversal deliberately — a dry run that counts in a separate code
+ * path can disagree with the write, and a preview that under-reports reads as
+ * "nothing to do", which is worse than no preview at all.
  */
 export const applySaleLocations = internalMutation({
   args: {
     updates: v.array(v.object({ saleEventId: v.id("saleEvents"), location: v.string() })),
+    dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let salesPatched = 0;
@@ -793,15 +799,16 @@ export const applySaleLocations = internalMutation({
       const sale = await ctx.db.get(saleEventId);
       if (!sale) continue;
       if (sale.suburb !== location) {
-        await ctx.db.patch(saleEventId, { suburb: location });
+        if (!args.dryRun) await ctx.db.patch(saleEventId, { suburb: location });
         salesPatched++;
       }
       for (const item of await saleItems(ctx, saleEventId)) {
         if (item.location !== location) {
-          await ctx.db.patch(item._id, { location });
+          if (!args.dryRun) await ctx.db.patch(item._id, { location });
           adsPatched++;
         }
       }
+      if (args.dryRun) continue;
       const fresh = await ctx.db.get(saleEventId);
       if (fresh) await refreshSaleDerived(ctx, fresh);
     }
@@ -869,9 +876,10 @@ export const backfillSaleSuburbLocations = internalAction({
         if (location) updates.push({ saleEventId: sale._id, location });
         else unresolved.push({ saleEventId: sale._id, suburb: sale.suburb });
       }
-      if (updates.length > 0 && !args.dryRun) {
+      if (updates.length > 0) {
         const applied = await ctx.runMutation(internal.migrations.applySaleLocations, {
           updates,
+          dryRun: args.dryRun,
         });
         salesPatched += applied.salesPatched;
         adsPatched += applied.adsPatched;

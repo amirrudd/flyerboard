@@ -213,11 +213,30 @@ after every such mutation. That test is the guard; keep it exhaustive.
   asks "does any member price match?"; `minPrice` survives only as the "from $X"
   display floor.
 - **A missing derived field never matches a filter.** `[].includes(x)` is `false`
-  and an unset `searchText` is simply not indexed. So the read-path change is
-  inert for un-backfilled rows — which makes deploy order load-bearing:
-  **deploy schema + write path → run `migrations:backfillCompositeDerived` on
-  `resilient-pheasant-112` → verify zero rows lack the fields → deploy the read
-  path.** Same widen → backfill → narrow rollout `ads.bumpedAt` used.
+  and an unset `searchText` is simply not indexed.
+  **This is NOT the same as the read path being inert** — an earlier version of
+  this note said it was, and that was wrong. Between deploy and backfill:
+  - *category* and *search*: composites were already excluded pre-change, so no
+    difference a user can see;
+  - *location*: composites were **never** location-filtered before, so they
+    always showed. Now they match nothing. **Every Bundle and Moving Sale
+    disappears from a location-filtered feed until the backfill runs.**
+
+  Self-healing and non-corrupting, but a real regression window. Run the
+  backfill promptly after deploy; don't treat the gap as harmless.
+- **Rollback needs a schema rollback.** Convex validators are strict, so once any
+  composite row carries `categoryIds`/`searchText`/`locations`/`labelIsAuto`,
+  deploying the pre-change schema fails with
+  `Object contains extra field "categoryIds"`. Rows are written by the first
+  ordinary user action (`createBundle`, `updateAd`, `deleteAd`, …), not only by
+  the backfill, so this closes within minutes of deploy.
+
+  **Accepted 2026-08-23: rollback is forward-fix only.** No strip migration was
+  written — pre-launch, a broken deploy costs time, not users. If you ever need
+  a real rollback: deploy an intermediate schema (old code + the four fields as
+  `v.optional`), patch every composite row with those fields set to `undefined`,
+  then deploy the old schema. `migrations.ts` documents the same trap from the
+  `ads.bumpedAt` rollout.
 
 ### Search: relevance selects, date orders
 

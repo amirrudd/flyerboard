@@ -259,7 +259,7 @@ export const AdsGrid = memo(function AdsGrid({
                     </h2>
                     <div className="mt-1 flex items-baseline justify-between gap-2">
                       <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                        {bundle.location}
+                        {displayLocation(bundle.location)}
                       </p>
                       <div className="flex flex-col items-end flex-shrink-0">
                         {bundle.separatelyTotal > bundle.bundlePrice && (
@@ -352,7 +352,7 @@ export const AdsGrid = memo(function AdsGrid({
                   </h2>
                   <div className="mt-1 flex items-baseline justify-between gap-2">
                     <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                      {ad.location}
+                      {displayLocation(ad.location)}
                     </p>
                     <div className="flex flex-col items-end flex-shrink-0">
                       {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (

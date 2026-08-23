@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CircleNotch, Check } from "@phosphor-icons/react";
 import { getPickupPresets, toDateTimeLocal } from "../saleHelpers";
 import { LocationPicker } from "../../../components/ui/LocationPicker";
+import { isCanonicalLocation } from "../../../lib/locationService";
 
 export interface SetupValues {
   title: string;
@@ -28,7 +29,17 @@ export function SetupStep({
   const [title, setTitle] = useState(
     initial?.title ?? `${defaultFirstName}'s Moving Sale`
   );
-  const [suburb, setSuburb] = useState(initial?.suburb ?? "");
+  // A draft saved before the picker existed holds free text ("Richmond, VIC"),
+  // which matches no location filter. Seeding it as a confirmed value would let
+  // the seller resume, see a filled field, and republish a sale that still can't
+  // be found — so only a canonical string counts as already-picked; anything
+  // else is shown as text to replace.
+  const legacySuburb = initial?.suburb && !isCanonicalLocation(initial.suburb)
+    ? initial.suburb
+    : undefined;
+  const [suburb, setSuburb] = useState(
+    initial?.suburb && isCanonicalLocation(initial.suburb) ? initial.suburb : ""
+  );
   const [note, setNote] = useState(initial?.note ?? "");
   const [presetId, setPresetId] = useState<string>(
     initial?.pickupWindowStart ? "custom" : presets[0].id
@@ -103,6 +114,7 @@ export function SetupStep({
             id="sale-suburb"
             value={suburb}
             onChange={setSuburb}
+            initialQuery={legacySuburb}
             inputClassName={inputClass}
             placeholder="Enter suburb or postcode"
           />

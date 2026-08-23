@@ -222,7 +222,25 @@ export const updateSaleEvent = mutation({
       pickupWindowEnd: end,
       ...(expiresAt !== undefined ? { expiresAt } : {}),
     });
-    // The sale's title is part of its derived searchText.
+    // Moving the sale moves its items. Sale items are stamped with the sale's
+    // suburb at insert (addSaleItems below), and the sale's derived `locations`
+    // come from the MEMBERS, not from `suburb` — so patching the suburb alone
+    // leaves the sale filed under its old location and its items advertising a
+    // suburb the card no longer shows. They have to move as a unit, the same way
+    // migrations:applySaleLocations moves them.
+    const newSuburb = args.suburb?.trim();
+    if (newSuburb && newSuburb !== sale.suburb) {
+      // Only relocate items still sitting on the sale's OLD suburb — an item the
+      // seller individually re-homed via updateAd keeps its own location.
+      await Promise.all(
+        (await saleItems(ctx, args.saleEventId))
+          .filter((item) => item.location === sale.suburb)
+          .map((item) => ctx.db.patch(item._id, { location: newSuburb }))
+      );
+    }
+
+    // The sale's title is part of its derived searchText, and its members'
+    // locations are its derived `locations` — both may have just changed.
     await refreshCompositeDerived(ctx, { saleEventId: args.saleEventId });
     return args.saleEventId;
   },

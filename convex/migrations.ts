@@ -782,6 +782,14 @@ export const saleSuburbPage = internalQuery({
  * sale items are born with `location: sale.suburb`, so a free-text suburb left
  * every item unfilterable too. Re-derives each sale afterwards.
  *
+ * NOTE on overwriting member locations: this stamps every sale item with the
+ * sale's resolved location, including items a seller had individually re-homed
+ * via `updateAd`. Accepted 2026-08-23 — the site is pre-launch with no real
+ * sellers, so there is nothing to overwrite, and the one-time repair is worth
+ * more than the guard. `saleEvents.updateSaleEvent` DOES respect individually
+ * re-homed items; if this migration is ever re-run against live data, copy that
+ * guard here first (`item.location === sale.suburb`).
+ *
  * `dryRun` counts exactly what a real run would change and writes nothing. It
  * shares this traversal deliberately — a dry run that counts in a separate code
  * path can disagree with the write, and a preview that under-reports reads as

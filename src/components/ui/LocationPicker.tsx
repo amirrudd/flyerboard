@@ -27,14 +27,21 @@ export function LocationPicker({
   id,
   placeholder = "Enter suburb or postcode",
   inputClassName,
+  initialQuery,
 }: {
   value: string;
   onChange: (formatted: string) => void;
   id?: string;
   placeholder?: string;
   inputClassName?: string;
+  /**
+   * Prefill the visible text WITHOUT treating it as a confirmed pick. Used to
+   * show a legacy free-text suburb so the seller can see what to replace —
+   * `value` stays empty, so the field is still unconfirmed and submit is blocked.
+   */
+  initialQuery?: string;
 }) {
-  const [query, setQuery] = useState(value);
+  const [query, setQuery] = useState(value || initialQuery || "");
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);

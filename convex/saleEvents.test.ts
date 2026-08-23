@@ -147,6 +147,66 @@ describe("updateSaleEvent", () => {
     expect(sale!.title).toBe("New Title");
   });
 
+  test("moving the sale moves its items, and its derived location with them", async () => {
+    // Sale items are stamped with the sale's suburb at insert, and the sale's
+    // derived `locations` come from its MEMBERS. Patching `suburb` alone left the
+    // sale filed under its old location while the card advertised the new one —
+    // so a buyer in either suburb could not find it (rules 1 and 4).
+    const { t, asUser } = await freshWithUser();
+    const saleId = await createDraft(asUser, { suburb: "RICHMOND, VIC 3121" });
+    await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId: saleId,
+      items: [{ imageKey: "r2:flyers/x/a.jpg", title: "Desk", price: 90 }],
+    });
+    // Publish first: a draft's items are isActive:false and derivation excludes
+    // them by design, so `locations` is [] until publish. The bug bites on a
+    // LIVE sale the seller edits.
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId: saleId });
+
+    await asUser.mutation(api.saleEvents.updateSaleEvent, {
+      saleEventId: saleId,
+      suburb: "FITZROY, VIC 3065",
+    });
+
+    const { sale, items } = await t.run(async (ctx) => ({
+      sale: await ctx.db.get(saleId),
+      items: await ctx.db
+        .query("ads")
+        .withIndex("by_sale_event", (q) => q.eq("saleEventId", saleId))
+        .collect(),
+    }));
+
+    expect(sale!.suburb).toBe("FITZROY, VIC 3065");
+    expect(items.map((i) => i.location)).toEqual(["FITZROY, VIC 3065"]);
+    // The whole point: the filter matches on derived `locations`, not `suburb`.
+    expect(sale!.locations).toEqual(["FITZROY, VIC 3065"]);
+  });
+
+  test("an item the seller re-homed individually keeps its own location", async () => {
+    const { t, asUser } = await freshWithUser();
+    const saleId = await createDraft(asUser, { suburb: "RICHMOND, VIC 3121" });
+    const [stays, moves] = await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId: saleId,
+      items: [
+        { imageKey: "r2:flyers/x/a.jpg", title: "Desk", price: 90 },
+        { imageKey: "r2:flyers/x/b.jpg", title: "Chair", price: 40 },
+      ],
+    });
+    await t.run((ctx) => ctx.db.patch(stays, { location: "BONDI, NSW 2026" }));
+
+    await asUser.mutation(api.saleEvents.updateSaleEvent, {
+      saleEventId: saleId,
+      suburb: "FITZROY, VIC 3065",
+    });
+
+    const locs = await t.run(async (ctx) => ({
+      stays: (await ctx.db.get(stays))!.location,
+      moves: (await ctx.db.get(moves))!.location,
+    }));
+    expect(locs.stays).toBe("BONDI, NSW 2026");
+    expect(locs.moves).toBe("FITZROY, VIC 3065");
+  });
+
   test("a different user cannot modify the sale", async () => {
     const { t, asUser } = await freshWithUser();
     const saleId = await createDraft(asUser);

@@ -17,7 +17,8 @@ const SEARCH_LIMIT = 50;
 
 /**
  * Ceiling on composite rows read per table. `search_composite`'s filterFields
- * are `status` (+ `isDeleted` on bundles) — neither `categoryIds` (an array;
+ * are `status` only (`isDeleted` is a post-search `.filter()`, not a filter
+ * field) — and neither `categoryIds` (an array;
  * Convex can't index array-contains) nor `location` is indexed, so both
  * narrowings are JS predicates that must run BELOW the cap, or out-of-category
  * rows eat the budget and a qualifying card disappears.

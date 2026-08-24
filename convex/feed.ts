@@ -42,9 +42,10 @@ const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
  *   types; a composite matches when any member ad is in the category (rules 1
  *   and 4, `.agent/PRODUCT-RULES.md`).
  * @param args.location - Location filter (optional, exact match on the ad's
- *   `location`). Applies to all three ad types; a composite matches on its
- *   derived `location` (copied from its first live member). A composite with no
- *   derived location does NOT match (rules 1 and 4).
+ *   `location`). Applies to all three ad types; a composite matches when ANY of
+ *   its derived `locations` matches — a bundle can span suburbs, so it is a list,
+ *   not one string. A composite with no derived locations does NOT match
+ *   (rules 1 and 4).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:

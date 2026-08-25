@@ -32,25 +32,6 @@ const SEARCH_LIMIT = 50;
 const COMPOSITE_LIMIT = 500;
 
 /**
- * How many composite rows to read. The over-fetch only pays for itself when a
- * JS predicate can reject rows below the cap:
- * - `sinceTimestamp` set (the 60s rail): freshness is a `.filter()` on a search
- *   index, so a big cap scans the whole matching set to find rows that mostly
- *   don't exist. Only `limit` can survive the merge anyway.
- * - no category/location filter: liveness is the only JS rejection, so a small
- *   multiple of `limit` covers it.
- */
-function compositeCap(args: {
-  categoryId?: Doc<"ads">["categoryId"];
-  location?: string;
-  sinceTimestamp?: number;
-  limit: number;
-}): number {
-  if (args.sinceTimestamp !== undefined) return args.limit;
-  return args.categoryId || args.location ? COMPOSITE_LIMIT : args.limit * 4;
-}
-
-/**
  * Read both composite tables behind their feature flags and tag the live,
  * in-filter rows. `buildBundles`/`buildSales` supply the per-table query
  * (search index vs `by_status_and_bumped_at`); everything else — flags,
@@ -107,7 +88,7 @@ async function searchAllTypes(
   }
 ): Promise<FeedSourceEntry[]> {
   const since = args.sinceTimestamp;
-  const cap = compositeCap(args);
+  const cap = COMPOSITE_LIMIT;
   const [ads, composites] = await Promise.all([
     ctx.db
       .query("ads")
@@ -175,7 +156,7 @@ async function latestComposites(
     limit: number;
   }
 ): Promise<FeedSourceEntry[]> {
-  const cap = compositeCap(args);
+  const cap = COMPOSITE_LIMIT;
   const since = args.sinceTimestamp;
 
   return compositeHits(
@@ -208,7 +189,7 @@ async function mergeAndHydrate(ctx: QueryCtx, hits: FeedSourceEntry[], limit: nu
   // Relevance selects the candidates; date orders them (rule 2).
   // ponytail: the 50-ad relevance cap is a relevance cut — a very old exact match
   // can fall out of the pool. Fine at current inventory; revisit if search feels
-  // lossy. (Composites are capped separately, see compositeCap.)
+  // lossy. (Composites are capped separately, see COMPOSITE_LIMIT.)
   const merged = hits.sort((a, b) => b.doc.bumpedAt - a.doc.bumpedAt).slice(0, limit);
 
   return hydrateEntries(ctx, merged);

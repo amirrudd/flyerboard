@@ -116,7 +116,6 @@ export function SetupStep({
             onChange={setSuburb}
             initialQuery={legacySuburb}
             inputClassName={inputClass}
-            placeholder="Enter suburb or postcode"
           />
         </div>
 

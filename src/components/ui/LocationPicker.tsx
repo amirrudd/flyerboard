@@ -25,14 +25,12 @@ export function LocationPicker({
   value,
   onChange,
   id,
-  placeholder = "Enter suburb or postcode",
   inputClassName,
   initialQuery,
 }: {
   value: string;
   onChange: (formatted: string) => void;
   id?: string;
-  placeholder?: string;
   inputClassName?: string;
   /**
    * Prefill the visible text WITHOUT treating it as a confirmed pick. Used to
@@ -88,7 +86,7 @@ export function LocationPicker({
         className={inputClassName}
         value={query}
         maxLength={100}
-        placeholder={placeholder}
+        placeholder="Enter suburb or postcode"
         // Prefetch the postcode dataset on focus so it's warm before the first
         // keystroke; fetchLocations() caches internally, so repeats are free.
         onFocus={() => {

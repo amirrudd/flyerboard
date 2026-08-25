@@ -88,18 +88,14 @@ export const adIsVisible = (ad: Doc<"ads"> | null | undefined): ad is Doc<"ads">
 
 /**
  * Resolve a bundle's `adIds` into live ad docs (concurrently), dropping deleted/
- * missing ones — optionally sold ones too (the feed card needs a real deal).
- * Re-exported from `bundles.ts` for its existing importers.
+ * missing ones. Re-exported from `bundles.ts` for its existing importers.
  */
 export async function hydrateBundleItems(
   ctx: QueryCtx | MutationCtx,
-  adIds: Id<"ads">[],
-  opts: { excludeSold?: boolean } = {}
+  adIds: Id<"ads">[]
 ): Promise<Doc<"ads">[]> {
   const ads = await Promise.all(adIds.map((id) => ctx.db.get(id)));
-  return ads.filter(
-    (a): a is Doc<"ads"> => a !== null && !a.isDeleted && !(opts.excludeSold && a.isSold)
-  );
+  return ads.filter((a): a is Doc<"ads"> => a !== null && !a.isDeleted);
 }
 
 /**
@@ -131,13 +127,11 @@ export async function refreshBundleDerived(
   bundle: Doc<"saleBundles">
 ): Promise<void> {
   if (bundle.saleEventId) {
-    if (bundle.searchText !== undefined || bundle.categoryIds !== undefined || bundle.locations !== undefined) {
-      await ctx.db.patch(bundle._id, {
-        searchText: undefined,
-        categoryIds: undefined,
-        locations: undefined,
-      });
-    }
+    await ctx.db.patch(bundle._id, {
+      searchText: undefined,
+      categoryIds: undefined,
+      locations: undefined,
+    });
     return;
   }
   const members = (await hydrateBundleItems(ctx, bundle.adIds)).filter(adIsVisible);

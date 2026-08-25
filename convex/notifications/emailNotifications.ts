@@ -131,7 +131,7 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
     try {
       // Send email via Resend
       await resend.sendEmail(ctx, {
-        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com.au>",
         to: recipient.email,
         subject: `💬 ${senderName} sent you a message about "${itemTitle}"`,
         html: htmlBody,
@@ -336,7 +336,7 @@ To manage your notification settings, visit: ${appUrl}/dashboard?tab=profile
 
         // Send the email
         await resend.sendEmail(ctx, {
-          from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+          from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com.au>",
           to: recipient.email,
           subject,
           html: htmlBody,
@@ -380,7 +380,7 @@ export const sendSupportRequestEmail = internalAction({
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     try {
       await resend.sendEmail(ctx, {
-        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com>",
+        from: process.env.EMAIL_FROM || "FlyerBoard <notifications@flyerboard.com.au>",
         to: "support@flyerboard.com.au",
         replyTo: [args.email],
         subject: `[Support] ${args.subject}`,

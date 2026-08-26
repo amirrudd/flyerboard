@@ -2,11 +2,9 @@ import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/adminAuth";
 import { Id } from "./_generated/dataModel";
-import type { Doc } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
 import { createError, logAdminAction } from "./lib/logger";
 import { detachAdFromBundle } from "./bundles";
-import { refreshCompositeDerived, refreshOwningComposites } from "./lib/derive";
+import { refreshDistinctComposites, refreshOwningComposites } from "./lib/derive";
 
 // ============================================================================
 // ADMIN QUERIES
@@ -324,23 +322,6 @@ export const isCurrentUserAdmin = query({
 // ============================================================================
 // ADMIN MUTATIONS
 // ============================================================================
-
-/**
- * Re-derive every composite these ads belong to, once per composite.
- * Bulk ad writes must never call `refreshOwningComposites` inside the loop: each
- * call re-reads the composite and ALL of its members, so N members of one sale
- * costs O(N²) reads and blows the transaction cap.
- */
-async function refreshDistinctComposites(ctx: MutationCtx, ads: Doc<"ads">[]): Promise<void> {
-    const bundleIds = new Set<Id<"saleBundles">>();
-    const saleEventIds = new Set<Id<"saleEvents">>();
-    for (const ad of ads) {
-        if (ad.bundleId) bundleIds.add(ad.bundleId);
-        if (ad.saleEventId) saleEventIds.add(ad.saleEventId);
-    }
-    for (const bundleId of bundleIds) await refreshCompositeDerived(ctx, { bundleId });
-    for (const saleEventId of saleEventIds) await refreshCompositeDerived(ctx, { saleEventId });
-}
 
 /**
  * Toggle user account status (activate/deactivate)

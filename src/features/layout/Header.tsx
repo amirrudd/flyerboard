@@ -5,7 +5,7 @@ import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass 
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
-import { searchLocations, formatLocation, fetchLocations, LocationData } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, displayLocation, LocationData } from "../../lib/locationService";
 import { debounce } from "../../lib/performanceUtils";
 
 interface HeaderProps {
@@ -165,6 +165,9 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
     return () => { }; // Cleanup handled by debounce function
   }, [query]);
 
+  // Postcode-free view of the canonical filter value — display only.
+  const locationLabel = selectedLocation ? displayLocation(selectedLocation) : "All Locations";
+
   return (
     <div className="relative location-dropdown">
       <button
@@ -174,12 +177,12 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
         }
         onClick={() => setIsOpen(!isOpen)}
         disabled={isDetectingLocation}
-        title={compact ? (selectedLocation || "All Locations") : undefined}
+        title={compact ? locationLabel : undefined}
       >
         <MapPin className={compact ? "w-5 h-5 text-foreground/70" : "w-4 h-4 text-primary"} />
         {!compact && (
           <>
-            <span className="max-w-[150px] truncate">{selectedLocation || "All Locations"}</span>
+            <span className="max-w-[150px] truncate">{locationLabel}</span>
             <CaretDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} weight="bold" />
           </>
         )}

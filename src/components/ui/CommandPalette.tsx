@@ -83,7 +83,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           return {
             key: entryKey(entry),
             title: c.label,
-            subtitle: [`Bundle · ${c.itemCount} items`, c.location].filter(Boolean).join(" · "),
+            subtitle: [`Bundle · ${c.itemCount} items`, c.location && displayLocation(c.location)].filter(Boolean).join(" · "),
             trailing: formatPrice(c.bundlePrice),
             select: () => handleSelectListing(`/bundle/${c._id}`),
           };
@@ -102,7 +102,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         return {
           key: entryKey(entry),
           title: ad.title,
-          subtitle: ad.location,
+          subtitle: displayLocation(ad.location),
           trailing:
             ad.listingType === "exchange"
               ? "Trade"

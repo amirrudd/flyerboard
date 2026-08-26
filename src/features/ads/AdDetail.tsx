@@ -707,7 +707,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
               <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-border/60 pt-4">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-primary" />
-                  <span className="text-foreground/80 font-medium">{displayAd.location}</span>
+                  <span className="text-foreground/80 font-medium">{displayLocation(displayAd.location)}</span>
                 </div>
               </div>
             </m.div>

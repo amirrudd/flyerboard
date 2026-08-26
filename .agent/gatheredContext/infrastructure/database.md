@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-08-22
+**Last Updated**: 2026-08-26
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -166,6 +166,19 @@ so treat "I'll remember" as already disproven.
 Adding a mutation that writes to `ads`? Refresh the owning composites, and extend
 the enumeration test that asserts derived fields match a fresh `deriveFromMembers`
 after every such mutation. That test is the guard; keep it exhaustive.
+
+Since 2026-08-26 the guard (`convex/lib/derive.test.ts`) scans every top-level
+`convex/*.ts` module whose source mentions `"ads"` (not just the original four;
+`sampleData.ts` excluded by name — dev-only, throws under convex-test) — a
+newly caught mutation fails the coverage test until classified. Widening it
+caught two real misses, both fixed: `users.deleteAccount` hard-deleted the
+user's ads without detaching them from bundles or refreshing composites, and
+`seed:seedMovingSale` inserted a published sale with no derived fields at all
+(invisible to search/filters). `refreshDistinctComposites` (bulk writes:
+refresh once per composite, never per ad) now lives in `convex/lib/derive.ts`.
+The test fixture also passes `transactionLimits: { documentsRead: 1000 }` to
+`convexTest` — convex-test leaves limits DISABLED by default, so without an
+explicit cap a read-amplification regression cannot fail a test.
 
 ### Gotchas worth the reading
 

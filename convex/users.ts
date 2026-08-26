@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import { getDescopeUserId } from "./lib/auth";
 import { isValidEmail, normalizeEmail } from "./lib/emailUtils";
 import { createError, logOperation } from "./lib/logger";
+import { detachAdFromBundle } from "./bundles";
+import { refreshDistinctComposites } from "./lib/derive";
 
 export const getUserByToken = internalQuery({
   args: { token: v.string() },
@@ -150,8 +152,14 @@ export const deleteAccount = mutation({
         await ctx.db.delete(savedAd._id);
       }
 
+      // Same involuntary-exit path admin.deleteUserAccount takes: leave the ad
+      // out of its bundle so a Bundle can't keep advertising a deleted listing.
+      await detachAdFromBundle(ctx, ad, "deleted");
       await ctx.db.delete(ad._id);
     }
+    // Re-derive ONCE per distinct composite, never per ad (O(N²) — see
+    // admin.deleteUserAccount).
+    await refreshDistinctComposites(ctx, userAds);
 
     // Delete user's saved ads
     const userSavedAds = await ctx.db

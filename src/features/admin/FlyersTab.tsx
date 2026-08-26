@@ -8,6 +8,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { MagnifyingGlass, Trash, Eye, X, Image as ImageIcon } from '@phosphor-icons/react';
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { formatPrice } from "../../lib/priceFormatter";
+import { displayLocation } from "../../lib/locationService";
 
 export function FlyersTab() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -163,7 +164,7 @@ export function FlyersTab() {
                                             </p>
                                             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                                                 <span className="font-display font-semibold tabular-nums text-primary">{formatPrice(flyer.price ?? 0)}</span>
-                                                <span>📍 {flyer.location}</span>
+                                                <span>📍 {displayLocation(flyer.location)}</span>
                                                 <span className="tabular-nums">👁️ {flyer.views} views</span>
                                             </div>
                                         </div>

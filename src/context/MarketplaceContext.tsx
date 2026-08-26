@@ -155,7 +155,8 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const { status, loadMore } = isSearching ? searchQueryResult : feedQuery;
 
     // Normalise both sources to FeedEntry[]. Location is applied server-side
-    // on both paths, to every ad type (rule 4).
+    // on both paths, to every ad type (rule 4) — it stamps a near/far `tier`
+    // on every entry rather than filtering (rule 5); AdsGrid partitions.
     const feedEntries = useMemo<FeedEntry[] | undefined>(() => {
         if (isSearching) {
             return searchQueryResult.results;

@@ -54,13 +54,25 @@ async function compositeHits(
   ]);
 
   const now = Date.now();
+  // Rule 5: category narrows (a requirement); location only TIERS (a
+  // preference). Composites need no second DB pass — the location narrowing
+  // here was always a JS predicate below the `.take(cap)`, never a DB cut, so
+  // the same predicate now stamps the tier instead of dropping the row.
+  const tierOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
+    args.location
+      ? {
+          tier: compositeMatchesFilters(doc, { location: args.location })
+            ? ("near" as const)
+            : ("far" as const),
+        }
+      : {};
   return [
     ...bundles
-      .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, args))
-      .map((doc) => ({ kind: "bundle" as const, doc })),
+      .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId }))
+      .map((doc) => ({ kind: "bundle" as const, doc, ...tierOf(doc) })),
     ...sales
-      .filter((s) => saleIsLive(s, now) && compositeMatchesFilters(s, args))
-      .map((doc) => ({ kind: "sale" as const, doc })),
+      .filter((s) => saleIsLive(s, now) && compositeMatchesFilters(s, { categoryId: args.categoryId }))
+      .map((doc) => ({ kind: "sale" as const, doc, ...tierOf(doc) })),
   ];
 }
 
@@ -69,9 +81,10 @@ async function compositeHits(
  * return the raw hits.
  *
  * A composite matches when any MEMBER ad matches — that's what `searchText`
- * holds. Category and `location` narrow all three tables (rules 1 and 4,
- * `.agent/PRODUCT-RULES.md`): on `ads` as index filter fields, on composites as
- * post-search predicates over the derived `categoryIds`/`location`.
+ * holds. Category narrows all three tables (rules 1 and 4,
+ * `.agent/PRODUCT-RULES.md`): on `ads` as an index filter field, on composites
+ * as a post-search predicate over the derived `categoryIds`. `location` never
+ * narrows — it stamps `tier: "near" | "far"` on every hit instead (rule 5).
  *
  * `sinceTimestamp`, when given, is a `bumpedAt` lower bound pushed into every
  * query so the per-table cap keeps rows that are relevant AND fresh (a JS
@@ -89,7 +102,12 @@ async function searchAllTypes(
 ): Promise<FeedSourceEntry[]> {
   const since = args.sinceTimestamp;
   const cap = COMPOSITE_LIMIT;
-  const [ads, composites] = await Promise.all([
+  // The ads cut is a `.take()` INSIDE the DB query, by relevance — so with a
+  // location set, one unpinned pass may not contain the in-area ad at all.
+  // Rule 5 needs TWO passes: the location-pinned one is "near", the unpinned
+  // one is "far" (deduped); a post-hoc partition cannot resurrect a row the
+  // cap already dropped.
+  const searchAdsPass = (location?: string) =>
     ctx.db
       .query("ads")
       .withSearchIndex("search_ads", (q) => {
@@ -98,8 +116,8 @@ async function searchAllTypes(
         if (args.categoryId) {
           searchQuery = searchQuery.eq("categoryId", args.categoryId);
         }
-        if (args.location) {
-          searchQuery = searchQuery.eq("location", args.location);
+        if (location) {
+          searchQuery = searchQuery.eq("location", location);
         }
 
         return searchQuery.eq("isActive", true);
@@ -111,7 +129,22 @@ async function searchAllTypes(
           since === undefined ? true : q.gt(q.field("bumpedAt"), since)
         )
       )
-      .take(args.limit),
+      .take(args.limit);
+  const adHits = async (): Promise<FeedSourceEntry[]> => {
+    if (!args.location) {
+      return (await searchAdsPass()).map((doc) => ({ kind: "ad" as const, doc }));
+    }
+    const [near, unpinned] = await Promise.all([searchAdsPass(args.location), searchAdsPass()]);
+    const nearIds = new Set(near.map((d) => d._id));
+    return [
+      ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
+      ...unpinned
+        .filter((d) => !nearIds.has(d._id))
+        .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
+    ];
+  };
+  const [ads, composites] = await Promise.all([
+    adHits(),
     compositeHits(
       ctx,
       args,
@@ -139,13 +172,20 @@ async function searchAllTypes(
     ),
   ]);
 
-  return [...ads.map((doc) => ({ kind: "ad" as const, doc })), ...composites];
+  return [...ads, ...composites];
 }
 
 /**
  * The browse counterpart of `searchAllTypes`: every composite bumped since the
  * watermark, ordered by `bumpedAt` desc via `by_status_and_bumped_at`;
  * `mergeAndHydrate` interleaves them with the ads (rule 2).
+ *
+ * Rule 5 caveat (recorded so it isn't re-derived): this `.take(cap)` IS a
+ * DB-level date cut, and no location-pinned pass is possible — neither
+ * composite table has a location index. A near composite below `cap` fresher
+ * far ones is lost. Out of scope: it needs >COMPOSITE_LIMIT composites bumped
+ * inside one 60s window; the fix would be raising the cap when a location is
+ * set.
  */
 async function latestComposites(
   ctx: QueryCtx,
@@ -186,11 +226,18 @@ async function latestComposites(
  * exact card shapes `feed.getFeed` returns.
  */
 async function mergeAndHydrate(ctx: QueryCtx, hits: FeedSourceEntry[], limit: number) {
-  // Relevance selects the candidates; date orders them (rule 2).
+  // Relevance selects the candidates; date orders them (rule 2), WITHIN each
+  // location tier. Tier-first is load-bearing: two passes can pool up to
+  // 2×limit rows, and a plain date sort would let the slice trim an older near
+  // entry exactly as the DB cut would have — the trim must eat far entries
+  // first (rule 5). `undefined ⇒ near` matches the client's `tier !== "far"`.
   // ponytail: the 50-ad relevance cap is a relevance cut — a very old exact match
   // can fall out of the pool. Fine at current inventory; revisit if search feels
   // lossy. (Composites are capped separately, see COMPOSITE_LIMIT.)
-  const merged = hits.sort((a, b) => b.doc.bumpedAt - a.doc.bumpedAt).slice(0, limit);
+  const tierRank = (e: FeedSourceEntry) => (e.tier === "far" ? 1 : 0);
+  const merged = hits
+    .sort((a, b) => tierRank(a) - tierRank(b) || b.doc.bumpedAt - a.doc.bumpedAt)
+    .slice(0, limit);
 
   return hydrateEntries(ctx, merged);
 }
@@ -206,7 +253,8 @@ async function mergeAndHydrate(ctx: QueryCtx, hits: FeedSourceEntry[], limit: nu
  *
  * @param args.search - Search term (ad titles; composites' member titles)
  * @param args.categoryId - Filter by specific category (optional)
- * @param args.location - Filter by location string (optional, exact match)
+ * @param args.location - Location preference (optional, exact match): tiers
+ *   results near/far instead of filtering (rule 5)
  * @param args.paginationOpts - Pagination envelope (results are one page)
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
@@ -309,7 +357,8 @@ export const incrementViews = mutation({
  * 
  * @param args.categoryId - Filter by specific category (optional)
  * @param args.search - Search term for title search (optional)
- * @param args.location - Filter by location string (optional)
+ * @param args.location - Location preference (optional): tiers results
+ *   near/far instead of filtering (rule 5)
  * @param args.sinceTimestamp - Fetch ads created after this timestamp
  * @param args.limit - Maximum number of ads to return (default: 50)
  * @returns The same entries `getAds` returns, newest first — both branches
@@ -354,38 +403,55 @@ export const getLatestAds = query({
       return await mergeAndHydrate(ctx, hits, limit);
     } else {
       // `sinceTimestamp` is a `bumpedAt` watermark, not a creation time: the
-      // rail surfaces brand-new AND boosted rows.
-      let q = ctx.db
-        .query("ads")
-        .withIndex("by_bumped_at", (q) => q.gt("bumpedAt", args.sinceTimestamp))
-        .order("desc");
-
-      if (args.categoryId) {
-        q = ctx.db
-          .query("ads")
-          // [categoryId, bumpedAt] supports .eq on the leading field AND a range
-          // on the trailing one, so the watermark stays an index bound.
-          .withIndex("by_category_and_bumped_at", (q) =>
-            q.eq("categoryId", args.categoryId!).gt("bumpedAt", args.sinceTimestamp)
-          )
-          .order("desc");
-      }
-
-      // The rail is the ONLY path that re-injects new arrivals into the feed,
-      // which is frozen at `maxSortTime` from mount — so composites ride it too.
-      const [ads, composites] = await Promise.all([
-        q
+      // rail surfaces brand-new AND boosted rows. The `.take(limit)` is a
+      // DB-level DATE cut, so a near arrival older than `limit` far arrivals
+      // would be dropped by one unpinned pass — rule 5 needs a location-pinned
+      // "near" pass plus an unpinned "far" pass, deduped on _id.
+      const latestAdsPass = (location?: string) => {
+        const q = args.categoryId
+          ? ctx.db
+              .query("ads")
+              // [categoryId, bumpedAt] supports .eq on the leading field AND a
+              // range on the trailing one, so the watermark stays an index bound.
+              .withIndex("by_category_and_bumped_at", (q) =>
+                q.eq("categoryId", args.categoryId!).gt("bumpedAt", args.sinceTimestamp)
+              )
+          : ctx.db
+              .query("ads")
+              .withIndex("by_bumped_at", (q) => q.gt("bumpedAt", args.sinceTimestamp));
+        return q
+          .order("desc")
           .filter((q) =>
             q.and(
               q.eq(q.field("isActive"), true),
               q.neq(q.field("isDeleted"), true),
               q.neq(q.field("isSold"), true),
-              args.location === undefined
-                ? true
-                : q.eq(q.field("location"), args.location)
+              location === undefined ? true : q.eq(q.field("location"), location)
             )
           )
-          .take(limit),
+          .take(limit);
+      };
+      const adHits = async (): Promise<FeedSourceEntry[]> => {
+        if (!args.location) {
+          return (await latestAdsPass()).map((doc) => ({ kind: "ad" as const, doc }));
+        }
+        const [near, unpinned] = await Promise.all([
+          latestAdsPass(args.location),
+          latestAdsPass(),
+        ]);
+        const nearIds = new Set(near.map((d) => d._id));
+        return [
+          ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
+          ...unpinned
+            .filter((d) => !nearIds.has(d._id))
+            .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
+        ];
+      };
+
+      // The rail is the ONLY path that re-injects new arrivals into the feed,
+      // which is frozen at `maxSortTime` from mount — so composites ride it too.
+      const [ads, composites] = await Promise.all([
+        adHits(),
         latestComposites(ctx, {
           categoryId: args.categoryId,
           location: args.location,
@@ -394,11 +460,7 @@ export const getLatestAds = query({
         }),
       ]);
 
-      return await mergeAndHydrate(
-        ctx,
-        [...ads.map((doc) => ({ kind: "ad" as const, doc })), ...composites],
-        limit
-      );
+      return await mergeAndHydrate(ctx, [...ads, ...composites], limit);
     }
   },
 });

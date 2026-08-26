@@ -492,8 +492,8 @@ describe("getFeed — exclusions", () => {
   });
 });
 
-describe("getFeed — location", () => {
-  test("the location filter applies to every ad type (rule 4)", async () => {
+describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
+  test("a location stamps a tier on every ad type; nothing is hidden", async () => {
     const { t, userId, categoryId } = await fresh();
     const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 }); // "Richmond, VIC"
     const elsewhere = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
@@ -515,16 +515,43 @@ describe("getFeed — location", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    const keys = result.page.map(entryKey);
-    expect(keys).toContain(`ad:${richmond}`);
-    expect(keys).toContain(`bundle:${localBundle}`);
-    expect(keys).toContain(`sale:${localSale}`);
-    expect(keys).not.toContain(`ad:${elsewhere}`);
-    expect(keys).not.toContain(`bundle:${remoteBundle}`);
-    expect(keys).not.toContain(`sale:${remoteSale}`);
+    // Nothing the unfiltered feed would return is missing, order is untouched
+    // (bumpedAt desc — the client partitions on tier at render).
+    expect(result.page.map(entryKey)).toEqual([
+      `sale:${remoteSale}`,
+      `sale:${localSale}`,
+      `bundle:${remoteBundle}`,
+      `bundle:${localBundle}`,
+      `ad:${elsewhere}`,
+      `ad:${richmond}`,
+    ]);
+    const tiers = Object.fromEntries(result.page.map((e) => [entryKey(e), e.tier]));
+    expect(tiers).toEqual({
+      [`ad:${richmond}`]: "near",
+      [`ad:${elsewhere}`]: "far",
+      [`bundle:${localBundle}`]: "near",
+      [`bundle:${remoteBundle}`]: "far",
+      [`sale:${localSale}`]: "near",
+      [`sale:${remoteSale}`]: "far",
+    });
   });
 
-  test("a composite with no derived location does not match a location filter", async () => {
+  test("with no location set the response carries no tier at all", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
+    await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 20, locations: ["Richmond, VIC"] });
+    await insertSale(t, { userId, categoryId, bumpedAt: T0 + 30, locations: ["Richmond, VIC"] });
+
+    const result = await getPage(t, { maxSortTime: T0 + 100 });
+    expect(result.page).toHaveLength(3);
+    // Genuinely absent, not undefined — the no-location response must stay
+    // byte-identical to the pre-tier feed.
+    for (const entry of result.page) {
+      expect("tier" in entry).toBe(false);
+    }
+  });
+
+  test("a composite with no derived location tiers as far, not hidden", async () => {
     const { t, userId, categoryId } = await fresh();
     const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30, locations: null });
     const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40, locations: null });
@@ -534,17 +561,20 @@ describe("getFeed — location", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    expect(filtered.page.map(entryKey)).toEqual([]);
-
-    // ...but an unfiltered feed still shows them (no location set = no filter).
-    const unfiltered = await getPage(t, { maxSortTime: T0 + 100 });
-    expect(unfiltered.page.map(entryKey)).toEqual([`sale:${saleId}`, `bundle:${bundleId}`]);
+    expect(filtered.page.map((e) => [entryKey(e), e.tier])).toEqual([
+      [`sale:${saleId}`, "far"],
+      [`bundle:${bundleId}`, "far"],
+    ]);
   });
 
-  test("the category feed applies the location filter to ads", async () => {
+  test("category stays a requirement while location only tiers (rule 5)", async () => {
     const { t, userId, categoryId } = await fresh();
+    const otherCategoryId = await t.run(async (ctx) =>
+      ctx.db.insert("categories", { name: "Books", slug: "books" })
+    );
     const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
-    await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
+    const perth = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
+    await insertAd(t, { userId, categoryId: otherCategoryId, bumpedAt: T0 + 30 });
 
     const result = await t.query(api.feed.getFeed, {
       paginationOpts: { numItems: 20, cursor: null },
@@ -552,7 +582,11 @@ describe("getFeed — location", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    expect(result.page.map(entryKey)).toEqual([`ad:${richmond}`]);
+    // The out-of-category ad is gone; the out-of-area one is tiered, not gone.
+    expect(result.page.map((e) => [entryKey(e), e.tier])).toEqual([
+      [`ad:${perth}`, "far"],
+      [`ad:${richmond}`, "near"],
+    ]);
   });
 });
 
@@ -626,7 +660,9 @@ describe("getFeed — a composite card never outlives its members", () => {
         location,
         maxSortTime: T0 + 100,
       });
-      expect(result.page.map(entryKey), location).toEqual([`bundle:${bundleId}`]);
+      expect(result.page.map((e) => [entryKey(e), e.tier]), location).toEqual([
+        [`bundle:${bundleId}`, "near"],
+      ]);
     }
   });
 });

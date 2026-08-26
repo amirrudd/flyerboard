@@ -373,12 +373,12 @@ describe("getLatestAds search branch", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────
-// Rule 4: every filter reaches every ad type. Composites are location-filtered
-// on their derived `location` (the first live member's canonical string), and
-// a composite with no live members (location undefined) matches no location.
+// Rule 5: location groups, it doesn't hide. Search tiers every ad type on the
+// derived `locations` list; out-of-area results come back tiered "far", never
+// dropped — and the near set survives the relevance cap via a pinned pass.
 // ──────────────────────────────────────────────────────────────────────────
-describe("search applies the location filter to composites (rule 4)", () => {
-  test("a bundle in another suburb is excluded when a location is set", async () => {
+describe("search tiers results by location instead of hiding them (rule 5)", () => {
+  test("an out-of-area bundle is tiered far, an in-area ad near", async () => {
     const { t, userId, categoryId } = await fresh();
     await enableFlag(t, "bundleListing");
     const now = Date.now();
@@ -401,12 +401,15 @@ describe("search applies the location filter to composites (rule 4)", () => {
       location: "Richmond, VIC",
       paginationOpts: PAGE,
     });
-    const ids = pageKeys(r.page);
-    expect(ids).toContain(localAd);
-    expect(ids).not.toContain(farBundle);
+    const tiers = new Map(r.page.map((e) => ["ad" in e && e.kind === "ad" ? e.ad._id : e.card._id, e.tier]));
+    expect(tiers.get(localAd)).toBe("near");
+    expect(tiers.get(farBundle)).toBe("far");
+    // Near block first, then far — bumpedAt desc within each.
+    const firstFar = r.page.findIndex((e) => e.tier === "far");
+    expect(r.page.slice(0, firstFar).every((e) => e.tier === "near")).toBe(true);
   });
 
-  test("a Moving Sale with no derived location matches no location filter", async () => {
+  test("a Moving Sale with no derived location tiers far, not hidden", async () => {
     const { t, userId } = await fresh();
     await enableFlag(t, "movingSaleMode");
     const saleId = await seedSale(t, {
@@ -422,8 +425,50 @@ describe("search applies the location filter to composites (rule 4)", () => {
       location: "Richmond, VIC",
       paginationOpts: PAGE,
     });
+    const sale = r.page.find((e) => e.kind === "sale" && e.card._id === saleId);
+    expect(sale?.tier).toBe("far");
+  });
+
+  test("with no location set, search results carry no tier", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await insertAd(t, { userId, categoryId, title: "Oak desk" });
+
+    const r = await t.query(api.ads.getAds, { search: "desk", paginationOpts: PAGE });
+    expect(r.page.length).toBeGreaterThan(0);
+    for (const entry of r.page) expect("tier" in entry).toBe(false);
+  });
+
+  test("an in-area match outranked by 60 out-of-area matches still returns (pinned pass)", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const now = Date.now();
+
+    // 60 newer out-of-area matches would fill the 50-row relevance cap and the
+    // post-merge slice; only the pinned near pass + tier-aware trim save it.
+    for (let i = 0; i < 60; i++) {
+      await insertAd(t, {
+        userId,
+        categoryId,
+        title: `Far desk ${i}`,
+        location: "Bondi, NSW",
+        bumpedAt: now - i,
+      });
+    }
+    const localAd = await insertAd(t, {
+      userId,
+      categoryId,
+      title: "Old local desk",
+      location: "Richmond, VIC",
+      bumpedAt: now - 1_000_000,
+    });
+
+    const r = await t.query(api.ads.getAds, {
+      search: "desk",
+      location: "Richmond, VIC",
+      paginationOpts: PAGE,
+    });
     const ids = pageKeys(r.page);
-    expect(ids).not.toContain(saleId);
+    expect(ids).toContain(localAd);
+    expect(r.page.find((e) => e.kind === "ad" && e.ad._id === localAd)?.tier).toBe("near");
   });
 });
 
@@ -558,7 +603,7 @@ describe("getLatestAds browse branch returns composites", () => {
     expect(entries.every((e) => e.kind === "ad")).toBe(true);
   });
 
-  test("the browse rail applies the location filter to composites", async () => {
+  test("the browse rail tiers composites by location instead of hiding them (rule 5)", async () => {
     const { t, userId, categoryId } = await fresh();
     await enableFlag(t, "bundleListing");
     const now = Date.now();
@@ -580,8 +625,42 @@ describe("getLatestAds browse branch returns composites", () => {
       sinceTimestamp: since,
       location: "Richmond, VIC",
     });
+    // Near block first, then far; nothing hidden.
+    expect(pageKeys(entries)).toEqual([localAd, farBundle]);
+    expect(entries.map((e) => e.tier)).toEqual(["near", "far"]);
+  });
+
+  test("a near arrival older than `limit` far arrivals still reaches the rail (pinned pass)", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const now = Date.now();
+    const since = now - 60_000;
+
+    // 5 far arrivals newer than the near one; limit 3 cuts by date, so only
+    // the pinned near pass keeps the local ad in the rail.
+    for (let i = 0; i < 5; i++) {
+      await insertAd(t, {
+        userId,
+        categoryId,
+        title: `Far arrival ${i}`,
+        location: "Bondi, NSW",
+        bumpedAt: now - i,
+      });
+    }
+    const localAd = await insertAd(t, {
+      userId,
+      categoryId,
+      title: "Local arrival",
+      location: "Richmond, VIC",
+      bumpedAt: since + 1_000,
+    });
+
+    const entries = await t.query(api.ads.getLatestAds, {
+      sinceTimestamp: since,
+      location: "Richmond, VIC",
+      limit: 3,
+    });
     const ids = pageKeys(entries);
-    expect(ids).toEqual([localAd]);
-    expect(ids).not.toContain(farBundle);
+    expect(ids).toContain(localAd);
+    expect(entries.find((e) => e.kind === "ad" && e.ad._id === localAd)?.tier).toBe("near");
   });
 });

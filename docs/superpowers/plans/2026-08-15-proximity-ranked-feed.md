@@ -87,14 +87,14 @@ That is the whole design.
 > out-of-area search results with no tier and no divider, a fresh rule 5
 > regression.
 
-- [ ] **Write the failing test first.** With a location set: no entry is
+- [x] **Write the failing test first.** With a location set: no entry is
       missing that today's unfiltered feed would return; every entry carries a
       `tier`; a composite matching any of its `locations` is `near`; with no
       location set the response is byte-identical to today (`undefined` fields
       are dropped before serialisation, so an absent `tier` is genuinely
       absent).
 
-- [ ] **One stream, no location filter, stamp the tier.** Remove the location
+- [x] **One stream, no location filter, stamp the tier.** Remove the location
       clause from the ads `filterWith`, and **stop passing `location` into
       `compositeMatchesFilters` at the feed's two call sites — do not edit that
       helper's body.** Its location clause simply goes unused once B2 stops
@@ -148,7 +148,7 @@ handler can see. Simply dropping the location filter loses near results before
 the merge ever runs — a rule 5 violation manufactured by the rule 5 fix. A
 post-hoc partition cannot resurrect them.
 
-- [ ] **`searchAllTypes` — two passes.** The existing location-pinned query
+- [x] **`searchAllTypes` — two passes.** The existing location-pinned query
       (`.eq("location", …)`, `.take(limit)`) → stamp `tier: "near"`. Then an
       unpinned query `.take(limit)` → stamp `tier: "far"`, dropping any `_id`
       already in the near set. Concatenate, then `mergeAndHydrate` — **and make
@@ -175,7 +175,7 @@ post-hoc partition cannot resurrect them.
       Failing test first: 60 out-of-area matches newer than one in-area match —
       assert the in-area one is still returned.
 
-- [ ] **`getLatestAds` — two passes for the ADS query only.** The cut here is by
+- [x] **`getLatestAds` — two passes for the ADS query only.** The cut here is by
       **date**: a near arrival older than `limit` far arrivals in the 60s window
       is dropped. Pin with `.filter(q.eq("location", …))` → `tier: "near"`, then
       unpinned → `tier: "far"`, dedupe on `_id`.
@@ -197,7 +197,7 @@ post-hoc partition cannot resurrect them.
       `args.location` is set. **Not in scope for B2** — it needs >50 composites
       bumped inside one 60s window. Recorded so it isn't re-derived.
 
-- [ ] **Keep threading `location` into the composite args.** `compositeCap`
+- [x] **Keep threading `location` into the composite args.** `compositeCap`
       branches on `args.categoryId || args.location`; stop passing it and the
       search cap silently drops from 500 to `limit * 4`.
 
@@ -207,11 +207,11 @@ post-hoc partition cannot resurrect them.
 `src/features/ads/AdsGrid.tsx`, `src/pages/HomePage.tsx`,
 `src/features/ads/AdsGrid.test.tsx`
 
-- [ ] **Write the failing test first.** Exactly one divider renders, before the
+- [x] **Write the failing test first.** Exactly one divider renders, before the
       first `far` entry, however pagination splits the list. With no near
       results, the banner leads instead of a bare divider.
 
-- [ ] **Partition at render.** A pure filter of an already-ordered list
+- [x] **Partition at render.** A pure filter of an already-ordered list
       preserves `bumpedAt` desc per group, and this fixes the fresh rail for
       free:
 
@@ -225,20 +225,20 @@ post-hoc partition cannot resurrect them.
       rail is keyed by a `cacheKey` that includes the location, so a location
       change starts a fresh rail. Don't extend its union.
 
-- [ ] **Plumb what's actually missing.** `AdsGrid` already derives
+- [x] **Plumb what's actually missing.** `AdsGrid` already derives
       `categoryName` from its `categories` prop — that part is free. What it does
       **not** have is `selectedLocation` or a clear-location callback, and it is
       unit-tested bare with no `MarketplaceProvider`, so `NearbyBoundary` cannot
       reach for `useMarketplace()`. Both must come down as props from
       `HomePage`.
 
-- [ ] **Mind the grid.** `AdsGrid` is one `<div>` wrapping one `entries.map`, so
+- [x] **Mind the grid.** `AdsGrid` is one `<div>` wrapping one `entries.map`, so
       a full-width divider needs `col-span-full` or two grids. If you split into
       two grids: the `staggerCard` index restarts across the boundary, the
       `isLoadingMore` skeletons must move into the far grid, and the header
       count now spans both groups — decide what it should say and pin it.
 
-- [ ] **Build `NearbyBoundary`.** Two modes, one component:
+- [x] **Build `NearbyBoundary`.** Two modes, one component:
       - **Divider** (near results exist) — `Further from {suburb}`.
       - **Banner** (no near results) — `Nothing in {suburb} right now`, plus
         `Showing the newest flyers from further out.` and a clear-location
@@ -250,7 +250,7 @@ post-hoc partition cannot resurrect them.
       with visible text — **not** a live region: `AdsGrid` has none, and a live
       region announces *changes*, which a static divider isn't.
 
-- [ ] **Fix the stale empty state's copy — keep the state.** `AdsGrid.tsx:420-432` renders "No Flyers
+- [x] **Fix the stale empty state's copy — keep the state.** `AdsGrid.tsx:420-432` renders "No Flyers
       Found / Try a different search term, **widen your location**, or clear the
       active category". Under grouping that state is near-unreachable (far
       entries keep `entries.length > 0`), and its advice is wrong — location no
@@ -270,7 +270,7 @@ post-hoc partition cannot resurrect them.
 - [ ] Manually confirm all three surfaces group rather than hide: browse with a
       location, search with a location, and leave a tab open 60s while posting
       an out-of-area ad.
-- [ ] Run the `product-guardian` agent. **Expected: the rule 5 exception in
+- [x] Run the `product-guardian` agent. **Expected: the rule 5 exception in
       `.agent/PRODUCT-RULES.md` no longer applies.** Deleting it is the
       definition of done. Four edits go together, or the file contradicts
       itself:
@@ -285,7 +285,7 @@ post-hoc partition cannot resurrect them.
 
       Rule 2's and rule 3's "Not violated by" lines already read forward for
       grouping — leave them.
-- [ ] Update `.agent/gatheredContext/infrastructure/database.md`: all three
+- [x] Update `.agent/gatheredContext/infrastructure/database.md`: all three
       queries stamp `tier`; the client partitions at render; `tier` is
       per-entry, not a page index, because the rail splices arrivals and any
       index would be stale immediately. Record why search and the rail need two

@@ -12,6 +12,7 @@ import { BundleThumbnail } from "../bundles/BundleThumbnail";
 import { boostArrivalKey, entryKey } from "../../context/freshAdsMerge";
 import type { FeedEntry } from "../../context/MarketplaceContext";
 import { displayLocation } from "../../lib/locationService";
+import { NearbyBoundary } from "./NearbyBoundary";
 
 /**
  * A feed cell is either a normal ad, a Sale card, or a Bundle card. The list
@@ -62,6 +63,13 @@ interface AdsGridProps {
   boostedAdKeys?: Set<string>;
   onSaleClick?: (slug: string) => void;
   onBundleClick?: (card: BundleFeedCard) => void;
+  /**
+   * The active location preference (canonical string), if any. Rule 5: with a
+   * location set the server stamps `tier` on every entry and the grid
+   * partitions at render — in-area first, one boundary, out-of-area below.
+   */
+  selectedLocation?: string;
+  onClearLocation?: () => void;
 }
 
 export const AdsGrid = memo(function AdsGrid({
@@ -76,6 +84,8 @@ export const AdsGrid = memo(function AdsGrid({
   boostedAdKeys = new Set(),
   onSaleClick,
   onBundleClick,
+  selectedLocation,
+  onClearLocation,
 }: AdsGridProps) {
   const { staggerCard, boostPinDrop, boostRingPulse, reduced } = useMotionPrefs();
   const { isMobile } = useDeviceInfo();
@@ -119,6 +129,14 @@ export const AdsGrid = memo(function AdsGrid({
 
   const headerTitle = categoryName ? `${categoryName} Flyers` : 'All Flyers';
   const headerKicker = categoryName ? 'Category' : 'Marketplace';
+
+  // Rule 5 (location groups, it doesn't hide): partition at render. A pure
+  // filter of the already-ordered list preserves bumpedAt desc within each
+  // group. Untiered entries (no location set) all land in `near`, so `far`
+  // stays empty and no boundary renders. The header count deliberately spans
+  // both groups — everything shown is a listing.
+  const near = (entries ?? []).filter((e) => e.tier !== "far");
+  const far = (entries ?? []).filter((e) => e.tier === "far");
 
   return (
     // data-testid: masked in e2e visual snapshots — everything inside (listing
@@ -172,7 +190,8 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         <LayoutGroup>
         <div className={`listings-grid ${gridClasses}`}>
-          {entries.map((entry, index) => {
+          {(() => {
+            const renderEntry = (entry: FeedEntry, index: number) => {
             // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
             if (entry.kind === "sale") {
               const sale = entry.card;
@@ -415,7 +434,22 @@ export const AdsGrid = memo(function AdsGrid({
                 )}
               </m.article>
             );
-          })}
+            };
+            return (
+              <>
+                {near.map((entry, index) => renderEntry(entry, index))}
+                {selectedLocation && far.length > 0 && (
+                  <NearbyBoundary
+                    location={selectedLocation}
+                    hasNearResults={near.length > 0}
+                    categoryName={categoryName}
+                    onClearLocation={onClearLocation}
+                  />
+                )}
+                {far.map((entry, index) => renderEntry(entry, near.length + index))}
+              </>
+            );
+          })()}
 
           {isLoadingMore && (
             [...Array(4)].map((_, i) => (
@@ -434,8 +468,11 @@ export const AdsGrid = memo(function AdsGrid({
           <h3 className="font-display text-2xl sm:text-3xl font-medium text-foreground mb-2 tracking-tight">
             No Flyers Found
           </h3>
+          {/* Rule 5: location no longer narrows (out-of-area entries keep the
+              list non-empty), so this state is search/category-shaped — don't
+              suggest widening the location. */}
           <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-            Try a different search term, widen your location, or clear the active category.
+            Try a different search term or clear the active category.
           </p>
         </div>
       )}

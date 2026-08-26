@@ -10,6 +10,7 @@ import {
   hydrateEntries,
   saleIsLive,
   type FeedSourceEntry,
+  type FeedTier,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
 
@@ -41,11 +42,12 @@ const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
  * @param args.categoryId - Category filter (optional). Applies to all three ad
  *   types; a composite matches when any member ad is in the category (rules 1
  *   and 4, `.agent/PRODUCT-RULES.md`).
- * @param args.location - Location filter (optional, exact match on the ad's
- *   `location`). Applies to all three ad types; a composite matches when ANY of
- *   its derived `locations` matches — a bundle can span suburbs, so it is a list,
- *   not one string. A composite with no derived locations does NOT match
- *   (rules 1 and 4).
+ * @param args.location - Location preference (optional, exact match on the ad's
+ *   `location`). Rule 5: it GROUPS, it never hides — every entry is stamped
+ *   `tier: "near" | "far"` instead of being filtered, and the client partitions
+ *   at render. A composite is "near" when ANY of its derived `locations`
+ *   matches — a bundle can span suburbs, so it is a list, not one string; a
+ *   composite with no derived locations is "far" (rules 1 and 4).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:
@@ -64,6 +66,13 @@ export const getFeed = query({
   },
   handler: async (ctx, args) => {
     const maxSortTime = args.maxSortTime ?? Date.now();
+
+    // Rule 5: location TIERS, it never filters. Stamp ONLY when a location is
+    // set — an unstamped entry is the default state, and `undefined` fields
+    // are dropped before serialisation, which keeps the no-location response
+    // byte-identical to the pre-tier feed.
+    const tierOf = (matches: boolean): { tier?: FeedTier } =>
+      args.location ? { tier: matches ? "near" : "far" } : {};
 
     // Merge the three sources on bumpedAt desc. Feature flags are read
     // server-side; a disabled flag excludes its stream.
@@ -86,26 +95,34 @@ export const getFeed = query({
       )
         .order("desc")
         .filterWith(
-          async (ad) =>
-            ad.isActive &&
-            ad.isDeleted !== true &&
-            ad.isSold !== true &&
-            (!args.location || ad.location === args.location)
+          async (ad) => ad.isActive && ad.isDeleted !== true && ad.isSold !== true
         )
-        .map(async (doc) => ({ kind: "ad" as const, doc })),
+        .map(async (doc) => ({
+          kind: "ad" as const,
+          doc,
+          ...tierOf(doc.location === args.location),
+        })),
     ];
 
     if (bundlesEnabled) {
       streams.push(
         // Standalone active bundles only — sale-suggestion bundles never feed.
+        // Category stays a requirement (filtered); location only tiers.
         stream(ctx.db, schema)
           .query("saleBundles")
           .withIndex("by_status_and_bumped_at", (q) =>
             q.eq("status", "active").lte("bumpedAt", maxSortTime)
           )
           .order("desc")
-          .filterWith(async (b) => bundleIsLive(b) && compositeMatchesFilters(b, args))
-          .map(async (doc) => ({ kind: "bundle" as const, doc }))
+          .filterWith(
+            async (b) =>
+              bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId })
+          )
+          .map(async (doc) => ({
+            kind: "bundle" as const,
+            doc,
+            ...tierOf(compositeMatchesFilters(doc, { location: args.location })),
+          }))
       );
     }
 
@@ -119,8 +136,15 @@ export const getFeed = query({
             q.eq("status", "active").lte("bumpedAt", maxSortTime)
           )
           .order("desc")
-          .filterWith(async (s) => saleIsLive(s, now) && compositeMatchesFilters(s, args))
-          .map(async (doc) => ({ kind: "sale" as const, doc }))
+          .filterWith(
+            async (s) =>
+              saleIsLive(s, now) && compositeMatchesFilters(s, { categoryId: args.categoryId })
+          )
+          .map(async (doc) => ({
+            kind: "sale" as const,
+            doc,
+            ...tierOf(compositeMatchesFilters(doc, { location: args.location })),
+          }))
       );
     }
 

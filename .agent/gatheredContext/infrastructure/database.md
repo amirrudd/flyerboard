@@ -98,6 +98,34 @@ follow this pattern**, not a denormalized feed table (see
   `[..., "bumpedAt"]`, so after the composites' `.eq("status", "active")` every stream
   is ordered by exactly those fields.
 
+## Location tiers, not a filter (rule 5 grouping, Aug 2026)
+
+Location never narrows a result set. All three list surfaces — `feed.getFeed`,
+`ads.getAds` (search), `ads.getLatestAds` (the 60s rail) — stamp
+`tier: "near" | "far"` on every entry when a location is set (near = matches the
+selected location; a composite is near when ANY of its derived `locations` matches).
+The client partitions at render (`AdsGrid` filters `tier !== "far"` / `=== "far"` and
+puts `NearbyBoundary` between the groups). Category and search stay requirements.
+
+- **`tier` is per-entry, not a page index** — the fresh rail splices arrivals into the
+  display list, so any positional index would be stale immediately. `freshAdsMerge.ts`
+  needed no change: it's generic over `FeedEntryLike` and passes entries by reference.
+- **Stamp ONLY when a location is set.** An absent `tier` (undefined, dropped before
+  serialisation) keeps the no-location response byte-identical to the pre-tier feed —
+  a helper that answers "true" with no location would stamp `"near"` everywhere.
+  `hydrateEntries` spreads the tier conditionally for the same reason, and its return
+  type keeps `tier` optional so bare `{ kind: "ad", ad }` test literals still check.
+- **Why search and the rail need TWO ads passes while the feed needs none**: their
+  `.take(limit)` sits INSIDE the DB query (by relevance for search, by date for the
+  rail), so simply dropping the location clause loses near rows before any JS runs —
+  a post-hoc partition can't resurrect them. Each runs a location-pinned "near" pass
+  plus an unpinned "far" pass, deduped on `_id`; `mergeAndHydrate` sorts tier-first
+  (undefined ⇒ near) so its `slice(0, limit)` eats far entries first. The feed's
+  stream `filterWith` has no such cut, so it just tags. Composites need no second
+  pass anywhere — their location narrowing was always a JS predicate below
+  `.take(COMPOSITE_LIMIT)` (no location index on either composite table); the known
+  residual date-cut caveat is documented on `latestComposites`.
+
 ```typescript
 // convex/feed.ts (condensed)
 import { stream, mergedStream } from "convex-helpers/server/stream";

@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { formatPrice } from "../../lib/priceFormatter";
+import { displayLocation } from "../../lib/locationService";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useSaveBundle } from "./useSaveBundle";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -79,7 +80,7 @@ export function PublicBundleView({
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-[0.16em] opacity-85">
                 <Package size={14} weight="fill" aria-hidden="true" />
-                Bundle deal{bundle.location ? ` · ${bundle.location}` : ""}
+                Bundle deal{bundle.location ? ` · ${displayLocation(bundle.location)}` : ""}
               </p>
               <h1 className="mt-1 font-display text-2xl font-semibold tracking-[-0.01em] sm:text-3xl">
                 {bundle.label}
@@ -273,7 +274,7 @@ export function PublicBundleView({
               </p>
               {bundle.location && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin size={12} aria-hidden="true" /> {bundle.location}
+                  <MapPin size={12} aria-hidden="true" /> {displayLocation(bundle.location)}
                 </p>
               )}
             </div>

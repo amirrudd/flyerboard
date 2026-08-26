@@ -1290,7 +1290,7 @@ export function UserDashboard({ onBack, onPostAd, onEditAd }: UserDashboardProps
                                 {savedAd.ad!.description}
                               </p>
                               <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
-                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {savedAd.ad!.location}</span>
+                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {displayLocation(savedAd.ad!.location)}</span>
                                 <span>{savedAd.ad!.views} views</span>
                               </div>
                             </div>

@@ -9,7 +9,7 @@ import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
-import { boostArrivalKey } from "../../context/freshAdsMerge";
+import { boostArrivalKey, newBadgeKey } from "../../context/freshAdsMerge";
 import type { FeedEntry } from "../../context/MarketplaceContext";
 import { displayLocation } from "../../lib/locationService";
 
@@ -167,6 +167,9 @@ export const AdsGrid = memo(function AdsGrid({
             // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
             if (entry.kind === "sale") {
               const sale = entry.card;
+              // Fresh-rail arrival: same "New" badge as a fresh ad (rule 1) —
+              // top-right, since top-left holds the type badge.
+              const isNew = newAdIds.has(newBadgeKey(entry));
               return (
                 <m.article
                   key={`sale-${sale._id}`}
@@ -196,6 +199,11 @@ export const AdsGrid = memo(function AdsGrid({
                       <House className="w-3 h-3" weight="fill" />
                       Moving Sale
                     </div>
+                    {isNew && (
+                      <div className="absolute top-2.5 right-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md">
+                        New
+                      </div>
+                    )}
                   </div>
                   <div className="px-3.5 pt-3 pb-3.5">
                     <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
@@ -223,6 +231,8 @@ export const AdsGrid = memo(function AdsGrid({
             // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
             if (entry.kind === "bundle") {
               const bundle = entry.card;
+              // Fresh-rail arrival: same "New" badge as a fresh ad (rule 1).
+              const isNew = newAdIds.has(newBadgeKey(entry));
               return (
                 <m.article
                   key={`bundle-${bundle._id}`}
@@ -247,6 +257,11 @@ export const AdsGrid = memo(function AdsGrid({
                       <Package className="w-3 h-3" weight="fill" />
                       Bundle
                     </div>
+                    {isNew && (
+                      <div className="absolute top-2.5 right-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md">
+                        New
+                      </div>
+                    )}
                     {bundle.savings > 0 && (
                       <div className="absolute bottom-2.5 right-2.5 bg-bundle text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
                         Save {formatPrice(bundle.savings)}

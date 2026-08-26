@@ -5,6 +5,7 @@ import {
     entrySortKey,
     mergeFreshRail,
     mergeAheadOfQuery,
+    newBadgeKey,
     nextWatermark,
 } from './freshAdsMerge';
 
@@ -98,6 +99,17 @@ describe('classifyLatestEntries — replacement-aware dedupe (Boost, Phase 2)', 
     it('does not confuse an ad and a composite that share a raw id', () => {
         const { brandNew } = classifyLatestEntries([bundle('x')], [ad('x', 100)]);
         expect(brandNew.map(entryKey)).toEqual(['bundle:x']);
+    });
+});
+
+describe('newBadgeKey — the "New" badge identity shared by context and grid', () => {
+    it('is the raw _id for an ad (the pre-composite badge scheme)', () => {
+        expect(newBadgeKey(ad('a1', 100))).toBe('a1');
+    });
+
+    it('is the `${kind}-${_id}` grid key for a composite card', () => {
+        expect(newBadgeKey(bundle('b1'))).toBe('bundle-b1');
+        expect(newBadgeKey(sale('s1'))).toBe('sale-s1');
     });
 });
 

@@ -61,6 +61,17 @@ export function boostArrivalKey(ad: { _id: string; bumpedAt: number }): string {
 }
 
 /**
+ * The "New"-badge identity for a brand-new feed entry, shared by the
+ * newAdIds producer (MarketplaceContext) and consumer (AdsGrid). An ad keeps
+ * its raw `_id` (the pre-composite badge scheme); a composite uses the same
+ * `${kind}-${_id}` key AdsGrid already keys its cards on. One formatter so the
+ * two sides can't drift and silently never match.
+ */
+export function newBadgeKey(e: FeedEntryLike): string {
+  return "ad" in e ? e.ad._id : `${e.kind}-${e.card._id}`;
+}
+
+/**
  * Classify a `getLatestAds` result set against everything the session already
  * holds (fresh rail + paginated query results):
  *

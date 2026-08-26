@@ -60,6 +60,34 @@ describe("SetupStep — the sale's suburb is a canonical location (rule 4)", () 
   });
 });
 
+describe("suburb dataset unavailable (offline) — the flow must not dead-end", () => {
+    it("accepts the typed suburb as free text when suggestions can't load", async () => {
+        const { searchLocations, fetchLocations } = await import(
+            "../../../lib/locationService"
+        );
+        // fetchLocations swallows its own failure and resolves [] — the
+        // dataset is never legitimately empty, so [] means the fetch failed.
+        vi.mocked(searchLocations).mockResolvedValue([]);
+        vi.mocked(fetchLocations).mockResolvedValue([]);
+
+        const onSubmit = vi.fn();
+        render(
+            <SetupStep defaultFirstName="Amir" submitting={false} onSubmit={onSubmit} />
+        );
+
+        fireEvent.change(screen.getByPlaceholderText("Enter suburb or postcode"), {
+            target: { value: "Richmond" },
+        });
+        await waitFor(() =>
+            expect(screen.getByText(/suggestions unavailable/i)).toBeInTheDocument()
+        );
+
+        fireEvent.click(screen.getByText("Continue to photos"));
+        expect(onSubmit).toHaveBeenCalledTimes(1);
+        expect(onSubmit.mock.calls[0][0].suburb).toBe("Richmond");
+    });
+});
+
 describe("resuming a draft saved before the picker existed", () => {
     // The bug: a legacy free-text suburb was seeded as a CONFIRMED value, so the
     // picker short-circuited (query === value), the field looked valid, and the

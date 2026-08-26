@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CircleNotch } from "@phosphor-icons/react";
 import {
   searchLocations,
@@ -20,6 +20,12 @@ import {
  * `value` is the confirmed selection ("" = nothing picked yet). Typing anything
  * that isn't the confirmed string clears it, so a caller can require a real pick
  * simply by checking `value`.
+ *
+ * Offline fallback: if the suburb dataset can't load, requiring a pick would
+ * dead-end the flow (SetupStep blocks submit on an empty `value`). In that case
+ * the typed text is committed as the value verbatim — consumers already store
+ * plain strings (legacy free-text suburbs exist) — and a quiet note says
+ * suggestions are unavailable.
  */
 export function LocationPicker({
   value,
@@ -42,8 +48,21 @@ export function LocationPicker({
   const [query, setQuery] = useState(value || initialQuery || "");
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
+  // Sticky once the dataset fetch has failed: fetchLocations() caches its
+  // (empty) failure result for the session, so there is nothing to retry.
+  const [suggestionsUnavailable, setSuggestionsUnavailable] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
+
+  const pick = (loc: LocationData) => {
+    const formatted = formatLocation(loc);
+    setQuery(formatted);
+    onChange(formatted);
+    setShowSuggestions(false);
+    setActiveIndex(-1);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -53,19 +72,38 @@ export function LocationPicker({
         if (query === value || query.length < 2) {
           setSuggestions([]);
           setShowSuggestions(false);
+          setActiveIndex(-1);
           return;
         }
         setIsSearching(true);
         try {
           const results = await searchLocations(query);
+          if (results.length === 0) {
+            // Distinguish "no match" from "dataset never loaded": the dataset
+            // is never legitimately empty, so an empty fetchLocations() means
+            // the fetch failed. Fall back to free text so the flow isn't
+            // blocked — the typed text becomes the value as-is.
+            const dataset = await fetchLocations();
+            if (!dataset || dataset.length === 0) {
+              setSuggestionsUnavailable(true);
+              setSuggestions([]);
+              setShowSuggestions(false);
+              onChange(query);
+              return;
+            }
+          }
           setSuggestions(results.slice(0, 8));
           setShowSuggestions(results.length > 0);
+          setActiveIndex(-1);
         } finally {
           setIsSearching(false);
         }
       })();
     }, 300);
     return () => clearTimeout(timer);
+    // onChange is deliberately not a dependency: consumers pass state setters,
+    // and re-debouncing on every parent render would defeat the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, value]);
 
   useEffect(() => {
@@ -78,11 +116,20 @@ export function LocationPicker({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  const isOpen = showSuggestions && suggestions.length > 0;
+
   return (
     <div className="relative" ref={wrapperRef}>
       <input
         id={id}
         type="text"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          isOpen && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+        }
         className={inputClassName}
         value={query}
         maxLength={100}
@@ -97,6 +144,24 @@ export function LocationPicker({
           setQuery(e.target.value);
           if (value && e.target.value !== value) onChange("");
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setShowSuggestions(false);
+            setActiveIndex(-1);
+            return;
+          }
+          if (!isOpen) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIndex((i) => (i + 1) % suggestions.length);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+          } else if (e.key === "Enter" && activeIndex >= 0) {
+            e.preventDefault();
+            pick(suggestions[activeIndex]);
+          }
+        }}
       />
       {isSearching && (
         <CircleNotch
@@ -104,24 +169,23 @@ export function LocationPicker({
           className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground"
         />
       )}
-      {showSuggestions && suggestions.length > 0 && (
+      {isOpen && (
         <div
+          id={listboxId}
           role="listbox"
           className="absolute z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-popover py-1 shadow-lg ring-1 ring-border/70"
         >
-          {suggestions.map((loc) => (
+          {suggestions.map((loc, index) => (
             <button
               key={loc.id}
+              id={`${listboxId}-option-${index}`}
               type="button"
               role="option"
-              aria-selected={false}
-              onClick={() => {
-                const formatted = formatLocation(loc);
-                setQuery(formatted);
-                onChange(formatted);
-                setShowSuggestions(false);
-              }}
-              className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/60"
+              aria-selected={index === activeIndex}
+              onClick={() => pick(loc)}
+              className={`flex min-h-[44px] w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 ${
+                index === activeIndex ? "bg-muted/60" : ""
+              }`}
             >
               <span className="font-medium text-foreground">{loc.locality}</span>
               <span className="text-xs tabular-nums text-muted-foreground">
@@ -130,6 +194,11 @@ export function LocationPicker({
             </button>
           ))}
         </div>
+      )}
+      {suggestionsUnavailable && (
+        <p role="status" className="mt-1.5 text-xs text-muted-foreground">
+          Suggestions unavailable — type your suburb and continue.
+        </p>
       )}
     </div>
   );

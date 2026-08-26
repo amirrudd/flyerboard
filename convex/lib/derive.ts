@@ -186,3 +186,20 @@ export async function refreshOwningComposites(ctx: MutationCtx, ad: Doc<"ads">):
   if (ad.bundleId) await refreshCompositeDerived(ctx, { bundleId: ad.bundleId });
   if (ad.saleEventId) await refreshCompositeDerived(ctx, { saleEventId: ad.saleEventId });
 }
+
+/**
+ * Re-derive every composite these ads belong to, once per composite.
+ * Bulk ad writes must never call `refreshOwningComposites` inside the loop: each
+ * call re-reads the composite and ALL of its members, so N members of one sale
+ * costs O(N²) reads and blows the transaction cap.
+ */
+export async function refreshDistinctComposites(ctx: MutationCtx, ads: Doc<"ads">[]): Promise<void> {
+  const bundleIds = new Set<Id<"saleBundles">>();
+  const saleEventIds = new Set<Id<"saleEvents">>();
+  for (const ad of ads) {
+    if (ad.bundleId) bundleIds.add(ad.bundleId);
+    if (ad.saleEventId) saleEventIds.add(ad.saleEventId);
+  }
+  for (const bundleId of bundleIds) await refreshCompositeDerived(ctx, { bundleId });
+  for (const saleEventId of saleEventIds) await refreshCompositeDerived(ctx, { saleEventId });
+}

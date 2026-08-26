@@ -3,7 +3,7 @@
 import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
 import schema from "../schema";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
   adIsVisible,
@@ -23,11 +23,14 @@ import {
  * Four mutations shipped without doing that. Discipline already failed once, so
  * this file does not rely on it:
  *
- *   1. `MUTATIONS` must list every exported mutation in the four ad-writing
- *      modules. Add a mutation, this test fails until you classify it.
- *   2. Every entry flagged `writesAds` must have an `exercise`, and after running
- *      it EVERY composite in the database must equal a fresh derivation over its
- *      current members. Forget the refresh, this test fails.
+ *   1. `MUTATIONS` must list every exported mutation in EVERY top-level
+ *      `convex/*.ts` module (`_generated`, `lib/` and tests excluded). Add a
+ *      mutation — or a whole new module — and this test fails until you
+ *      classify it.
+ *   2. Every entry flagged `writesAds` must have an `exercise` (or a documented
+ *      `exemption`), and after running it EVERY composite in the database must
+ *      equal a fresh derivation over its current members. Forget the refresh,
+ *      this test fails.
  */
 
 const modules = loadConvexModules();
@@ -45,21 +48,40 @@ function loadConvexModules(): Record<string, () => Promise<unknown>> {
   return filtered;
 }
 
-/** Raw source of the ad-writing modules, for the coverage scan. */
-const SOURCES = import.meta.glob("../{posts,bundles,saleEvents,admin}.ts", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+/**
+ * Raw source of every top-level convex module, for the coverage scan.
+ * `../*.ts` deliberately does not descend into `../_generated/` or `../lib/`
+ * (no mutations live there — helpers and tests only).
+ */
+const SOURCES = Object.fromEntries(
+  Object.entries(
+    import.meta.glob("../*.ts", { query: "?raw", import: "default", eager: true })
+  ).filter(([path]) => !/\.(test|spec)\.[cm]?[jt]sx?$/.test(path))
+);
+
+/** Module name → its exported (internal)mutations, scraped from source. */
+const EXPORTED_MUTATIONS: Record<string, string[]> = Object.fromEntries(
+  Object.entries(SOURCES)
+    .map(([path, source]) => [
+      path.replace(/^\.\.\//, "").replace(/\.ts$/, ""),
+      [...source.matchAll(/^export const (\w+) = (?:internalM|m)utation\(/gm)].map((m) => m[1]),
+    ])
+    .filter(([, names]) => names.length > 0)
+);
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
 type World = Awaited<ReturnType<typeof world>>;
 type Case = {
-  /** true = the handler writes to the `ads` table (insert or patch). */
+  /** true = the handler writes to the `ads` table (insert, patch or delete). */
   writesAds: boolean;
   exercise?: (w: World) => Promise<unknown>;
+  /**
+   * Why an ads-writing mutation is deliberately NOT exercised. Use only when
+   * the mutation cannot run under convex-test; the reason must say so.
+   */
+  exemption?: string;
 };
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -71,11 +93,16 @@ type Case = {
  * of two ads, three loose ads, a PUBLISHED moving sale of two items, and a draft
  * sale for `publishSaleEvent` to publish.
  */
-async function world() {
-  const t = convexTest(schema, modules);
+async function world(opts?: { transactionLimits?: { documentsRead: number } }) {
+  const t = convexTest({ schema, modules, transactionLimits: opts?.transactionLimits ?? false });
 
   const sellerId = await t.run((ctx) =>
-    ctx.db.insert("users", { tokenIdentifier: "seller", name: "Amir", isActive: true })
+    ctx.db.insert("users", {
+      tokenIdentifier: "seller",
+      name: "Amir",
+      email: "seller@example.com",
+      isActive: true,
+    })
   );
   await t.run((ctx) =>
     ctx.db.insert("users", {
@@ -343,6 +370,146 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
     saveSaleEvent: { writesAds: false },
   },
 
+  adDetail: {
+    incrementViews: {
+      writesAds: true, // patches `views` only — not derived, so no refresh needed
+      exercise: (w) => w.asUser.mutation(api.adDetail.incrementViews, { adId: w.a1 }),
+    },
+    batchIncrementViews: {
+      writesAds: true,
+      exercise: (w) => w.asUser.mutation(api.adDetail.batchIncrementViews, { adIds: [w.a1, w.a3] }),
+    },
+    saveAd: { writesAds: false },
+    sendFirstMessage: { writesAds: false },
+  },
+
+  ads: {
+    incrementViews: {
+      writesAds: true,
+      exercise: (w) => w.asUser.mutation(api.ads.incrementViews, { adId: w.a1 }),
+    },
+  },
+
+  appSettings: { updateSetting: { writesAds: false } },
+  bundleChats: { sendBundleMessage: { writesAds: false } },
+
+  categories: {
+    createCategory: { writesAds: false },
+    updateCategory: { writesAds: false },
+    deleteCategory: { writesAds: false }, // reads ads to refuse deletion; never writes them
+  },
+
+  descopeAuth: { syncDescopeUser: { writesAds: false } },
+
+  featureFlags: {
+    createFeatureFlag: { writesAds: false },
+    updateFeatureFlag: { writesAds: false },
+    deleteFeatureFlag: { writesAds: false },
+  },
+
+  imageCleanup: {
+    stampDeletedAt: {
+      writesAds: true, // patches `deletedAt` on already-refreshed soft-deleted ads
+      exercise: (w) => w.t.mutation(internal.imageCleanup.stampDeletedAt, { adId: w.a3 }),
+    },
+    markImagesPurged: {
+      writesAds: true, // patches `images`/`imagesPurgedAt` — not derived
+      exercise: (w) => w.t.mutation(internal.imageCleanup.markImagesPurged, { adId: w.a3 }),
+    },
+  },
+
+  messages: {
+    sendMessage: { writesAds: false },
+    markChatAsRead: { writesAds: false },
+    archiveChat: { writesAds: false },
+    unarchiveChat: { writesAds: false },
+    deleteArchivedChats: { writesAds: false },
+  },
+
+  migrations: {
+    updateAdImages: {
+      writesAds: true, // patches `images` — not derived
+      exercise: (w) =>
+        w.t.mutation(internal.migrations.updateAdImages, { adId: w.a1, images: ["r2:x"] }),
+    },
+    updateUserImage: { writesAds: false },
+    updateCategoryNames: { writesAds: false },
+    backfillListingType: {
+      writesAds: true, // patches `listingType` — not derived
+      exercise: (w) => w.t.mutation(internal.migrations.backfillListingType, {}),
+    },
+    addHobbiesCategory: { writesAds: false },
+    ensureAllCategories: { writesAds: false },
+    seedFeatureFlags: { writesAds: false },
+    seedAppSettings: { writesAds: false },
+    backfillSaleBundles: { writesAds: false }, // patches saleBundles bookkeeping, never ads
+    backfillBumpedAt: {
+      writesAds: true, // patches `bumpedAt` — not derived
+      exercise: (w) => w.t.mutation(internal.migrations.backfillBumpedAt, {}),
+    },
+    backfillCompositeDerived: { writesAds: false }, // writes composites via the shared refresh
+    renameFeatureFlag: { writesAds: false },
+    applySaleLocations: {
+      writesAds: true, // patches member `location` (derived!) — must refresh
+      exercise: (w) =>
+        w.t.mutation(internal.migrations.applySaleLocations, {
+          updates: [{ saleEventId: w.saleEventId, location: "Fitzroy, VIC 3065" }],
+        }),
+    },
+  },
+
+  ratings: { submitRating: { writesAds: false } },
+  reports: { submitReport: { writesAds: false } },
+  saleChats: { sendSaleMessage: { writesAds: false } },
+
+  sampleData: {
+    clearAndCreateSampleData: {
+      writesAds: true,
+      exemption:
+        "Dev-only: hard-wipes the entire ads table and is guarded by a CONVEX_CLOUD_URL " +
+        "check that throws under convex-test. Predates composites and never runs where " +
+        "one exists. Do not copy this pattern.",
+    },
+  },
+
+  seed: {
+    wipeSeededMovingSales: {
+      writesAds: true, // hard-deletes sale items — and their sale + bundles with them
+      exercise: (w) => w.t.mutation(internal.seed.wipeSeededMovingSales, {}),
+    },
+    setFeatureFlagLocal: { writesAds: false },
+    seedMovingSale: {
+      writesAds: true,
+      exercise: (w) =>
+        w.t.mutation(internal.seed.seedMovingSale, { email: "seller@example.com" }),
+    },
+    seedBundleAds: {
+      writesAds: true, // inserts standalone ads — no composite membership
+      exercise: (w) =>
+        w.t.mutation(internal.seed.seedBundleAds, { email: "seller@example.com" }),
+    },
+  },
+
+  seedTestAd: {
+    seedTallImageAd: {
+      writesAds: true, // inserts a standalone ad — no composite membership
+      exercise: (w) => w.t.mutation(internal.seedTestAd.seedTallImageAd, {}),
+    },
+  },
+
+  support: { submitSupportRequest: { writesAds: false } },
+  updateRentHireIcon: { updateRentHireIcon: { writesAds: false } },
+
+  users: {
+    updateProfile: { writesAds: false },
+    deleteAccount: {
+      writesAds: true, // hard-deletes the user's ads — must refresh their composites
+      exercise: (w) => w.asUser.mutation(api.users.deleteAccount, {}),
+    },
+    verifyIdentity: { writesAds: false },
+    updateEmailNotificationPreference: { writesAds: false },
+  },
+
   admin: {
     toggleUserStatus: {
       writesAds: true,
@@ -372,25 +539,25 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
 // ──────────────────────────────────────────────────────────────────────────
 
 describe("refresh contract: coverage", () => {
-  for (const [moduleName, cases] of Object.entries(MUTATIONS)) {
-    test(`every exported mutation in ${moduleName}.ts is classified`, () => {
-      const source = SOURCES[`../${moduleName}.ts`];
-      expect(source, `source for ${moduleName}.ts not found`).toBeTruthy();
-      const exported = [
-        ...source.matchAll(/^export const (\w+) = (?:internalM|m)utation\(/gm),
-      ].map((m) => m[1]);
+  test("every convex module that exports mutations is in the registry", () => {
+    expect(Object.keys(EXPORTED_MUTATIONS).length).toBeGreaterThan(0);
+    // If this fails: a module gained (or lost) its first/last mutation — add or
+    // remove its block in MUTATIONS above.
+    expect(Object.keys(EXPORTED_MUTATIONS).sort()).toEqual(Object.keys(MUTATIONS).sort());
+  });
 
-      expect(exported.length).toBeGreaterThan(0);
+  for (const [moduleName, exported] of Object.entries(EXPORTED_MUTATIONS)) {
+    test(`every exported mutation in ${moduleName}.ts is classified`, () => {
       // If this fails: add the new mutation to MUTATIONS above with writesAds set
       // honestly. If it writes to `ads`, it also needs an `exercise`.
-      expect(exported.slice().sort()).toEqual(Object.keys(cases).sort());
+      expect(exported.slice().sort()).toEqual(Object.keys(MUTATIONS[moduleName] ?? {}).sort());
     });
   }
 
-  test("every ads-writing mutation is exercised", () => {
+  test("every ads-writing mutation is exercised (or carries a documented exemption)", () => {
     const missing = Object.entries(MUTATIONS).flatMap(([m, cases]) =>
       Object.entries(cases)
-        .filter(([, c]) => c.writesAds && !c.exercise)
+        .filter(([, c]) => c.writesAds && !c.exercise && !c.exemption)
         .map(([name]) => `${m}.${name}`)
     );
     expect(missing).toEqual([]);
@@ -425,7 +592,11 @@ describe("refresh contract: composites are never left stale", () => {
 
 describe("deleteUserAccount refreshes once per composite, not once per ad", () => {
   test("a 60-item sale is deletable (per-ad refresh would be ~3,700 reads)", async () => {
-    const w = await world();
+    // convexTest leaves transaction limits DISABLED by default, which made this
+    // test pass even with the O(N²) per-ad refresh. Cap documentsRead well above
+    // what the once-per-composite implementation needs (~350 for this fixture)
+    // and well below what per-ad refresh costs (~4,000): the regression now fails.
+    const w = await world({ transactionLimits: { documentsRead: 1000 } });
     const items = Array.from({ length: 60 }, (_, i) => ({
       imageKey: `r2:bulk${i}`,
       title: `Bulk item ${i}`,

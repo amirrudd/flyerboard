@@ -99,9 +99,16 @@ export function classifyLatestEntries<T extends FeedEntryLike>(
 }
 
 /**
- * Build the next fresh rail: new arrivals first, then the surviving previous
- * rail. A boosted replacement shadows (removes) its stale prior copy by
- * kind+id so the rail never holds two generations of the same entry.
+ * Build the next fresh rail: new arrivals merged with the surviving previous
+ * rail, in `bumpedAt` desc order. A boosted replacement shadows (removes) its
+ * stale prior copy by kind+id so the rail never holds two generations of the
+ * same entry.
+ *
+ * The final sort is load-bearing (rule 2: `bumpedAt` desc is the only feed
+ * order): a raw concat renders arrivals in fetch order, so a batch of mixed
+ * arrivals — or a new arrival older than a previously railed boost — could
+ * sit out of order at the top of the feed. The sort is stable, so the
+ * replacement-aware dedupe above it is untouched.
  */
 export function mergeFreshRail<T extends FeedEntryLike>(
   fresh: readonly T[],
@@ -109,7 +116,9 @@ export function mergeFreshRail<T extends FeedEntryLike>(
   boosted: readonly T[]
 ): T[] {
   const replaced = new Set(boosted.map(entryKey));
-  return [...brandNew, ...boosted, ...fresh.filter((e) => !replaced.has(entryKey(e)))];
+  return [...brandNew, ...boosted, ...fresh.filter((e) => !replaced.has(entryKey(e)))].sort(
+    (a, b) => entrySortKey(b) - entrySortKey(a)
+  );
 }
 
 /**

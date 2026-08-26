@@ -110,9 +110,19 @@ describe('entrySortKey', () => {
 });
 
 describe('mergeFreshRail — accumulation with boost replacement', () => {
-    it('prepends brand-new and boosted arrivals to the surviving rail', () => {
+    it('merges brand-new and boosted arrivals with the surviving rail in bumpedAt desc order', () => {
         const rail = mergeFreshRail([ad('old', 100)], [ad('new', 300)], [ad('boosted', 400)]);
-        expect(rail.map(entryKey)).toEqual(['ad:new', 'ad:boosted', 'ad:old']);
+        expect(rail.map(entryKey)).toEqual(['ad:boosted', 'ad:new', 'ad:old']);
+    });
+
+    it('sorts the whole rail by bumpedAt desc — never concat order (rule 2)', () => {
+        // A raw [brandNew, boosted, fresh] concat would yield n(300), b(500),
+        // f(400) — the boost and the surviving rail entry both out of order.
+        const rail = mergeFreshRail([ad('f', 400)], [ad('n', 300)], [ad('b', 500)]);
+        expect(rail.map(entryKey)).toEqual(['ad:b', 'ad:f', 'ad:n']);
+        // Composites sort on the same key, interleaved with ads (rules 1, 2, 4).
+        const mixed = mergeFreshRail([sale('s', 250)], [bundle('bu', 350), ad('a', 150)], []);
+        expect(mixed.map(entryKey)).toEqual(['bundle:bu', 'sale:s', 'ad:a']);
     });
 
     it('a boost replacement shadows its stale prior copy in the rail (no two generations)', () => {

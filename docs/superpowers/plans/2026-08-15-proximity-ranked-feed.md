@@ -6,9 +6,10 @@
 **Goal:** picking a location stops hiding everything else. Ads in the area come
 first (newest-first), then everything else below one labelled divider.
 
-**Status:** Phase A is on local `main` (`96d18db`, `ee463c4`, merged by `68e9d9e`);
-**PR #357 is still open upstream.** Phase B is small and is the whole of
-what rule 5 still needs. Phase C (radius) is **parked** — see its own section for
+**Status:** Done. Phase A merged via PR #357 (`96d18db`, `ee463c4`, plus review
+fixes). Phase B merged via PR #363 (`0299c03`) on 2026-08-26: every surface
+tiers `near`/`far` instead of hiding, verified live in browse, search, and the
+60s rail. Phase C (radius) is **parked** — see its own section for
 the condition that unparks it.
 
 **Rules:** `.agent/PRODUCT-RULES.md` — binding. Rule 5 is what this closes.
@@ -266,10 +267,14 @@ post-hoc partition cannot resurrect them.
 
 ### Task B4: close the exception
 
-- [ ] `npm run lint`, `npx vitest run`, `npm run build`.
-- [ ] Manually confirm all three surfaces group rather than hide: browse with a
+- [x] `npm run lint`, `npx vitest run`, `npm run build`.
+- [x] Manually confirm all three surfaces group rather than hide: browse with a
       location, search with a location, and leave a tab open 60s while posting
-      an out-of-area ad.
+      an out-of-area ad. **Verified 2026-08-26** against prod (browse, search)
+      and local dev (60s rail): a background tab open on a suburb with zero
+      near results silently picked up two newly-posted out-of-area ads —
+      15 → 17 listings, both slotted into the far group below the banner, no
+      reload, nothing hidden.
 - [x] Run the `product-guardian` agent. **Expected: the rule 5 exception in
       `.agent/PRODUCT-RULES.md` no longer applies.** Deleting it is the
       definition of done. Four edits go together, or the file contradicts

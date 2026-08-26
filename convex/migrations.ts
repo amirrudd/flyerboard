@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { isR2Reference, r2, toR2Reference } from "./r2";
 import { APP_SETTING_SPECS } from "./lib/appConfig";
+import { refreshBundleDerived, refreshSaleDerived, saleItems } from "./lib/derive";
 
 const DEFAULT_BATCH_SIZE = 10;
 
@@ -609,6 +610,67 @@ export const backfillBumpedAt = internalMutation({
 // migration from a pre-narrow commit BEFORE deploying the narrowed schema.
 
 /**
+ * Backfill the derived fields (`categoryIds`, `searchText`, `location`) on every existing
+ * composite — `saleEvents` and `saleBundles`. Rule 1: "an aggregation inherits from
+ * its members" (`.agent/PRODUCT-RULES.md`). Rows written before the derivation
+ * existed carry neither field, so they are invisible to the category filter and to
+ * search until this runs.
+ *
+ * Idempotent: re-derives from the current members every time, so re-running is a
+ * no-op in effect. Uses the same `refreshBundleDerived` / `refreshSaleDerived` the
+ * write path uses — there is no second derivation rule to drift. That also means it
+ * picks up `location` for free, and that it will NOT rewrite any existing bundle
+ * label: legacy rows have no `labelIsAuto`, which derivation treats as
+ * "seller-authored, hands off".
+ *
+ * Batched + resumable (`DEFAULT_BATCH_SIZE`, like the other migrations here): the
+ * old one-shot version collected BOTH whole tables plus every member ad in a single
+ * transaction, which has no headroom and no resume path if it trips the limit.
+ * Rows are passed to the derive helpers directly — the one-shot version re-`get`s
+ * every row it had already collected.
+ *
+ * Usage: npx convex run migrations:backfillCompositeDerived
+ *   then, while `done` is false, repeat with the returned `table` + `cursor`:
+ *   npx convex run migrations:backfillCompositeDerived '{"table":"saleBundles","cursor":"..."}'
+ */
+export const backfillCompositeDerived = internalMutation({
+  args: {
+    table: v.optional(v.union(v.literal("saleEvents"), v.literal("saleBundles"))),
+    cursor: v.optional(v.string()),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const table = args.table ?? "saleEvents";
+    const numItems = args.batchSize ?? DEFAULT_BATCH_SIZE;
+    const page = await ctx.db
+      .query(table)
+      .paginate({ cursor: args.cursor ?? null, numItems });
+
+    for (const doc of page.page) {
+      if (table === "saleEvents") {
+        await refreshSaleDerived(ctx, doc as Doc<"saleEvents">);
+      } else {
+        await refreshBundleDerived(ctx, doc as Doc<"saleBundles">);
+      }
+    }
+
+    // saleEvents to exhaustion, then saleBundles, then done.
+    const next = !page.isDone
+      ? { table, cursor: page.continueCursor }
+      : table === "saleEvents"
+        ? { table: "saleBundles" as const, cursor: null }
+        : null;
+
+    return {
+      processed: page.page.length,
+      table: next?.table ?? null,
+      cursor: next?.cursor ?? null,
+      done: next === null,
+    };
+  },
+});
+
+/**
  * Rename feature flag key from userSelfVerification to identityVerification
  * Run this once to update existing database
  *
@@ -655,5 +717,184 @@ export const renameFeatureFlag = internalMutation({
       message: "Renamed 'userSelfVerification' to 'identityVerification'",
       renamed: true,
     };
+  },
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Moving Sale suburbs → canonical location strings
+// ──────────────────────────────────────────────────────────────────────────
+
+/** The three fields of `public/australian-postcodes.json` this migration reads. */
+type PostcodeRow = { postcode: string; locality: string; state: string };
+
+/** Mirrors `src/lib/locationService.formatLocation` — "SYDNEY, NSW 2000". */
+const formatPostcodeRow = (r: PostcodeRow) => `${r.locality}, ${r.state} ${r.postcode}`;
+
+const AU_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
+
+/**
+ * Resolve one free-text suburb against the postcode dataset. Returns the
+ * canonical string, or null when the input matches zero rows or more than one
+ * distinct canonical string — an ambiguous suburb is REPORTED, never guessed
+ * (guessing writes a location a seller never chose).
+ */
+export function resolveSuburb(
+  byLocality: Map<string, PostcodeRow[]>,
+  suburb: string
+): string | null {
+  const raw = suburb.trim();
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+  const postcode = upper.match(/\b(\d{4})\b/)?.[1];
+  const state = AU_STATES.find((st) => new RegExp(`\\b${st}\\b`).test(upper));
+  // Locality = everything before the first comma, minus any state/postcode token.
+  const locality = upper
+    .split(",")[0]
+    .replace(/\b\d{4}\b/g, "")
+    .replace(new RegExp(`\\b(${AU_STATES.join("|")})\\b`, "g"), "")
+    .trim();
+  const candidates = (byLocality.get(locality) ?? []).filter(
+    (r) =>
+      (!state || r.state.toUpperCase() === state) &&
+      (!postcode || r.postcode === postcode)
+  );
+  const distinct = [...new Set(candidates.map(formatPostcodeRow))];
+  return distinct.length === 1 ? distinct[0] : null;
+}
+
+/** One page of sales, for the resolver action. */
+export const saleSuburbPage = internalQuery({
+  args: { cursor: v.optional(v.union(v.string(), v.null())), batchSize: v.number() },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("saleEvents")
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize });
+    return {
+      sales: page.page.map((s) => ({ _id: s._id, suburb: s.suburb })),
+      cursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
+/**
+ * Write the resolved location onto a batch of sales AND their member ads. Both:
+ * sale items are born with `location: sale.suburb`, so a free-text suburb left
+ * every item unfilterable too. Re-derives each sale afterwards.
+ *
+ * NOTE on overwriting member locations: this stamps every sale item with the
+ * sale's resolved location, including items a seller had individually re-homed
+ * via `updateAd`. Accepted 2026-08-23 — the site is pre-launch with no real
+ * sellers, so there is nothing to overwrite, and the one-time repair is worth
+ * more than the guard. `saleEvents.updateSaleEvent` DOES respect individually
+ * re-homed items; if this migration is ever re-run against live data, copy that
+ * guard here first (`item.location === sale.suburb`).
+ *
+ * `dryRun` counts exactly what a real run would change and writes nothing. It
+ * shares this traversal deliberately — a dry run that counts in a separate code
+ * path can disagree with the write, and a preview that under-reports reads as
+ * "nothing to do", which is worse than no preview at all.
+ */
+export const applySaleLocations = internalMutation({
+  args: {
+    updates: v.array(v.object({ saleEventId: v.id("saleEvents"), location: v.string() })),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    let salesPatched = 0;
+    let adsPatched = 0;
+    for (const { saleEventId, location } of args.updates) {
+      const sale = await ctx.db.get(saleEventId);
+      if (!sale) continue;
+      if (sale.suburb !== location) {
+        if (!args.dryRun) await ctx.db.patch(saleEventId, { suburb: location });
+        salesPatched++;
+      }
+      for (const item of await saleItems(ctx, saleEventId)) {
+        if (item.location !== location) {
+          if (!args.dryRun) await ctx.db.patch(item._id, { location });
+          adsPatched++;
+        }
+      }
+      if (args.dryRun) continue;
+      const fresh = await ctx.db.get(saleEventId);
+      if (fresh) await refreshSaleDerived(ctx, fresh);
+    }
+    return { salesPatched, adsPatched };
+  },
+});
+
+/**
+ * Rewrite every `saleEvents.suburb` (and its items' `location`) as the canonical
+ * `formatLocation()` string the location filter compares against.
+ *
+ * Why: until 2026-08-22 the Moving Sale setup step took a bare free-text suburb
+ * ("Richmond, VIC"), while the location filter matches "RICHMOND, VIC 3121"
+ * exactly. Every pre-existing sale is therefore invisible to every location
+ * filter (rule 4). The setup step now uses the shared location picker, so only
+ * historical rows need fixing.
+ *
+ * The postcode dataset lives in `public/australian-postcodes.json`, which a
+ * Convex function cannot read off disk — hence an action that fetches the very
+ * same file over HTTP from the deployed site. Point `datasetUrl` elsewhere when
+ * running against a deployment whose site isn't live yet.
+ *
+ * Ambiguous or unknown suburbs are RETURNED, not guessed. Fix those by hand
+ * (dashboard, or `updateSaleEvent` with a picked location) and re-run.
+ *
+ * Usage: npx convex run migrations:backfillSaleSuburbLocations
+ *        npx convex run migrations:backfillSaleSuburbLocations '{"dryRun":true}'
+ */
+export const backfillSaleSuburbLocations = internalAction({
+  args: {
+    datasetUrl: v.optional(v.string()),
+    batchSize: v.optional(v.number()),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const url = args.datasetUrl ?? "https://flyerboard.com.au/australian-postcodes.json";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not fetch ${url}: ${res.status}`);
+    const rows = (await res.json()) as PostcodeRow[];
+    const byLocality = new Map<string, PostcodeRow[]>();
+    for (const r of rows) {
+      if (!r?.locality || !r.state || !r.postcode) continue;
+      const key = r.locality.toUpperCase().trim();
+      const bucket = byLocality.get(key);
+      if (bucket) bucket.push(r);
+      else byLocality.set(key, [r]);
+    }
+
+    const batchSize = args.batchSize ?? DEFAULT_BATCH_SIZE;
+    const unresolved: { saleEventId: Id<"saleEvents">; suburb: string }[] = [];
+    let cursor: string | null = null;
+    let scanned = 0;
+    let salesPatched = 0;
+    let adsPatched = 0;
+    for (;;) {
+      const page: {
+        sales: { _id: Id<"saleEvents">; suburb: string }[];
+        cursor: string;
+        isDone: boolean;
+      } = await ctx.runQuery(internal.migrations.saleSuburbPage, { cursor, batchSize });
+      scanned += page.sales.length;
+      const updates: { saleEventId: Id<"saleEvents">; location: string }[] = [];
+      for (const sale of page.sales) {
+        const location = resolveSuburb(byLocality, sale.suburb);
+        if (location) updates.push({ saleEventId: sale._id, location });
+        else unresolved.push({ saleEventId: sale._id, suburb: sale.suburb });
+      }
+      if (updates.length > 0) {
+        const applied = await ctx.runMutation(internal.migrations.applySaleLocations, {
+          updates,
+          dryRun: args.dryRun,
+        });
+        salesPatched += applied.salesPatched;
+        adsPatched += applied.adsPatched;
+      }
+      if (page.isDone) break;
+      cursor = page.cursor;
+    }
+    return { scanned, salesPatched, adsPatched, unresolved, dryRun: args.dryRun === true };
   },
 });

@@ -2,7 +2,11 @@ import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./lib/adminAuth";
 import { Id } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { createError, logAdminAction } from "./lib/logger";
+import { detachAdFromBundle } from "./bundles";
+import { refreshCompositeDerived, refreshOwningComposites } from "./lib/derive";
 
 // ============================================================================
 // ADMIN QUERIES
@@ -322,6 +326,23 @@ export const isCurrentUserAdmin = query({
 // ============================================================================
 
 /**
+ * Re-derive every composite these ads belong to, once per composite.
+ * Bulk ad writes must never call `refreshOwningComposites` inside the loop: each
+ * call re-reads the composite and ALL of its members, so N members of one sale
+ * costs O(N²) reads and blows the transaction cap.
+ */
+async function refreshDistinctComposites(ctx: MutationCtx, ads: Doc<"ads">[]): Promise<void> {
+    const bundleIds = new Set<Id<"saleBundles">>();
+    const saleEventIds = new Set<Id<"saleEvents">>();
+    for (const ad of ads) {
+        if (ad.bundleId) bundleIds.add(ad.bundleId);
+        if (ad.saleEventId) saleEventIds.add(ad.saleEventId);
+    }
+    for (const bundleId of bundleIds) await refreshCompositeDerived(ctx, { bundleId });
+    for (const saleEventId of saleEventIds) await refreshCompositeDerived(ctx, { saleEventId });
+}
+
+/**
  * Toggle user account status (activate/deactivate)
  */
 export const toggleUserStatus = mutation({
@@ -356,6 +377,9 @@ export const toggleUserStatus = mutation({
             for (const ad of userAds) {
                 await ctx.db.patch(ad._id, { isActive: false });
             }
+            // `isActive` is a derived input — refresh once per DISTINCT composite
+            // after the loop, never per ad (see deleteUserAccount below).
+            await refreshDistinctComposites(ctx, userAds);
         }
 
         logAdminAction("User status toggled", { adminId: adminUser, userId: args.userId, newStatus, adsAffected: newStatus ? 0 : (await ctx.db.query("ads").withIndex("by_user", (q) => q.eq("userId", args.userId)).collect()).length });
@@ -395,7 +419,15 @@ export const deleteUserAccount = mutation({
                 isActive: false,
                 deletedAt: Date.now(),
             });
+            // Same involuntary-exit path posts.deleteAd takes: leave the ad out of
+            // its bundle so a Bundle can't keep advertising a deleted listing (rule 1).
+            await detachAdFromBundle(ctx, ad, "deleted");
         }
+        // Re-derive ONCE per distinct composite, not once per ad. Per-ad was O(N²):
+        // a 200-item Moving Sale ran 200 × (get + full by_sale_event collect) ≈ 40k
+        // reads, past Convex's 32k-document transaction cap — the account could not
+        // be deleted at all. Same shape addSaleItems already uses.
+        await refreshDistinctComposites(ctx, userAds);
 
         // Delete the user
         await ctx.db.delete(args.userId);
@@ -457,6 +489,8 @@ export const deleteFlyerAdmin = mutation({
             isActive: false,
             deletedAt: Date.now(),
         });
+        await detachAdFromBundle(ctx, ad, "deleted");
+        await refreshOwningComposites(ctx, ad);
 
         logAdminAction("Flyer deleted by admin", { adminId: adminUser, adId: args.adId, ownerId: ad.userId });
         return { success: true };

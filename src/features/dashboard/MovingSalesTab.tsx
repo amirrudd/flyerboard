@@ -9,6 +9,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { AdListingSkeleton } from "../../components/ui/DashboardSkeleton";
 import { formatAUD, formatPickupShort } from "../movingSale/saleHelpers";
+import { displayLocation } from "../../lib/locationService";
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-amber-100 text-amber-700" },
@@ -137,7 +138,7 @@ export function MovingSalesTab() {
                     </span>
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
-                    {sale.suburb} · {formatPickupShort(sale.pickupWindowStart)}
+                    {displayLocation(sale.suburb)} · {formatPickupShort(sale.pickupWindowStart)}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {sale.availableCount} available · {sale.soldCount} sold ·{" "}

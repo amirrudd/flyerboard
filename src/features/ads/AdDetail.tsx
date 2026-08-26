@@ -33,6 +33,7 @@ import { formatPickupShort } from "../movingSale/saleHelpers";
 import { trackView, setFlushCallback } from "../../lib/viewTracker";
 import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 import { BundleBanner } from "../bundles/BundleBanner";
+import { displayLocation } from "../../lib/locationService";
 
 
 interface AdDetailProps {
@@ -644,7 +645,7 @@ export function AdDetail({ adId, initialAd, onBack, onShowAuth }: AdDetailProps)
                         {saleBanner.currentItemSold
                           ? `${saleBanner.availableCount} items still available`
                           : [
-                              saleBanner.suburb,
+                              displayLocation(saleBanner.suburb),
                               `${saleBanner.itemCount} items`,
                               formatPickupShort(saleBanner.pickupWindowStart),
                               saleBanner.minPrice > 0 ? `from ${formatPrice(saleBanner.minPrice)}` : null,

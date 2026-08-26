@@ -50,3 +50,22 @@ export const searchLocations = async (query: string): Promise<LocationData[]> =>
 export const formatLocation = (loc: LocationData) => {
     return `${loc.locality}, ${loc.state} ${loc.postcode}`;
 };
+
+/**
+ * Does this string look like `formatLocation()` output — the canonical form
+ * every location filter compares on? Legacy rows hold free text a seller typed
+ * ("Richmond, VIC"), which matches nothing; those must be re-picked rather than
+ * silently accepted as a confirmed choice.
+ */
+export const isCanonicalLocation = (location: string) =>
+    /,\s*[A-Z]{2,3}\s+\d{4}$/.test(location.trim());
+
+/**
+ * The prose form of a stored location. `formatLocation()` is the canonical
+ * string every filter compares on ("RICHMOND, VIC 3121"), but the postcode is
+ * noise in a card subtitle or a printed flyer, so display drops it:
+ * "RICHMOND, VIC". Never store this — it's a view of the canonical value.
+ * A location with no trailing postcode (older free-text rows) passes through.
+ */
+export const displayLocation = (location: string) =>
+    location.replace(/\s+\d{4}\s*$/, "").trim();

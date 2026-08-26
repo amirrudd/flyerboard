@@ -242,3 +242,64 @@ describe("getBuyerChats", () => {
     expect(chats).toHaveLength(0);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// Composite derivation (rule 1 — an aggregation inherits from its members)
+// ──────────────────────────────────────────────────────────────────────────
+describe("updateAd / deleteAd refresh the owning Moving Sale", () => {
+  async function saleWithItem() {
+    const t = convexTest(schema, modules);
+    await seedUser(t, "seller", "Amir");
+    const asUser = t.withIdentity({ subject: "seller" });
+    const categoryId = await t.run((ctx) =>
+      ctx.db.insert("categories", { name: "Other", slug: "other" })
+    );
+    const tools = await t.run((ctx) =>
+      ctx.db.insert("categories", { name: "Tools", slug: "tools" })
+    );
+    const start = Date.now() + 86_400_000;
+    const saleEventId = await asUser.mutation(api.saleEvents.createSaleEvent, {
+      title: "Amir's Moving Sale",
+      suburb: "Richmond, VIC",
+      pickupWindowStart: start,
+      pickupWindowEnd: start + 3_600_000,
+    });
+    const [adId] = await asUser.mutation(api.saleEvents.addSaleItems, {
+      saleEventId,
+      items: [{ imageKey: "r2:a", title: "Oak desk" }],
+    });
+    // Publish: a draft's items are isActive:false, and an inactive ad is not a
+    // live member (`adIsVisible`).
+    await asUser.mutation(api.saleEvents.publishSaleEvent, { saleEventId });
+    return { t, asUser, saleEventId, adId, categoryId, tools };
+  }
+
+  test("editing a sale item's title and category re-derives the sale", async () => {
+    const { t, asUser, saleEventId, adId, tools } = await saleWithItem();
+
+    await asUser.mutation(api.posts.updateAd, {
+      adId,
+      title: "Teak sideboard",
+      description: "desc",
+      location: "Richmond, VIC",
+      categoryId: tools,
+      images: ["r2:a"],
+      price: 50,
+    });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.categoryIds).toEqual([tools]);
+    expect(sale!.searchText).toContain("Teak sideboard");
+    expect(sale!.searchText).not.toContain("Oak desk");
+  });
+
+  test("soft-deleting a sale item drops it from the sale's derived fields", async () => {
+    const { t, asUser, saleEventId, adId } = await saleWithItem();
+
+    await asUser.mutation(api.posts.deleteAd, { adId });
+
+    const sale = await t.run((ctx) => ctx.db.get(saleEventId));
+    expect(sale!.categoryIds).toEqual([]);
+    expect(sale!.searchText).not.toContain("Oak desk");
+  });
+});

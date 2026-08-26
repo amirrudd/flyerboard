@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CircleNotch, Check } from "@phosphor-icons/react";
 import { getPickupPresets, toDateTimeLocal } from "../saleHelpers";
+import { LocationPicker } from "../../../components/ui/LocationPicker";
+import { isCanonicalLocation } from "../../../lib/locationService";
 
 export interface SetupValues {
   title: string;
@@ -27,7 +29,17 @@ export function SetupStep({
   const [title, setTitle] = useState(
     initial?.title ?? `${defaultFirstName}'s Moving Sale`
   );
-  const [suburb, setSuburb] = useState(initial?.suburb ?? "");
+  // A draft saved before the picker existed holds free text ("Richmond, VIC"),
+  // which matches no location filter. Seeding it as a confirmed value would let
+  // the seller resume, see a filled field, and republish a sale that still can't
+  // be found — so only a canonical string counts as already-picked; anything
+  // else is shown as text to replace.
+  const legacySuburb = initial?.suburb && !isCanonicalLocation(initial.suburb)
+    ? initial.suburb
+    : undefined;
+  const [suburb, setSuburb] = useState(
+    initial?.suburb && isCanonicalLocation(initial.suburb) ? initial.suburb : ""
+  );
   const [note, setNote] = useState(initial?.note ?? "");
   const [presetId, setPresetId] = useState<string>(
     initial?.pickupWindowStart ? "custom" : presets[0].id
@@ -48,7 +60,10 @@ export function SetupStep({
 
   function handleSubmit() {
     if (!suburb.trim()) {
-      setError("Add the suburb so buyers know where to come.");
+      // The picker only ever emits a canonical formatLocation() string, so an
+      // empty value means the seller typed without choosing. Free text here used
+      // to be stored verbatim and never matched the location filter (rule 4).
+      setError("Pick the suburb from the list so buyers can find your sale.");
       return;
     }
     const { start, end } = resolveWindow();
@@ -92,14 +107,15 @@ export function SetupStep({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
+          <label htmlFor="sale-suburb" className="mb-1.5 block text-sm font-medium text-foreground">
             Suburb
           </label>
-          <input
-            className={inputClass}
+          <LocationPicker
+            id="sale-suburb"
             value={suburb}
-            onChange={(e) => setSuburb(e.target.value)}
-            placeholder="Richmond, VIC"
+            onChange={setSuburb}
+            initialQuery={legacySuburb}
+            inputClassName={inputClass}
           />
         </div>
 

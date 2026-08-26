@@ -253,10 +253,26 @@ const applicationTables = {
     // ads.bumpedAt used).
     bumpedAt: v.number(),                  // epoch ms — feed sort key
     boostCount: v.optional(v.number()),    // total boosts; mirrors ads.boostCount
+
+    // Derived from member ads — rule 1, "an aggregation inherits from its members".
+    // Never authored directly. Refreshed by refreshCompositeDerived() on every
+    // membership change and on any member ad's category/title/location edit.
+    categoryIds: v.optional(v.array(v.id("categories"))),
+    searchText: v.optional(v.string()),
+    // Distinct canonical formatLocation() strings of the live members, so the
+    // location filter can reach a Sale the same way it reaches an ad (rule 4).
+    // A LIST, like categoryIds: the card matches if ANY member matches (rule 1).
+    // Overlaps `suburb` above in practice (every item is born at the sale's
+    // suburb), but this one is derived and `suburb` is the seller's own field.
+    locations: v.optional(v.array(v.string())),
   })
     .index("by_user", ["userId"])
     .index("by_slug", ["slug"])
-    .index("by_status_and_bumped_at", ["status", "bumpedAt"]),
+    .index("by_status_and_bumped_at", ["status", "bumpedAt"])
+    .searchIndex("search_composite", {
+      searchField: "searchText",
+      filterFields: ["status"],
+    }),
 
   // Bundles serve two callers off one table:
   //   • Moving Sale step-5 "bundle suggestions" — always carry a `saleEventId`.
@@ -270,6 +286,16 @@ const applicationTables = {
     sellerId: v.optional(v.id("users")),   // Owner. Always set on new rows; backfilled from saleEvent.userId on legacy rows.
     saleEventId: v.optional(v.id("saleEvents")), // FK → saleEvents; undefined = standalone bundle
     label: v.string(),                     // "Home office setup" — doubles as the standalone bundle's display title
+    // True when `label` came from autoLabel() rather than the seller. Only an
+    // auto label is regenerated when members change (refreshCompositeDerived) —
+    // a seller's own words are never overwritten. ABSENT on legacy rows, which
+    // read as seller-authored: leaving an old label alone beats rewriting it.
+    //
+    // Deriving the label at read time instead (dropping this flag) was tried and
+    // reverted: several callers expose a bundle's label WITHOUT loading members
+    // (e.g. convex/notifications/queries.ts, convex/posts.ts chat shapes), so
+    // they would each have to read every member ad just to render one string.
+    labelIsAuto: v.optional(v.boolean()),
     bundlePrice: v.number(),               // Seller-set or AI-suggested bundle price
     adIds: v.array(v.id("ads")),           // Ads included in this bundle (exactly N for standalone)
     status: v.optional(                    // Sold-state machine; missing => "active"
@@ -287,10 +313,25 @@ const applicationTables = {
     // narrowed (same widen→backfill→narrow rollout ads.bumpedAt used).
     bumpedAt: v.number(),                  // epoch ms — feed sort key
     boostCount: v.optional(v.number()),    // total boosts; mirrors ads.boostCount
+
+    // Derived from member ads — rule 1, "an aggregation inherits from its members".
+    // Never authored directly. Refreshed by refreshCompositeDerived() on every
+    // membership change and on any member ad's category/title/location edit.
+    categoryIds: v.optional(v.array(v.id("categories"))),
+    searchText: v.optional(v.string()),
+    // Distinct canonical formatLocation() strings of the live members, so the
+    // location filter can reach a Bundle the same way it reaches an ad (rule 4).
+    // A LIST, like categoryIds: nothing forces a bundle's members to share an
+    // address, so the card matches if ANY member matches (rule 1).
+    locations: v.optional(v.array(v.string())),
   })
     .index("by_sale_event", ["saleEventId"])
     .index("by_seller", ["sellerId"])
-    .index("by_status_and_bumped_at", ["status", "bumpedAt"]),
+    .index("by_status_and_bumped_at", ["status", "bumpedAt"])
+    .searchIndex("search_composite", {
+      searchField: "searchText",
+      filterFields: ["status"],
+    }),
 };
 
 // Extend the auth tables to add custom fields

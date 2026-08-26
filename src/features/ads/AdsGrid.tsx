@@ -11,6 +11,7 @@ import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
 import { boostArrivalKey } from "../../context/freshAdsMerge";
 import type { FeedEntry } from "../../context/MarketplaceContext";
+import { displayLocation } from "../../lib/locationService";
 
 /**
  * A feed cell is either a normal ad, a Sale card, or a Bundle card. The list
@@ -188,7 +189,7 @@ export const AdsGrid = memo(function AdsGrid({
                       covers={sale.covers}
                       photoCount={sale.photoCount}
                       itemCount={sale.itemCount}
-                      suburb={sale.suburb}
+                      suburb={displayLocation(sale.suburb)}
                     />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
                     <div className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
@@ -202,7 +203,7 @@ export const AdsGrid = memo(function AdsGrid({
                     </h2>
                     <div className="mt-1 flex items-baseline justify-between gap-2">
                       <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                        {sale.suburb}
+                        {displayLocation(sale.suburb)}
                       </p>
                       <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none flex-shrink-0">
                         {sale.minPrice > 0 ? `from ${formatPrice(sale.minPrice)}` : 'Moving sale'}
@@ -258,7 +259,7 @@ export const AdsGrid = memo(function AdsGrid({
                     </h2>
                     <div className="mt-1 flex items-baseline justify-between gap-2">
                       <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                        {bundle.location}
+                        {displayLocation(bundle.location)}
                       </p>
                       <div className="flex flex-col items-end flex-shrink-0">
                         {bundle.separatelyTotal > bundle.bundlePrice && (
@@ -351,7 +352,7 @@ export const AdsGrid = memo(function AdsGrid({
                   </h2>
                   <div className="mt-1 flex items-baseline justify-between gap-2">
                     <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                      {ad.location}
+                      {displayLocation(ad.location)}
                     </p>
                     <div className="flex flex-col items-end flex-shrink-0">
                       {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (

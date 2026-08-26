@@ -103,7 +103,17 @@ export function HomePage() {
     clearNewAdIds,
     boostedAdKeys,
     clearBoostedAdKeys,
+    selectedLocation,
+    setSelectedLocation,
   } = useMarketplace();
+
+  // Stable identity so AdsGrid's memo isn't broken every render. AdsGrid is
+  // unit-tested bare (no MarketplaceProvider), so location comes down as props
+  // rather than via useMarketplace() inside the grid.
+  const handleClearLocation = useCallback(
+    () => setSelectedLocation(""),
+    [setSelectedLocation]
+  );
 
   // Price-range filter only. We deliberately never re-sort: the feed is always
   // newest-first because the product's core value is "pin your flyer to the top"
@@ -363,6 +373,8 @@ export function HomePage() {
               boostedAdKeys={boostedAdKeys}
               onSaleClick={handleSaleClick}
               onBundleClick={handleBundleClick}
+              selectedLocation={selectedLocation || undefined}
+              onClearLocation={handleClearLocation}
             />
 
 

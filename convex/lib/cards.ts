@@ -87,13 +87,37 @@ export async function hydrateSaleCard(ctx: QueryCtx, sale: Doc<"saleEvents">) {
 }
 
 /**
+ * Location tier (rule 5, `.agent/PRODUCT-RULES.md`): stamped on every entry
+ * when — and only when — a location filter is set. "near" = matches the
+ * selected location, "far" = everything else. The server tags; the client
+ * partitions at render. Absent (undefined, dropped before serialisation) on
+ * an unfiltered feed, so the no-location response is byte-identical to before.
+ */
+export type FeedTier = "near" | "far";
+
+/**
+ * The tier fields for one entry — THE single enforcement site of "stamp ONLY
+ * when a location is set". An unstamped entry is the default state, and
+ * `undefined` fields are dropped before serialisation, which keeps the
+ * no-location response byte-identical to the pre-tier feed. (Fields, not a
+ * bare tier value: a helper answering "near" with no location set would break
+ * that guarantee.)
+ */
+export function tierFields(
+  location: string | undefined,
+  matches: boolean
+): { tier?: FeedTier } {
+  return location ? { tier: matches ? "near" : "far" } : {};
+}
+
+/**
  * A feed/search source entry before hydration. ONE definition — `feed.getFeed`
  * and `ads.getAds` must produce byte-identical page shapes.
  */
 export type FeedSourceEntry =
-  | { kind: "ad"; doc: Doc<"ads"> }
-  | { kind: "bundle"; doc: Doc<"saleBundles"> }
-  | { kind: "sale"; doc: Doc<"saleEvents"> };
+  | { kind: "ad"; doc: Doc<"ads">; tier?: FeedTier }
+  | { kind: "bundle"; doc: Doc<"saleBundles">; tier?: FeedTier }
+  | { kind: "sale"; doc: Doc<"saleEvents">; tier?: FeedTier };
 
 /** Standalone, live bundle (sale-suggestion bundles never feed). */
 export const bundleIsLive = (b: Doc<"saleBundles">) => !b.saleEventId && b.isDeleted !== true;
@@ -125,19 +149,32 @@ export function compositeMatchesFilters(
  * despawned (a bundle below BUNDLE_MIN_ITEMS visible members, a sale with none).
  * The despawn rule has exactly one enforcement site — this function.
  */
-export async function hydrateEntries(ctx: QueryCtx, entries: FeedSourceEntry[]) {
+/** A hydrated feed page entry. `tier` stays OPTIONAL — absent when no location is set. */
+type FeedPageEntry =
+  | { kind: "ad"; ad: Doc<"ads">; tier?: FeedTier }
+  | { kind: "bundle"; card: NonNullable<Awaited<ReturnType<typeof hydrateBundleCard>>>; tier?: FeedTier }
+  | { kind: "sale"; card: NonNullable<Awaited<ReturnType<typeof hydrateSaleCard>>>; tier?: FeedTier };
+
+export async function hydrateEntries(
+  ctx: QueryCtx,
+  entries: FeedSourceEntry[]
+): Promise<FeedPageEntry[]> {
   const hydrated = await Promise.all(
-    entries.map(async (entry) => {
+    entries.map(async (entry): Promise<FeedPageEntry | null> => {
+      // Spread conditionally: `tier: entry.tier` would make the property a
+      // required `… | undefined`, and an undefined field must stay genuinely
+      // absent so the no-location response is byte-identical to before.
+      const tier = entry.tier ? { tier: entry.tier } : {};
       switch (entry.kind) {
         case "ad":
-          return { kind: "ad" as const, ad: entry.doc };
+          return { kind: "ad" as const, ad: entry.doc, ...tier };
         case "bundle": {
           const card = await hydrateBundleCard(ctx, entry.doc);
-          return card ? { kind: "bundle" as const, card } : null;
+          return card ? { kind: "bundle" as const, card, ...tier } : null;
         }
         case "sale": {
           const card = await hydrateSaleCard(ctx, entry.doc);
-          return card ? { kind: "sale" as const, card } : null;
+          return card ? { kind: "sale" as const, card, ...tier } : null;
         }
       }
     })

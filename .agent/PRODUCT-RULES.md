@@ -132,25 +132,13 @@ guardian should note these as accepted rather than reporting them as findings.
 **Keep this list near-empty.** An exception with no removal condition is just a rule
 being repealed quietly.
 
-| Rule | Exception | Accepted | Ends when |
-|---|---|---|---|
-| 5 | The location filter is a **hard** filter — it hides out-of-area ads instead of grouping them below a divider. Applies to all three ad types. | 2026-08-15, **widened 2026-08-22** | Grouping ships (in-area newest, then out-of-area newest) and the filter stops hiding anything. |
-
-**Note on the 2026-08-22 widening.** As accepted on 2026-08-15 this exception covered
-ads only — Bundles and Moving Sales were simply exempt from the location filter, which
-was itself a rule 4 violation. Making them participate (rule 4) necessarily makes them
-hideable (rule 5). Amir chose consistency: location now means the same thing for every
-ad type, and grouping will fix all three at once rather than one.
-
-The original wording named a `proximityFeed` feature flag as the thing that would end
-this. **No such flag exists in the codebase** — nothing was ever shipped behind it. The
-condition above is written in terms of the behaviour instead, so it cannot be satisfied
-by deleting a flag that was never created.
+*None currently.* (The rule 5 hard-location-filter exception, accepted 2026-08-15 and
+widened 2026-08-22, ended when grouping shipped: every surface now tiers out-of-area
+results below a divider instead of hiding them.)
 
 ## Notes
 
-- Rules 1–4 describe what the app already is. **Rule 5 describes what it must become**
-  — today's exact-match location filter contradicts it and is a bug, not a decision.
+- Rules 1–5 describe what the app already is.
 - "Documented decision" in a code comment is not automatically a product decision.
   Several existing comments describe behaviour that was inherited from a data
   limitation and later labelled as a choice. Check against these rules, not against

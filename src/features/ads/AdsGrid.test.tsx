@@ -501,6 +501,88 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
 });
 
 // ============================================================================
+// RULE 5 — location groups, it doesn't hide. Entries arrive tiered from the
+// server; the grid partitions at render: near group, one divider, far group.
+// ============================================================================
+
+describe('AdsGrid - location grouping (rule 5)', () => {
+    const nearAd = { ...mockAds[0], tier: 'near' as const };
+    const farAd = { ...mockAds[1], tier: 'far' as const };
+    const tierEntries = (ads: readonly (AdDoc & { tier?: 'near' | 'far' })[]): FeedEntry[] =>
+        ads.map(({ tier, ...ad }) => ({ kind: 'ad' as const, ad, ...(tier && { tier }) }));
+
+    it('renders exactly one divider, before the first far entry, whatever the interleave', () => {
+        render(
+            <AdsGrid
+                entries={tierEntries([farAd, nearAd])}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                selectedLocation="Sydney, NSW 2000"
+            />
+        );
+        const separators = screen.getAllByRole('separator');
+        expect(separators).toHaveLength(1);
+        // Near group first, divider, then the far group — despite server order.
+        const grid = separators[0].parentElement!;
+        const order = [...grid.children].map((el) =>
+            el.getAttribute('role') === 'separator' ? 'divider' : el.querySelector('h2')?.textContent
+        );
+        expect(order).toEqual(['iPhone 13', 'divider', 'Toyota Camry']);
+        expect(screen.getByText(/Further from Sydney/i)).toBeInTheDocument();
+    });
+
+    it('leads with a banner (not a bare divider) when nothing is in the area', () => {
+        const onClearLocation = vi.fn();
+        render(
+            <AdsGrid
+                entries={tierEntries([farAd])}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                selectedLocation="Sydney, NSW 2000"
+                onClearLocation={onClearLocation}
+            />
+        );
+        expect(screen.getByText(/Nothing in Sydney, NSW right now/i)).toBeInTheDocument();
+        expect(screen.getByText(/newest flyers from further out/i)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /clear location/i }));
+        expect(onClearLocation).toHaveBeenCalled();
+        // The far ad still renders below the banner — never an empty screen.
+        expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
+    });
+
+    it('names the active category in the empty-area banner', () => {
+        render(
+            <AdsGrid
+                entries={tierEntries([farAd])}
+                categories={mockCategories}
+                selectedCategory={'cat1' as Id<'categories'>}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                selectedLocation="Sydney, NSW 2000"
+            />
+        );
+        expect(screen.getByText(/No Electronics in Sydney, NSW right now/i)).toBeInTheDocument();
+    });
+
+    it('renders no divider when no location is set (untiered entries)', () => {
+        render(
+            <AdsGrid
+                entries={adEntries(mockAds)}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+            />
+        );
+        expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+    });
+});
+
+// ============================================================================
 // BOOST (Phase 2) — feed sorts on bumpedAt; boost arrivals get the pin-drop
 // ring pulse and deliberately NO "New" badge.
 // ============================================================================

@@ -4,6 +4,7 @@ import {
   searchLocations,
   formatLocation,
   fetchLocations,
+  locationsUnavailable,
   type LocationData,
 } from "../../lib/locationService";
 
@@ -78,19 +79,13 @@ export function LocationPicker({
         setIsSearching(true);
         try {
           const results = await searchLocations(query);
-          if (results.length === 0) {
-            // Distinguish "no match" from "dataset never loaded": the dataset
-            // is never legitimately empty, so an empty fetchLocations() means
-            // the fetch failed. Fall back to free text so the flow isn't
+          if (results.length === 0 && locationsUnavailable()) {
+            // Dataset fetch failed: fall back to free text so the flow isn't
             // blocked — the typed text becomes the value as-is.
-            const dataset = await fetchLocations();
-            if (!dataset || dataset.length === 0) {
-              setSuggestionsUnavailable(true);
-              setSuggestions([]);
-              setShowSuggestions(false);
-              onChange(query);
-              return;
-            }
+            setSuggestionsUnavailable(true);
+            setSuggestions([]);
+            onChange(query);
+            return;
           }
           setSuggestions(results.slice(0, 8));
           setShowSuggestions(results.length > 0);
@@ -157,7 +152,7 @@ export function LocationPicker({
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
-          } else if (e.key === "Enter" && activeIndex >= 0) {
+          } else if (e.key === "Enter" && suggestions[activeIndex]) {
             e.preventDefault();
             pick(suggestions[activeIndex]);
           }

@@ -11,6 +11,10 @@ export interface LocationData {
 
 let locationsCache: LocationData[] | null = null;
 let fetchPromise: Promise<LocationData[]> | null = null;
+let loadFailed = false;
+
+/** True once the dataset fetch has failed (it caches the failure for the session). */
+export const locationsUnavailable = () => loadFailed;
 
 export const fetchLocations = async (): Promise<LocationData[]> => {
     if (locationsCache) return locationsCache;
@@ -25,6 +29,7 @@ export const fetchLocations = async (): Promise<LocationData[]> => {
         })
         .catch((err) => {
             console.error("Error loading locations:", err);
+            loadFailed = true;
             toast.error("Failed to load location data. Please try again.");
             return [];
         });

@@ -9,7 +9,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
-import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey, newBadgeKey } from "./freshAdsMerge";
+import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey, entryKey } from "./freshAdsMerge";
 
 /** One unified-feed page entry (ad | bundle card | sale card), server-interleaved on `bumpedAt` desc; rendered verbatim. */
 export type FeedEntry = FunctionReturnType<typeof api.feed.getFeed>["page"][number];
@@ -211,13 +211,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             const merged = [...brandNew, ...boosted];
 
             if (merged.length > 0) {
-                // The "New" badge applies to every kind: ads keyed by _id,
-                // composites by the `${kind}-${_id}` grid key (newBadgeKey).
-                // The pin-drop entrance is still ad-only (AdsGrid keys it off
-                // the ad's _id), so only ad entries feed boostedAdKeys.
+                // "New" badges every kind (entryKey); pin-drop stays ad-only.
                 const boostedAds = boosted.filter((e) => e.kind === "ad");
                 if (brandNew.length > 0) {
-                    setNewAdIds(new Set(brandNew.map(newBadgeKey)));
+                    setNewAdIds(new Set(brandNew.map(entryKey)));
                 }
                 if (boostedAds.length > 0) {
                     // Boost arrivals get the pin-drop entrance instead of the

@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { LocationPicker } from "./LocationPicker";
-import { searchLocations, fetchLocations } from "../../lib/locationService";
+import {
+  searchLocations,
+  fetchLocations,
+  locationsUnavailable,
+} from "../../lib/locationService";
 
 // Mock only the dataset access; formatLocation stays real so the emitted
 // string is byte-identical to what the location filter compares on.
@@ -11,6 +15,7 @@ vi.mock("../../lib/locationService", async () => ({
   )),
   searchLocations: vi.fn(),
   fetchLocations: vi.fn(),
+  locationsUnavailable: vi.fn(() => false),
 }));
 
 const RICHMOND = { id: 1, locality: "RICHMOND", state: "VIC", postcode: "3121", lat: 0, long: 0 };
@@ -100,10 +105,9 @@ describe("LocationPicker — combobox semantics", () => {
 describe("LocationPicker — offline fallback (dataset fetch failed)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // fetchLocations swallows its own failure and resolves [] — the dataset is
-    // never legitimately empty, so [] is the failure signal.
     vi.mocked(searchLocations).mockResolvedValue([]);
     vi.mocked(fetchLocations).mockResolvedValue([]);
+    vi.mocked(locationsUnavailable).mockReturnValue(true);
   });
 
   it("commits the typed text as the value and shows the inline note", async () => {
@@ -118,7 +122,7 @@ describe("LocationPicker — offline fallback (dataset fetch failed)", () => {
   });
 
   it("shows no note while the dataset is available (no match is not a failure)", async () => {
-    vi.mocked(fetchLocations).mockResolvedValue([RICHMOND]);
+    vi.mocked(locationsUnavailable).mockReturnValue(false);
     const { input, onChange } = setup();
     fireEvent.change(input, { target: { value: "Xyzzy" } });
 

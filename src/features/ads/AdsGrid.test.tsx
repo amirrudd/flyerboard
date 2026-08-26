@@ -583,7 +583,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
         expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();
     });
 
-    it('shows the "New" badge on a fresh composite card via the `${kind}-${_id}` key (rule 1)', () => {
+    it('shows the "New" badge on a fresh composite card via its entryKey (rule 1)', () => {
         const entries: FeedEntry[] = [
             {
                 kind: 'sale',
@@ -610,7 +610,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                newAdIds={new Set(['sale-sale1', 'bundle-bundle1'])}
+                newAdIds={new Set(['sale:sale1', 'bundle:bundle1'])}
             />
         );
         // One badge per fresh composite — same badge a fresh ad gets.
@@ -647,7 +647,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                newAdIds={new Set(['adNewer'])}
+                newAdIds={new Set(['ad:adNewer'])}
             />
         );
         expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();

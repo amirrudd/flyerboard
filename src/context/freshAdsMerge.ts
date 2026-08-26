@@ -61,17 +61,6 @@ export function boostArrivalKey(ad: { _id: string; bumpedAt: number }): string {
 }
 
 /**
- * The "New"-badge identity for a brand-new feed entry, shared by the
- * newAdIds producer (MarketplaceContext) and consumer (AdsGrid). An ad keeps
- * its raw `_id` (the pre-composite badge scheme); a composite uses the same
- * `${kind}-${_id}` key AdsGrid already keys its cards on. One formatter so the
- * two sides can't drift and silently never match.
- */
-export function newBadgeKey(e: FeedEntryLike): string {
-  return "ad" in e ? e.ad._id : `${e.kind}-${e.card._id}`;
-}
-
-/**
  * Classify a `getLatestAds` result set against everything the session already
  * holds (fresh rail + paginated query results):
  *
@@ -115,11 +104,7 @@ export function classifyLatestEntries<T extends FeedEntryLike>(
  * stale prior copy by kind+id so the rail never holds two generations of the
  * same entry.
  *
- * The final sort is load-bearing (rule 2: `bumpedAt` desc is the only feed
- * order): a raw concat renders arrivals in fetch order, so a batch of mixed
- * arrivals — or a new arrival older than a previously railed boost — could
- * sit out of order at the top of the feed. The sort is stable, so the
- * replacement-aware dedupe above it is untouched.
+ * bumpedAt desc is the only feed order (rule 2); stable sort, dedupe above untouched.
  */
 export function mergeFreshRail<T extends FeedEntryLike>(
   fresh: readonly T[],

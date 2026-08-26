@@ -9,7 +9,7 @@ import { useMotionPrefs } from "../../hooks/useMotionPrefs";
 import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
-import { boostArrivalKey, newBadgeKey } from "../../context/freshAdsMerge";
+import { boostArrivalKey, entryKey } from "../../context/freshAdsMerge";
 import type { FeedEntry } from "../../context/MarketplaceContext";
 import { displayLocation } from "../../lib/locationService";
 
@@ -34,6 +34,15 @@ interface Category {
   slug: string;
   parentId?: Id<"categories">;
 }
+
+/** The "New" badge. Composites place it right — top-left holds the type badge. */
+const NewBadge = ({ side = "left" }: { side?: "left" | "right" }) => (
+  <div
+    className={`absolute top-2.5 ${side === "left" ? "left-2.5" : "right-2.5"} bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md`}
+  >
+    New
+  </div>
+);
 
 interface AdsGridProps {
   /** The unified feed page: ads + composite cards, server-interleaved. */
@@ -167,9 +176,7 @@ export const AdsGrid = memo(function AdsGrid({
             // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
             if (entry.kind === "sale") {
               const sale = entry.card;
-              // Fresh-rail arrival: same "New" badge as a fresh ad (rule 1) —
-              // top-right, since top-left holds the type badge.
-              const isNew = newAdIds.has(newBadgeKey(entry));
+              const isNew = newAdIds.has(entryKey(entry));
               return (
                 <m.article
                   key={`sale-${sale._id}`}
@@ -199,11 +206,7 @@ export const AdsGrid = memo(function AdsGrid({
                       <House className="w-3 h-3" weight="fill" />
                       Moving Sale
                     </div>
-                    {isNew && (
-                      <div className="absolute top-2.5 right-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md">
-                        New
-                      </div>
-                    )}
+                    {isNew && <NewBadge side="right" />}
                   </div>
                   <div className="px-3.5 pt-3 pb-3.5">
                     <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
@@ -231,8 +234,7 @@ export const AdsGrid = memo(function AdsGrid({
             // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
             if (entry.kind === "bundle") {
               const bundle = entry.card;
-              // Fresh-rail arrival: same "New" badge as a fresh ad (rule 1).
-              const isNew = newAdIds.has(newBadgeKey(entry));
+              const isNew = newAdIds.has(entryKey(entry));
               return (
                 <m.article
                   key={`bundle-${bundle._id}`}
@@ -257,11 +259,7 @@ export const AdsGrid = memo(function AdsGrid({
                       <Package className="w-3 h-3" weight="fill" />
                       Bundle
                     </div>
-                    {isNew && (
-                      <div className="absolute top-2.5 right-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md">
-                        New
-                      </div>
-                    )}
+                    {isNew && <NewBadge side="right" />}
                     {bundle.savings > 0 && (
                       <div className="absolute bottom-2.5 right-2.5 bg-bundle text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
                         Save {formatPrice(bundle.savings)}
@@ -299,7 +297,7 @@ export const AdsGrid = memo(function AdsGrid({
             }
 
             const ad = entry.ad;
-            const isNew = newAdIds.has(newBadgeKey(entry));
+            const isNew = newAdIds.has(entryKey(entry));
             const isPriority = index < 6;
             const isExchange = ad.listingType === "exchange";
             // Boost arrival (one-shot per boost event): the card is keyed on
@@ -348,11 +346,7 @@ export const AdsGrid = memo(function AdsGrid({
                       {ad.images.length}
                     </div>
                   )}
-                  {isNew && (
-                    <div className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md">
-                      New
-                    </div>
-                  )}
+                  {isNew && <NewBadge />}
                   {isExchange && !isNew && (
                     <div className="absolute top-2.5 left-2.5 bg-background/85 backdrop-blur-sm text-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1 shadow-sm ring-1 ring-border">
                       <Repeat className="w-3 h-3" weight="bold" />

@@ -14,6 +14,7 @@ vi.mock("../../../lib/locationService", async () => ({
   )),
   searchLocations: vi.fn(),
   fetchLocations: vi.fn(),
+  locationsUnavailable: vi.fn(() => false),
 }));
 
 const RICHMOND = { id: 1, locality: "RICHMOND", state: "VIC", postcode: "3121", lat: 0, long: 0 };
@@ -62,13 +63,11 @@ describe("SetupStep — the sale's suburb is a canonical location (rule 4)", () 
 
 describe("suburb dataset unavailable (offline) — the flow must not dead-end", () => {
     it("accepts the typed suburb as free text when suggestions can't load", async () => {
-        const { searchLocations, fetchLocations } = await import(
+        const { searchLocations, locationsUnavailable } = await import(
             "../../../lib/locationService"
         );
-        // fetchLocations swallows its own failure and resolves [] — the
-        // dataset is never legitimately empty, so [] means the fetch failed.
         vi.mocked(searchLocations).mockResolvedValue([]);
-        vi.mocked(fetchLocations).mockResolvedValue([]);
+        vi.mocked(locationsUnavailable).mockReturnValue(true);
 
         const onSubmit = vi.fn();
         render(

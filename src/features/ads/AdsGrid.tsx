@@ -299,7 +299,7 @@ export const AdsGrid = memo(function AdsGrid({
             }
 
             const ad = entry.ad;
-            const isNew = newAdIds.has(ad._id);
+            const isNew = newAdIds.has(newBadgeKey(entry));
             const isPriority = index < 6;
             const isExchange = ad.listingType === "exchange";
             // Boost arrival (one-shot per boost event): the card is keyed on

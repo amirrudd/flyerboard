@@ -1,7 +1,7 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { refreshSaleDerived } from "./lib/derive";
+import { refreshDistinctComposites, saleItems } from "./lib/derive";
 
 /**
  * Seed a complete, published sample Moving Sale for local/dev testing.
@@ -270,11 +270,11 @@ export const seedMovingSale = internalMutation({
       for (const adId of adIds) await ctx.db.patch(adId, { bundleId });
     }
 
-    // 6. Derive the sale's composite fields (categoryIds / searchText / locations)
-    // from its members — without this the seeded sale is invisible to the
-    // category filter, search, and the location filter (rule 1).
-    const sale = await ctx.db.get(saleEventId);
-    if (sale) await refreshSaleDerived(ctx, sale);
+    // 6. Derive the composites' fields (categoryIds / searchText / locations)
+    // from their members — without this the seeded sale is invisible to the
+    // category filter, search, and the location filter (rule 1). Re-read the
+    // items so the bundle patches above are visible to the refresh.
+    await refreshDistinctComposites(ctx, await saleItems(ctx, saleEventId));
 
     return {
       success: true,

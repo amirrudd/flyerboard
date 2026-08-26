@@ -23,14 +23,14 @@ import {
  * Four mutations shipped without doing that. Discipline already failed once, so
  * this file does not rely on it:
  *
- *   1. `MUTATIONS` must list every exported mutation in EVERY top-level
- *      `convex/*.ts` module (`_generated`, `lib/` and tests excluded). Add a
- *      mutation — or a whole new module — and this test fails until you
+ *   1. `MUTATIONS` must list every exported mutation in every top-level
+ *      `convex/*.ts` module whose source mentions the ads table (see
+ *      `EXPORTED_MUTATIONS` for the scan and its exclusions). Add a mutation —
+ *      or write `"ads"` from a new module — and this test fails until you
  *      classify it.
- *   2. Every entry flagged `writesAds` must have an `exercise` (or a documented
- *      `exemption`), and after running it EVERY composite in the database must
- *      equal a fresh derivation over its current members. Forget the refresh,
- *      this test fails.
+ *   2. Every entry flagged `writesAds` must have an `exercise`, and after
+ *      running it EVERY composite in the database must equal a fresh derivation
+ *      over its current members. Forget the refresh, this test fails.
  */
 
 const modules = loadConvexModules();
@@ -49,25 +49,26 @@ function loadConvexModules(): Record<string, () => Promise<unknown>> {
 }
 
 /**
- * Raw source of every top-level convex module, for the coverage scan.
- * `../*.ts` deliberately does not descend into `../_generated/` or `../lib/`
- * (no mutations live there — helpers and tests only).
+ * Every "module.mutation" exported by a top-level convex module whose source
+ * mentions the ads table, scraped from raw source. `../*.ts` deliberately does
+ * not descend into `../_generated/` or `../lib/` (no mutations live there —
+ * helpers and tests only); test files at the top level export no mutations, so
+ * they scrape to nothing. Modules that never say `"ads"` structurally cannot
+ * write the table and need no classification — a later ads write necessarily
+ * introduces the string and pulls the module into the required set.
+ * `sampleData.ts` is excluded by name: dev-only, hard-wipes the ads table
+ * wholesale, and its env guard throws under convex-test. Do not copy it.
  */
-const SOURCES = Object.fromEntries(
-  Object.entries(
-    import.meta.glob("../*.ts", { query: "?raw", import: "default", eager: true })
-  ).filter(([path]) => !/\.(test|spec)\.[cm]?[jt]sx?$/.test(path))
-);
-
-/** Module name → its exported (internal)mutations, scraped from source. */
-const EXPORTED_MUTATIONS: Record<string, string[]> = Object.fromEntries(
-  Object.entries(SOURCES)
-    .map(([path, source]) => [
-      path.replace(/^\.\.\//, "").replace(/\.ts$/, ""),
-      [...source.matchAll(/^export const (\w+) = (?:internalM|m)utation\(/gm)].map((m) => m[1]),
-    ])
-    .filter(([, names]) => names.length > 0)
-);
+const EXPORTED_MUTATIONS = Object.entries(
+  import.meta.glob("../*.ts", { query: "?raw", import: "default", eager: true })
+)
+  .filter(([path, source]) => path !== "../sampleData.ts" && source.includes('"ads"'))
+  .flatMap(([path, source]) =>
+    [...source.matchAll(/^export const (\w+) = (?:internalM|m)utation\(/gm)].map(
+      (m) => `${path.replace(/^\.\.\//, "").replace(/\.ts$/, "")}.${m[1]}`
+    )
+  )
+  .sort();
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -77,11 +78,6 @@ type Case = {
   /** true = the handler writes to the `ads` table (insert, patch or delete). */
   writesAds: boolean;
   exercise?: (w: World) => Promise<unknown>;
-  /**
-   * Why an ads-writing mutation is deliberately NOT exercised. Use only when
-   * the mutation cannot run under convex-test; the reason must say so.
-   */
-  exemption?: string;
 };
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -93,8 +89,13 @@ type Case = {
  * of two ads, three loose ads, a PUBLISHED moving sale of two items, and a draft
  * sale for `publishSaleEvent` to publish.
  */
-async function world(opts?: { transactionLimits?: { documentsRead: number } }) {
-  const t = convexTest({ schema, modules, transactionLimits: opts?.transactionLimits ?? false });
+async function world() {
+  // convexTest leaves transaction limits DISABLED by default, which would let a
+  // read-amplification regression (e.g. per-ad composite refresh — O(N²)) pass
+  // every test here. Cap documentsRead well above what once-per-composite
+  // implementations need (~350 for the bulk fixture) and well below what
+  // per-ad refresh costs (~4,000): the regression now fails.
+  const t = convexTest({ schema, modules, transactionLimits: { documentsRead: 1000 } });
 
   const sellerId = await t.run((ctx) =>
     ctx.db.insert("users", {
@@ -390,9 +391,6 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
     },
   },
 
-  appSettings: { updateSetting: { writesAds: false } },
-  bundleChats: { sendBundleMessage: { writesAds: false } },
-
   categories: {
     createCategory: { writesAds: false },
     updateCategory: { writesAds: false },
@@ -400,12 +398,6 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
   },
 
   descopeAuth: { syncDescopeUser: { writesAds: false } },
-
-  featureFlags: {
-    createFeatureFlag: { writesAds: false },
-    updateFeatureFlag: { writesAds: false },
-    deleteFeatureFlag: { writesAds: false },
-  },
 
   imageCleanup: {
     stampDeletedAt: {
@@ -458,19 +450,7 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
     },
   },
 
-  ratings: { submitRating: { writesAds: false } },
-  reports: { submitReport: { writesAds: false } },
   saleChats: { sendSaleMessage: { writesAds: false } },
-
-  sampleData: {
-    clearAndCreateSampleData: {
-      writesAds: true,
-      exemption:
-        "Dev-only: hard-wipes the entire ads table and is guarded by a CONVEX_CLOUD_URL " +
-        "check that throws under convex-test. Predates composites and never runs where " +
-        "one exists. Do not copy this pattern.",
-    },
-  },
 
   seed: {
     wipeSeededMovingSales: {
@@ -496,9 +476,6 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
       exercise: (w) => w.t.mutation(internal.seedTestAd.seedTallImageAd, {}),
     },
   },
-
-  support: { submitSupportRequest: { writesAds: false } },
-  updateRentHireIcon: { updateRentHireIcon: { writesAds: false } },
 
   users: {
     updateProfile: { writesAds: false },
@@ -539,25 +516,20 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
 // ──────────────────────────────────────────────────────────────────────────
 
 describe("refresh contract: coverage", () => {
-  test("every convex module that exports mutations is in the registry", () => {
-    expect(Object.keys(EXPORTED_MUTATIONS).length).toBeGreaterThan(0);
-    // If this fails: a module gained (or lost) its first/last mutation — add or
-    // remove its block in MUTATIONS above.
-    expect(Object.keys(EXPORTED_MUTATIONS).sort()).toEqual(Object.keys(MUTATIONS).sort());
+  test("every exported mutation in every convex module is classified", () => {
+    // If this fails: add the new mutation to MUTATIONS above with writesAds set
+    // honestly. If it writes to `ads`, it also needs an `exercise`.
+    expect(EXPORTED_MUTATIONS).toEqual(
+      Object.entries(MUTATIONS)
+        .flatMap(([m, cases]) => Object.keys(cases).map((name) => `${m}.${name}`))
+        .sort()
+    );
   });
 
-  for (const [moduleName, exported] of Object.entries(EXPORTED_MUTATIONS)) {
-    test(`every exported mutation in ${moduleName}.ts is classified`, () => {
-      // If this fails: add the new mutation to MUTATIONS above with writesAds set
-      // honestly. If it writes to `ads`, it also needs an `exercise`.
-      expect(exported.slice().sort()).toEqual(Object.keys(MUTATIONS[moduleName] ?? {}).sort());
-    });
-  }
-
-  test("every ads-writing mutation is exercised (or carries a documented exemption)", () => {
+  test("every ads-writing mutation is exercised", () => {
     const missing = Object.entries(MUTATIONS).flatMap(([m, cases]) =>
       Object.entries(cases)
-        .filter(([, c]) => c.writesAds && !c.exercise && !c.exemption)
+        .filter(([, c]) => c.writesAds && !c.exercise)
         .map(([name]) => `${m}.${name}`)
     );
     expect(missing).toEqual([]);
@@ -592,11 +564,8 @@ describe("refresh contract: composites are never left stale", () => {
 
 describe("deleteUserAccount refreshes once per composite, not once per ad", () => {
   test("a 60-item sale is deletable (per-ad refresh would be ~3,700 reads)", async () => {
-    // convexTest leaves transaction limits DISABLED by default, which made this
-    // test pass even with the O(N²) per-ad refresh. Cap documentsRead well above
-    // what the once-per-composite implementation needs (~350 for this fixture)
-    // and well below what per-ad refresh costs (~4,000): the regression now fails.
-    const w = await world({ transactionLimits: { documentsRead: 1000 } });
+    // The documentsRead cap in world() is what makes this test able to fail.
+    const w = await world();
     const items = Array.from({ length: 60 }, (_, i) => ({
       imageKey: `r2:bulk${i}`,
       title: `Bulk item ${i}`,

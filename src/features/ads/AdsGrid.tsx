@@ -138,6 +138,251 @@ export const AdsGrid = memo(function AdsGrid({
   const near = (entries ?? []).filter((e) => e.tier !== "far");
   const far = (entries ?? []).filter((e) => e.tier === "far");
 
+  const renderEntry = (entry: FeedEntry, index: number) => {
+  // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
+  if (entry.kind === "sale") {
+    const sale = entry.card;
+    const isNew = newAdIds.has(entryKey(entry));
+    return (
+      <m.article
+        key={`sale-${sale._id}`}
+        layout={animateLayout}
+        onClick={() => onSaleClick?.(sale.slug)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSaleClick?.(sale.slug);
+          }
+        }}
+        onMouseMove={handleSpotlightMove}
+        {...staggerCard(index)}
+        className="spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ring-border/70 hover:ring-foreground/15"
+      >
+        <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
+          <SaleThumbnail
+            covers={sale.covers}
+            photoCount={sale.photoCount}
+            itemCount={sale.itemCount}
+            suburb={displayLocation(sale.suburb)}
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
+          <div className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
+            <House className="w-3 h-3" weight="fill" />
+            Moving Sale
+          </div>
+          {isNew && <NewBadge side="right" />}
+        </div>
+        <div className="px-3.5 pt-3 pb-3.5">
+          <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+            {sale.title}
+          </h2>
+          <div className="mt-1 flex items-baseline justify-between gap-2">
+            <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
+              {displayLocation(sale.suburb)}
+            </p>
+            <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none flex-shrink-0">
+              {sale.minPrice > 0 ? `from ${formatPrice(sale.minPrice)}` : 'Moving sale'}
+            </p>
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
+            <span className="tabular">{sale.itemCount} items</span>
+            <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
+              View sale
+            </span>
+          </div>
+        </div>
+      </m.article>
+    );
+  }
+
+  // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
+  if (entry.kind === "bundle") {
+    const bundle = entry.card;
+    const isNew = newAdIds.has(entryKey(entry));
+    return (
+      <m.article
+        key={`bundle-${bundle._id}`}
+        layout={animateLayout}
+        onClick={() => onBundleClick?.(bundle)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onBundleClick?.(bundle);
+          }
+        }}
+        onMouseMove={handleSpotlightMove}
+        {...staggerCard(index)}
+        className="spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ring-border/70 hover:ring-foreground/15"
+      >
+        <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
+          <BundleThumbnail covers={bundle.covers} itemCount={bundle.itemCount} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
+          <div className="absolute top-2.5 left-2.5 bg-bundle text-white px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
+            <Package className="w-3 h-3" weight="fill" />
+            Bundle
+          </div>
+          {isNew && <NewBadge side="right" />}
+          {bundle.savings > 0 && (
+            <div className="absolute bottom-2.5 right-2.5 bg-bundle text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
+              Save {formatPrice(bundle.savings)}
+            </div>
+          )}
+        </div>
+        <div className="px-3.5 pt-3 pb-3.5">
+          <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+            {bundle.label}
+          </h2>
+          <div className="mt-1 flex items-baseline justify-between gap-2">
+            <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
+              {displayLocation(bundle.location)}
+            </p>
+            <div className="flex flex-col items-end flex-shrink-0">
+              {bundle.separatelyTotal > bundle.bundlePrice && (
+                <p className="text-[11px] text-muted-foreground/80 line-through tabular leading-none mb-0.5">
+                  {formatPrice(bundle.separatelyTotal)}
+                </p>
+              )}
+              <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
+                {formatPrice(bundle.bundlePrice)}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
+            <span className="tabular">{bundle.itemCount} items</span>
+            <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
+              View bundle
+            </span>
+          </div>
+        </div>
+      </m.article>
+    );
+  }
+
+  const ad = entry.ad;
+  const isNew = newAdIds.has(entryKey(entry));
+  const isPriority = index < 6;
+  const isExchange = ad.listingType === "exchange";
+  // Boost arrival (one-shot per boost event): the card is keyed on
+  // `${_id}:${bumpedAt}`, so a boost replacement remounts it — the
+  // pin-drop entrance plays exactly once per boost (a second boost
+  // days later re-keys and re-animates; plain re-renders don't).
+  const boostKey = boostArrivalKey(ad);
+  const isBoostArrival = boostedAdKeys.has(boostKey);
+
+  return (
+    <m.article
+      key={boostKey}
+      layout={animateLayout}
+      onClick={() => handleAdClick(ad)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleAdClick(ad);
+        }
+      }}
+      onMouseMove={handleSpotlightMove}
+      {...(isBoostArrival ? boostPinDrop() : staggerCard(index))}
+      className={`spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
+        isNew
+          ? 'ring-primary/40'
+          : 'ring-border/70 hover:ring-foreground/15'
+      }`}
+    >
+      <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
+        <ImageDisplay
+          src={ad.images[0] || ''}
+          alt={ad.title}
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.025]"
+          priority={isPriority}
+          backdrop
+          size="card"
+        />
+
+        {/* Warm-tint gradient — always present at rest, deepens on hover */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
+
+        {ad.images.length > 1 && (
+          <div className="absolute bottom-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular">
+            {ad.images.length}
+          </div>
+        )}
+        {isNew && <NewBadge />}
+        {isExchange && !isNew && (
+          <div className="absolute top-2.5 left-2.5 bg-background/85 backdrop-blur-sm text-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1 shadow-sm ring-1 ring-border">
+            <Repeat className="w-3 h-3" weight="bold" />
+            Trade
+          </div>
+        )}
+      </div>
+
+      <div className="px-3.5 pt-3 pb-3.5">
+        <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
+          {ad.title}
+        </h2>
+        <div className="mt-1 flex items-baseline justify-between gap-2">
+          <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
+            {displayLocation(ad.location)}
+          </p>
+          <div className="flex flex-col items-end flex-shrink-0">
+            {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (
+              <p className="text-[11px] text-muted-foreground/80 line-through tabular leading-none mb-0.5">
+                {formatPrice(ad.previousPrice)}
+              </p>
+            )}
+            {(!ad.listingType || ad.listingType === "sale") && ad.price !== undefined && (
+              <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
+                {formatPrice(ad.price)}
+              </p>
+            )}
+            {ad.listingType === "exchange" && (
+              <p className="text-[13px] font-semibold text-primary-bright whitespace-nowrap flex items-center gap-1 leading-none">
+                <Repeat className="w-3.5 h-3.5" weight="bold" />
+                Open to Trade
+              </p>
+            )}
+            {ad.listingType === "both" && ad.price !== undefined && (
+              <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
+                {formatPrice(ad.price)}{' '}
+                <span className="font-sans text-primary-bright text-[10px] font-semibold tracking-wider uppercase align-middle">• Trade</span>
+              </p>
+            )}
+          </div>
+        </div>
+        {/* v3.1: sale items are NOT differentiated in the feed — they
+            render exactly like any single listing. Sale discovery happens
+            on the ad detail page banner (and the whole-Sale card above). */}
+        <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
+          <span className="tabular">{ad.views} views</span>
+          <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
+            View
+          </span>
+        </div>
+      </div>
+
+      {/* Boost ring pulse — opacity-only overlay (never animated
+          border/box-shadow: borders shift layout, box-shadow janks).
+          Last positioned child so it paints above the card content
+          without z-index (a past prod bug was a badge z-index leak).
+          ring-inset because the article is overflow-hidden — an
+          outset ring would be clipped entirely. */}
+      {isBoostArrival && (
+        <m.div
+          aria-hidden
+          data-testid="boost-ring-pulse"
+          className="absolute inset-0 rounded-xl ring-2 ring-inset ring-primary pointer-events-none"
+          {...boostRingPulse()}
+        />
+      )}
+    </m.article>
+  );
+  };
+
   return (
     // data-testid: masked in e2e visual snapshots — everything inside (listing
     // count, cards, view counts) is live Convex data and changes run-to-run.
@@ -190,266 +435,16 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         <LayoutGroup>
         <div className={`listings-grid ${gridClasses}`}>
-          {(() => {
-            const renderEntry = (entry: FeedEntry, index: number) => {
-            // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
-            if (entry.kind === "sale") {
-              const sale = entry.card;
-              const isNew = newAdIds.has(entryKey(entry));
-              return (
-                <m.article
-                  key={`sale-${sale._id}`}
-                  layout={animateLayout}
-                  onClick={() => onSaleClick?.(sale.slug)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onSaleClick?.(sale.slug);
-                    }
-                  }}
-                  onMouseMove={handleSpotlightMove}
-                  {...staggerCard(index)}
-                  className="spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ring-border/70 hover:ring-foreground/15"
-                >
-                  <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
-                    <SaleThumbnail
-                      covers={sale.covers}
-                      photoCount={sale.photoCount}
-                      itemCount={sale.itemCount}
-                      suburb={displayLocation(sale.suburb)}
-                    />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
-                    <div className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
-                      <House className="w-3 h-3" weight="fill" />
-                      Moving Sale
-                    </div>
-                    {isNew && <NewBadge side="right" />}
-                  </div>
-                  <div className="px-3.5 pt-3 pb-3.5">
-                    <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
-                      {sale.title}
-                    </h2>
-                    <div className="mt-1 flex items-baseline justify-between gap-2">
-                      <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                        {displayLocation(sale.suburb)}
-                      </p>
-                      <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none flex-shrink-0">
-                        {sale.minPrice > 0 ? `from ${formatPrice(sale.minPrice)}` : 'Moving sale'}
-                      </p>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
-                      <span className="tabular">{sale.itemCount} items</span>
-                      <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
-                        View sale
-                      </span>
-                    </div>
-                  </div>
-                </m.article>
-              );
-            }
-
-            // Whole-Bundle card — same shell as an ad card, vertical-strip thumbnail slot.
-            if (entry.kind === "bundle") {
-              const bundle = entry.card;
-              const isNew = newAdIds.has(entryKey(entry));
-              return (
-                <m.article
-                  key={`bundle-${bundle._id}`}
-                  layout={animateLayout}
-                  onClick={() => onBundleClick?.(bundle)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onBundleClick?.(bundle);
-                    }
-                  }}
-                  onMouseMove={handleSpotlightMove}
-                  {...staggerCard(index)}
-                  className="spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ring-border/70 hover:ring-foreground/15"
-                >
-                  <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
-                    <BundleThumbnail covers={bundle.covers} itemCount={bundle.itemCount} />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
-                    <div className="absolute top-2.5 left-2.5 bg-bundle text-white px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase shadow-md flex items-center gap-1">
-                      <Package className="w-3 h-3" weight="fill" />
-                      Bundle
-                    </div>
-                    {isNew && <NewBadge side="right" />}
-                    {bundle.savings > 0 && (
-                      <div className="absolute bottom-2.5 right-2.5 bg-bundle text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular shadow-md">
-                        Save {formatPrice(bundle.savings)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="px-3.5 pt-3 pb-3.5">
-                    <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
-                      {bundle.label}
-                    </h2>
-                    <div className="mt-1 flex items-baseline justify-between gap-2">
-                      <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                        {displayLocation(bundle.location)}
-                      </p>
-                      <div className="flex flex-col items-end flex-shrink-0">
-                        {bundle.separatelyTotal > bundle.bundlePrice && (
-                          <p className="text-[11px] text-muted-foreground/80 line-through tabular leading-none mb-0.5">
-                            {formatPrice(bundle.separatelyTotal)}
-                          </p>
-                        )}
-                        <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
-                          {formatPrice(bundle.bundlePrice)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
-                      <span className="tabular">{bundle.itemCount} items</span>
-                      <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
-                        View bundle
-                      </span>
-                    </div>
-                  </div>
-                </m.article>
-              );
-            }
-
-            const ad = entry.ad;
-            const isNew = newAdIds.has(entryKey(entry));
-            const isPriority = index < 6;
-            const isExchange = ad.listingType === "exchange";
-            // Boost arrival (one-shot per boost event): the card is keyed on
-            // `${_id}:${bumpedAt}`, so a boost replacement remounts it — the
-            // pin-drop entrance plays exactly once per boost (a second boost
-            // days later re-keys and re-animates; plain re-renders don't).
-            const boostKey = boostArrivalKey(ad);
-            const isBoostArrival = boostedAdKeys.has(boostKey);
-
-            return (
-              <m.article
-                key={boostKey}
-                layout={animateLayout}
-                onClick={() => handleAdClick(ad)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAdClick(ad);
-                  }
-                }}
-                onMouseMove={handleSpotlightMove}
-                {...(isBoostArrival ? boostPinDrop() : staggerCard(index))}
-                className={`spotlight-card listing-card relative bg-card overflow-hidden rounded-xl cursor-pointer group shadow-card ring-1 ${
-                  isNew
-                    ? 'ring-primary/40'
-                    : 'ring-border/70 hover:ring-foreground/15'
-                }`}
-              >
-                <div className="aspect-[4/3] bg-muted/60 overflow-hidden relative">
-                  <ImageDisplay
-                    src={ad.images[0] || ''}
-                    alt={ad.title}
-                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.025]"
-                    priority={isPriority}
-                    backdrop
-                    size="card"
-                  />
-
-                  {/* Warm-tint gradient — always present at rest, deepens on hover */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[hsl(25_40%_10%/0.22)] via-[hsl(25_30%_15%/0.08)] to-transparent transition-opacity duration-300 opacity-60 group-hover:opacity-100" />
-
-                  {ad.images.length > 1 && (
-                    <div className="absolute bottom-2.5 right-2.5 bg-black/55 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[11px] font-medium tabular">
-                      {ad.images.length}
-                    </div>
-                  )}
-                  {isNew && <NewBadge />}
-                  {isExchange && !isNew && (
-                    <div className="absolute top-2.5 left-2.5 bg-background/85 backdrop-blur-sm text-foreground px-2 py-1 rounded-md text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1 shadow-sm ring-1 ring-border">
-                      <Repeat className="w-3 h-3" weight="bold" />
-                      Trade
-                    </div>
-                  )}
-                </div>
-
-                <div className="px-3.5 pt-3 pb-3.5">
-                  <h2 className="font-semibold text-foreground line-clamp-1 text-[15px] tracking-tight">
-                    {ad.title}
-                  </h2>
-                  <div className="mt-1 flex items-baseline justify-between gap-2">
-                    <p className="text-xs text-muted-foreground line-clamp-1 min-w-0 flex-1">
-                      {displayLocation(ad.location)}
-                    </p>
-                    <div className="flex flex-col items-end flex-shrink-0">
-                      {ad.price !== undefined && ad.previousPrice && ad.previousPrice > ad.price && (
-                        <p className="text-[11px] text-muted-foreground/80 line-through tabular leading-none mb-0.5">
-                          {formatPrice(ad.previousPrice)}
-                        </p>
-                      )}
-                      {(!ad.listingType || ad.listingType === "sale") && ad.price !== undefined && (
-                        <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
-                          {formatPrice(ad.price)}
-                        </p>
-                      )}
-                      {ad.listingType === "exchange" && (
-                        <p className="text-[13px] font-semibold text-primary-bright whitespace-nowrap flex items-center gap-1 leading-none">
-                          <Repeat className="w-3.5 h-3.5" weight="bold" />
-                          Open to Trade
-                        </p>
-                      )}
-                      {ad.listingType === "both" && ad.price !== undefined && (
-                        <p className="font-display text-base font-semibold text-foreground whitespace-nowrap tabular leading-none">
-                          {formatPrice(ad.price)}{' '}
-                          <span className="font-sans text-primary-bright text-[10px] font-semibold tracking-wider uppercase align-middle">• Trade</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {/* v3.1: sale items are NOT differentiated in the feed — they
-                      render exactly like any single listing. Sale discovery happens
-                      on the ad detail page banner (and the whole-Sale card above). */}
-                  <div className="mt-2.5 pt-2 border-t border-border/60 text-[11px] text-muted-foreground flex justify-between items-center">
-                    <span className="tabular">{ad.views} views</span>
-                    <span className="kicker text-[9px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
-                      View
-                    </span>
-                  </div>
-                </div>
-
-                {/* Boost ring pulse — opacity-only overlay (never animated
-                    border/box-shadow: borders shift layout, box-shadow janks).
-                    Last positioned child so it paints above the card content
-                    without z-index (a past prod bug was a badge z-index leak).
-                    ring-inset because the article is overflow-hidden — an
-                    outset ring would be clipped entirely. */}
-                {isBoostArrival && (
-                  <m.div
-                    aria-hidden
-                    data-testid="boost-ring-pulse"
-                    className="absolute inset-0 rounded-xl ring-2 ring-inset ring-primary pointer-events-none"
-                    {...boostRingPulse()}
-                  />
-                )}
-              </m.article>
-            );
-            };
-            return (
-              <>
-                {near.map((entry, index) => renderEntry(entry, index))}
-                {selectedLocation && far.length > 0 && (
-                  <NearbyBoundary
-                    location={selectedLocation}
-                    hasNearResults={near.length > 0}
-                    categoryName={categoryName}
-                    onClearLocation={onClearLocation}
-                  />
-                )}
-                {far.map((entry, index) => renderEntry(entry, near.length + index))}
-              </>
-            );
-          })()}
+          {near.map((entry, index) => renderEntry(entry, index))}
+          {selectedLocation && far.length > 0 && (
+            <NearbyBoundary
+              location={selectedLocation}
+              hasNearResults={near.length > 0}
+              categoryName={categoryName}
+              onClearLocation={onClearLocation}
+            />
+          )}
+          {far.map((entry, index) => renderEntry(entry, near.length + index))}
 
           {isLoadingMore && (
             [...Array(4)].map((_, i) => (

@@ -9,6 +9,7 @@ import {
   compositeMatchesFilters,
   hydrateEntries,
   saleIsLive,
+  tierFields,
   type FeedSourceEntry,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
@@ -59,13 +60,7 @@ async function compositeHits(
   // here was always a JS predicate below the `.take(cap)`, never a DB cut, so
   // the same predicate now stamps the tier instead of dropping the row.
   const tierOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
-    args.location
-      ? {
-          tier: compositeMatchesFilters(doc, { location: args.location })
-            ? ("near" as const)
-            : ("far" as const),
-        }
-      : {};
+    tierFields(args.location, compositeMatchesFilters(doc, { location: args.location }));
   return [
     ...bundles
       .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId }))
@@ -73,6 +68,31 @@ async function compositeHits(
     ...sales
       .filter((s) => saleIsLive(s, now) && compositeMatchesFilters(s, { categoryId: args.categoryId }))
       .map((doc) => ({ kind: "sale" as const, doc, ...tierOf(doc) })),
+  ];
+}
+
+/**
+ * Rule 5 two-pass ads fetch, shared by search and the rail. Both cut with a
+ * `.take()` INSIDE the DB query (by relevance for search, by date for the
+ * rail), so one unpinned pass can lose near rows before any JS runs — a
+ * post-hoc partition cannot resurrect them. With a location set: a
+ * location-pinned "near" pass plus an unpinned "far" pass, deduped on `_id`.
+ * With none: one unpinned pass, no tier.
+ */
+async function tieredAdHits(
+  location: string | undefined,
+  pass: (location?: string) => Promise<Doc<"ads">[]>
+): Promise<FeedSourceEntry[]> {
+  if (!location) {
+    return (await pass()).map((doc) => ({ kind: "ad" as const, doc }));
+  }
+  const [near, unpinned] = await Promise.all([pass(location), pass()]);
+  const nearIds = new Set(near.map((d) => d._id));
+  return [
+    ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
+    ...unpinned
+      .filter((d) => !nearIds.has(d._id))
+      .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
   ];
 }
 
@@ -102,11 +122,6 @@ async function searchAllTypes(
 ): Promise<FeedSourceEntry[]> {
   const since = args.sinceTimestamp;
   const cap = COMPOSITE_LIMIT;
-  // The ads cut is a `.take()` INSIDE the DB query, by relevance — so with a
-  // location set, one unpinned pass may not contain the in-area ad at all.
-  // Rule 5 needs TWO passes: the location-pinned one is "near", the unpinned
-  // one is "far" (deduped); a post-hoc partition cannot resurrect a row the
-  // cap already dropped.
   const searchAdsPass = (location?: string) =>
     ctx.db
       .query("ads")
@@ -130,21 +145,8 @@ async function searchAllTypes(
         )
       )
       .take(args.limit);
-  const adHits = async (): Promise<FeedSourceEntry[]> => {
-    if (!args.location) {
-      return (await searchAdsPass()).map((doc) => ({ kind: "ad" as const, doc }));
-    }
-    const [near, unpinned] = await Promise.all([searchAdsPass(args.location), searchAdsPass()]);
-    const nearIds = new Set(near.map((d) => d._id));
-    return [
-      ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
-      ...unpinned
-        .filter((d) => !nearIds.has(d._id))
-        .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
-    ];
-  };
   const [ads, composites] = await Promise.all([
-    adHits(),
+    tieredAdHits(args.location, searchAdsPass),
     compositeHits(
       ctx,
       args,
@@ -404,9 +406,7 @@ export const getLatestAds = query({
     } else {
       // `sinceTimestamp` is a `bumpedAt` watermark, not a creation time: the
       // rail surfaces brand-new AND boosted rows. The `.take(limit)` is a
-      // DB-level DATE cut, so a near arrival older than `limit` far arrivals
-      // would be dropped by one unpinned pass — rule 5 needs a location-pinned
-      // "near" pass plus an unpinned "far" pass, deduped on _id.
+      // DB-level DATE cut — hence `tieredAdHits`' pinned near pass (rule 5).
       const latestAdsPass = (location?: string) => {
         const q = args.categoryId
           ? ctx.db
@@ -431,27 +431,11 @@ export const getLatestAds = query({
           )
           .take(limit);
       };
-      const adHits = async (): Promise<FeedSourceEntry[]> => {
-        if (!args.location) {
-          return (await latestAdsPass()).map((doc) => ({ kind: "ad" as const, doc }));
-        }
-        const [near, unpinned] = await Promise.all([
-          latestAdsPass(args.location),
-          latestAdsPass(),
-        ]);
-        const nearIds = new Set(near.map((d) => d._id));
-        return [
-          ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
-          ...unpinned
-            .filter((d) => !nearIds.has(d._id))
-            .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
-        ];
-      };
 
       // The rail is the ONLY path that re-injects new arrivals into the feed,
       // which is frozen at `maxSortTime` from mount — so composites ride it too.
       const [ads, composites] = await Promise.all([
-        adHits(),
+        tieredAdHits(args.location, latestAdsPass),
         latestComposites(ctx, {
           categoryId: args.categoryId,
           location: args.location,

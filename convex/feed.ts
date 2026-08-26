@@ -9,8 +9,8 @@ import {
   compositeMatchesFilters,
   hydrateEntries,
   saleIsLive,
+  tierFields,
   type FeedSourceEntry,
-  type FeedTier,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
 
@@ -67,13 +67,6 @@ export const getFeed = query({
   handler: async (ctx, args) => {
     const maxSortTime = args.maxSortTime ?? Date.now();
 
-    // Rule 5: location TIERS, it never filters. Stamp ONLY when a location is
-    // set — an unstamped entry is the default state, and `undefined` fields
-    // are dropped before serialisation, which keeps the no-location response
-    // byte-identical to the pre-tier feed.
-    const tierOf = (matches: boolean): { tier?: FeedTier } =>
-      args.location ? { tier: matches ? "near" : "far" } : {};
-
     // Merge the three sources on bumpedAt desc. Feature flags are read
     // server-side; a disabled flag excludes its stream.
     const [bundlesEnabled, salesEnabled] = await Promise.all([
@@ -97,10 +90,12 @@ export const getFeed = query({
         .filterWith(
           async (ad) => ad.isActive && ad.isDeleted !== true && ad.isSold !== true
         )
+        // Rule 5: location TIERS, it never filters (tierFields stamps only
+        // when a location is set).
         .map(async (doc) => ({
           kind: "ad" as const,
           doc,
-          ...tierOf(doc.location === args.location),
+          ...tierFields(args.location, doc.location === args.location),
         })),
     ];
 
@@ -121,7 +116,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "bundle" as const,
             doc,
-            ...tierOf(compositeMatchesFilters(doc, { location: args.location })),
+            ...tierFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
           }))
       );
     }
@@ -143,7 +138,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "sale" as const,
             doc,
-            ...tierOf(compositeMatchesFilters(doc, { location: args.location })),
+            ...tierFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
           }))
       );
     }

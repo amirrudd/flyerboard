@@ -96,6 +96,21 @@ export async function hydrateSaleCard(ctx: QueryCtx, sale: Doc<"saleEvents">) {
 export type FeedTier = "near" | "far";
 
 /**
+ * The tier fields for one entry — THE single enforcement site of "stamp ONLY
+ * when a location is set". An unstamped entry is the default state, and
+ * `undefined` fields are dropped before serialisation, which keeps the
+ * no-location response byte-identical to the pre-tier feed. (Fields, not a
+ * bare tier value: a helper answering "near" with no location set would break
+ * that guarantee.)
+ */
+export function tierFields(
+  location: string | undefined,
+  matches: boolean
+): { tier?: FeedTier } {
+  return location ? { tier: matches ? "near" : "far" } : {};
+}
+
+/**
  * A feed/search source entry before hydration. ONE definition — `feed.getFeed`
  * and `ads.getAds` must produce byte-identical page shapes.
  */
@@ -135,7 +150,7 @@ export function compositeMatchesFilters(
  * The despawn rule has exactly one enforcement site — this function.
  */
 /** A hydrated feed page entry. `tier` stays OPTIONAL — absent when no location is set. */
-export type FeedPageEntry =
+type FeedPageEntry =
   | { kind: "ad"; ad: Doc<"ads">; tier?: FeedTier }
   | { kind: "bundle"; card: NonNullable<Awaited<ReturnType<typeof hydrateBundleCard>>>; tier?: FeedTier }
   | { kind: "sale"; card: NonNullable<Awaited<ReturnType<typeof hydrateSaleCard>>>; tier?: FeedTier };

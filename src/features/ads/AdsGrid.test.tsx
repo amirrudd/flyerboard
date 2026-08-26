@@ -583,6 +583,62 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
         expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();
     });
 
+    it('shows the "New" badge on a fresh composite card via its entryKey (rule 1)', () => {
+        const entries: FeedEntry[] = [
+            {
+                kind: 'sale',
+                card: {
+                    _id: 'sale1' as Id<'saleEvents'>, slug: 'janes-sale', title: "Jane's Moving Sale",
+                    suburb: 'Carlton, VIC', createdAt: 1000, bumpedAt: 1000, itemCount: 9,
+                    photoCount: 9, minPrice: 15, prices: [15], covers: ['c1.jpg'],
+                },
+            },
+            {
+                kind: 'bundle',
+                card: {
+                    _id: 'bundle1' as Id<'saleBundles'>, label: 'Kitchen Starter Bundle', createdAt: 2000,
+                    bumpedAt: 2000, itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
+                    separatelyTotal: 120, savings: 40, covers: ['b1.jpg'],
+                    adIds: ['adB1'] as Id<'ads'>[],
+                },
+            },
+        ];
+        render(
+            <AdsGrid
+                entries={entries}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                newAdIds={new Set(['sale:sale1', 'bundle:bundle1'])}
+            />
+        );
+        // One badge per fresh composite — same badge a fresh ad gets.
+        expect(screen.getAllByText('New')).toHaveLength(2);
+    });
+
+    it('shows no "New" badge on a composite the session already held', () => {
+        render(
+            <AdsGrid
+                entries={[{
+                    kind: 'bundle',
+                    card: {
+                        _id: 'bundle1' as Id<'saleBundles'>, label: 'Kitchen Starter Bundle', createdAt: 2000,
+                        bumpedAt: 2000, itemCount: 3, location: 'Fitzroy, VIC', bundlePrice: 80,
+                        separatelyTotal: 120, savings: 40, covers: ['b1.jpg'],
+                        adIds: ['adB1'] as Id<'ads'>[],
+                    },
+                }]}
+                categories={mockCategories}
+                selectedCategory={null}
+                sidebarCollapsed={false}
+                onAdClick={vi.fn()}
+                newAdIds={new Set(['someOtherAdId'])}
+            />
+        );
+        expect(screen.queryByText('New')).not.toBeInTheDocument();
+    });
+
     it('renders no ring pulse when there are no boost arrivals; brand-new ads keep the "New" badge', () => {
         render(
             <AdsGrid
@@ -591,7 +647,7 @@ describe('AdsGrid - boost (bumpedAt feed order + arrival treatment)', () => {
                 selectedCategory={null}
                 sidebarCollapsed={false}
                 onAdClick={vi.fn()}
-                newAdIds={new Set(['adNewer'])}
+                newAdIds={new Set(['ad:adNewer'])}
             />
         );
         expect(screen.queryByTestId('boost-ring-pulse')).not.toBeInTheDocument();

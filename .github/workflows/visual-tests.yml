@@ -109,6 +109,12 @@ jobs:
             echo "No new snapshots to commit"
           else
             git commit -m "chore: add missing visual regression snapshots (Linux)"
+            # `npx convex dev` (above) regenerates tracked convex/_generated/*
+            # files as a side effect of pushing functions, leaving them locally
+            # modified. That's unrelated to this commit and blocks the rebase
+            # below with "you have unstaged changes" — discard it, the snapshot
+            # commit itself is already safely committed.
+            git checkout -- .
             git pull --rebase origin ${{ github.head_ref }}
             git push origin HEAD:${{ github.head_ref }}
           fi

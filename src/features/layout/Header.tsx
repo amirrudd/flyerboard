@@ -197,7 +197,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
               placeholder="Enter suburb or postcode…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
+              className="w-full px-3 py-2 text-base rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
           </div>
 
@@ -404,7 +404,7 @@ const MobileHeader = memo(function MobileHeader({
               placeholder="Search the board…"
               value={localSearchQuery}
               onChange={handleSearchChange}
-              className="w-full h-11 pl-11 pr-4 text-sm bg-muted/60 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
+              className="w-full h-11 pl-11 pr-4 text-base bg-muted/60 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
             <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors pointer-events-none" weight="bold" />
           </form>

@@ -118,7 +118,7 @@ export function LucideIconPicker({ value, onChange, onClose }: LucideIconPickerP
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search 1400+ icons..."
-                        className="w-full h-10 pl-10 pr-4 text-sm bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
+                        className="w-full h-10 pl-10 pr-4 text-base bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
                         autoFocus
                     />
                 </div>

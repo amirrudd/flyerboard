@@ -390,7 +390,7 @@ function PriceStep({
           maxLength={80}
           onChange={(e) => onLabelChange(e.target.value)}
           placeholder={autoName}
-          className="mt-1.5 w-full rounded-xl bg-transparent px-3.5 py-3 text-sm text-foreground ring-1 ring-border outline-none focus:ring-2! focus:ring-bundle! focus:border-transparent!"
+          className="mt-1.5 w-full rounded-xl bg-transparent px-3.5 py-3 text-base text-foreground ring-1 ring-border outline-none focus:ring-2! focus:ring-bundle! focus:border-transparent!"
         />
       </div>
 

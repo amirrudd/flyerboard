@@ -300,7 +300,7 @@ export function SaleMessageModal({
                 }}
                 rows={1}
                 placeholder={`Message ${sellerFirst}…`}
-                className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:border-primary"
+                className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-card px-3 py-3 text-base text-foreground outline-none focus:border-primary"
               />
               <button
                 type="button"

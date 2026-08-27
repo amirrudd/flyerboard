@@ -220,7 +220,7 @@ export function BundlesStep({
                           )
                         )
                       }
-                      className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-foreground focus:border-border focus:bg-card focus:outline-none"
+                      className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 text-base font-semibold text-foreground focus:border-border focus:bg-card focus:outline-none"
                     />
                     <button
                       type="button"

@@ -326,7 +326,7 @@ export function CategoriesTab() {
                                                 slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                                             }))
                                         }
-                                        className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70 font-mono text-sm tabular-nums"
+                                        className="w-full h-11 px-4 bg-muted/50 rounded-full ring-1 ring-transparent focus:ring-ring focus:bg-card focus:outline-none transition-all text-foreground placeholder:text-muted-foreground/70 font-mono text-base tabular-nums"
                                         placeholder="e.g., electronics"
                                         required
                                     />

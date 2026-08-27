@@ -19,7 +19,7 @@ export function AdsFilterBar() {
           placeholder="Min $"
           value={minPrice ?? ""}
           onChange={e => setParam("minPrice", e.target.value)}
-          className="w-20 h-8 px-3 rounded-full bg-card ring-1 ring-border/70 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="w-20 h-8 px-3 rounded-full bg-card ring-1 ring-border/70 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span className="text-muted-foreground text-xs">–</span>
         <input
@@ -27,7 +27,7 @@ export function AdsFilterBar() {
           placeholder="Max $"
           value={maxPrice ?? ""}
           onChange={e => setParam("maxPrice", e.target.value)}
-          className="w-20 h-8 px-3 rounded-full bg-card ring-1 ring-border/70 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="w-20 h-8 px-3 rounded-full bg-card ring-1 ring-border/70 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-primary/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
       </div>
 

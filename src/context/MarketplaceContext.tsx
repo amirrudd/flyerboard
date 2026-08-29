@@ -8,6 +8,7 @@ import { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
+import { type LocationMeta } from "../lib/locationService";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey, entryKey } from "./freshAdsMerge";
 
@@ -28,7 +29,14 @@ interface MarketplaceContextType {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     selectedLocation: string;
-    setSelectedLocation: (location: string) => void;
+    /**
+     * The dataset record behind `selectedLocation`, captured at the pick site
+     * (Header) and passed to the feed queries, which use it to decide which
+     * SECTION each entry lands in (convex/lib/nearby.ts). Absent for a
+     * preference stored before this existed, and for a free-text fallback.
+     */
+    selectedLocationMeta: LocationMeta | undefined;
+    setSelectedLocation: (location: string, meta?: LocationMeta) => void;
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     isCategoriesLoading: boolean;
@@ -60,6 +68,17 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const [selectedLocation, setSelectedLocation] = useState(() => {
         const savedLocation = Cookies.get("selectedLocation");
         return savedLocation !== undefined ? savedLocation : "";
+    });
+    // Stored beside the suburb string, never derived from it — the same string
+    // can name two dataset rows 80 km apart (see Header's SetSelectedLocation).
+    const [selectedLocationMeta, setSelectedLocationMeta] = useState<LocationMeta | undefined>(() => {
+        const saved = Cookies.get("selectedLocationMeta");
+        if (!saved) return undefined;
+        try {
+            return JSON.parse(saved) as LocationMeta;
+        } catch {
+            return undefined;
+        }
     });
 
     // Initialize sidebar state based on device
@@ -113,8 +132,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // Generate cache key from current filters
     const cacheKey = useMemo(() => {
-        return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}`;
-    }, [selectedCategory, searchQuery, selectedLocation]);
+        // The locality id is part of the key: two different suburbs can share a
+        // display string, and they section differently.
+        return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}_${selectedLocationMeta?.localityId ?? ''}`;
+    }, [selectedCategory, searchQuery, selectedLocation, selectedLocationMeta]);
 
     // --- Data Fetching ---
     const categories = useQuery(api.categories.getCategories);
@@ -137,6 +158,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
             : {
                 categoryId: selectedCategory ?? undefined,
                 location: selectedLocation || undefined,
+                locationMeta: selectedLocationMeta,
                 maxSortTime: initialLoadTimestamp,
             },
         { initialNumItems: 30 }
@@ -148,6 +170,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 categoryId: selectedCategory ?? undefined,
                 search: searchQuery,
                 location: selectedLocation || undefined,
+                locationMeta: selectedLocationMeta,
             }
             : "skip",
         { initialNumItems: 30 }
@@ -194,6 +217,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 categoryId: selectedCategory ?? undefined,
                 search: searchQuery || undefined,
                 location: selectedLocation || undefined,
+                locationMeta: selectedLocationMeta,
                 sinceTimestamp: lastRefreshTimestamps.current.get(cacheKey) ?? initialRefreshTimestamp,
                 limit: 50,
             });
@@ -250,7 +274,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Failed to refresh ads:', error);
         }
-    }, [convex, selectedCategory, searchQuery, selectedLocation, feedEntries, cacheKey, initialRefreshTimestamp]);
+    }, [convex, selectedCategory, searchQuery, selectedLocation, selectedLocationMeta, feedEntries, cacheKey, initialRefreshTimestamp]);
 
     // Clear new ad IDs (called after animation or user interaction)
     const clearNewAdIds = useCallback(() => {
@@ -316,9 +340,17 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     }, [isMobile]);
 
     // Handle location change and save to cookies
-    const handleSetSelectedLocation = useCallback((location: string) => {
+    const handleSetSelectedLocation = useCallback((location: string, meta?: LocationMeta) => {
         setSelectedLocation(location);
+        setSelectedLocationMeta(meta);
         Cookies.set("selectedLocation", location, { expires: 365 });
+        // Cleared together with the suburb: a record left behind would section
+        // the next pick (or "All Locations") against the wrong point.
+        if (meta) {
+            Cookies.set("selectedLocationMeta", JSON.stringify(meta), { expires: 365 });
+        } else {
+            Cookies.remove("selectedLocationMeta");
+        }
     }, []);
 
     // Note: Sample data creation removed for production safety
@@ -332,6 +364,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         searchQuery,
         setSearchQuery,
         selectedLocation,
+        selectedLocationMeta,
         setSelectedLocation: handleSetSelectedLocation,
         sidebarCollapsed,
         setSidebarCollapsed,

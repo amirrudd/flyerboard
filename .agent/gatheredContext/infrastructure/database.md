@@ -102,9 +102,9 @@ follow this pattern**, not a denormalized feed table (see
 
 Location never narrows a result set. All three list surfaces — `feed.getFeed`,
 `ads.getAds` (search), `ads.getLatestAds` (the 60s rail) — stamp
-`section: "near" | "far"` on every entry when a location is set (near = matches the
-selected location; a composite is near when ANY of its derived `locations` matches).
-Category and search stay requirements.
+`section: "near" | "far"` on every entry when a location is set. Category and search
+stay requirements. **What "near" MEANS lives in `convex/lib/nearby.ts` (Phase 4) — see
+"The near test" below.** A composite is near when ANY member is (rule 1).
 
 **The extraction/display boundary (Phase 3 of `.agent/plans/location-model-and-proximity.md`).
 Read this before adding anything to a feed page.**
@@ -148,7 +148,40 @@ Read this before adding anything to a feed page.**
   cut, so it just tags. Composites need no second pass anywhere — their location
   narrowing was always a JS predicate below `.take(COMPOSITE_LIMIT)` (no location index
   on either composite table); the known residual date-cut caveat is documented on
-  `latestComposites`.
+  `latestComposites`. **Phase 4 ceiling:** the pinned pass is still
+  `.eq("location", …)`, so it only guarantees survival for SAME-SUBURB near rows; one
+  that is near by distance or SA4 can be lost to the relevance/date cut and leave a far
+  row above it. `getFeed` is unaffected (it paginates, it doesn't cut). The fix is the
+  deliberately-deferred server-side near lane (a pass pinned on `sa4Code`).
+
+### The near test (Phase 4, Aug 2026) — `convex/lib/nearby.ts`
+
+`near = same localityId OR haversine ≤ nearRadiusKm OR same sa4Code`. One boolean,
+consumed by `sectionFields`; nothing else changed on the path. Before it, "near"
+meant the ad's location STRING equalled the buyer's, so the next suburb read as far
+away as another state.
+
+- **Identity first** — a large rural locality whose centroid is far from the buyer is
+  still the same suburb row, so it stays near.
+- **The SA4 clause is the adaptive part.** A flat radius is wrong outside cities
+  (Wagga's nearest real neighbours are 40–90 km away). ABS SA4 regions are small in
+  metro and enormous in the bush: one string comparison, and the near group is never
+  empty for a regional buyer.
+- **The radius is `appSettings.nearRadiusKm`** (default 25 km, 1–500, admin Settings →
+  Feed). Read per query via `resolveBuyer`. Never hardcode it.
+- **An unresolved listing matches no clause and groups far.** It is never hidden.
+- **NEVER re-resolve the buyer's suburb string into a record.** 24
+  locality+state+postcode groups in the dataset hold two rows with different ids and no
+  shared coordinates — O'CONNELL QLD 4680's two rows are 80 km apart, 7 of the 24
+  exceed the whole threshold. The record is captured where the user picks
+  (`Header.tsx`: the dropdown pick's second `onChange` argument, and the geolocation
+  match), stored beside the string in the `selectedLocationMeta` cookie, and passed to
+  the queries as `locationMeta`. `convex/nearby.test.ts` pins this: the same suburb
+  string sections one ad both ways depending on which row was picked.
+- **A buyer preference with no record falls back to string equality** — the pre-Phase-4
+  behaviour, kept only for cookies stored before the record existed.
+- The client cache key includes `localityId` for the same reason: two suburbs can share
+  a display string and section differently.
 
 ```typescript
 // convex/feed.ts (condensed)
@@ -258,10 +291,8 @@ explicit cap a read-amplification regression cannot fail a test.
 - **A location string is not a location.** Since 2026-08-29 `ads` also carries
   `localityId` / `latitude` / `longitude` / `sa4Code` / `locationSource`, and
   `saleEvents` carries `suburbMeta` (its own picked record, because sale items are
-  created in a LATER wizard step and inherit it). **Nothing reads any of them yet** —
-  every filter still compares the `location` STRING exactly as before, and
-  `sectionFields` (was `tierFields`) / `compositeMatchesFilters` in
-  `convex/lib/cards.ts` are untouched.
+  created in a LATER wizard step and inherit it). Since Phase 4 the near/far test
+  READS them (`convex/lib/nearby.ts`); every other filter still compares the STRING.
   The point was to stop discarding what the picker already had:
   - **The name is not a key.** `public/australian-postcodes.json` has 726 duplicated
     locality+state pairs and names repeat across states. `localityId` (the dataset's

@@ -38,6 +38,7 @@ export const SETTING_SALE_MAX_ITEMS = "saleMaxItems";
 export const SETTING_SALE_EXPIRY_BUFFER_DAYS = "saleExpiryBufferDays";
 export const SETTING_FEED_SALE_MEMBER_CAP = "feedSaleMemberCap";
 export const SETTING_FEED_BUNDLE_MEMBER_CAP = "feedBundleMemberCap";
+export const SETTING_NEAR_RADIUS_KM = "nearRadiusKm";
 
 // ── Defaults (used when the appSettings row is missing) ──────────────────────────
 export const DEFAULT_BUNDLE_MAX_ITEMS = 4;
@@ -45,6 +46,8 @@ export const DEFAULT_SALE_MAX_ITEMS = 100;
 export const DEFAULT_SALE_EXPIRY_BUFFER_DAYS = 2;
 export const DEFAULT_FEED_SALE_MEMBER_CAP = 3;
 export const DEFAULT_FEED_BUNDLE_MEMBER_CAP = 2;
+/** ~how far an Australian drives to collect furniture (Newtown→Parramatta is 22 km). */
+export const DEFAULT_NEAR_RADIUS_KM = 25;
 
 export interface AppSettingSpec {
     key: string;
@@ -138,6 +141,15 @@ const SEEDED_SPECS: AppSettingSpec[] = [
             "How many of a bundle's individual items can also appear in the home feed as their own listings, alongside the bundle's card (which always shows). Set to Unlimited to let every item show, or 0 to show only the bundle card.",
         seed: true,
         unlimited: true,
+    },
+    {
+        key: SETTING_NEAR_RADIUS_KM,
+        defaultValue: DEFAULT_NEAR_RADIUS_KM,
+        min: 1,
+        max: 500,
+        description:
+            "How far from someone's chosen suburb still counts as \"in the area\". Flyers further away than this are still shown — they just sit below the \"further away\" line instead of above it.",
+        seed: true,
     },
 ];
 

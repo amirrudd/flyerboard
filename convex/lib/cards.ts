@@ -9,6 +9,7 @@ import {
 import { saleItems } from "../saleEvents";
 import { adIsVisible } from "./derive";
 import { sectionRank, type FeedSection } from "./feedSections";
+import { isNearComposite, type BuyerLocation } from "./nearby";
 
 /**
  * Feed extraction, shared by `feed.getFeed` and `ads.getAds`. Both paths end at
@@ -124,20 +125,20 @@ export const saleIsLive = (s: Doc<"saleEvents">, now: number) =>
   Boolean(s.slug) && (!s.expiresAt || s.expiresAt > now);
 
 /**
- * Category/location narrowing for a composite row. Shared by the feed's
+ * Category narrowing and the near/far test for a composite row. Shared by the feed's
  * `filterWith` callbacks and search's post-`take` predicates — one definition of
  * "does a composite match this filter?" (rules 1 and 4).
  */
 export function compositeMatchesFilters(
   doc: Doc<"saleBundles"> | Doc<"saleEvents">,
-  args: { categoryId?: Doc<"ads">["categoryId"]; location?: string }
+  args: { categoryId?: Doc<"ads">["categoryId"]; buyer?: BuyerLocation }
 ): boolean {
   return (
     (!args.categoryId || (doc.categoryIds ?? []).includes(args.categoryId)) &&
-    // Any-member test, like category: a composite matches a location as soon as
-    // one of its members is there (rule 1). No live members = no locations = it
-    // matches none.
-    (!args.location || (doc.locations ?? []).includes(args.location))
+    // Any-member test, like category: a composite is near as soon as one of its
+    // members is (rule 1) — the nearest member decides. No live members = no
+    // derived location records = it is near nobody. See ./nearby.
+    (!args.buyer || isNearComposite(args.buyer, doc))
   );
 }
 

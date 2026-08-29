@@ -13,6 +13,8 @@ import {
   type FeedSourceEntry,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
+import { locationMetaValidator } from "./lib/location";
+import { resolveBuyer, isNearAd } from "./lib/nearby";
 
 /**
  * Unified home feed (Phase 2 of docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md).
@@ -42,14 +44,16 @@ const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
  * @param args.categoryId - Category filter (optional). Applies to all three ad
  *   types; a composite matches when any member ad is in the category (rules 1
  *   and 4, `.agent/PRODUCT-RULES.md`).
- * @param args.location - Location preference (optional, exact match on the ad's
- *   `location`). Rule 5: it GROUPS, it never hides — every entry is stamped
- *   `section: "near" | "far"` (convex/lib/feedSections.ts) instead of being
- *   filtered, and the page is grouped by section — newest first inside each,
- *   which is grouping, not ordering (rule 2). A composite is "near" when ANY of
- *   its derived `locations` matches — a bundle can span suburbs, so it is a
- *   list, not one string; a composite with no derived locations is "far"
- *   (rules 1 and 4).
+ * @param args.location - Location preference (optional). Rule 5: it GROUPS, it
+ *   never hides — every entry is stamped `section: "near" | "far"`
+ *   (convex/lib/feedSections.ts) instead of being filtered, and the page is
+ *   grouped by section — newest first inside each, which is grouping, not
+ *   ordering (rule 2). A composite is "near" when ANY of its members is — a
+ *   bundle can span suburbs; a composite with no derived location records is
+ *   "far" (rules 1 and 4).
+ * @param args.locationMeta - The record behind that suburb, captured where the
+ *   buyer picked it. What makes "near" mean a distance rather than an identical
+ *   suburb NAME (convex/lib/nearby.ts). Absent = the old string test.
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:
@@ -64,10 +68,14 @@ export const getFeed = query({
     paginationOpts: paginationOptsValidator,
     categoryId: v.optional(v.id("categories")),
     location: v.optional(v.string()),
+    locationMeta: v.optional(locationMetaValidator),
     maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const maxSortTime = args.maxSortTime ?? Date.now();
+    // The buyer's picked suburb record + the admin-tuned radius (convex/lib/nearby.ts).
+    // Undefined when no location is set, which is what leaves every entry unsectioned.
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
 
     // Merge the three sources on bumpedAt desc. Feature flags are read
     // server-side; a disabled flag excludes its stream.
@@ -97,7 +105,7 @@ export const getFeed = query({
         .map(async (doc) => ({
           kind: "ad" as const,
           doc,
-          ...sectionFields(args.location, doc.location === args.location),
+          ...sectionFields(args.location, isNearAd(buyer, doc)),
         })),
     ];
 
@@ -118,7 +126,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "bundle" as const,
             doc,
-            ...sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
+            ...sectionFields(args.location, compositeMatchesFilters(doc, { buyer })),
           }))
       );
     }
@@ -140,7 +148,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "sale" as const,
             doc,
-            ...sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
+            ...sectionFields(args.location, compositeMatchesFilters(doc, { buyer })),
           }))
       );
     }

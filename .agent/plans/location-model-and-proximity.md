@@ -1,10 +1,10 @@
 # Plan — Location model & proximity grouping
 
-**Status:** Agreed. **Phases 0–3 are done and on `main`** — #368 (suburb records),
+**Status:** Agreed. **Phases 0–4 are done** (0–3 on `main`; Phase 4 in review) — #368 (suburb records),
 #371 (header folded onto the shared picker), #372 (one feed assembly step, named
 sections). The prod backfill ran clean on 2026-08-29: 8 ads scanned, 8 patched, 0
-coordinates dropped, **nothing unresolved**. Phases 4–5 not started; Phase 4 is
-unblocked.
+coordinates dropped, **nothing unresolved**. Phase 4 (the distance rule) is in review;
+Phase 5 not started.
 **Created:** 2026-08-29
 **Owner:** Amir
 **Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
@@ -214,7 +214,7 @@ promise is that newness is the only thing that lifts an ad. Recorded here so the
 decision is made deliberately if it is ever made — the boundary above keeps it
 possible without committing to it.
 
-### Phase 4 — swap the near/far test *(unblocked)*
+### Phase 4 — swap the near/far test *(BUILT, in review)*
 
 The insertion point already exists and is a single function:
 `sectionFields(location, matches)` in `convex/lib/cards.ts` (renamed from `tierFields`
@@ -222,9 +222,9 @@ in Phase 3). Only `matches` changes —
 from string equality to the distance rule. Everything downstream (the divider, the
 client partition, the byte-identical no-location response) is untouched.
 
-- [ ] Haversine helper + the three-clause near test
-- [ ] `compositeMatchesFilters` uses min-distance over member points
-- [ ] Buyer preference stores the resolved object (`{localityId, label, lat, lng, sa4}`),
+- [x] Haversine helper + the three-clause near test
+- [x] `compositeMatchesFilters` uses min-distance over member points
+- [x] Buyer preference stores the resolved object (`{localityId, label, lat, lng, sa4}`),
       not just a string, so tiering works before the dataset chunk loads.
       **Capture it at the pick site, never by re-resolving the stored string.**
       24 locality+state+postcode groups in the shipped dataset hold two rows with
@@ -237,7 +237,21 @@ client partition, the byte-identical no-location response) is untouched.
       `Header.tsx:167`, where `LocationPicker.onChange` hands back the row as its
       second argument — so this costs nothing if known up front. (#371 folded the
       header's own dropdown into the shared picker, so there is no third site.)
-- [ ] Thresholds live in `appSettings` (numeric, admin-tunable) — not hardcoded
+- [x] Thresholds live in `appSettings` (numeric, admin-tunable) — not hardcoded
+      (`nearRadiusKm`, default 25, 1–500, admin Settings → Feed)
+
+**Outcome.** `convex/lib/nearby.ts` holds the whole rule; only the `matches` boolean
+handed to `sectionFields` changed. The buyer's record rides in the
+`selectedLocationMeta` cookie and reaches all three queries as `locationMeta`.
+`convex/nearby.test.ts` covers each clause through `getFeed`, including both
+`O'CONNELL, QLD 4680` rows sectioning one ad differently.
+
+**Known ceiling, carried from Phase 3 (not a regression, but now wider):** search and
+the fresh rail cut with `.take()` inside the DB query and their location-pinned pass is
+still `.eq("location", …)`, so it only guarantees survival for same-suburb near rows —
+one near by distance or SA4 can be lost to the cut. `getFeed` is unaffected. The fix is
+the server-side near lane in "Deliberately excluded"; raised with Amir rather than
+built.
 
 ### Phase 5 — the radius control, and the divider question
 

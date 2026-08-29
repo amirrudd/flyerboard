@@ -1,8 +1,10 @@
 # Plan — Location model & proximity grouping
 
-**Status:** Agreed. Phases 0–2 built in PR #368 — the only item left in them is the
-prod migration run. Phase 3 built (branch `claude/feed-sections-phase3`). Phases 4–5
-not started.
+**Status:** Agreed. **Phases 0–3 are done and on `main`** — #368 (suburb records),
+#371 (header folded onto the shared picker), #372 (one feed assembly step, named
+sections). The prod backfill ran clean on 2026-08-29: 8 ads scanned, 8 patched, 0
+coordinates dropped, **nothing unresolved**. Phases 4–5 not started; Phase 4 is
+unblocked.
 **Created:** 2026-08-29
 **Owner:** Amir
 **Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
@@ -147,7 +149,10 @@ for any existing ad, ever. Migration is free pre-launch and expensive after.
 - [x] Fix the free-text seed rows (`convex/seed.ts:238`, `:362`) — currently
       unreachable by any location filter
 - [x] Run on dev — dry run and real run reported identical numbers; re-run was a no-op
-- [ ] Run on prod (`resilient-pheasant-112`) — **outstanding, Amir**
+- [x] Run on prod (`resilient-pheasant-112`) — done 2026-08-29 by Amir:
+      `{adsPatched: 8, adsScanned: 8, coordinatesDropped: 0, salesStamped: 0, unresolved: []}`.
+      An empty `unresolved` means every live ad's suburb string matched the dataset, so
+      no prod ad is stranded without a locality id.
 
 ### Phase 3 — one feed pipeline with a stable boundary *(BUILT)*
 

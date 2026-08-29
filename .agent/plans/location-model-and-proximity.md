@@ -280,7 +280,7 @@ line at all; it may just keep going. Recommendation:
 | Free radius slider | Never. A dropdown of set distances is fewer values to reason about, and it matches Facebook. See Phase 5. |
 | Real suburb polygons | Complaints trace to centroid error. Centroids on ~2 km suburbs are sub-km against a 25 km threshold; polygons are ~50 MB. |
 | Geocoding service for posting | Never. Network dependency, per-call cost, rate limit, posting-blocker — for what a local nearest-centroid scan already does. (Detection still uses Nominatim; that's a button, not a post path.) |
-| Server-side near-lane query | Feed pages get large enough that the client fetches many pages to fill the near section. `sa4Code` makes this a same-day change. |
+| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is now narrower than the definition of near. `sa4Code` makes this a same-day change. |
 | Distance shown on cards | Held back on purpose: a visible number invites the expectation that it orders the list. Rule 2 is absolute. |
 | Multiple saved locations ("home + work") | Nobody has asked. |
 

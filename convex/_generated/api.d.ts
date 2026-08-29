@@ -32,6 +32,7 @@ import type * as lib_cards from "../lib/cards.js";
 import type * as lib_chatNotifications from "../lib/chatNotifications.js";
 import type * as lib_derive from "../lib/derive.js";
 import type * as lib_emailUtils from "../lib/emailUtils.js";
+import type * as lib_location from "../lib/location.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_rateLimitConfig from "../lib/rateLimitConfig.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   "lib/chatNotifications": typeof lib_chatNotifications;
   "lib/derive": typeof lib_derive;
   "lib/emailUtils": typeof lib_emailUtils;
+  "lib/location": typeof lib_location;
   "lib/logger": typeof lib_logger;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/rateLimitConfig": typeof lib_rateLimitConfig;

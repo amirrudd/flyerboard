@@ -6,7 +6,7 @@ import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { CircularProgress } from "../../components/ui/CircularProgress";
-import { searchLocations, formatLocation, fetchLocations, LocationData } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, toLocationMeta, LocationData } from "../../lib/locationService";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { useHeaderSlots } from "../layout/HeaderSlots";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
@@ -64,6 +64,10 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
 
   // Location search state
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
+  // The dataset row behind the confirmed location. Editing an existing ad gives us
+  // the string back but not the row, so this stays undefined until the seller picks
+  // again — and `updateAd` leaves the stored record alone when the string is unchanged.
+  const [locationRow, setLocationRow] = useState<LocationData | undefined>();
   const [locationSuggestions, setLocationSuggestions] = useState<LocationData[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -129,6 +133,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
     const formatted = formatLocation(location);
     setFormData(prev => ({ ...prev, location: formatted }));
     setLocationQuery(formatted);
+    setLocationRow(location);
     setShowSuggestions(false);
   };
 
@@ -304,6 +309,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
+          locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
           categoryId: formData.categoryId as Id<"categories">,
           images: finalImages,
         });
@@ -322,6 +328,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
+          locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
           categoryId: formData.categoryId as Id<"categories">,
           images: [], // Empty initially
         });
@@ -369,6 +376,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
             price: formData.price ? parseFloat(formData.price) : undefined,
             exchangeDescription: formData.exchangeDescription || undefined,
             location: formData.location,
+            locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
             categoryId: formData.categoryId as Id<"categories">,
             images: uploadedRefs,
           });
@@ -751,6 +759,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
                   onChange={(e) => {
                     setLocationQuery(e.target.value);
                     if (formData.location && e.target.value !== formData.location) {
+                      setLocationRow(undefined);
                       setFormData(prev => ({ ...prev, location: "" }));
                     }
                   }}

@@ -4,6 +4,22 @@ import type { Id } from "./_generated/dataModel";
 import { refreshDistinctComposites, saleItems } from "./lib/derive";
 
 /**
+ * The seeded suburb, as the canonical `formatLocation()` string plus the dataset
+ * row behind it. Was bare free text until 2026-08-29, which matched no location
+ * filter at all — so every seeded ad was unfindable by location (rule 4).
+ * Values are row id 4719 of `public/australian-postcodes.json`.
+ */
+const SEED_LOCATION = "RICHMOND, VIC 3121";
+const SEED_LOCATION_META = {
+  localityId: 4719,
+  latitude: -37.823303,
+  longitude: 145.001788,
+  sa4Code: "206",
+  locationSource: "picked" as const,
+};
+
+
+/**
  * Seed a complete, published sample Moving Sale for local/dev testing.
  *
  * Run it (the owner must have logged in at least once):
@@ -216,7 +232,8 @@ export const seedMovingSale = internalMutation({
       userId: user._id,
       slug,
       title: `${firstName}'s Moving Sale`,
-      suburb: "Richmond, VIC",
+      suburb: SEED_LOCATION,
+      suburbMeta: SEED_LOCATION_META,
       note: "Everything must go before we move! Cash or bank transfer. Bring a friend for the big stuff.",
       pickupWindowStart: start,
       pickupWindowEnd: end,
@@ -235,7 +252,8 @@ export const seedMovingSale = internalMutation({
         description: `${item.condition} condition. Part of ${firstName}'s moving sale in Richmond — pickup Saturday.`,
         listingType: "sale",
         price: item.price,
-        location: "Richmond, VIC",
+        location: SEED_LOCATION,
+        ...SEED_LOCATION_META,
         categoryId: categoryFor(item.categorySlug),
         images: [item.image],
         userId: user._id,
@@ -359,7 +377,8 @@ export const seedBundleAds = internalMutation({
         description: seed.description,
         listingType: "sale",
         price: seed.price,
-        location: "Richmond, VIC",
+        location: SEED_LOCATION,
+        ...SEED_LOCATION_META,
         categoryId: category._id,
         images: seed.images,
         userId: user._id,

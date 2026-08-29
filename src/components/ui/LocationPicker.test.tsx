@@ -79,8 +79,25 @@ describe("LocationPicker — combobox semantics", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(onChange).toHaveBeenCalledWith("RICHMOND, VIC 3121");
+    expect(onChange).toHaveBeenCalledWith("RICHMOND, VIC 3121", RICHMOND);
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("passes the whole dataset row alongside the string, not just the name", async () => {
+    // Suburb names are not unique (726 duplicated locality+state pairs), so the
+    // caller needs the row id — this is the data the picker used to discard.
+    const { input, onChange } = setup();
+    await typeAndOpen(input);
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    expect(onChange).toHaveBeenCalledWith("RICHMOND, VIC 3121", RICHMOND);
+  });
+
+  it("clearing the confirmed value passes no row", async () => {
+    const onChange = vi.fn();
+    render(<LocationPicker value="RICHMOND, VIC 3121" onChange={onChange} />);
+    const input = screen.getByPlaceholderText("Enter suburb or postcode");
+    fireEvent.change(input, { target: { value: "RICHMOND, VIC 312" } });
+    expect(onChange).toHaveBeenCalledWith("");
   });
 
   it("Escape closes the listbox without picking", async () => {
@@ -117,7 +134,11 @@ describe("LocationPicker — offline fallback (dataset fetch failed)", () => {
     await waitFor(() =>
       expect(screen.getByText(/suggestions unavailable/i)).toBeInTheDocument()
     );
+    // No second argument: there is no dataset row behind free text, so the
+    // caller stores `locationSource: "unresolved"` and NO coordinates. A guessed
+    // coordinate here would be indistinguishable from a real one forever after.
     expect(onChange).toHaveBeenCalledWith("Richmond");
+    expect(vi.mocked(onChange).mock.calls[0][1]).toBeUndefined();
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 

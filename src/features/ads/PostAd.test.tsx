@@ -56,7 +56,8 @@ vi.mock('../../lib/categoryIcons', () => ({
 }));
 
 // Mock location service
-vi.mock('../../lib/locationService', () => ({
+vi.mock('../../lib/locationService', async () => ({
+    ...(await vi.importActual<typeof import('../../lib/locationService')>('../../lib/locationService')),
     searchLocations: vi.fn(),
     formatLocation: vi.fn((loc) => loc.locality),
     fetchLocations: vi.fn(),
@@ -141,6 +142,9 @@ describe('PostAd', () => {
                 title: 'Test Ad',
                 price: 100,
                 location: 'Sydney',
+                // The picked row travels with the string now — this is the data
+                // the form used to throw away.
+                locationMeta: { localityId: 1, sa4Code: undefined, locationSource: 'picked' },
                 description: 'Test Description',
                 images: [],
             }));

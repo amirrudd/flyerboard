@@ -36,7 +36,12 @@ export function LocationPicker({
   initialQuery,
 }: {
   value: string;
-  onChange: (formatted: string) => void;
+  /**
+   * `loc` is the dataset row behind the pick — `undefined` when the value is
+   * free text (dataset unavailable) or when the field was cleared. Callers that
+   * STORE a location must pass it on; a caller that only filters can ignore it.
+   */
+  onChange: (formatted: string, loc?: LocationData) => void;
   id?: string;
   inputClassName?: string;
   /**
@@ -60,7 +65,7 @@ export function LocationPicker({
   const pick = (loc: LocationData) => {
     const formatted = formatLocation(loc);
     setQuery(formatted);
-    onChange(formatted);
+    onChange(formatted, loc);
     setShowSuggestions(false);
     setActiveIndex(-1);
   };

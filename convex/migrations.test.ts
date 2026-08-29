@@ -4,7 +4,7 @@ import { expect, test, describe } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "./schema";
 import { internal } from "./_generated/api";
-import { resolveSuburb } from "./migrations";
+import { resolveSuburb, resolveLocationRow } from "./migrations";
 
 // Load all Convex modules so convex-test can run them (same loader as feed.test.ts).
 const modules = loadConvexModules();
@@ -42,6 +42,44 @@ for (const r of rows) {
   else byLocality.set(r.locality, [r]);
 }
 const resolve = (suburb: string) => resolveSuburb(byLocality, suburb);
+
+describe("resolveLocationRow — the record behind a stored location string", () => {
+  // Full dataset rows, so the resolver can hand back the id/coordinates that the
+  // picker used to throw away. Same shape as public/australian-postcodes.json.
+  const full = [
+    { locality: "RICHMOND", state: "VIC", postcode: "3121", id: 4719, lat: -37.823303, long: 145.001788, sa4: "206" },
+    { locality: "RICHMOND", state: "NSW", postcode: "2753", id: 1500, lat: -33.598, long: 150.751, sa4: "115" },
+    { locality: "WANGARA", state: "WA", postcode: "6947", id: 24304, lat: 0, long: 0 },
+  ];
+  const byId = new Map<string, typeof full>();
+  for (const r of full) {
+    const bucket = byId.get(r.locality);
+    if (bucket) bucket.push(r);
+    else byId.set(r.locality, [r]);
+  }
+
+  test("a canonical stored string resolves back to its exact dataset row", () => {
+    expect(resolveLocationRow(byId, "RICHMOND, VIC 3121")?.id).toBe(4719);
+    expect(resolveLocationRow(byId, "RICHMOND, NSW 2753")?.id).toBe(1500);
+  });
+
+  test("an ambiguous suburb resolves to nothing rather than a guessed id", () => {
+    // "Richmond" alone is two different real places. Picking either would stamp a
+    // seller's ad with a suburb they never chose.
+    expect(resolveLocationRow(byId, "Richmond")).toBeNull();
+  });
+
+  test("a row whose coordinates are the (0, 0) placeholder still resolves", () => {
+    // The caller drops the coordinates; the row id is still worth keeping.
+    const row = resolveLocationRow(byId, "WANGARA, WA 6947");
+    expect(row?.id).toBe(24304);
+    expect(row?.lat).toBe(0);
+  });
+
+  test("free text that matches nothing resolves to nothing", () => {
+    expect(resolveLocationRow(byId, "Somewhere Else")).toBeNull();
+  });
+});
 
 describe("resolveSuburb", () => {
   test("a locality unique in the dataset resolves without a state", () => {
@@ -112,6 +150,161 @@ describe("applySaleLocations dryRun", () => {
     expect(real).toEqual(dry);
     await t.run(async (ctx) => {
       expect((await ctx.db.get(saleEventId))!.suburb).toBe("RICHMOND, VIC 3121");
+    });
+  });
+});
+
+describe("backfillAdLocationRecords", () => {
+  /**
+   * The backfill resolves each ad's stored location STRING back to the dataset row
+   * the picker originally used, and stamps the record that used to be discarded.
+   * It must change nothing a user sees: `location` itself is never rewritten.
+   */
+  const DATASET = [
+    { id: 4719, postcode: "3121", locality: "RICHMOND", state: "VIC", lat: -37.823303, long: 145.001788, sa4: "206" },
+    { id: 1500, postcode: "2753", locality: "RICHMOND", state: "NSW", lat: -33.598, long: 150.751, sa4: "115" },
+    { id: 4720, postcode: "3065", locality: "FITZROY", state: "VIC", lat: -37.8, long: 144.978, sa4: "206" },
+  ];
+
+  const seed = async (t: ReturnType<typeof convexTest>) =>
+    await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { isAnonymous: false });
+      const categoryId = await ctx.db.insert("categories", {
+        name: "Furniture", slug: "furniture", icon: "chair",
+      });
+      const now = Date.now();
+      const saleEventId = await ctx.db.insert("saleEvents", {
+        userId, title: "Move out", suburb: "RICHMOND, VIC 3121", slug: "move-out",
+        pickupWindowStart: now, pickupWindowEnd: now + 1, status: "active",
+        createdAt: now, bumpedAt: now,
+      });
+      const mk = (title: string, location: string, extra = {}) =>
+        ctx.db.insert("ads", {
+          title, description: "", location, categoryId, userId,
+          images: [], isActive: true, views: 0, bumpedAt: now, ...extra,
+        });
+      return {
+        saleEventId,
+        resolvable: await mk("Desk", "FITZROY, VIC 3065"),
+        // Free text a seller typed while the dataset was down. Matches no row.
+        freeText: await mk("Sofa", "Somewhere, Nowhere"),
+        // "Richmond" alone is two real places — resolving it would stamp a suburb
+        // the seller never chose.
+        ambiguous: await mk("Lamp", "Richmond"),
+        saleItem: await mk("Chair", "RICHMOND, VIC 3121", { saleEventId }),
+      };
+    });
+
+  /** Serve the dataset over `fetch`, the way the action reads it in production. */
+  const withDataset = async (fn: () => Promise<void>) => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify(DATASET), {
+        headers: { "content-type": "application/json" },
+      });
+    try {
+      await fn();
+    } finally {
+      globalThis.fetch = original;
+    }
+  };
+
+  test("a dry run counts exactly what a real run changes, and writes nothing", async () => {
+    await withDataset(async () => {
+      const t = convexTest(schema, modules);
+      const ids = await seed(t);
+
+      const dry = await t.action(internal.migrations.backfillAdLocationRecords, { dryRun: true });
+      expect(dry.dryRun).toBe(true);
+      expect(dry.adsScanned).toBe(4);
+      expect(dry.adsPatched).toBe(4);
+      expect(dry.salesStamped).toBe(1);
+      expect(dry.coordinatesDropped).toBe(0); // none of the seeded rows had one
+      expect(dry.unresolved).toEqual([
+        { location: "Somewhere, Nowhere", count: 1 },
+        { location: "Richmond", count: 1 },
+      ]);
+
+      await t.run(async (ctx) => {
+        expect((await ctx.db.get(ids.resolvable))!.locationSource).toBeUndefined();
+        expect((await ctx.db.get(ids.saleEventId))!.suburbMeta).toBeUndefined();
+      });
+
+      const real = await t.action(internal.migrations.backfillAdLocationRecords, {});
+      expect(real.adsPatched).toBe(dry.adsPatched);
+      expect(real.salesStamped).toBe(dry.salesStamped);
+      expect(real.unresolved).toEqual(dry.unresolved);
+    });
+  });
+
+  test("stamps the resolved record and leaves `location` itself untouched", async () => {
+    await withDataset(async () => {
+      const t = convexTest(schema, modules);
+      const ids = await seed(t);
+      await t.action(internal.migrations.backfillAdLocationRecords, {});
+
+      await t.run(async (ctx) => {
+        const ad = (await ctx.db.get(ids.resolvable))!;
+        expect(ad.location).toBe("FITZROY, VIC 3065"); // unchanged — zero user-visible change
+        expect(ad.localityId).toBe(4720);
+        expect(ad.latitude).toBe(-37.8);
+        expect(ad.longitude).toBe(144.978);
+        expect(ad.sa4Code).toBe("206");
+        expect(ad.locationSource).toBe("picked");
+
+        expect((await ctx.db.get(ids.saleEventId))!.suburbMeta).toEqual({
+          localityId: 4719, latitude: -37.823303, longitude: 145.001788,
+          sa4Code: "206", locationSource: "picked",
+        });
+      });
+    });
+  });
+
+  test("an unmatched or ambiguous location gets NO coordinates, never a placeholder", async () => {
+    await withDataset(async () => {
+      const t = convexTest(schema, modules);
+      const ids = await seed(t);
+      await t.action(internal.migrations.backfillAdLocationRecords, {});
+
+      await t.run(async (ctx) => {
+        for (const id of [ids.freeText, ids.ambiguous]) {
+          const ad = (await ctx.db.get(id))!;
+          expect(ad.locationSource).toBe("unresolved");
+          expect(ad.localityId).toBeUndefined();
+          // The whole point: a wrong coordinate is indistinguishable from a right
+          // one forever after, so there is no fallback point of any kind.
+          expect(ad.latitude).toBeUndefined();
+          expect(ad.longitude).toBeUndefined();
+          expect(ad.sa4Code).toBeUndefined();
+        }
+      });
+    });
+  });
+
+  test("the sale card inherits its members' records (rule 1)", async () => {
+    await withDataset(async () => {
+      const t = convexTest(schema, modules);
+      const ids = await seed(t);
+      await t.action(internal.migrations.backfillAdLocationRecords, {});
+
+      await t.run(async (ctx) => {
+        const sale = (await ctx.db.get(ids.saleEventId))!;
+        expect(sale.localityIds).toEqual([4719]);
+        expect(sale.points).toEqual([{ lat: -37.823303, lng: 145.001788 }]);
+        expect(sale.sa4Codes).toEqual(["206"]);
+      });
+    });
+  });
+
+  test("re-running changes nothing — already-stamped rows are skipped", async () => {
+    await withDataset(async () => {
+      const t = convexTest(schema, modules);
+      await seed(t);
+      await t.action(internal.migrations.backfillAdLocationRecords, {});
+      const second = await t.action(internal.migrations.backfillAdLocationRecords, {});
+      expect(second.adsScanned).toBe(0);
+      expect(second.adsPatched).toBe(0);
+      expect(second.salesStamped).toBe(0);
     });
   });
 });

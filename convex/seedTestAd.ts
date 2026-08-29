@@ -58,6 +58,12 @@ export const seedTallImageAd = internalMutation({
       listingType: "sale",
       price: 0,
       location: "DOCKLANDS, VIC 3008",
+      // Row 4754 of public/australian-postcodes.json.
+      localityId: 4754,
+      latitude: -37.814719,
+      longitude: 144.948039,
+      sa4Code: "206",
+      locationSource: "picked" as const,
       categoryId: category._id,
       images,
       userId: user._id,

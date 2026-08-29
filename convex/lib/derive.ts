@@ -17,13 +17,22 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
  */
 
 /** The only member-ad fields derivation reads. */
-type Member = Pick<Doc<"ads">, "title" | "categoryId" | "location">;
+type Member = Pick<
+  Doc<"ads">,
+  "title" | "categoryId" | "location" | "localityId" | "latitude" | "longitude" | "sa4Code"
+>;
 
 export type DerivedComposite = {
   categoryIds: Id<"categories">[];
   searchText: string;
   /** Empty when there are no live members — the row then matches no location. */
   locations: string[];
+  /** The same members' location records. Each list is its own distinct set —
+   *  they are NOT positionally aligned with `locations` or with each other, and
+   *  a member that resolved to nothing contributes to none of them. */
+  localityIds: number[];
+  points: { lat: number; lng: number }[];
+  sa4Codes: string[];
 };
 
 /** Auto-name a bundle from its first couple of item titles ("Sofa + Dining table"). */
@@ -58,7 +67,22 @@ export function deriveFromMembers(members: Member[], label?: string): DerivedCom
     .map((s) => s.trim())
     .filter(Boolean)
     .join(" ");
-  return { categoryIds, searchText, locations: [...new Set(members.map((m) => m.location))] };
+  const points = new Map<string, { lat: number; lng: number }>();
+  for (const m of members) {
+    // Both halves required: an unresolved member has NO coordinate, and (0, 0) is
+    // the postcode dataset's own "no coordinate" placeholder. Neither is a point.
+    if (m.latitude && m.longitude) {
+      points.set(`${m.latitude},${m.longitude}`, { lat: m.latitude, lng: m.longitude });
+    }
+  }
+  return {
+    categoryIds,
+    searchText,
+    locations: [...new Set(members.map((m) => m.location))],
+    localityIds: [...new Set(members.map((m) => m.localityId).filter((id): id is number => id !== undefined))],
+    points: [...points.values()],
+    sa4Codes: [...new Set(members.map((m) => m.sa4Code).filter((c): c is string => c !== undefined))],
+  };
 }
 
 /**
@@ -131,6 +155,9 @@ export async function refreshBundleDerived(
       searchText: undefined,
       categoryIds: undefined,
       locations: undefined,
+      localityIds: undefined,
+      points: undefined,
+      sa4Codes: undefined,
     });
     return;
   }

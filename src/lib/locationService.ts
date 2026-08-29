@@ -7,7 +7,47 @@ export interface LocationData {
     state: string;
     long: number;
     lat: number;
+    /** ABS Statistical Area Level 4 (ASGS 2021), e.g. "206". Absent on 7 of 18,559 rows. */
+    sa4?: string;
 }
+
+/**
+ * The part of a picked location that gets STORED alongside the formatted string.
+ *
+ * The formatted string ("RICHMOND, VIC 3121") stays the only thing any filter
+ * compares on today — this record is the data the picker used to throw away, kept
+ * so later work doesn't have to guess it back out of a name. Suburb names are not
+ * unique (726 duplicated locality+state pairs in the dataset), so `localityId` is
+ * the stable key, not the name.
+ */
+export interface LocationMeta {
+    localityId?: number;
+    latitude?: number;
+    longitude?: number;
+    sa4Code?: string;
+    /** "picked" = came from the dataset. "unresolved" = free text, nothing behind it. */
+    locationSource: "picked" | "unresolved";
+}
+
+/**
+ * Build the stored record from a picked dataset row, or the honest empty record
+ * when there is no row (the dataset failed to load and the seller typed a suburb).
+ *
+ * A missing coordinate is left MISSING. Six dataset rows carry (0, 0) as their own
+ * "no coordinate" placeholder, and a wrong coordinate is indistinguishable from a
+ * right one forever after — so a falsy lat/long writes no coordinate at all rather
+ * than a point in the Gulf of Guinea.
+ */
+export const toLocationMeta = (loc?: LocationData): LocationMeta => {
+    if (!loc) return { locationSource: "unresolved" };
+    const hasPoint = Boolean(loc.lat && loc.long);
+    return {
+        localityId: loc.id,
+        ...(hasPoint ? { latitude: loc.lat, longitude: loc.long } : {}),
+        sa4Code: loc.sa4,
+        locationSource: "picked",
+    };
+};
 
 let locationsCache: LocationData[] | null = null;
 let fetchPromise: Promise<LocationData[]> | null = null;

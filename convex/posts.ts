@@ -9,6 +9,7 @@ import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit, checkRateLimitDynamic, RATE_LIMITS } from "./lib/rateLimit";
 import { detachAdFromBundle } from "./bundles";
 import { refreshOwningComposites } from "./lib/derive";
+import { adLocationFields, optionalLocationMeta } from "./lib/location";
 import { readSettingValue } from "./appSettings";
 import {
   FLAG_BOOST_TO_TOP,
@@ -54,6 +55,10 @@ export const createAd = mutation({
     price: v.optional(v.number()),
     exchangeDescription: v.optional(v.string()),
     location: v.string(),
+    /** The picker's record behind `location`. Optional: an older client, or the
+     *  picker's free-text fallback, simply sends nothing and the ad is stored
+     *  exactly as it always was. `migrations:backfillAdLocationRecords` fills the gap. */
+    locationMeta: optionalLocationMeta,
     categoryId: v.id("categories"),
     images: v.array(v.string()),
   },
@@ -81,6 +86,7 @@ export const createAd = mutation({
       price: args.price,
       exchangeDescription: args.exchangeDescription,
       location: args.location,
+      ...adLocationFields(args.locationMeta),
       categoryId: args.categoryId,
       images: args.images,
       userId,
@@ -119,6 +125,7 @@ export const updateAd = mutation({
     price: v.optional(v.number()),
     exchangeDescription: v.optional(v.string()),
     location: v.string(),
+    locationMeta: optionalLocationMeta,
     categoryId: v.id("categories"),
     images: v.array(v.string()),
   },
@@ -170,6 +177,14 @@ export const updateAd = mutation({
       exchangeDescription: args.exchangeDescription,
       previousPrice,
       location: args.location,
+      // Three cases, and the middle one is the load-bearing one:
+      //   • a record was sent           → store it
+      //   • none sent, suburb CHANGED   → clear the old record; keeping the old
+      //     suburb's coordinates on a new suburb is worse than having none
+      //   • none sent, suburb unchanged → leave the record alone
+      ...(args.locationMeta || args.location !== existingAd.location
+        ? adLocationFields(args.locationMeta)
+        : {}),
       categoryId: args.categoryId,
       images: args.images,
     });

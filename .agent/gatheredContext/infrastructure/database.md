@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-08-26
+**Last Updated**: 2026-08-29
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -171,6 +171,12 @@ Composites carry **denormalised copies** of what their members have:
 categoryIds: v.optional(v.array(v.id("categories"))),
 searchText:  v.optional(v.string()),   // own label/title + every member title
 locations:   v.optional(v.array(v.string())), // distinct canonical strings of the live members
+// Since 2026-08-29 — the members' location RECORDS, derived at the same moment.
+// Each is its own distinct set: NOT positionally aligned with `locations` or with
+// each other, and a member with no record contributes to none of them.
+localityIds: v.optional(v.array(v.number())),
+points:      v.optional(v.array(v.object({ lat: v.number(), lng: v.number() }))),
+sa4Codes:    v.optional(v.array(v.string())),
 ```
 
 Denormalisation rather than query-time derivation is forced, not chosen: **a search
@@ -225,6 +231,34 @@ explicit cap a read-amplification regression cannot fail a test.
   `public/`, which a Convex function cannot read off disk, so it fetches the same
   file over HTTP and reports anything ambiguous rather than guessing). Display drops
   the postcode via `displayLocation()` — a view, never stored.
+- **A location string is not a location.** Since 2026-08-29 `ads` also carries
+  `localityId` / `latitude` / `longitude` / `sa4Code` / `locationSource`, and
+  `saleEvents` carries `suburbMeta` (its own picked record, because sale items are
+  created in a LATER wizard step and inherit it). **Nothing reads any of them yet** —
+  every filter still compares the `location` STRING exactly as before, and
+  `tierFields` / `compositeMatchesFilters` in `convex/lib/cards.ts` are untouched.
+  The point was to stop discarding what the picker already had:
+  - **The name is not a key.** `public/australian-postcodes.json` has 726 duplicated
+    locality+state pairs and names repeat across states. `localityId` (the dataset's
+    own `id`, unique across all 18,559 rows) is the stable key. Never synthesise a
+    slug from the name.
+  - **`latitude`/`longitude` existed since forever and were never written** by any
+    user-facing path — only `sampleData.ts` set them, to hand-written city centroids
+    paired with suburb names that matched no filter. The backfill discarded those 15
+    and reported the count.
+  - **An unresolved location gets NO coordinate. Not 0,0, not a capital, not a GPO.**
+    A wrong coordinate is indistinguishable from a right one forever after. The
+    picker's degraded path (dataset fetch failed → typed text committed verbatim)
+    writes `locationSource: "unresolved"` and nothing else, and publishing still
+    succeeds. `toLocationMeta()` in `src/lib/locationService.ts` is the single
+    enforcement site, and it *also* rejects (0, 0) — six dataset rows carry that as
+    their own "no coordinate" placeholder.
+  - **The record is DERIVED onto composites**, so any mutation patching it must
+    re-derive (rule 1). The `derive.test.ts` contract caught exactly this when
+    `applyAdLocationRecords` first shipped without it.
+  - `migrations:backfillAdLocationRecords` resolves historical rows the same way
+    `backfillSaleSuburbLocations` does (internalAction, fetches the dataset over
+    HTTP, reports ambiguous strings rather than guessing). Supports `dryRun`.
 - **`categoryIds` is an array, so Convex cannot index it.** `filterFields` are
   equality-only over the whole value; array-contains is not expressible. Composite
   category/location narrowing is therefore a JS predicate, which must run *below*

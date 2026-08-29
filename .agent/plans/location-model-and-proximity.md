@@ -233,9 +233,10 @@ client partition, the byte-identical no-location response) is untouched.
       exceed the 25 km near threshold outright, and HAASTS BLUFF NT pairs a real point
       with the `(0,0)` placeholder. Re-resolving a stored string for those is a coin
       flip that can land the near/far test 80 km out. The row is already in hand at
-      every pick site (`Header.tsx:85` detection match, `:207` dropdown row,
-      `LocationPicker.onChange`'s second argument), so this costs nothing if known
-      up front.
+      both pick sites — `Header.tsx:83`, where detection resolves a `match`, and
+      `Header.tsx:167`, where `LocationPicker.onChange` hands back the row as its
+      second argument — so this costs nothing if known up front. (#371 folded the
+      header's own dropdown into the shared picker, so there is no third site.)
 - [ ] Thresholds live in `appSettings` (numeric, admin-tunable) — not hardcoded
 
 ### Phase 5 — the radius control, and the divider question

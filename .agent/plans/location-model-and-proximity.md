@@ -302,7 +302,12 @@ dense enough that the first group fills a screen on its own.
 | Free radius slider | Never. A dropdown of set distances is fewer values to reason about, and it matches Facebook. Shipped in Phase 5 as 5/10/15/25/50 km. |
 | Real suburb polygons | Complaints trace to centroid error. Centroids on ~2 km suburbs are sub-km against a 25 km threshold; polygons are ~50 MB. |
 | Geocoding service for posting | Never. Network dependency, per-call cost, rate limit, posting-blocker — for what a local nearest-centroid scan already does. (Detection still uses Nominatim; that's a button, not a post path.) |
-| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is narrower than the definition of near. Phase 5 made the surviving SET independent of the radius (changing the distance can no longer remove an ad), but it did not widen the pinned pass — that still needs the `sa4Code` lane. `sa4Code` makes this a same-day change. |
+| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is narrower than the definition of near. Phase 5 made the surviving SET independent of the radius (changing the distance can no longer remove an ad), but it did not widen the pinned pass — that still needs the `sa4Code` lane. **Do NOT build this as an `sa4Code` lane** — measured against the shipped dataset and it
+does not work. Of the localities within 15 km of a Sydney suburb, only **26.8%** share
+that suburb's SA4 (Melbourne 33.7%, Brisbane 38.4%, national median 58.8%); at 25 km
+Sydney falls to 16.2%. An SA4 lane would miss roughly three quarters of the near set in
+the metro areas this is for. SA4 works as the near test's third clause, where it widens
+coverage in thin areas — it does not work as the pagination lane. |
 | Distance shown on cards | Held back on purpose: a visible number invites the expectation that it orders the list. Rule 2 is absolute. |
 | Multiple saved locations ("home + work") | Nobody has asked. |
 

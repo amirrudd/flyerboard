@@ -32,6 +32,29 @@ The header keeps its own chrome around the picker (trigger button, panel, "All
 Locations" reset, "Detect my location"). The picker's suggestion list is an absolute
 popover, so the panel must NOT be `overflow-hidden` or the list is clipped.
 
+**The header now says nothing when there is nothing to pick.** Its old results
+container had four branches — spinner / list / "No locations found" (query >= 2 chars,
+no matches) / "All Locations" (fewer than 2 chars). Folding onto the picker changed two
+of them, and both were accepted deliberately on 2026-08-29:
+
+- **"All Locations" went from conditional to permanent** — it used to disappear as soon
+  as you typed two characters. Permanent is better: the reset should always be reachable,
+  and there is no state in which hiding it helps.
+- **"No locations found" is gone, and that is a cost, not a win.** Type "Zzzzz" and the
+  old header told you there was no such suburb; now the dropdown simply doesn't appear.
+  Not restored, because the honest fix is an empty state inside `LocationPicker` — every
+  caller has the same hole — and that is a change to a shared component, not header
+  chrome. **Trigger to fix:** the first time anyone gives the picker a no-results state,
+  do it there and delete this paragraph.
+
+The same silence covers the dataset-offline path, with a wrinkle: the picker shows
+"Suggestions unavailable — type your suburb and continue", which is true for a posting
+form and a promise the header then breaks — the `isCanonicalLocation` guard drops the
+typed text, so nothing continues. **Accepted, not fixed.** Suppressing it needs either a
+prop or a CSS reach-in from the wrapper (`[&_[role=status]]:hidden`), and both buy
+silence, which is what the path already has. The picker's empty-state work above fixes
+this one too, in the same place.
+
 **Detection is separate from picking.** "Detect my location" reverse-geocodes via
 Nominatim, then resolves the suburb name against the dataset **by postcode**
 (`results.find(loc => loc.postcode === postcode) ?? results[0]`). Suburb names repeat

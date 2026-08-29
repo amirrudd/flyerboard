@@ -305,27 +305,37 @@ const compareSortKeys = (a: SortKey, b: SortKey): number =>
   (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
 
 /**
- * Take one page out of the ordered pool — one cursor PER GROUP.
+ * Take one page out of the ordered pool — one cursor PER GROUP, near group
+ * first.
  *
- * Two properties have to hold at once, and a single date-ordered cursor buys
- * only the first:
+ * Two properties, and the second is why there are two cursors rather than one
+ * date-ordered cursor over the whole pool:
  *
  * - **Newest first, honestly.** Every entry on a page sorts before every entry
  *   on the next one, so scrolling further only ever shows older things. Keyset,
  *   not offset: the cursor names the last entry handed out, so a row inserted
  *   between two fetches shifts no page.
- * - **Both groups reach the buyer.** Each page draws from the near group AND
- *   the far group, so neither waits on the other to run out. Selecting purely
- *   by date fails this in both directions: an in-area match older than a page
- *   of out-of-area ones is not on page 1 at all, so the buyer's first screen is
- *   the far group (rule 5 — the area comes first); and draining the near group
- *   first would put a boosted out-of-area listing out of reach for a buyer in a
- *   dense area, breaking Boost's promise in that group (rule 3).
+ * - **The buyer's area comes first, and it is finished before the rest starts.**
+ *   A page takes as much of the near group as it can hold, and only what is left
+ *   over goes to the far group. That is rule 5 in the order rule 5 states it:
+ *   ads in the area, then ads outside it — a buyer with nothing inside their
+ *   distance is TOLD so (the boundary's banner form) and the feed continues
+ *   outward from there.
  *
- * The split is half the page to the near group, the remainder to the far one,
- * and whichever group runs short gives its room to the other — so with no
- * location set (everything in the first group) a page is just the next
- * `numItems` newest, exactly as before.
+ * Selecting purely by date breaks that: an in-area match older than a page of
+ * out-of-area ones would not be on page 1 at all, so the buyer's first screen
+ * would be the far group.
+ *
+ * **Reserving a fixed share of every page for the far group is worse, and it is
+ * not what Boost needs.** It would make later pages insert near cards ABOVE
+ * content the buyer has already scrolled past — the page shifting under them
+ * mid-scroll — where a long near group is just a long list. Rule 3 says in terms
+ * that a boosted ad at the top of EACH group is the compliant outcome, so a
+ * boosted far ad sitting below a long near group is exactly right; it is not
+ * "unreachable", and the near group is bounded by the pool in any case.
+ *
+ * With no location set everything is in the first group, so a page is just the
+ * next `numItems` newest — exactly as before.
  *
  * This is grouping, not ordering (rule 2): inside each group the sequence is
  * `bumpedAt` desc and nothing else. `assembleFeedPage` then orders the page
@@ -373,9 +383,9 @@ function pageOfPool(
   // Floor of 1: a page that selects nothing while the pool still holds rows
   // never advances the cursor, and a client asking for more loops forever.
   const size = Math.max(1, paginationOpts.numItems);
-  const nearCount = Math.min(nearLeft.length, Math.max(Math.ceil(size / 2), size - farLeft.length));
-  const nearPage = nearLeft.slice(0, nearCount);
-  const farPage = farLeft.slice(0, Math.min(farLeft.length, size - nearPage.length));
+  // Near takes the whole page if it can fill it; far gets only what is left.
+  const nearPage = nearLeft.slice(0, size);
+  const farPage = farLeft.slice(0, size - nearPage.length);
 
   const lastOf = (page: FeedSourceEntry[], fallback: SortKey | null) =>
     page.length > 0 ? sortKeyOf(page[page.length - 1]) : fallback;

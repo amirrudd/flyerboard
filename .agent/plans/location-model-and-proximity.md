@@ -311,11 +311,18 @@ the ordered pool with a keyset cursor. No trim, so nothing is dropped.
 - [x] `pageOfPool` — keyset cursor on `(bumpedAt, _creationTime, _id)` desc, the same
       total order `feed.getFeed`'s mergedStream uses. Ads and composites share one
       sequence; no ad type has its own lane
-- [x] **One cursor PER GROUP.** Each page takes half its room from near and the rest
-      from far, each group giving its unused room to the other. A single date-ordered
-      cursor breaks rule 5 in both directions — an in-area match older than a page of
-      out-of-area ones misses page 1 entirely, and near-first-until-exhausted puts a
-      boosted out-of-area listing out of reach in a dense area (rule 3)
+- [x] **One cursor PER GROUP, near filled first.** A page takes as much of the near
+      group as it can hold; only the leftover room goes to far. Rule 5 in the order rule
+      5 states it. A single date-ordered cursor over the whole pool breaks it — an
+      in-area match older than a page of out-of-area ones misses page 1 entirely
+- [x] **Reverted: reserving half of each page for the far group.** Built that way first,
+      on a brief that warranted it with "a boosted out-of-area listing would be
+      unreachable". Amir overturned it on 2026-08-30: rule 3 says in terms that a boosted
+      ad at the top of EACH group is the compliant outcome, so the warrant was
+      overstated — and the split made later pages insert near cards ABOVE content the
+      buyer had already scrolled past, which is a real defect where a long near group is
+      merely a long list. Near-first is what Amir has meant all along: a buyer with
+      nothing inside their distance is TOLD so, and the feed continues outward
 - [x] `assembleFeedPage` called with no `limit` on this path — the `pinned`-first trim
       is now dead here and still load-bearing on `ads.getLatestAds`, which still cuts
 - [x] No frontend change: `MarketplaceContext` already routes `loadMore` to whichever

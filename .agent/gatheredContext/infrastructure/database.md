@@ -236,14 +236,21 @@ once, cursor over the ordered pool.
   sequence and no ad type gets its own lane. Keyset, not offset: a row inserted between
   two fetches shifts no page. A cursor we didn't issue restarts at the top rather than
   throwing (it crosses a trust boundary).
-- **Two cursors, not one, and this is the load-bearing part.** Each page takes half its
-  room from the near group and the rest from the far one, whichever group runs short
-  giving its room to the other. A SINGLE date-ordered cursor fails rule 5 in both
-  directions: an in-area match older than a page of out-of-area ones is not on page 1 at
-  all (so the buyer's first screen is the far group), and near-first-until-exhausted
-  puts a boosted out-of-area listing out of reach for a buyer in a dense area (rule 3 —
-  Boost's promise has to hold in every group). With no location set everything is in the
-  first group and a page is just the next `numItems` newest, exactly as before.
+- **Two cursors, not one, and the near group is FILLED FIRST.** A page takes as much of
+  the near group as it can hold; only the leftover room goes to the far group. That is
+  rule 5 in the order rule 5 states it — ads in the area, then ads outside it. A single
+  date-ordered cursor over the whole pool breaks it: an in-area match older than a page
+  of out-of-area ones would not be on page 1 at all, so the buyer's first screen would
+  be the far group. With no location set everything is in the first group and a page is
+  just the next `numItems` newest, exactly as before.
+- **Do NOT reserve a fixed share of each page for the far group.** It was built that way
+  first (a 50/50 split, to guarantee far entries on page 1) and it is worse: later pages
+  then insert near cards ABOVE content the buyer has already scrolled past — the page
+  shifting under them mid-scroll — where a long near group is merely a long list. It is
+  also not what Boost needs. Rule 3 says in terms that a boosted ad at the top of EACH
+  group is the compliant outcome, so a boosted far ad below a long near group is exactly
+  right, not "unreachable"; and the near group is bounded by the pool anyway. Amir
+  decided this on 2026-08-30, against the brief that asked for the split.
 - **This is grouping, not ordering.** Inside each group the sequence is `bumpedAt` desc
   and nothing else. `assembleFeedPage` orders the page section-first; `AdsGrid` regroups
   the ACCUMULATED pages into one near run and one far run, each still newest-first.
@@ -251,9 +258,11 @@ once, cursor over the ordered pool.
   page boundaries and asserts every entry on a page is newer than or equal to every
   entry on the next **within each group** — not merely that each page is internally
   sorted, which a per-page re-sort would also pass. A second test fails if out-of-area
-  results become unreachable when nearby matches fill the first page. Both are
-  mutation-checked: draining near before far fails the second, ascending sort fails the
-  first.
+  results become unreachable when nearby matches fill the first page, and pins the
+  near-first order (every far entry arrives after every near one; page 1 of a 51-near
+  pool is pure near). Mutation-checked three ways: reserving half the page for far fails
+  the second test, serving far before near fails it and the pinned-pass test, and an
+  ascending sort fails the first.
 
 #### Ceilings, recorded not papered over
 

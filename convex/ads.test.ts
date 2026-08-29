@@ -446,7 +446,8 @@ describe("search sections results by location instead of hiding them (rule 5)", 
     // 60 newer out-of-area matches would fill the relevance cap; only the
     // pinned near pass puts the local ad in the pool at all. It is the OLDEST
     // of the 61, so a page selected purely by date would not hold it — the near
-    // group's own cursor is what still puts it on the buyer's first screen.
+    // group being filled first is what still puts it on the buyer's first
+    // screen, above all 60.
     for (let i = 0; i < 60; i++) {
       await insertAd(t, {
         userId,
@@ -778,6 +779,12 @@ describe("getAds pagination", () => {
    * returned ONE page of 50 ranked near-first, so 51 nearby matches removed
    * every out-of-area match and left no page to scroll to — setting a location
    * strictly shrank what search returned. This fails if that ever comes back.
+   *
+   * Reachable means REACHABLE BY PAGING, not present on page 1. The near group
+   * is filled first and finished before the far group starts (rule 5's own
+   * order), so with 51 nearby matches the out-of-area ones land on page 3. A
+   * boosted far ad sitting at the top of the far group below them is the
+   * compliant outcome — rule 3 says so in terms.
    */
   test("out-of-area matches stay reachable when nearby matches fill the first page", async () => {
     const { t, userId, categoryId } = await fresh();
@@ -802,19 +809,14 @@ describe("getAds pagination", () => {
     expect(seen.map(keyOf)).toContain(farB);
     expect(seen.filter((e) => sectionOf(e) === "far")).toHaveLength(2);
 
-    // And reachable on the FIRST page, not only after 51 nearby matches are
-    // exhausted: the near group must not starve the far one. A boosted
-    // out-of-area listing is otherwise unreachable for a buyer in a dense area,
-    // and Boost's promise has to hold in every group (rule 3).
-    expect(pages[0].filter((e) => sectionOf(e) === "far").map(keyOf)).toEqual(
-      expect.arrayContaining([farA, farB])
-    );
-    // The near group still leads the page it shares (rule 5, area first).
-    expect(pages[0].filter((e) => sectionOf(e) === "near").length).toBeGreaterThan(0);
-    expect(pages[0].map(sectionOf)).toEqual([
-      ...pages[0].filter((e) => sectionOf(e) === "near").map(() => "near"),
-      ...pages[0].filter((e) => sectionOf(e) === "far").map(() => "far"),
-    ]);
+    // Every out-of-area entry arrives AFTER every in-area one. This is the
+    // "fill the near group first" contract, and it is what stops later pages
+    // inserting near cards above content the buyer has already scrolled past.
+    const sections = seen.map(sectionOf);
+    expect(sections.indexOf("far")).toBeGreaterThan(sections.lastIndexOf("near"));
+    // Page 1 is pure near — 51 nearby matches do not leave room for anything
+    // else, and nothing is reserved for the far group.
+    expect(new Set(pages[0].map(sectionOf))).toEqual(new Set(["near"]));
   });
 
   test("a cursor we never issued restarts at the top instead of throwing", async () => {

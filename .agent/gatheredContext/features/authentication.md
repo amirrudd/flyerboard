@@ -5,7 +5,7 @@ description: Rules and architecture for Authentication (Descope + Convex)
 
 # Authentication Architecture & Rules
 
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-08-29
 
 This project uses a **Hybrid Authentication** approach:
 - **Identity Provider**: [Descope](https://descope.com) handles user identity, OTP verification, and session management.
@@ -72,10 +72,65 @@ Convex is configured to verify Descope JWTs via OIDC. Ensure `convex/auth.config
 **How the token actually reaches Convex (verified live 2026-07-12):**
 1. Descope verifies the phone OTP and mints an RS256-signed session JWT; `useSession()` exposes it as `sessionToken`.
 2. `src/lib/useDescopeAuth.ts` returns it from `fetchAccessToken`; `ConvexProviderWithAuth` (main.tsx) attaches it to the Convex WebSocket.
-3. **Convex's runtime validates the JWT itself** — it fetches Descope's public keys (JWKS) from the issuer in `auth.config.ts` (`domain` = `https://api.descope.com/<PROJECT_ID>`, `applicationID` = project ID as audience) and checks signature/issuer/audience/expiry. **No Descope SDK or secret runs in Convex code** — pure asymmetric-crypto verification.
+3. **Convex's runtime validates the JWT itself** — it fetches Descope's public keys (JWKS) from the issuer in `auth.config.ts` (`domain` = the issuer string **copied verbatim from the token's own `iss` claim** — see the issuer-drift gotcha below, `applicationID` = project ID as audience) and checks signature/issuer/audience/expiry. **No Descope SDK or secret runs in Convex code** — pure asymmetric-crypto verification.
 4. Valid token → `ctx.auth.getUserIdentity()` returns claims; `identity.subject` = Descope user ID; `getDescopeUserId()` maps it to `users` via `tokenIdentifier`. Invalid/absent → null → function rejects.
 
 So: auth happens at Descope, verification inside Convex's runtime, authorization in each function.
+
+### ⚠️ GOTCHA: Descope changed its session-token issuer — `CONVEX_AUTH_ISSUER` must match `iss` exactly (hit 2026-08-29)
+
+**Symptom:** you are signed in (Descope session valid, "Sign out" shows), but every
+authenticated Convex query returns as if you were logged out — the dashboard profile
+card sits on `UserProfileSkeleton` forever, "No Flyers Yet", Messages badge 0. Convex
+logs show, on every page load:
+
+```
+[CONVEX M(descopeAuth:syncDescopeUser)] [ERROR] 'syncDescopeUser: No identity found. Check CONVEX_AUTH_ISSUER and DESCOPE_PROJECT_ID.'
+```
+
+**Cause:** Descope now mints session JWTs with
+
+```
+iss = https://api.descope.com/v1/apps/<PROJECT_ID>
+```
+
+instead of the older `https://api.descope.com/<PROJECT_ID>`. Convex compares `iss`
+against `domain` from `auth.config.ts` as an exact string. A mismatch makes
+`ctx.auth.getUserIdentity()` return `null`, so `getDescopeUserId()` returns `null`
+and every authed function silently behaves as unauthenticated. **Both issuer forms
+are live and valid at Descope** — each serves its own
+`/.well-known/openid-configuration` pointing at the same JWKS — so nothing 404s and
+nothing throws. No code change caused this; it drifted underneath us.
+
+**Diagnose (30 seconds).** Decode the session token the browser actually holds and
+compare it to what the deployment trusts:
+
+```js
+// devtools console on the running app
+JSON.parse(atob(localStorage.getItem('DS').split('.')[1])).iss
+```
+```bash
+npx convex env get CONVEX_AUTH_ISSUER   # must be byte-identical to the above
+```
+
+**Fix:** set the deployment env var to the token's `iss`, per deployment:
+
+```bash
+npx convex env set CONVEX_AUTH_ISSUER "https://api.descope.com/v1/apps/<PROJECT_ID>"
+```
+
+**Per-deployment, not global.** Local dev, Convex dev (`doting-dogfish-130`) and prod
+(`resilient-pheasant-112`) each carry their own `CONVEX_AUTH_ISSUER`, and local dev
+and prod point at **different Descope projects** — so fixing one does not fix the
+others. Check each separately.
+
+**Why this hid for weeks:** `syncDescopeUser` *returns `null`* rather than throwing
+when identity is missing (`convex/descopeAuth.ts`). The mutation promise resolves, so
+`useDescopeUserSync` sets `isSynced: true` and `UserSyncContext` reports a healthy
+sync while auth is completely broken. There is no UI error signal at all — the only
+evidence is the `console.error` in the Convex logs. If you are ever debugging
+"authenticated but no data", **read `npx convex logs` first**; the frontend will lie
+to you.
 
 ### ⚠️ GOTCHA: Two files named `auth.ts` — and why the legacy one can't be deleted
 - `convex/lib/auth.ts` — **the real path**: `getDescopeUserId()`.

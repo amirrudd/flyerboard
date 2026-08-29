@@ -290,7 +290,9 @@ VITE_CONVEX_URL=your_convex_url
 
 ### Backend (Convex Dashboard)
 ```bash
-CONVEX_AUTH_ISSUER=https://api.descope.com/[PROJECT_ID]
+# Must match the `iss` claim of Descope's session JWT exactly (Descope changed this
+# format in Aug 2026 — verify by decoding localStorage.DS rather than assuming):
+CONVEX_AUTH_ISSUER=https://api.descope.com/v1/apps/[PROJECT_ID]
 ```
 
 ---

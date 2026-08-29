@@ -6,11 +6,12 @@ import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { ImageUpload } from "../../components/ui/ImageUpload";
 import { CircularProgress } from "../../components/ui/CircularProgress";
-import { searchLocations, formatLocation, fetchLocations, toLocationMeta, LocationData } from "../../lib/locationService";
+import { toLocationMeta, LocationData } from "../../lib/locationService";
+import { LocationPicker } from "../../components/ui/LocationPicker";
 import { getCategoryIcon } from "../../lib/categoryIcons";
 import { useHeaderSlots } from "../layout/HeaderSlots";
 import { uploadImageToR2 } from "../../lib/uploadToR2";
-import { CaretLeft, Trash, CaretDown, CircleNotch, Warning, CurrencyDollar, Repeat, Handshake, Package, CaretRight } from '@phosphor-icons/react';
+import { CaretLeft, Trash, CaretDown, Warning, CurrencyDollar, Repeat, Handshake, Package, CaretRight } from '@phosphor-icons/react';
 import { useNavigate } from "react-router-dom";
 import { ContextualNotificationModal } from "../../components/notifications/ContextualNotificationModal";
 import { useFeatureFlag } from "../../hooks/useFeatureFlag";
@@ -62,17 +63,15 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
-  // Location search state
+  // The suburb field itself is `LocationPicker`; these two are only what PostAd
+  // renders AROUND it — the amber ring and hint for "typed something, confirmed
+  // nothing", which needs the visible text the picker owns.
   const [locationQuery, setLocationQuery] = useState(editingAd?.location || "");
   // The dataset row behind the confirmed location. Editing an existing ad gives us
   // the string back but not the row, so this stays undefined until the seller picks
   // again — and `updateAd` leaves the stored record alone when the string is unchanged.
   const [locationRow, setLocationRow] = useState<LocationData | undefined>();
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationData[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
-  const locationWrapperRef = useRef<HTMLDivElement>(null);
   const categoryWrapperRef = useRef<HTMLDivElement>(null);
 
   const categories = useQuery(api.categories.getCategories);
@@ -87,37 +86,9 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Handle location search
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      void (async () => {
-        if (locationQuery.length >= 2) {
-          setIsSearchingLocation(true);
-          try {
-            const results = await searchLocations(locationQuery);
-            setLocationSuggestions(results);
-            setShowSuggestions(true);
-          } catch (error) {
-            console.error("Failed to search locations", error);
-          } finally {
-            setIsSearchingLocation(false);
-          }
-        } else {
-          setLocationSuggestions([]);
-          setShowSuggestions(false);
-        }
-      })();
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [locationQuery]);
-
-  // Close suggestions on click outside
+  // Close the category dropdown on click outside. The picker closes its own.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (locationWrapperRef.current && !locationWrapperRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
       if (categoryWrapperRef.current && !categoryWrapperRef.current.contains(event.target as Node)) {
         setShowCategoryDropdown(false);
       }
@@ -128,14 +99,6 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const handleLocationSelect = (location: LocationData) => {
-    const formatted = formatLocation(location);
-    setFormData(prev => ({ ...prev, location: formatted }));
-    setLocationQuery(formatted);
-    setLocationRow(location);
-    setShowSuggestions(false);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -309,7 +272,10 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
-          locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
+          locationMeta:
+            locationRow || formData.location !== editingAd?.location
+              ? toLocationMeta(locationRow)
+              : undefined,
           categoryId: formData.categoryId as Id<"categories">,
           images: finalImages,
         });
@@ -328,7 +294,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
           price: formData.price ? parseFloat(formData.price) : undefined,
           exchangeDescription: formData.exchangeDescription || undefined,
           location: formData.location,
-          locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
+          locationMeta: toLocationMeta(locationRow),
           categoryId: formData.categoryId as Id<"categories">,
           images: [], // Empty initially
         });
@@ -376,7 +342,7 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
             price: formData.price ? parseFloat(formData.price) : undefined,
             exchangeDescription: formData.exchangeDescription || undefined,
             location: formData.location,
-            locationMeta: locationRow ? toLocationMeta(locationRow) : undefined,
+            locationMeta: toLocationMeta(locationRow),
             categoryId: formData.categoryId as Id<"categories">,
             images: uploadedRefs,
           });
@@ -747,65 +713,30 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
                 </p>
               </header>
 
-              <div className="relative" ref={locationWrapperRef}>
+              <div>
                 <label htmlFor="post-location" className={fieldLabelClass}>
                   Location *
                 </label>
-                <input
+                <LocationPicker
                   id="post-location"
-                  type="text"
-                  value={locationQuery}
-                  maxLength={100}
-                  onChange={(e) => {
-                    setLocationQuery(e.target.value);
-                    if (formData.location && e.target.value !== formData.location) {
-                      setLocationRow(undefined);
-                      setFormData(prev => ({ ...prev, location: "" }));
-                    }
+                  value={formData.location}
+                  initialQuery={editingAd?.location}
+                  onQueryChange={setLocationQuery}
+                  onChange={(formatted, loc) => {
+                    setFormData((prev) => ({ ...prev, location: formatted }));
+                    setLocationRow(loc);
                   }}
-                  onFocus={() => {
-                    // Prefetch the 1.9MB postcode dataset on focus so it's warm
-                    // before the first keystroke. fetchLocations() caches/dedupes
-                    // internally, so repeat focuses are free.
-                    void fetchLocations();
-                    if (locationSuggestions.length > 0) setShowSuggestions(true);
-                  }}
-                  className={
+                  inputClassName={
                     `w-full h-11 px-4 rounded-full bg-muted/50 ring-1 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:bg-card transition-all ` +
                     (!formData.location && locationQuery.length > 0
                       ? "ring-amber-500/60 focus:ring-amber-500"
                       : "ring-transparent focus:ring-ring")
                   }
-                  placeholder="Enter suburb or postcode"
-                  required
                 />
-                {isSearchingLocation && (
-                  <div className="absolute right-4 top-[42px]">
-                    <CircleNotch className="w-4 h-4 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-
-                {showSuggestions && locationSuggestions.length > 0 && (
-                  <div
-                    role="listbox"
-                    className="absolute z-10 w-full mt-2 bg-popover ring-1 ring-border/70 rounded-2xl shadow-lg max-h-60 overflow-y-auto py-1"
-                  >
-                    {locationSuggestions.map((loc) => (
-                      <button
-                        key={loc.id}
-                        type="button"
-                        role="option"
-                        aria-selected={false}
-                        onClick={() => handleLocationSelect(loc)}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/60 transition-colors flex items-center justify-between group"
-                      >
-                        <span className="font-medium text-foreground">{loc.locality}</span>
-                        <span className="text-muted-foreground text-xs tabular-nums">{loc.state} {loc.postcode}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {!formData.location && locationQuery.length > 0 && !isSearchingLocation ? (
+                {/* "Typed but didn't pick". It clears itself when the dataset is
+                    unavailable: the picker then commits the typed text as the
+                    value, so `formData.location` is set and submit unblocks. */}
+                {!formData.location && locationQuery.length > 0 ? (
                   <p className="mt-1.5 text-xs text-amber-600">Please select a location from the list</p>
                 ) : null}
               </div>

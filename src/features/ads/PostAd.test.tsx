@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PostAd } from './PostAd';
 import { useMutation, useQuery } from 'convex/react';
-import { searchLocations } from '../../lib/locationService';
+import { locationsUnavailable, searchLocations } from '../../lib/locationService';
 import type { Doc, Id } from '../../../convex/_generated/dataModel';
 import { HeaderSlotsHarness } from '../../test/headerSlotsTestUtils';
 
@@ -61,6 +61,7 @@ vi.mock('../../lib/locationService', async () => ({
     searchLocations: vi.fn(),
     formatLocation: vi.fn((loc) => loc.locality),
     fetchLocations: vi.fn(),
+    locationsUnavailable: vi.fn(() => false),
 }));
 
 describe('PostAd', () => {
@@ -147,6 +148,38 @@ describe('PostAd', () => {
                 locationMeta: { localityId: 1, sa4Code: undefined, locationSource: 'picked' },
                 description: 'Test Description',
                 images: [],
+            }));
+        });
+    });
+
+    it('publishes with typed free text when the suburb dataset fails to load', async () => {
+        // The one posting path that used to dead-end: PostAd hand-rolled its own
+        // suburb field with no degraded fallback, so a failed dataset fetch left
+        // submit disabled forever. Phase 1 of the location plan requires publish to
+        // proceed. If this fails, the offline path has regressed.
+        vi.mocked(locationsUnavailable).mockReturnValue(true);
+        vi.mocked(searchLocations).mockResolvedValue([]);
+
+        render(
+            <MemoryRouter><HeaderSlotsHarness><PostAd onBack={mockOnBack} /></HeaderSlotsHarness></MemoryRouter>
+        );
+
+        fireEvent.change(screen.getByPlaceholderText('Enter a descriptive title'), { target: { value: 'Test Ad' } });
+        fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '100' } });
+        fireEvent.change(screen.getByPlaceholderText('Enter suburb or postcode'), { target: { value: 'Woop Woop' } });
+        fireEvent.change(screen.getByPlaceholderText('Describe your item...'), { target: { value: 'Test Description' } });
+        fireEvent.click(screen.getByText('Select a category'));
+        fireEvent.click(screen.getByText('Electronics'));
+        fireEvent.click(screen.getByText('Add Image'));
+
+        await waitFor(() => expect(screen.getByText('Pin Flyer')).not.toBeDisabled());
+        fireEvent.click(screen.getByText('Pin Flyer'));
+
+        await waitFor(() => {
+            expect(mockCreateAd).toHaveBeenCalledWith(expect.objectContaining({
+                location: 'Woop Woop',
+                // No row behind it, so no coordinates — never a placeholder.
+                locationMeta: { locationSource: 'unresolved' },
             }));
         });
     });

@@ -120,8 +120,9 @@ Read this before adding anything to a feed page.**
   empty). **Adding, renaming or merging a section is a server-side change**; no
   component knows what a section means, and nothing hardcodes "there are exactly two".
 - **`assembleFeedPage` (`convex/lib/cards.ts`) is THE assembly step.** Every path ends
-  there: it sorts by section rank then `bumpedAt` desc, applies the search/rail cut if
-  a `limit` is given, and hydrates. `convex/feed.test.ts` ("getFeed and getAds return
+  there: it picks the survivors if a `limit` is given, orders them by section rank then
+  `bumpedAt` desc, and hydrates. **The cut and the order are separate on purpose** —
+  see "The cut must not depend on the radius" below. `convex/feed.test.ts` ("getFeed and getAds return
   identical pages for identical input") runs the same rows through both queries and
   asserts identical pages — the guarantee used to be a comment saying they must match.
 - **`getFeed` pages are section-grouped, not strictly `bumpedAt` desc.** That changed
@@ -142,13 +143,11 @@ Read this before adding anything to a feed page.**
   `.take(limit)` sits INSIDE the DB query (by relevance for search, by date for the
   rail), so simply dropping the location clause loses near rows before any JS runs —
   a post-hoc partition can't resurrect them. Each runs a location-pinned "near" pass
-  plus an unpinned "far" pass, deduped on `_id` (`sectionedAdHits`);
-  `assembleFeedPage` sorts section-first (undefined ⇒ first section) so its
-  `slice(0, limit)` eats far entries first. The feed's stream `filterWith` has no such
-  cut, so it just tags. Composites need no second pass anywhere — their location
+  plus an unpinned "far" pass, deduped on `_id` (`sectionedAdHits`), which stamps
+  `pinned` so `assembleFeedPage` can protect near rows from its own cut. The feed's stream `filterWith` has no such cut, so it just tags. Composites need no second pass anywhere — their location
   narrowing was always a JS predicate below `.take(COMPOSITE_LIMIT)` (no location index
   on either composite table); the known residual date-cut caveat is documented on
-  `latestComposites`. **Phase 4 ceiling:** the pinned pass is still
+  `latestComposites`. **Ceiling (Phase 4, still open after Phase 5):** the pinned pass is still
   `.eq("location", …)`, so it only guarantees survival for SAME-SUBURB near rows; one
   that is near by distance or SA4 can be lost to the relevance/date cut and leave a far
   row above it. `getFeed` is unaffected (it paginates, it doesn't cut). The fix is the
@@ -167,8 +166,10 @@ away as another state.
   (Wagga's nearest real neighbours are 40–90 km away). ABS SA4 regions are small in
   metro and enormous in the bush: one string comparison, and the near group is never
   empty for a regional buyer.
-- **The radius is `appSettings.nearRadiusKm`** (default 25 km, 1–500, admin Settings →
-  Feed). Read per query via `resolveBuyer`. Never hardcode it.
+- **The radius has three sources, in order** (`resolveBuyer`): the buyer's own pick,
+  arriving as the `radiusKm` query arg; then `appSettings.nearRadiusKm` (1–500, admin
+  Settings → Feed); then `DEFAULT_NEAR_RADIUS_KM`. Never hardcode it. The client value
+  is clamped to the setting's range like any stored one — it crosses a trust boundary.
 - **An unresolved listing matches no clause and groups far.** It is never hidden.
 - **NEVER re-resolve the buyer's suburb string into a record.** 24
   locality+state+postcode groups in the dataset hold two rows with different ids and no
@@ -181,7 +182,67 @@ away as another state.
 - **A buyer preference with no record falls back to string equality** — the pre-Phase-4
   behaviour, kept only for cookies stored before the record existed.
 - The client cache key includes `localityId` for the same reason: two suburbs can share
-  a display string and section differently.
+  a display string and section differently. It includes the chosen radius too — two
+  radii stamp different sections, so they are two different cached pages.
+
+### The buyer's radius control (Phase 5, Aug 2026)
+
+A native `<select>` of `NEAR_RADIUS_OPTIONS_KM` (5/10/15/25/50 km, default 15) inside
+the header's existing location panel, under the shared `LocationPicker`. It is a
+CLIENT preference sent UP: persisted in a `selectedRadiusKm` cookie beside
+`selectedLocation` / `selectedLocationMeta`, passed to all three feed queries as
+`radiusKm`. Nothing numeric comes back — no distance, score or match reason is ever
+on a feed entry (the Phase 3 boundary).
+
+- **Only a real pick is sent.** `chosenRadiusKm` stays `undefined` until the buyer
+  chooses, so the server falls back to the admin's `appSettings` value; the control
+  DISPLAYS the static default meanwhile. They agree today (both 15) and diverge only if
+  an admin retunes — reading the setting for a label would cost a query on every page
+  load. Note the distinction if you touch this: seeding the state to the default would
+  silently make the admin setting dead for the web client.
+- **The distance outlives the suburb.** Picking a new suburb keeps the radius; only
+  `selectedLocationMeta` is cleared with the suburb (a stale record would measure from
+  the wrong point, a stale distance would not).
+
+#### The cut must not depend on the radius
+
+The one real trap, and the reason `assembleFeedPage` splits selection from ordering.
+Rule 5: location groups, it never hides. Ranking the TRIM section-first (what Phase 4
+shipped) means an ad that stops being near loses its place in the ordering — and on the
+two CAPPED paths (`ads.getAds`, `ads.getLatestAds`; `feed.getFeed` paginates and never
+cuts) it then falls off the end of the page. Narrowing 25 km → 5 km REMOVED ads. The
+radius control made that reachable in one click.
+
+```ts
+// convex/lib/cards.ts — the cut ranks on `pinned` then `bumpedAt`, and only
+// THEN does the display order use the section.
+const kept = limit === undefined ? entries : [...entries]
+  .sort((a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false)
+                  || b.doc.bumpedAt - a.doc.bumpedAt)
+  .slice(0, limit);
+
+// convex/ads.ts — `pinned` = near at the WIDEST rung of the ladder (a constant,
+// `atWidestRadius`), plus whatever the same-suburb pass fetched. Two properties
+// at once: everything near at the buyer's radius is near at the widest one, so
+// no in-area ad loses the cut to a newer out-of-area one (rule 5); and the
+// threshold is fixed, so narrowing the radius cannot change who survives.
+pinned: fromPinnedPass || isNearAd(atWidestRadius(buyer), doc)
+```
+
+Composites are pinned on the same any-member test (`isNearComposite` at the same
+widest radius). A card type with less protection at the cut than an equivalent ad
+would be a rule 1 / rule 4 carve-out.
+
+Reproducing it needs a pool larger than the limit, which happens when the pinned
+same-suburb pass fetches a row the date/relevance pass had already cut. `nearby.test.ts`
+("no radius, however narrow, drops an ad from any feed path") builds exactly that and
+asserts the same ids survive at every rung of the ladder. **If you touch the trim, that
+test is the contract** — it fails on a section-ranked cut.
+
+This does NOT widen the DB pass: a row near by distance or SA4 alone is still only
+fetched by the unpinned `.take()`, so it can be lost before any JS runs. Protection
+here applies to rows that reached the pool. That is the separate, still-open ceiling
+above, and it still needs the `sa4Code` lane.
 
 ```typescript
 // convex/feed.ts (condensed)

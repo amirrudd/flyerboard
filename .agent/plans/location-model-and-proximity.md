@@ -1,10 +1,12 @@
 # Plan — Location model & proximity grouping
 
-**Status:** Agreed. **Phases 0–4 are done** (0–3 on `main`; Phase 4 in review) — #368 (suburb records),
+**Status:** **COMPLETE — every phase built and on `main`.** #368 (suburb records),
 #371 (header folded onto the shared picker), #372 (one feed assembly step, named
-sections). The prod backfill ran clean on 2026-08-29: 8 ads scanned, 8 patched, 0
-coordinates dropped, **nothing unresolved**. Phase 4 (the distance rule) is in review;
-Phase 5 not started.
+sections), #375 (the distance rule), and Phase 5 (the radius control) closing it out.
+The prod backfill ran clean on 2026-08-29: 8 ads scanned, 8 patched, 0 coordinates
+dropped, **nothing unresolved**. What is deliberately NOT built is in
+"Deliberately excluded" — the server-side near lane is the one entry with a
+condition that is already true.
 **Created:** 2026-08-29
 **Owner:** Amir
 **Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
@@ -214,7 +216,7 @@ promise is that newness is the only thing that lifts an ad. Recorded here so the
 decision is made deliberately if it is ever made — the boundary above keeps it
 possible without committing to it.
 
-### Phase 4 — swap the near/far test *(BUILT, in review)*
+### Phase 4 — swap the near/far test *(DONE — #375)*
 
 The insertion point already exists and is a single function:
 `sectionFields(location, matches)` in `convex/lib/cards.ts` (renamed from `tierFields`
@@ -238,7 +240,8 @@ client partition, the byte-identical no-location response) is untouched.
       second argument — so this costs nothing if known up front. (#371 folded the
       header's own dropdown into the shared picker, so there is no third site.)
 - [x] Thresholds live in `appSettings` (numeric, admin-tunable) — not hardcoded
-      (`nearRadiusKm`, default 25, 1–500, admin Settings → Feed)
+      (`nearRadiusKm`, 1–500, admin Settings → Feed; default lowered to 15 in
+      Phase 5 so the admin setting and the buyer's control agree)
 
 **Outcome.** `convex/lib/nearby.ts` holds the whole rule; only the `matches` boolean
 handed to `sectionFields` changed. The buyer's record rides in the
@@ -253,34 +256,53 @@ one near by distance or SA4 can be lost to the cut. `getFeed` is unaffected. The
 the server-side near lane in "Deliberately excluded"; raised with Amir rather than
 built.
 
-### Phase 5 — the radius control, and the divider question
+### Phase 5 — the radius control *(DONE)*
 
-**Radius control.** A dropdown of set distances, following Facebook's shape. Suggested
-ladder: 5 / 10 / 25 / 50 / 100 / 250 km, defaulting to 25 km. Stored with the chosen
-suburb and persisted across sessions. Values live in `appSettings` so the default is
-tunable without a deploy.
+**Radius control.** A dropdown of set distances in the header's location panel,
+directly under the shared `LocationPicker` — the ladder is **5 / 10 / 15 / 25 / 50 km,
+defaulting to 15** (`NEAR_RADIUS_OPTIONS_KM` / `DEFAULT_NEAR_RADIUS_KM`,
+`convex/lib/appConfig.ts`). Amir set this ladder on 2026-08-29; it replaces the
+5/10/25/50/100/250-at-25 sketch this section used to carry.
 
-**Open question — divider or silent continuation.** Facebook may not draw a visible
-line at all; it may just keep going. Recommendation:
+- [x] Ladder rendered as a native `<select>`, shown only with a suburb chosen
+- [x] Persisted in a `selectedRadiusKm` cookie beside `selectedLocation` /
+      `selectedLocationMeta`, and sent UP with all three feed queries as `radiusKm`
+- [x] `appSettings.nearRadiusKm` default lowered 25 → 15 to match the control
+- [x] Precedence: the buyer's own pick wins; with no pick the admin `appSettings`
+      value applies, then the static default. A saved suburb with no saved distance
+      gets the default, never an undefined radius.
+- [x] Nothing numeric crosses back to the client — the radius travels one way, and no
+      distance, score or match reason is returned on a feed entry (the Phase 3 boundary)
+- [x] Divider unchanged: `NearbyBoundary` already draws the line only when the near
+      group is non-empty and falls back to its banner otherwise
 
-- **Keep the divider, but only when the first group has something in it.** A line
-  reading "Further from Richmond" appearing after two ads advertises how empty the
-  marketplace is. With nothing inside the circle, drop the divider and show one
-  continuous newest-first feed.
-- Rationale for keeping it at all: the loudest complaint in the Facebook seller
-  research is buyers not understanding why distant items appear. A divider answers
-  that before it is asked, and it is already built and shipped.
-- Rationale for revisiting later: once inventory is dense the first group will fill a
-  screen on its own, and the line stops earning its space.
+**The cut had to stop depending on the radius.** Handing a buyer a 5 km option made a
+latent Phase 4 defect reachable in one click: `assembleFeedPage` ranked the trim
+section-first, so on the two CAPPED paths (`ads.getAds`, `ads.getLatestAds` — the feed
+paginates and never cuts) an ad that stopped being near lost its place in the ordering
+and fell off the end of the page. Narrowing the radius REMOVED ads, which rule 5
+forbids. The trim now ranks on `pinned` then `bumpedAt`, and the section only decides render
+order. `pinned` means "near at the WIDEST rung the control offers" — a constant, so it
+does not move when the buyer narrows their radius, while still covering everything near
+at whatever they picked. That buys both properties at once: narrowing can no longer
+remove an ad, and an in-area ad is not cut in favour of a newer out-of-area one.
+Composites are pinned on the same any-member test, so no card type is protected less
+than an equivalent ad (rules 1 and 4). `convex/nearby.test.ts` asserts both.
+
+**Divider — resolved.** Keep it, and only when the first group has something in it.
+The loudest complaint in the Facebook seller research is buyers not understanding why
+distant items appear; the line answers that before it is asked. With nothing inside the
+circle the existing banner leads the grid instead. Worth revisiting once inventory is
+dense enough that the first group fills a screen on its own.
 
 ## 4. Deliberately excluded
 
 | Not built | Trigger to add |
 |---|---|
-| Free radius slider | Never. A dropdown of set distances is fewer values to reason about, and it matches Facebook. See Phase 5. |
+| Free radius slider | Never. A dropdown of set distances is fewer values to reason about, and it matches Facebook. Shipped in Phase 5 as 5/10/15/25/50 km. |
 | Real suburb polygons | Complaints trace to centroid error. Centroids on ~2 km suburbs are sub-km against a 25 km threshold; polygons are ~50 MB. |
 | Geocoding service for posting | Never. Network dependency, per-call cost, rate limit, posting-blocker — for what a local nearest-centroid scan already does. (Detection still uses Nominatim; that's a button, not a post path.) |
-| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is now narrower than the definition of near. `sa4Code` makes this a same-day change. |
+| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is narrower than the definition of near. Phase 5 made the surviving SET independent of the radius (changing the distance can no longer remove an ad), but it did not widen the pinned pass — that still needs the `sa4Code` lane. `sa4Code` makes this a same-day change. |
 | Distance shown on cards | Held back on purpose: a visible number invites the expectation that it orders the list. Rule 2 is absolute. |
 | Multiple saved locations ("home + work") | Nobody has asked. |
 

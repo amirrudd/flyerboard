@@ -101,6 +101,48 @@ describe('Header', () => {
         expect(setSidebarCollapsed).toHaveBeenCalled();
     });
 
+    describe('the distance control', () => {
+        // Both LocationSelectors (desktop + mobile) render into the same tree,
+        // so open whichever panel the query finds and work inside it.
+        const openPanel = (props = {}) => {
+            renderHeader({ selectedLocation: 'RICHMOND, VIC 3121', ...props });
+            fireEvent.click(screen.getAllByText('RICHMOND, VIC 3121')[0]);
+        };
+
+        it('offers the five distances and reports the pick in km', () => {
+            const setSelectedRadiusKm = vi.fn();
+            openPanel({ selectedRadiusKm: 15, setSelectedRadiusKm });
+
+            const select = screen.getAllByLabelText('Show as nearby within')[0];
+            expect(
+                Array.from((select as HTMLSelectElement).options).map((o) => o.value)
+            ).toEqual(['5', '10', '15', '25', '50']);
+            expect(select).toHaveValue('15');
+
+            fireEvent.change(select, { target: { value: '50' } });
+            // A number, not the "50" the DOM hands back — the query arg is numeric.
+            expect(setSelectedRadiusKm).toHaveBeenCalledWith(50);
+        });
+
+        it('stays open after a pick, so two distances can be tried', () => {
+            // A control whose options render outside the panel's DOM would trip
+            // the outside-click handler and close it on the first pick. The
+            // native <select> does not, and this is what says so.
+            openPanel({ selectedRadiusKm: 15, setSelectedRadiusKm: vi.fn() });
+            const select = screen.getAllByLabelText('Show as nearby within')[0];
+            fireEvent.change(select, { target: { value: '5' } });
+            fireEvent.click(select);
+
+            expect(screen.getAllByLabelText('Show as nearby within').length).toBeGreaterThan(0);
+        });
+
+        it('is absent with no suburb chosen — nothing to measure from', () => {
+            renderHeader({ selectedLocation: '' });
+            fireEvent.click(screen.getAllByText('All Locations')[0]);
+            expect(screen.queryByLabelText('Show as nearby within')).not.toBeInTheDocument();
+        });
+    });
+
     it('picks the suburb match whose postcode came back from geolocation', async () => {
         // RICHMOND exists in NSW, VIC and QLD, and the dataset lists NSW first —
         // only the postcode tells us which one the user is standing in.

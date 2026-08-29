@@ -9,6 +9,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Cookies from "js-cookie";
 import { type LocationMeta } from "../lib/locationService";
+import { DEFAULT_NEAR_RADIUS_KM } from "../../convex/lib/appConfig";
 import { useDeviceInfo } from "../hooks/useDeviceInfo";
 import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark, boostArrivalKey, entryKey } from "./freshAdsMerge";
 
@@ -37,6 +38,13 @@ interface MarketplaceContextType {
      */
     selectedLocationMeta: LocationMeta | undefined;
     setSelectedLocation: (location: string, meta?: LocationMeta) => void;
+    /**
+     * How far from `selectedLocation` still counts as "in the area", in km —
+     * always a number to render, so the control never shows a blank. Falls back
+     * to {@link DEFAULT_NEAR_RADIUS_KM} until the buyer picks one.
+     */
+    selectedRadiusKm: number;
+    setSelectedRadiusKm: (km: number) => void;
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     isCategoriesLoading: boolean;
@@ -79,6 +87,23 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         } catch {
             return undefined;
         }
+    });
+
+    /**
+     * The distance the buyer picked, or `undefined` when they never have — the
+     * distinction is load-bearing, which is why this isn't seeded to the static
+     * default. Only a real pick is sent to the server; without one the server
+     * uses the admin-tuned `appSettings` value, the starting point for someone
+     * who has never chosen.
+     *
+     * ponytail: while unchosen, the control displays the static default rather
+     * than the admin's value. They agree today (both 15 km) and only diverge if
+     * an admin retunes the setting; reading it would cost every page load an
+     * extra query for a label. Add that when an admin actually retunes.
+     */
+    const [chosenRadiusKm, setChosenRadiusKm] = useState<number | undefined>(() => {
+        const saved = Number(Cookies.get("selectedRadiusKm"));
+        return Number.isFinite(saved) && saved > 0 ? saved : undefined;
     });
 
     // Initialize sidebar state based on device
@@ -134,8 +159,10 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     const cacheKey = useMemo(() => {
         // The locality id is part of the key: two different suburbs can share a
         // display string, and they section differently.
-        return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}_${selectedLocationMeta?.localityId ?? ''}`;
-    }, [selectedCategory, searchQuery, selectedLocation, selectedLocationMeta]);
+        // The radius is part of the key too: it changes which SECTION each entry
+        // is stamped with, so two radii are two different cached pages.
+        return `${selectedCategory || 'all'}_${searchQuery}_${selectedLocation}_${selectedLocationMeta?.localityId ?? ''}_${chosenRadiusKm ?? ''}`;
+    }, [selectedCategory, searchQuery, selectedLocation, selectedLocationMeta, chosenRadiusKm]);
 
     // --- Data Fetching ---
     const categories = useQuery(api.categories.getCategories);
@@ -159,6 +186,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 categoryId: selectedCategory ?? undefined,
                 location: selectedLocation || undefined,
                 locationMeta: selectedLocationMeta,
+                radiusKm: chosenRadiusKm,
                 maxSortTime: initialLoadTimestamp,
             },
         { initialNumItems: 30 }
@@ -171,6 +199,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 search: searchQuery,
                 location: selectedLocation || undefined,
                 locationMeta: selectedLocationMeta,
+                radiusKm: chosenRadiusKm,
             }
             : "skip",
         { initialNumItems: 30 }
@@ -218,6 +247,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
                 search: searchQuery || undefined,
                 location: selectedLocation || undefined,
                 locationMeta: selectedLocationMeta,
+                radiusKm: chosenRadiusKm,
                 sinceTimestamp: lastRefreshTimestamps.current.get(cacheKey) ?? initialRefreshTimestamp,
                 limit: 50,
             });
@@ -274,7 +304,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Failed to refresh ads:', error);
         }
-    }, [convex, selectedCategory, searchQuery, selectedLocation, selectedLocationMeta, feedEntries, cacheKey, initialRefreshTimestamp]);
+    }, [convex, selectedCategory, searchQuery, selectedLocation, selectedLocationMeta, chosenRadiusKm, feedEntries, cacheKey, initialRefreshTimestamp]);
 
     // Clear new ad IDs (called after animation or user interaction)
     const clearNewAdIds = useCallback(() => {
@@ -353,6 +383,13 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    // Persisted beside the suburb, not derived from it: a distance preference
+    // outlives any one suburb, so picking a new suburb keeps it.
+    const handleSetSelectedRadiusKm = useCallback((km: number) => {
+        setChosenRadiusKm(km);
+        Cookies.set("selectedRadiusKm", String(km), { expires: 365 });
+    }, []);
+
     // Note: Sample data creation removed for production safety
     // To create sample data in local development, use the Convex dashboard
     // to manually call the clearAndCreateSampleData mutation
@@ -366,6 +403,8 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         selectedLocation,
         selectedLocationMeta,
         setSelectedLocation: handleSetSelectedLocation,
+        selectedRadiusKm: chosenRadiusKm ?? DEFAULT_NEAR_RADIUS_KM,
+        setSelectedRadiusKm: handleSetSelectedRadiusKm,
         sidebarCollapsed,
         setSidebarCollapsed,
         isCategoriesLoading: categories === undefined,

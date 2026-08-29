@@ -54,6 +54,10 @@ const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
  * @param args.locationMeta - The record behind that suburb, captured where the
  *   buyer picked it. What makes "near" mean a distance rather than an identical
  *   suburb NAME (convex/lib/nearby.ts). Absent = the old string test.
+ * @param args.radiusKm - How far from that suburb still counts as "in the
+ *   area", chosen by the buyer in the header. Absent = the admin-tuned
+ *   `appSettings` default. It only ever decides which SECTION an entry lands
+ *   in — narrowing it regroups ads, it never removes one (rule 5).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:
@@ -69,13 +73,14 @@ export const getFeed = query({
     categoryId: v.optional(v.id("categories")),
     location: v.optional(v.string()),
     locationMeta: v.optional(locationMetaValidator),
+    radiusKm: v.optional(v.number()),
     maxSortTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const maxSortTime = args.maxSortTime ?? Date.now();
     // The buyer's picked suburb record + the admin-tuned radius (convex/lib/nearby.ts).
     // Undefined when no location is set, which is what leaves every entry unsectioned.
-    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta, args.radiusKm);
 
     // Merge the three sources on bumpedAt desc. Feature flags are read
     // server-side; a disabled flag excludes its stream.

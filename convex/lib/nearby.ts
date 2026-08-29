@@ -1,7 +1,12 @@
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { readSettingValue } from "../appSettings";
-import { clampAppSetting, DEFAULT_NEAR_RADIUS_KM, SETTING_NEAR_RADIUS_KM } from "./appConfig";
+import {
+  clampAppSetting,
+  DEFAULT_NEAR_RADIUS_KM,
+  NEAR_RADIUS_OPTIONS_KM,
+  SETTING_NEAR_RADIUS_KM,
+} from "./appConfig";
 import type { LocationMeta } from "./location";
 
 /**
@@ -65,17 +70,33 @@ const buyerPoint = (meta: LocationMeta): Point | undefined =>
     : undefined;
 
 /**
- * Read the admin-tuned radius and pair it with the buyer's record. Returns
- * `undefined` when no location is set — the default state, where the feed is
- * one continuous run and no entry is sectioned at all.
+ * Pair the buyer's record with the radius to test it at. Returns `undefined`
+ * when no location is set — the default state, where the feed is one continuous
+ * run and no entry is sectioned at all.
+ *
+ * Three sources, in order:
+ *
+ * 1. `chosenRadiusKm` — what the buyer picked in the header (Phase 5). Their own
+ *    choice always wins; it arrives from the client, so it is clamped to the
+ *    setting's range like any stored value would be.
+ * 2. The `appSettings` row — the admin's tuned starting point for someone who
+ *    has never chosen.
+ * 3. {@link DEFAULT_NEAR_RADIUS_KM} — when the row is missing entirely.
+ *
+ * Whichever wins, the result only ever moves an ad between sections. No radius
+ * removes one from a feed: see the never-hides test in `nearby.test.ts`.
  */
 export async function resolveBuyer(
   ctx: QueryCtx,
   location: string | undefined,
-  meta: LocationMeta | undefined
+  meta: LocationMeta | undefined,
+  chosenRadiusKm?: number
 ): Promise<BuyerLocation | undefined> {
   if (!location) return undefined;
-  const raw = await readSettingValue(ctx, SETTING_NEAR_RADIUS_KM);
+  const raw =
+    chosenRadiusKm !== undefined && Number.isFinite(chosenRadiusKm)
+      ? chosenRadiusKm
+      : await readSettingValue(ctx, SETTING_NEAR_RADIUS_KM);
   return {
     location,
     meta,
@@ -129,3 +150,23 @@ export function isNearComposite(
   }
   return meta.sa4Code !== undefined && (doc.sa4Codes ?? []).includes(meta.sa4Code);
 }
+
+/**
+ * The widest distance the buyer's control can select. A CONSTANT, deliberately:
+ * it is what the capped paths (`ads.getAds`, `ads.getLatestAds`) protect from
+ * their trim, and a threshold that moved with the buyer's own radius would put
+ * us back where we started — the radius deciding which ads exist rather than
+ * which group they sit in (rule 5: location groups, it never hides).
+ */
+const TRIM_PROTECT_RADIUS_KM = Math.max(...NEAR_RADIUS_OPTIONS_KM);
+
+/**
+ * The same buyer, tested at {@link TRIM_PROTECT_RADIUS_KM}. Everything near at
+ * the buyer's chosen radius is near at this one (their radius can only be
+ * narrower), so protecting this wider set protects theirs — without the
+ * protection itself depending on what they chose.
+ */
+export const atWidestRadius = (buyer: BuyerLocation): BuyerLocation => ({
+  ...buyer,
+  radiusKm: Math.max(buyer.radiusKm, TRIM_PROTECT_RADIUS_KM),
+});

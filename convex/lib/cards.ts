@@ -113,9 +113,9 @@ export function sectionFields(
  * and `ads.getAds` must produce byte-identical page shapes.
  */
 export type FeedSourceEntry =
-  | { kind: "ad"; doc: Doc<"ads">; section?: FeedSection }
-  | { kind: "bundle"; doc: Doc<"saleBundles">; section?: FeedSection }
-  | { kind: "sale"; doc: Doc<"saleEvents">; section?: FeedSection };
+  | { kind: "ad"; doc: Doc<"ads">; section?: FeedSection; pinned?: boolean }
+  | { kind: "bundle"; doc: Doc<"saleBundles">; section?: FeedSection; pinned?: boolean }
+  | { kind: "sale"; doc: Doc<"saleEvents">; section?: FeedSection; pinned?: boolean };
 
 /** Standalone, live bundle (sale-suggestion bundles never feed). */
 export const bundleIsLive = (b: Doc<"saleBundles">) => !b.saleEventId && b.isDeleted !== true;
@@ -185,21 +185,47 @@ async function hydrateEntries(
  * `ads.getLatestAds` — hands its source entries to this function and returns
  * what comes back; nothing else orders, cuts or hydrates a page.
  *
- * Order is section rank first, then `bumpedAt` desc WITHIN each section. That
- * is grouping, not ordering (rule 2): newest is still on top of every group,
- * and no distance or score exists to sort on. Section-first is load-bearing
- * wherever `limit` applies — search pools up to 2×limit rows across a pinned
- * and an unpinned pass, and the trim must eat the last section first or the cut
- * drops a near entry exactly as the DB cut would have (rule 5).
+ * WHICH entries survive and WHAT ORDER they render in are decided separately,
+ * and they have to be:
+ *
+ * - **The cut ignores the section.** Search and the rail pool up to 2×limit rows
+ *   across a pinned and an unpinned pass, so the trim has to drop some. If it
+ *   dropped by section, the buyer's radius would decide which ads EXIST rather
+ *   than which group they sit in — narrowing 25 km to 5 km would push an ad into
+ *   the far group and straight off the end of the page. Rule 5 says location
+ *   groups and never hides, so the cut ranks on `pinned` (a location STRING
+ *   match, fixed for a given suburb) then `bumpedAt` — neither moves when the
+ *   radius does. `nearby.test.ts` holds this: the same ads survive at every rung
+ *   of the ladder.
+ * - **The order is section rank, then `bumpedAt` desc within each.** Grouping,
+ *   not ordering (rule 2): newest is still on top of every group, and no
+ *   distance or score exists to sort on.
+ *
+ * ponytail: `pinned` protects same-SUBURB rows from the cut, not everything the
+ * radius calls near — an ad near by distance or SA4 alone still rides the
+ * unpinned pass and is lost if it ranks below the cut. That is the known
+ * ceiling recorded on `sectionedAdHits` (convex/ads.ts); the fix is a
+ * server-side near lane pinned on `sa4Code`. What is guaranteed here is only
+ * that the surviving set does not depend on the radius.
  */
 export async function assembleFeedPage(
   ctx: QueryCtx,
   entries: FeedSourceEntry[],
   limit?: number
 ): Promise<FeedPageEntry[]> {
-  const ordered = [...entries].sort(
+  const kept =
+    limit === undefined
+      ? entries
+      : [...entries]
+          .sort(
+            (a, b) =>
+              Number(b.pinned ?? false) - Number(a.pinned ?? false) ||
+              b.doc.bumpedAt - a.doc.bumpedAt
+          )
+          .slice(0, limit);
+  const ordered = [...kept].sort(
     (a, b) =>
       sectionRank(a.section) - sectionRank(b.section) || b.doc.bumpedAt - a.doc.bumpedAt
   );
-  return hydrateEntries(ctx, limit === undefined ? ordered : ordered.slice(0, limit));
+  return hydrateEntries(ctx, ordered);
 }

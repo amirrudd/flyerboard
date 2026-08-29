@@ -2,6 +2,7 @@ import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { refreshDistinctComposites, saleItems } from "./lib/derive";
+import { adLocationFields, locationMetaFromRow } from "./lib/location";
 
 /**
  * The seeded suburb, as the canonical `formatLocation()` string plus the dataset
@@ -10,14 +11,12 @@ import { refreshDistinctComposites, saleItems } from "./lib/derive";
  * Values are row id 4719 of `public/australian-postcodes.json`.
  */
 const SEED_LOCATION = "RICHMOND, VIC 3121";
-const SEED_LOCATION_META = {
-  localityId: 4719,
-  latitude: -37.823303,
-  longitude: 145.001788,
-  sa4Code: "206",
-  locationSource: "picked" as const,
-};
-
+const SEED_LOCATION_META = locationMetaFromRow({
+  id: 4719,
+  lat: -37.823303,
+  long: 145.001788,
+  sa4: "206",
+});
 
 /**
  * Seed a complete, published sample Moving Sale for local/dev testing.
@@ -253,7 +252,7 @@ export const seedMovingSale = internalMutation({
         listingType: "sale",
         price: item.price,
         location: SEED_LOCATION,
-        ...SEED_LOCATION_META,
+        ...adLocationFields(SEED_LOCATION_META),
         categoryId: categoryFor(item.categorySlug),
         images: [item.image],
         userId: user._id,
@@ -378,7 +377,7 @@ export const seedBundleAds = internalMutation({
         listingType: "sale",
         price: seed.price,
         location: SEED_LOCATION,
-        ...SEED_LOCATION_META,
+        ...adLocationFields(SEED_LOCATION_META),
         categoryId: category._id,
         images: seed.images,
         userId: user._id,

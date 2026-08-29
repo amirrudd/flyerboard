@@ -10,7 +10,12 @@ import {
   refreshSaleDerived,
   saleItems,
 } from "./lib/derive";
-import { adLocationFields, locationMetaValidator, type LocationMeta } from "./lib/location";
+import {
+  adLocationFields,
+  locationMetaFromRow,
+  locationMetaValidator,
+  type LocationMeta,
+} from "./lib/location";
 
 const DEFAULT_BATCH_SIZE = 10;
 
@@ -732,15 +737,15 @@ export const renameFeatureFlag = internalMutation({
 
 /**
  * A row of `public/australian-postcodes.json`. `postcode`/`locality`/`state` are
- * what the free-text resolver matches on; the rest is the record that
- * `backfillAdLocationRecords` stamps onto an ad. The extras are optional so a
- * caller (or a test) can supply just the three matching fields.
+ * what the free-text resolver matches on; `id` is the stable key, present on
+ * every one of the 18,559 rows. `lat`/`long`/`sa4` can genuinely be missing —
+ * seven rows have no usable coordinate and no region.
  */
 type PostcodeRow = {
   postcode: string;
   locality: string;
   state: string;
-  id?: number;
+  id: number;
   lat?: number;
   long?: number;
   sa4?: string;
@@ -761,8 +766,14 @@ export function resolveSuburb(
   byLocality: Map<string, PostcodeRow[]>,
   suburb: string
 ): string | null {
-  const row = resolveLocationRow(byLocality, suburb);
-  return row ? formatPostcodeRow(row) : null;
+  // Distinct by the CANONICAL STRING, not by row id. 24 locality+state+postcode
+  // groups in the dataset hold two rows (HAASTS BLUFF NT 0872, O'CONNOR ACT 2602,
+  // …); they name one place twice, so for a caller that only wants the string
+  // there is nothing ambiguous about them. `resolveLocationRow` below is stricter
+  // because it must return the row the SELLER picked, and those two rows differ.
+  const candidates = matchingRows(byLocality, suburb);
+  const distinct = [...new Set(candidates.map(formatPostcodeRow))];
+  return distinct.length === 1 ? distinct[0] : null;
 }
 
 /**
@@ -778,8 +789,20 @@ export function resolveLocationRow(
   byLocality: Map<string, PostcodeRow[]>,
   suburb: string
 ): PostcodeRow | null {
+  const candidates = matchingRows(byLocality, suburb);
+  // Distinct by row ID, unlike `resolveSuburb` above: two rows naming the same
+  // place are the same STRING but not the same RECORD, and the id has to be the
+  // one the seller actually picked or it is worse than absent.
+  return new Set(candidates.map((r) => r.id)).size === 1 ? candidates[0] : null;
+}
+
+/** Rows whose locality (and state/postcode, when given) match a free-text suburb. */
+function matchingRows(
+  byLocality: Map<string, PostcodeRow[]>,
+  suburb: string
+): PostcodeRow[] {
   const raw = suburb.trim();
-  if (!raw) return null;
+  if (!raw) return [];
   const upper = raw.toUpperCase();
   const postcode = upper.match(/\b(\d{4})\b/)?.[1];
   const state = AU_STATES.find((st) => new RegExp(`\\b${st}\\b`).test(upper));
@@ -789,13 +812,35 @@ export function resolveLocationRow(
     .replace(/\b\d{4}\b/g, "")
     .replace(new RegExp(`\\b(${AU_STATES.join("|")})\\b`, "g"), "")
     .trim();
-  const candidates = (byLocality.get(locality) ?? []).filter(
+  return (byLocality.get(locality) ?? []).filter(
     (r) =>
       (!state || r.state.toUpperCase() === state) &&
       (!postcode || r.postcode === postcode)
   );
-  const distinct = [...new Set(candidates.map((r) => `${formatPostcodeRow(r)}#${r.id ?? ""}`))];
-  return distinct.length === 1 ? candidates[0] : null;
+}
+
+/**
+ * Fetch the postcode dataset and index it by upper-cased locality. Shared by both
+ * location backfills — one copy of the URL, one copy of the key normalisation, so
+ * the two migrations cannot disagree about what resolves.
+ *
+ * A Convex function cannot read `public/` off disk, hence the HTTP fetch of the
+ * very same file. Point `datasetUrl` elsewhere when the deployment's site isn't live.
+ */
+async function loadPostcodeIndex(datasetUrl?: string) {
+  const url = datasetUrl ?? "https://flyerboard.com.au/australian-postcodes.json";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not fetch ${url}: ${res.status}`);
+  const rows = (await res.json()) as PostcodeRow[];
+  const byLocality = new Map<string, PostcodeRow[]>();
+  for (const r of rows) {
+    if (!r?.locality || !r.state || !r.postcode) continue;
+    const key = r.locality.toUpperCase().trim();
+    const bucket = byLocality.get(key);
+    if (bucket) bucket.push(r);
+    else byLocality.set(key, [r]);
+  }
+  return byLocality;
 }
 
 /** One page of sales, for the resolver action. */
@@ -888,18 +933,7 @@ export const backfillSaleSuburbLocations = internalAction({
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const url = args.datasetUrl ?? "https://flyerboard.com.au/australian-postcodes.json";
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Could not fetch ${url}: ${res.status}`);
-    const rows = (await res.json()) as PostcodeRow[];
-    const byLocality = new Map<string, PostcodeRow[]>();
-    for (const r of rows) {
-      if (!r?.locality || !r.state || !r.postcode) continue;
-      const key = r.locality.toUpperCase().trim();
-      const bucket = byLocality.get(key);
-      if (bucket) bucket.push(r);
-      else byLocality.set(key, [r]);
-    }
+    const byLocality = await loadPostcodeIndex(args.datasetUrl);
 
     const batchSize = args.batchSize ?? DEFAULT_BATCH_SIZE;
     const unresolved: { saleEventId: Id<"saleEvents">; suburb: string }[] = [];
@@ -996,7 +1030,7 @@ export const applyAdLocationRecords = internalMutation({
       if (!ad || ad.locationSource !== undefined) continue;
       if (ad.latitude !== undefined && meta?.latitude === undefined) coordinatesDropped++;
       if (!args.dryRun) {
-        await ctx.db.patch(adId, adLocationFields(meta ?? { locationSource: "unresolved" }));
+        await ctx.db.patch(adId, adLocationFields(meta));
         touched.push(ad);
       }
       patched++;
@@ -1011,13 +1045,15 @@ export const applyAdLocationRecords = internalMutation({
 });
 
 /**
- * Second pass: the aggregate cards. A Bundle or Moving Sale has no location of
- * its own — it has its members' (rule 1) — so its new `localityIds` / `points` /
- * `sa4Codes` come from re-deriving it, exactly like `locations` already did.
- * Re-derivation is idempotent, so this is safe to re-run.
+ * A sale carries its own `suburbMeta` on top of its members' records, because
+ * items added in a later wizard step inherit it. Resolved from `suburb` the same
+ * way an ad's is.
  *
- * A sale ALSO carries its own `suburbMeta`, because items added in a later wizard
- * step inherit it. That is resolved from `suburb` the same way an ad's is.
+ * It does NOT re-derive the composites: `applyAdLocationRecords` already refreshes
+ * every composite whose member it patched, so a blanket pass would only re-do that
+ * work — and it would do it as two unbounded `.collect()`s inside one transaction.
+ * If a standalone re-derive of every composite is ever wanted,
+ * `migrations:backfillCompositeDerived` above is the paginated one that does it.
  */
 export const applyCompositeLocationRecords = internalMutation({
   args: {
@@ -1028,35 +1064,15 @@ export const applyCompositeLocationRecords = internalMutation({
   },
   // Annotated because `backfillAdLocationRecords` awaits this through
   // `internal.migrations.*`, and inferring it would be circular.
-  handler: async (
-    ctx,
-    args
-  ): Promise<{ salesStamped: number; salesDerived: number; bundlesDerived: number }> => {
+  handler: async (ctx, args): Promise<{ salesStamped: number }> => {
     let salesStamped = 0;
     for (const { saleEventId, meta } of args.saleMeta) {
       const sale = await ctx.db.get(saleEventId);
       if (!sale || sale.suburbMeta !== undefined) continue;
-      if (!args.dryRun) {
-        await ctx.db.patch(saleEventId, { suburbMeta: meta ?? { locationSource: "unresolved" } });
-      }
+      if (!args.dryRun) await ctx.db.patch(saleEventId, { suburbMeta: meta });
       salesStamped++;
     }
-    if (args.dryRun) {
-      const sales = await ctx.db.query("saleEvents").collect();
-      const bundles = await ctx.db.query("saleBundles").collect();
-      return { salesStamped, salesDerived: sales.length, bundlesDerived: bundles.length };
-    }
-    let salesDerived = 0;
-    for (const sale of await ctx.db.query("saleEvents").collect()) {
-      await refreshSaleDerived(ctx, sale);
-      salesDerived++;
-    }
-    let bundlesDerived = 0;
-    for (const bundle of await ctx.db.query("saleBundles").collect()) {
-      await refreshBundleDerived(ctx, bundle);
-      bundlesDerived++;
-    }
-    return { salesStamped, salesDerived, bundlesDerived };
+    return { salesStamped };
   },
 });
 
@@ -1077,35 +1093,23 @@ export const backfillAdLocationRecords = internalAction({
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const url = args.datasetUrl ?? "https://flyerboard.com.au/australian-postcodes.json";
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Could not fetch ${url}: ${res.status}`);
-    const rows = (await res.json()) as PostcodeRow[];
-    const byLocality = new Map<string, PostcodeRow[]>();
-    for (const r of rows) {
-      if (!r?.locality || !r.state || !r.postcode) continue;
-      const key = r.locality.toUpperCase().trim();
-      const bucket = byLocality.get(key);
-      if (bucket) bucket.push(r);
-      else byLocality.set(key, [r]);
-    }
+    const byLocality = await loadPostcodeIndex(args.datasetUrl);
 
-    // Same resolution for an ad's `location` and a sale's `suburb`.
+    // Same resolution for an ad's `location` and a sale's `suburb`. Memoised:
+    // ads cluster hard by suburb, and resolving re-scans and re-dedupes a bucket
+    // every call. `locationMetaFromRow` is the SAME mapping the picker uses, so
+    // "what counts as a point" cannot mean two things.
     const unresolved = new Map<string, number>();
-    const metaFor = (location: string): LocationMeta | undefined => {
-      const row = resolveLocationRow(byLocality, location);
-      if (!row || row.id === undefined) {
+    const resolved = new Map<string, LocationMeta>();
+    const metaFor = (location: string): LocationMeta => {
+      const hit = resolved.get(location);
+      if (hit) return hit;
+      const meta = locationMetaFromRow(resolveLocationRow(byLocality, location) ?? undefined);
+      if (meta.locationSource === "unresolved") {
         unresolved.set(location, (unresolved.get(location) ?? 0) + 1);
-        return undefined;
       }
-      // (0, 0) is the dataset's own "no coordinate" placeholder on six rows.
-      const hasPoint = Boolean(row.lat && row.long);
-      return {
-        localityId: row.id,
-        ...(hasPoint ? { latitude: row.lat, longitude: row.long } : {}),
-        sa4Code: row.sa4,
-        locationSource: "picked",
-      };
+      resolved.set(location, meta);
+      return meta;
     };
 
     const batchSize = args.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -1132,8 +1136,8 @@ export const backfillAdLocationRecords = internalAction({
       cursor = page.cursor;
     }
 
-    const sales: { _id: Id<"saleEvents">; suburb: string }[] = [];
     let saleCursor: string | null = null;
+    let salesStamped = 0;
     for (;;) {
       const page: {
         sales: { _id: Id<"saleEvents">; suburb: string }[];
@@ -1143,25 +1147,27 @@ export const backfillAdLocationRecords = internalAction({
         cursor: saleCursor,
         batchSize,
       });
-      sales.push(...page.sales);
+      const stamped: { salesStamped: number } = await ctx.runMutation(
+        internal.migrations.applyCompositeLocationRecords,
+        {
+          saleMeta: page.sales.map((sale) => ({
+            saleEventId: sale._id,
+            meta: metaFor(sale.suburb),
+          })),
+          dryRun: args.dryRun,
+        }
+      );
+      salesStamped += stamped.salesStamped;
       if (page.isDone) break;
       saleCursor = page.cursor;
     }
-    const composites: {
-      salesStamped: number;
-      salesDerived: number;
-      bundlesDerived: number;
-    } = await ctx.runMutation(internal.migrations.applyCompositeLocationRecords, {
-      saleMeta: sales.map((s) => ({ saleEventId: s._id, meta: metaFor(s.suburb) })),
-      dryRun: args.dryRun,
-    });
 
     return {
       dryRun: args.dryRun === true,
       adsScanned: scanned,
       adsPatched,
       coordinatesDropped,
-      ...composites,
+      salesStamped,
       unresolved: [...unresolved.entries()]
         .sort((a, b) => b[1] - a[1])
         .map(([location, count]) => ({ location, count })),

@@ -12,8 +12,12 @@ import {
 export interface SetupValues {
   title: string;
   suburb: string;
-  /** The picker's record behind `suburb` — stored so every sale item inherits it. */
-  suburbMeta: LocationMeta;
+  /**
+   * The picker's record behind `suburb`, or `undefined` when the suburb wasn't
+   * touched this session — the server then leaves the stored record alone rather
+   * than downgrading it. Same convention as PostAd, which is why it's optional.
+   */
+  suburbMeta?: LocationMeta;
   note: string;
   pickupWindowStart: number;
   pickupWindowEnd: number;
@@ -86,7 +90,13 @@ export function SetupStep({
     onSubmit({
       title: title.trim() || `${defaultFirstName}'s Moving Sale`,
       suburb: suburb.trim(),
-      suburbMeta: toLocationMeta(suburbRow),
+      // Picked this session, or typed a different suburb (the free-text fallback
+      // when the dataset is down) -> say what we know, "unresolved" included.
+      // Untouched -> say nothing.
+      suburbMeta:
+        suburbRow || suburb.trim() !== initial?.suburb
+          ? toLocationMeta(suburbRow)
+          : undefined,
       note: note.trim(),
       pickupWindowStart: start,
       pickupWindowEnd: end,

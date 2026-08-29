@@ -79,17 +79,10 @@ describe("LocationPicker — combobox semantics", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "Enter" });
 
+    // The whole dataset row travels with the string: suburb names are not unique
+    // (726 duplicated locality+state pairs), so the caller needs the row id.
     expect(onChange).toHaveBeenCalledWith("RICHMOND, VIC 3121", RICHMOND);
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-  });
-
-  it("passes the whole dataset row alongside the string, not just the name", async () => {
-    // Suburb names are not unique (726 duplicated locality+state pairs), so the
-    // caller needs the row id — this is the data the picker used to discard.
-    const { input, onChange } = setup();
-    await typeAndOpen(input);
-    fireEvent.click(screen.getAllByRole("option")[0]);
-    expect(onChange).toHaveBeenCalledWith("RICHMOND, VIC 3121", RICHMOND);
   });
 
   it("clearing the confirmed value passes no row", async () => {

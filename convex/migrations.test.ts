@@ -29,11 +29,15 @@ function loadConvexModules(): Record<string, () => Promise<unknown>> {
  * a location the seller never chose.
  */
 const rows = [
-  { locality: "RICHMOND", state: "VIC", postcode: "3121" },
-  { locality: "RICHMOND", state: "NSW", postcode: "2753" },
-  { locality: "RICHMOND", state: "QLD", postcode: "4740" },
-  { locality: "RICHMOND", state: "QLD", postcode: "4822" },
-  { locality: "CARLTON", state: "VIC", postcode: "3053" },
+  { locality: "RICHMOND", state: "VIC", postcode: "3121", id: 4719 },
+  { locality: "RICHMOND", state: "NSW", postcode: "2753", id: 1500 },
+  { locality: "RICHMOND", state: "QLD", postcode: "4740", id: 9001 },
+  { locality: "RICHMOND", state: "QLD", postcode: "4822", id: 9002 },
+  { locality: "CARLTON", state: "VIC", postcode: "3053", id: 4400 },
+  // Two rows naming ONE place — 24 such groups exist in the shipped dataset.
+  // `resolveSuburb` must still resolve them; `resolveLocationRow` must not.
+  { locality: "HOBARTVILLE", state: "NSW", postcode: "2753", id: 5623 },
+  { locality: "HOBARTVILLE", state: "NSW", postcode: "2753", id: 24269 },
 ];
 const byLocality = new Map<string, typeof rows>();
 for (const r of rows) {
@@ -44,40 +48,17 @@ for (const r of rows) {
 const resolve = (suburb: string) => resolveSuburb(byLocality, suburb);
 
 describe("resolveLocationRow — the record behind a stored location string", () => {
-  // Full dataset rows, so the resolver can hand back the id/coordinates that the
-  // picker used to throw away. Same shape as public/australian-postcodes.json.
-  const full = [
-    { locality: "RICHMOND", state: "VIC", postcode: "3121", id: 4719, lat: -37.823303, long: 145.001788, sa4: "206" },
-    { locality: "RICHMOND", state: "NSW", postcode: "2753", id: 1500, lat: -33.598, long: 150.751, sa4: "115" },
-    { locality: "WANGARA", state: "WA", postcode: "6947", id: 24304, lat: 0, long: 0 },
-  ];
-  const byId = new Map<string, typeof full>();
-  for (const r of full) {
-    const bucket = byId.get(r.locality);
-    if (bucket) bucket.push(r);
-    else byId.set(r.locality, [r]);
-  }
-
+  // The shared matching logic is covered by the `resolveSuburb` suite below; these
+  // cover only what differs — that a ROW comes back, and that it is stricter.
   test("a canonical stored string resolves back to its exact dataset row", () => {
-    expect(resolveLocationRow(byId, "RICHMOND, VIC 3121")?.id).toBe(4719);
-    expect(resolveLocationRow(byId, "RICHMOND, NSW 2753")?.id).toBe(1500);
+    expect(resolveLocationRow(byLocality, "RICHMOND, VIC 3121")?.id).toBe(4719);
+    expect(resolveLocationRow(byLocality, "RICHMOND, NSW 2753")?.id).toBe(1500);
   });
 
-  test("an ambiguous suburb resolves to nothing rather than a guessed id", () => {
-    // "Richmond" alone is two different real places. Picking either would stamp a
-    // seller's ad with a suburb they never chose.
-    expect(resolveLocationRow(byId, "Richmond")).toBeNull();
-  });
-
-  test("a row whose coordinates are the (0, 0) placeholder still resolves", () => {
-    // The caller drops the coordinates; the row id is still worth keeping.
-    const row = resolveLocationRow(byId, "WANGARA, WA 6947");
-    expect(row?.id).toBe(24304);
-    expect(row?.lat).toBe(0);
-  });
-
-  test("free text that matches nothing resolves to nothing", () => {
-    expect(resolveLocationRow(byId, "Somewhere Else")).toBeNull();
+  test("two rows naming one place are one STRING but not one RECORD", () => {
+    // resolveSuburb resolves this (below); the id would be a coin flip, and an id
+    // the seller didn't pick is worse than no id.
+    expect(resolveLocationRow(byLocality, "HOBARTVILLE, NSW 2753")).toBeNull();
   });
 });
 
@@ -94,6 +75,11 @@ describe("resolveSuburb", () => {
 
   test("a postcode narrows further", () => {
     expect(resolve("Richmond, QLD 4822")).toBe("RICHMOND, QLD 4822");
+  });
+
+  test("two dataset rows naming ONE place still resolve (24 such groups exist)", () => {
+    // Regression guard: distinctness here is by canonical STRING, not row id.
+    expect(resolve("Hobartville, NSW 2753")).toBe("HOBARTVILLE, NSW 2753");
   });
 
   test("ambiguous or unknown input is reported, never guessed", () => {

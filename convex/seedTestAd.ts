@@ -1,5 +1,6 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { adLocationFields, locationMetaFromRow } from "./lib/location";
 
 /**
  * Local-test helper: inserts an ad with off-ratio images to exercise grid
@@ -59,11 +60,9 @@ export const seedTallImageAd = internalMutation({
       price: 0,
       location: "DOCKLANDS, VIC 3008",
       // Row 4754 of public/australian-postcodes.json.
-      localityId: 4754,
-      latitude: -37.814719,
-      longitude: 144.948039,
-      sa4Code: "206",
-      locationSource: "picked" as const,
+      ...adLocationFields(
+        locationMetaFromRow({ id: 4754, lat: -37.814719, long: 144.948039, sa4: "206" })
+      ),
       categoryId: category._id,
       images,
       userId: user._id,

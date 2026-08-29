@@ -114,8 +114,12 @@ describe('locationService', () => {
     });
 
     describe('toLocationMeta — the record stored alongside the location string', () => {
+        /** A dataset row; the picker passes the whole LocationData, the backfill a PostcodeRow. */
+        const row = (over: Partial<LocationData>): LocationData => ({
+            id: 1, postcode: '3121', locality: 'RICHMOND', state: 'VIC', lat: -37.8, long: 145, ...over,
+        });
         it('keeps the picked row id, coordinates and region', () => {
-            expect(toLocationMeta({ id: 4719, postcode: '3121', locality: 'RICHMOND', state: 'VIC', lat: -37.823303, long: 145.001788, sa4: '206' })).toEqual({
+            expect(toLocationMeta(row({ id: 4719, lat: -37.823303, long: 145.001788, sa4: '206' }))).toEqual({
                 localityId: 4719,
                 latitude: -37.823303,
                 longitude: 145.001788,
@@ -136,7 +140,7 @@ describe('locationService', () => {
             // Six of the 18,559 rows carry (0, 0) as their own "no coordinate"
             // marker. Storing it would put the ad in the Gulf of Guinea, and a
             // wrong coordinate is indistinguishable from a right one forever.
-            const meta = toLocationMeta({ id: 24304, postcode: '6947', locality: 'WANGARA', state: 'WA', lat: 0, long: 0 });
+            const meta = toLocationMeta(row({ id: 24304, lat: 0, long: 0 }));
             expect(meta.latitude).toBeUndefined();
             expect(meta.longitude).toBeUndefined();
             expect(meta.localityId).toBe(24304);
@@ -144,7 +148,7 @@ describe('locationService', () => {
         });
 
         it('leaves the region absent when the dataset row has none', () => {
-            expect(toLocationMeta({ id: 24156, postcode: '4740', locality: 'CORAL SEA', state: 'QLD', lat: -22.5094, long: 151.7322 }).sa4Code).toBeUndefined();
+            expect(toLocationMeta(row({ id: 24156, lat: -22.5094, long: 151.7322 })).sa4Code).toBeUndefined();
         });
     });
 

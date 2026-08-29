@@ -9,7 +9,7 @@ import { createError, logOperation } from "./lib/logger";
 import { checkRateLimit, checkRateLimitDynamic, RATE_LIMITS } from "./lib/rateLimit";
 import { detachAdFromBundle } from "./bundles";
 import { refreshOwningComposites } from "./lib/derive";
-import { adLocationFields, optionalLocationMeta } from "./lib/location";
+import { adLocationFields, locationMetaValidator } from "./lib/location";
 import { readSettingValue } from "./appSettings";
 import {
   FLAG_BOOST_TO_TOP,
@@ -58,7 +58,7 @@ export const createAd = mutation({
     /** The picker's record behind `location`. Optional: an older client, or the
      *  picker's free-text fallback, simply sends nothing and the ad is stored
      *  exactly as it always was. `migrations:backfillAdLocationRecords` fills the gap. */
-    locationMeta: optionalLocationMeta,
+    locationMeta: v.optional(locationMetaValidator),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
   },
@@ -125,7 +125,7 @@ export const updateAd = mutation({
     price: v.optional(v.number()),
     exchangeDescription: v.optional(v.string()),
     location: v.string(),
-    locationMeta: optionalLocationMeta,
+    locationMeta: v.optional(locationMetaValidator),
     categoryId: v.id("categories"),
     images: v.array(v.string()),
   },

@@ -12,7 +12,7 @@ import {
   clampAppSetting,
 } from "./lib/appConfig";
 import { MS_PER_DAY } from "./lib/boost";
-import { adLocationFields, optionalLocationMeta } from "./lib/location";
+import { adLocationFields, locationMetaValidator } from "./lib/location";
 import {
   deriveFromMembers,
   refreshCompositeDerived,
@@ -140,7 +140,7 @@ export const createSaleEvent = mutation({
     title: v.string(),
     suburb: v.string(),
     /** The picker's record behind `suburb`. Every item added later inherits it. */
-    suburbMeta: optionalLocationMeta,
+    suburbMeta: v.optional(locationMetaValidator),
     note: v.optional(v.string()),
     pickupWindowStart: v.number(),
     pickupWindowEnd: v.number(),
@@ -190,7 +190,7 @@ export const updateSaleEvent = mutation({
     saleEventId: v.id("saleEvents"),
     title: v.optional(v.string()),
     suburb: v.optional(v.string()),
-    suburbMeta: optionalLocationMeta,
+    suburbMeta: v.optional(locationMetaValidator),
     note: v.optional(v.string()),
     pickupWindowStart: v.optional(v.number()),
     pickupWindowEnd: v.optional(v.number()),
@@ -222,7 +222,17 @@ export const updateSaleEvent = mutation({
     await ctx.db.patch(args.saleEventId, {
       ...(args.title !== undefined ? { title: args.title.trim() || sale.title } : {}),
       ...(args.suburb !== undefined
-        ? { suburb: args.suburb.trim(), suburbMeta: args.suburbMeta }
+        ? {
+            suburb: args.suburb.trim(),
+            // Same three-way as `posts.updateAd` — ONE convention across both
+            // write paths. Record sent -> store it. None sent but the suburb
+            // CHANGED -> clear the stale one. Neither -> leave it alone, so
+            // re-submitting the setup step without re-picking (resuming a draft,
+            // editing only the pickup window) cannot downgrade a good record.
+            ...(args.suburbMeta || args.suburb.trim() !== sale.suburb
+              ? { suburbMeta: args.suburbMeta }
+              : {}),
+          }
         : {}),
       ...(args.note !== undefined ? { note: args.note.trim() || undefined } : {}),
       pickupWindowStart: start,

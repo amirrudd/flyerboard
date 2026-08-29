@@ -212,7 +212,17 @@ client partition, the byte-identical no-location response) is untouched.
 - [ ] Haversine helper + the three-clause near test
 - [ ] `compositeMatchesFilters` uses min-distance over member points
 - [ ] Buyer preference stores the resolved object (`{localityId, label, lat, lng, sa4}`),
-      not just a string, so tiering works before the dataset chunk loads
+      not just a string, so tiering works before the dataset chunk loads.
+      **Capture it at the pick site, never by re-resolving the stored string.**
+      24 locality+state+postcode groups in the shipped dataset hold two rows with
+      different ids, and none of the 24 share coordinates — O'CONNELL QLD 4680's two
+      rows are 80 km apart, ERNESTINA QLD 56 km, GERMAN CREEK SA 47 km; 7 of the 24
+      exceed the 25 km near threshold outright, and HAASTS BLUFF NT pairs a real point
+      with the `(0,0)` placeholder. Re-resolving a stored string for those is a coin
+      flip that can land the near/far test 80 km out. The row is already in hand at
+      every pick site (`Header.tsx:85` detection match, `:207` dropdown row,
+      `LocationPicker.onChange`'s second argument), so this costs nothing if known
+      up front.
 - [ ] Thresholds live in `appSettings` (numeric, admin-tunable) — not hardcoded
 
 ### Phase 5 — the radius control, and the divider question

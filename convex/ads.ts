@@ -91,13 +91,24 @@ async function compositeHits(
  * The SECTION of every row is then stamped by `isNearAd` — the pinned pass only
  * decides what is fetched, never what is near.
  *
- * ponytail: the pinned pass is `.eq("location", …)`, so since Phase 4 it
- * guarantees survival for the SAME-SUBURB near rows only. A row that is near by
- * distance or by SA4 reaches the pool through the unpinned pass and is lost if
- * it ranks below the cut (50 by relevance in search, `limit` by date on the
- * rail), which can leave a far row rendered above a near one that was never
- * fetched. The main feed (`feed.getFeed`) is unaffected — it paginates, it
- * doesn't cut. Fixing it means a server-side near lane (a pass pinned on
+ * **"Pinned" means two different things here, at two levels. Keep them apart:**
+ *
+ * - The pinned PASS (this function, `.eq("location", …)`) decides what the DB
+ *   hands us. Exact-string, so it only rescues same-suburb rows from the
+ *   `.take()`.
+ * - The `pinned` FIELD stamped below decides what survives the JS trim in
+ *   `assembleFeedPage`. It is wider: near at the widest rung the buyer's control
+ *   offers (`atWidestRadius`), plus everything the pass fetched.
+ *
+ * ponytail: the still-open ceiling is the first level only. A row near by
+ * distance or SA4 alone is not matched by `.eq("location", …)`, so if it ranks
+ * below the DB cut (50 by relevance in search, `limit` by date on the rail) it
+ * is never fetched, and no JS can resurrect it — leaving a far row rendered
+ * above a near one that was never in the pool. Once a row IS in the pool the
+ * `pinned` field protects it, so do not read this as "distance-near rows lose
+ * the trim"; they don't, and Phase 5's tests fail if that changes. The main feed
+ * (`feed.getFeed`) is unaffected at both levels — it paginates, it doesn't cut.
+ * Fixing the first level means a server-side near lane (a pass pinned on
  * `sa4Code`, which needs an index and a search filterField); the plan lists that
  * as deliberately not built, triggered by page size. Same class as the composite
  * ceiling recorded on `latestComposites` below.
@@ -111,11 +122,12 @@ async function sectionedAdHits(
   }
   const [sameSuburb, unpinned] = await Promise.all([pass(buyer.location), pass()]);
   const seen = new Set(sameSuburb.map((d) => d._id));
-  // `pinned` is what survives the trim in assembleFeedPage. It marks everything
-  // that could be near at ANY rung of the buyer's control — judged at the widest
-  // one, plus the rows the same-suburb pass fetched — so it does not move when
-  // the buyer narrows their radius. That is what stops the radius deciding which
-  // ads exist rather than which group they sit in (rule 5: it never hides).
+  // The `pinned` FIELD (not the pass above): what survives the JS trim in
+  // assembleFeedPage. Everything that could be near at ANY rung of the buyer's
+  // control — judged at the widest one — plus the rows the pass fetched. Judging
+  // it at a CONSTANT radius is the point: it does not move when the buyer
+  // narrows theirs, so the radius decides which group an ad sits in and never
+  // which ads exist (rule 5: it never hides). See assembleFeedPage's contract.
   const widest = atWidestRadius(buyer);
   return [
     ...sameSuburb.map((doc) => ({ doc, sameSuburb: true })),

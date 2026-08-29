@@ -147,11 +147,17 @@ Read this before adding anything to a feed page.**
   `pinned` so `assembleFeedPage` can protect near rows from its own cut. The feed's stream `filterWith` has no such cut, so it just tags. Composites need no second pass anywhere — their location
   narrowing was always a JS predicate below `.take(COMPOSITE_LIMIT)` (no location index
   on either composite table); the known residual date-cut caveat is documented on
-  `latestComposites`. **Ceiling (Phase 4, still open after Phase 5):** the pinned pass is still
-  `.eq("location", …)`, so it only guarantees survival for SAME-SUBURB near rows; one
-  that is near by distance or SA4 can be lost to the relevance/date cut and leave a far
-  row above it. `getFeed` is unaffected (it paginates, it doesn't cut). The fix is the
-  deliberately-deferred server-side near lane (a pass pinned on `sa4Code`).
+  `latestComposites`.
+- **"Pinned" names two things at two levels. Don't merge them.** The pinned PASS
+  (`.eq("location", …)`) decides what the DB hands us; the `pinned` FIELD decides what
+  survives the JS trim in `assembleFeedPage`, and is wider (near at the widest rung —
+  see below). **Ceiling (Phase 4, still open after Phase 5): the first level only.** The
+  pass is still exact-string, so a row near by distance or SA4 alone is never fetched if
+  it ranks below the DB `.take()`, and no JS can resurrect it — leaving a far row above
+  a near one that was never in the pool. Once a row IS in the pool the `pinned` field
+  protects it, so this is NOT "distance-near rows lose the trim". `getFeed` is
+  unaffected at both levels (it paginates, it doesn't cut). The fix for the first level
+  is the deliberately-deferred server-side near lane (a pass pinned on `sa4Code`).
 
 ### The near test (Phase 4, Aug 2026) — `convex/lib/nearby.ts`
 

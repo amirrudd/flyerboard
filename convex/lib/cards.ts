@@ -193,20 +193,32 @@ async function hydrateEntries(
  *   dropped by section, the buyer's radius would decide which ads EXIST rather
  *   than which group they sit in — narrowing 25 km to 5 km would push an ad into
  *   the far group and straight off the end of the page. Rule 5 says location
- *   groups and never hides, so the cut ranks on `pinned` (a location STRING
- *   match, fixed for a given suburb) then `bumpedAt` — neither moves when the
- *   radius does. `nearby.test.ts` holds this: the same ads survive at every rung
- *   of the ladder.
+ *   groups and never hides, so the cut ranks on `pinned` then `bumpedAt`, and
+ *   the section is consulted only for the order below.
  * - **The order is section rank, then `bumpedAt` desc within each.** Grouping,
  *   not ordering (rule 2): newest is still on top of every group, and no
  *   distance or score exists to sort on.
  *
- * ponytail: `pinned` protects same-SUBURB rows from the cut, not everything the
- * radius calls near — an ad near by distance or SA4 alone still rides the
- * unpinned pass and is lost if it ranks below the cut. That is the known
- * ceiling recorded on `sectionedAdHits` (convex/ads.ts); the fix is a
- * server-side near lane pinned on `sa4Code`. What is guaranteed here is only
- * that the surviving set does not depend on the radius.
+ * `pinned` is stamped by the callers (`sectionedAdHits` / `compositeHits`,
+ * convex/ads.ts) and means **near at the WIDEST rung the buyer's control offers**
+ * — `atWidestRadius`, a constant — plus whatever the same-suburb pass fetched.
+ * A constant threshold is what makes this work in both directions at once:
+ *
+ * - It does not move when the buyer narrows their radius, so the surviving SET
+ *   is radius-independent — changing the distance regroups, never removes.
+ * - Everything near at the buyer's own radius is near at the widest one, so an
+ *   in-area entry is not cut in favour of a newer out-of-area entry.
+ *
+ * Do not "simplify" `pinned` back to a location-string match. It reads like the
+ * obvious definition and it silently drops the second guarantee.
+ * `nearby.test.ts` is the contract for both — it fails on a section-ranked cut,
+ * on a string-only `pinned`, and on a threshold that follows the buyer's radius.
+ *
+ * ponytail: this protects rows that REACHED the pool. It does not widen the DB
+ * pass — that is still `.eq("location", …)`, so a row near only by distance or
+ * SA4 can be cut by the `.take()` before any of this runs. Two different levels;
+ * only the second is still open. It is the known ceiling recorded on
+ * `sectionedAdHits`, and the fix is a server-side near lane pinned on `sa4Code`.
  */
 export async function assembleFeedPage(
   ctx: QueryCtx,

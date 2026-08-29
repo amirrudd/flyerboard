@@ -443,8 +443,10 @@ describe("search sections results by location instead of hiding them (rule 5)", 
     const { t, userId, categoryId } = await fresh();
     const now = Date.now();
 
-    // 60 newer out-of-area matches would fill the 50-row relevance cap and the
-    // post-merge slice; only the pinned near pass + section-aware trim save it.
+    // 60 newer out-of-area matches would fill the relevance cap; only the
+    // pinned near pass puts the local ad in the pool at all. It is the OLDEST
+    // of the 61, so a page selected purely by date would not hold it — the near
+    // group's own cursor is what still puts it on the buyer's first screen.
     for (let i = 0; i < 60; i++) {
       await insertAd(t, {
         userId,
@@ -467,8 +469,7 @@ describe("search sections results by location instead of hiding them (rule 5)", 
       location: "Richmond, VIC",
       paginationOpts: PAGE,
     });
-    const ids = pageKeys(r.page);
-    expect(ids).toContain(localAd);
+    expect(pageKeys(r.page)).toContain(localAd);
     expect(r.page.find((e) => e.kind === "ad" && e.ad._id === localAd)?.section).toBe("near");
   });
 });
@@ -663,5 +664,167 @@ describe("getLatestAds browse branch returns composites", () => {
     const ids = pageKeys(entries);
     expect(ids).toContain(localAd);
     expect(entries.find((e) => e.kind === "ad" && e.ad._id === localAd)?.section).toBe("near");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// getAds paginates (Aug 2026).
+//
+// A Convex search index answers in relevance order and nothing else, so the
+// index can't be cursored newest-first. `getAds` pools the matches, sorts the
+// pool by `bumpedAt` desc once, and walks it with a keyset cursor. These tests
+// are the contract for the two things that buys.
+// ──────────────────────────────────────────────────────────────────────────
+
+type PagedEntry = {
+  kind: string;
+  section?: string;
+  ad?: { _id: string; bumpedAt: number };
+  card?: { _id: string; bumpedAt: number };
+};
+
+const keyOf = (e: PagedEntry) => (e.ad ?? e.card)!._id;
+const bumpOf = (e: PagedEntry) => (e.ad ?? e.card)!.bumpedAt;
+const sectionOf = (e: PagedEntry) => e.section ?? "near";
+
+/** Walk `getAds` to exhaustion at the given page size. */
+async function allPages(
+  t: ReturnType<typeof convexTest>,
+  args: { search: string; location?: string },
+  numItems: number
+): Promise<PagedEntry[][]> {
+  const pages: PagedEntry[][] = [];
+  let cursor: string | null = null;
+  for (let guard = 0; guard < 50; guard++) {
+    const r: { page: PagedEntry[]; isDone: boolean; continueCursor: string } = await t.query(
+      api.ads.getAds,
+      { ...args, paginationOpts: { numItems, cursor } }
+    );
+    pages.push(r.page);
+    if (r.isDone) return pages;
+    cursor = r.continueCursor;
+  }
+  throw new Error("getAds never reported isDone");
+}
+
+describe("getAds pagination", () => {
+  /**
+   * THE acceptance test (Amir, Aug 2026): every entry on a page must be newer
+   * than or equal to every entry on the NEXT page, within a group. That is what
+   * makes paging honest — scrolling further only ever shows older things.
+   *
+   * Asserted at every boundary, not just "each page is internally sorted": a
+   * per-page sort passes that weaker check while still putting a newer item on
+   * page 2 than page 1, which is exactly the failure mode of sorting a
+   * relevance-ordered page after the fact.
+   */
+  test("every entry on a page is newer than every entry on the next, in each group", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await enableFlag(t, "bundleListing");
+    await enableFlag(t, "movingSaleMode");
+
+    // Nine matching entries alternating near/far, so BOTH groups span every
+    // page boundary — a guarantee that only holds inside one group is not the
+    // guarantee. Composites ride the same pool: no ad type is exempt.
+    const near = "Richmond, VIC";
+    const far = "Bondi, NSW";
+    for (let i = 0; i < 7; i++) {
+      await insertAd(t, {
+        userId,
+        categoryId,
+        title: `Teak desk ${i}`,
+        location: i % 2 === 0 ? near : far,
+        bumpedAt: 1_000 + i,
+      });
+    }
+    const member = await insertAd(t, {
+      userId, categoryId, title: "bundled item", location: near, bumpedAt: 10,
+    });
+    const member2 = await insertAd(t, {
+      userId, categoryId, title: "bundled item", location: near, bumpedAt: 11,
+    });
+    await seedBundle(t, {
+      userId, adIds: [member, member2], label: "Desk set",
+      searchText: "Teak desk set", bumpedAt: 1_007, locations: [near],
+    });
+    await seedSale(t, {
+      userId, title: "Moving out", searchText: "Teak desk and more",
+      bumpedAt: 1_008, locations: [far],
+    });
+
+    const pages = await allPages(t, { search: "Teak", location: near }, 3);
+    expect(pages.length).toBeGreaterThanOrEqual(3); // at least two boundaries
+
+    // No entry is served twice, and paging reaches everything the pool holds.
+    const seen = pages.flat().map(keyOf);
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(seen.length).toBe(9);
+
+    for (const section of ["near", "far"]) {
+      for (let i = 0; i + 1 < pages.length; i++) {
+        const here = pages[i].filter((e) => sectionOf(e) === section).map(bumpOf);
+        const next = pages[i + 1].filter((e) => sectionOf(e) === section).map(bumpOf);
+        if (here.length === 0 || next.length === 0) continue;
+        expect(
+          Math.min(...here),
+          `${section}: page ${i + 1} oldest vs page ${i + 2} newest`
+        ).toBeGreaterThanOrEqual(Math.max(...next));
+      }
+    }
+  });
+
+  /**
+   * Rule 5: location groups, it never hides. Before pagination this query
+   * returned ONE page of 50 ranked near-first, so 51 nearby matches removed
+   * every out-of-area match and left no page to scroll to — setting a location
+   * strictly shrank what search returned. This fails if that ever comes back.
+   */
+  test("out-of-area matches stay reachable when nearby matches fill the first page", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const near = "Richmond, VIC";
+
+    for (let i = 0; i < 51; i++) {
+      await insertAd(t, {
+        userId, categoryId, title: `Nearby desk ${i}`, location: near, bumpedAt: 5_000 + i,
+      });
+    }
+    // Older than every nearby match, so they sort last — the worst case.
+    const farA = await insertAd(t, {
+      userId, categoryId, title: "Faraway desk A", location: "Bondi, NSW", bumpedAt: 100,
+    });
+    const farB = await insertAd(t, {
+      userId, categoryId, title: "Faraway desk B", location: "Perth, WA", bumpedAt: 101,
+    });
+
+    const pages = await allPages(t, { search: "desk", location: near }, 20);
+    const seen = pages.flat();
+    expect(seen.map(keyOf)).toContain(farA);
+    expect(seen.map(keyOf)).toContain(farB);
+    expect(seen.filter((e) => sectionOf(e) === "far")).toHaveLength(2);
+
+    // And reachable on the FIRST page, not only after 51 nearby matches are
+    // exhausted: the near group must not starve the far one. A boosted
+    // out-of-area listing is otherwise unreachable for a buyer in a dense area,
+    // and Boost's promise has to hold in every group (rule 3).
+    expect(pages[0].filter((e) => sectionOf(e) === "far").map(keyOf)).toEqual(
+      expect.arrayContaining([farA, farB])
+    );
+    // The near group still leads the page it shares (rule 5, area first).
+    expect(pages[0].filter((e) => sectionOf(e) === "near").length).toBeGreaterThan(0);
+    expect(pages[0].map(sectionOf)).toEqual([
+      ...pages[0].filter((e) => sectionOf(e) === "near").map(() => "near"),
+      ...pages[0].filter((e) => sectionOf(e) === "far").map(() => "far"),
+    ]);
+  });
+
+  test("a cursor we never issued restarts at the top instead of throwing", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await insertAd(t, { userId, categoryId, title: "Oak desk" });
+
+    const r = await t.query(api.ads.getAds, {
+      search: "desk",
+      paginationOpts: { numItems: 20, cursor: "not-a-cursor" },
+    });
+    expect(r.page).toHaveLength(1);
   });
 });

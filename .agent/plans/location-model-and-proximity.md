@@ -295,6 +295,45 @@ distant items appear; the line answers that before it is asked. With nothing ins
 circle the existing banner leads the grid instead. Worth revisiting once inventory is
 dense enough that the first group fills a screen on its own.
 
+### Phase 6 — search paginates *(built, awaiting Amir's merge)*
+
+Amir's decision, 2026-08-30. `ads.getAds` returned one page of 50 with a `pinned`-first
+trim, so once 50 nearby matches existed every out-of-area match was removed and there
+was no page to scroll to — setting a location strictly SHRANK what search returned,
+which rule 5 forbids.
+
+Convex full-text search answers in **relevance order only** and scans at most **1024
+rows**, so the index itself cannot be cursored newest-first. The shape built instead:
+pool the matches (1024, the platform ceiling), sort by `bumpedAt` desc once, and walk
+the ordered pool with a keyset cursor. No trim, so nothing is dropped.
+
+- [x] `SEARCH_LIMIT = 50` → `SEARCH_POOL_LIMIT = 1024`; the pool, not a page size
+- [x] `pageOfPool` — keyset cursor on `(bumpedAt, _creationTime, _id)` desc, the same
+      total order `feed.getFeed`'s mergedStream uses. Ads and composites share one
+      sequence; no ad type has its own lane
+- [x] **One cursor PER GROUP.** Each page takes half its room from near and the rest
+      from far, each group giving its unused room to the other. A single date-ordered
+      cursor breaks rule 5 in both directions — an in-area match older than a page of
+      out-of-area ones misses page 1 entirely, and near-first-until-exhausted puts a
+      boosted out-of-area listing out of reach in a dense area (rule 3)
+- [x] `assembleFeedPage` called with no `limit` on this path — the `pinned`-first trim
+      is now dead here and still load-bearing on `ads.getLatestAds`, which still cuts
+- [x] No frontend change: `MarketplaceContext` already routes `loadMore` to whichever
+      of the two paginated queries is live, and `AdsGrid` already regroups accumulated
+      pages by section
+- [x] Acceptance test walks ≥2 page boundaries and asserts every entry on a page is
+      newer than or equal to every entry on the next WITHIN EACH GROUP; a second test
+      fails if out-of-area results become unreachable when nearby fills page 1
+
+**Ceiling, recorded not papered over.** Past ~1024 live matches for one term the pool is
+a relevance-selected subset: a very old exact match can be absent from every page, and
+because re-stamping `bumpedAt` does not change relevance rank, beyond the cap a Boost
+cannot pull an ad into the search pool. Not reachable at current inventory. Trigger: any
+single search term matching more than ~1024 live rows. The fix then is a date-ordered
+lane (a `bumpedAt` index pass unioned with the relevance pass) — 1024 is the platform
+ceiling, not a tuning knob. **Flagged to Amir: this belongs in "Accepted exceptions" or
+gets a build, and that is his call, not an agent's.**
+
 ## 4. Deliberately excluded
 
 | Not built | Trigger to add |
@@ -302,7 +341,7 @@ dense enough that the first group fills a screen on its own.
 | Free radius slider | Never. A dropdown of set distances is fewer values to reason about, and it matches Facebook. Shipped in Phase 5 as 5/10/15/25/50 km. |
 | Real suburb polygons | Complaints trace to centroid error. Centroids on ~2 km suburbs are sub-km against a 25 km threshold; polygons are ~50 MB. |
 | Geocoding service for posting | Never. Network dependency, per-call cost, rate limit, posting-blocker — for what a local nearest-centroid scan already does. (Detection still uses Nominatim; that's a button, not a post path.) |
-| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **already true since Phase 4** — search and the fresh rail cut with `.take()` inside the DB query and their pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. The near guarantee is only as wide as the pinned pass, which is narrower than the definition of near. Phase 5 made the surviving SET independent of the radius (changing the distance can no longer remove an ad), but it did not widen the pinned pass — that still needs the `sa4Code` lane. **Do NOT build this as an `sa4Code` lane** — measured against the shipped dataset and it
+| Server-side near-lane query | Either of: (a) feed pages get large enough that the client fetches many pages to fill the near section; (b) **still true after Phase 6** — the fresh rail cuts with `.take()` inside the DB query and the pinned pass is still exact-string, so a row near by DISTANCE or SA4 can be cut before any JS runs. Phase 6 removed search's own cut and widened its pool 50 → 1024, shrinking that window by ~20× on the search path without closing it. The near guarantee is only as wide as the pinned pass, which is narrower than the definition of near. Phase 5 made the surviving SET independent of the radius (changing the distance can no longer remove an ad), but it did not widen the pinned pass — that still needs the `sa4Code` lane. **Do NOT build this as an `sa4Code` lane** — measured against the shipped dataset and it
 does not work. Of the localities within 15 km of a Sydney suburb, only **26.8%** share
 that suburb's SA4 (Melbourne 33.7%, Brisbane 38.4%, national median 58.8%); at 25 km
 Sydney falls to 16.2%. An SA4 lane would miss roughly three quarters of the near set in

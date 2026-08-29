@@ -1,4 +1,11 @@
 import { toast } from "sonner";
+// ONE definition of the stored location record, shared with the backend — the
+// same cross-import `src/features/admin/SettingsTab.tsx` uses for `convex/lib/
+// appConfig`. A hand-written frontend copy would be a copy that drifts.
+export {
+  locationMetaFromRow as toLocationMeta,
+  type LocationMeta,
+} from "../../convex/lib/location";
 
 export interface LocationData {
     id: number;
@@ -7,6 +14,8 @@ export interface LocationData {
     state: string;
     long: number;
     lat: number;
+    /** ABS Statistical Area Level 4 (ASGS 2021), e.g. "206". Absent on 7 of 18,559 rows. */
+    sa4?: string;
 }
 
 let locationsCache: LocationData[] | null = null;

@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { locationMetaValidator } from "./lib/location";
 import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
@@ -35,7 +36,15 @@ const applicationTables = {
     bundleId: v.optional(v.id("saleBundles")),   // Optional FK → saleBundles
     condition: v.optional(v.string()),           // e.g. "New", "Like new", "Good", "Fair" — surfaced in batch review
 
-    latitude: v.optional(v.number()),
+    // The picker's own record for `location` above. Declared and written since
+    // 2026-08-29; NOTHING reads them yet — every filter still compares the
+    // `location` string exactly as before. See convex/lib/location.ts for why a
+    // suburb name is not a usable key. `latitude`/`longitude` predate this and
+    // were never written by any user-facing path until now.
+    localityId: v.optional(v.number()),   // `id` in public/australian-postcodes.json
+    sa4Code: v.optional(v.string()),      // ABS SA4 (ASGS 2021), e.g. "206"
+    locationSource: v.optional(v.union(v.literal("picked"), v.literal("unresolved"))),
+    latitude: v.optional(v.number()),     // ABSENT when unresolved — never a placeholder
     longitude: v.optional(v.number()),
 
     // Boost ("push to top"): mutable feed sort key. Initialized to creation time
@@ -228,6 +237,9 @@ const applicationTables = {
     slug: v.optional(v.string()),          // Permanent public URL slug, e.g. "amirs-sale-richmond-k7p2". Minted at publish time, never regenerated (printed flyers encode it).
     title: v.string(),                     // "Amir's Moving Sale"
     suburb: v.string(),                    // Display-only, e.g. "Richmond, VIC"
+    // The picker's record behind `suburb`. Kept on the sale (not only on its
+    // items) because items are created in a LATER wizard step and inherit it.
+    suburbMeta: v.optional(locationMetaValidator),
     note: v.optional(v.string()),          // Optional note for buyers
     pickupWindowStart: v.number(),         // Timestamp
     pickupWindowEnd: v.number(),           // Timestamp
@@ -265,6 +277,12 @@ const applicationTables = {
     // Overlaps `suburb` above in practice (every item is born at the sale's
     // suburb), but this one is derived and `suburb` is the seller's own field.
     locations: v.optional(v.array(v.string())),
+    // The same members' location RECORDS, derived at the same moment as
+    // `locations` and positionally unrelated to it (each is a distinct set).
+    // Nothing reads them yet — see convex/lib/location.ts.
+    localityIds: v.optional(v.array(v.number())),
+    points: v.optional(v.array(v.object({ lat: v.number(), lng: v.number() }))),
+    sa4Codes: v.optional(v.array(v.string())),
   })
     .index("by_user", ["userId"])
     .index("by_slug", ["slug"])
@@ -324,6 +342,12 @@ const applicationTables = {
     // A LIST, like categoryIds: nothing forces a bundle's members to share an
     // address, so the card matches if ANY member matches (rule 1).
     locations: v.optional(v.array(v.string())),
+    // The same members' location RECORDS, derived at the same moment as
+    // `locations` and positionally unrelated to it (each is a distinct set).
+    // Nothing reads them yet — see convex/lib/location.ts.
+    localityIds: v.optional(v.array(v.number())),
+    points: v.optional(v.array(v.object({ lat: v.number(), lng: v.number() }))),
+    sa4Codes: v.optional(v.array(v.string())),
   })
     .index("by_sale_event", ["saleEventId"])
     .index("by_seller", ["sellerId"])

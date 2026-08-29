@@ -503,3 +503,49 @@ is the point to introduce the denormalized `feedCards` table — not before.
 **Spec**: `docs/superpowers/specs/2026-07-16-unified-feed-pagination-design.md`.
 Implementation patterns and the mergedStream order-fields gotcha:
 `.agent/gatheredContext/infrastructure/database.md` ("Unified home feed").
+
+## The location record: a stable id, and no coordinate rather than a wrong one (Aug 2026)
+
+**Decision**: an ad now stores the suburb *record* the picker resolved — `localityId`,
+`latitude`, `longitude`, `sa4Code`, `locationSource` — alongside the free-text
+`location` string it already had. The string remains the only thing any filter
+compares on; this shipped with **zero user-visible change**.
+
+**Why a row id and not the name**: suburb names are not unique. The shipped dataset
+(`public/australian-postcodes.json`, 18,559 rows) has 726 duplicated locality+state
+pairs, and names repeat freely across states — three different real Richmonds. The
+dataset's own `id` is unique across every row, so it is the key. Synthesising a slug
+from the name would have re-created the ambiguity we were trying to escape.
+
+**Why coordinates were missing until now**: `ads.latitude` / `ads.longitude` have been
+in the schema since the beginning and were **never written** by any user-facing path —
+only `sampleData.ts` set them. The loss happened in one line: the picker called
+`formatLocation(loc)` and dropped `loc` on the floor.
+
+**Why no fallback coordinate, ever**: when a location can't be resolved — the dataset
+fetch failed and the seller typed a suburb, or a legacy row matches nothing — we write
+`locationSource: "unresolved"` and **no coordinate at all**. Not (0, 0), not the state
+capital, not a GPO. A wrong coordinate is indistinguishable from a right one forever
+after; absence is recoverable, a plausible lie is not. Publishing still succeeds — the
+degraded path must never dead-end a seller. (The dataset itself carries (0, 0) on six
+rows as its own "no coordinate" marker, which is rejected the same way.)
+
+**Region codes (`sa4`) were added to the dataset, not derived at runtime.** The
+upstream dataset this file came from ships an `SA4_CODE_2021` column, and it is
+**corrupt** — 21 distinct values across 108 real regions, with Sydney CBD filed under
+"Sydney - Sutherland". Its `SA2_CODE_2021` column (whose first three digits are the
+SA4 code) disagrees with ABS geometry on ~16% of a random sample, always rural. Both
+were rejected. Instead every row's own coordinate was point-in-polygoned against the
+ABS ASGS 2021 SA4 boundaries — authoritative, and self-consistent with the coordinate
+we store, so a region can never disagree with the point it came from. 18,552 of 18,559
+rows resolved (99.96%); the seven that didn't are six rows with no coordinate and one
+genuinely in the Coral Sea. Regenerate with `scripts/add-sa4-to-postcodes.mjs`.
+
+**Cost accepted**: the dataset grew 1.91 MB → 2.13 MB raw, but only **245 KB → 250 KB
+gzipped** (+2%) — which is what actually crosses the wire when the picker opens. SA4
+codes compress almost perfectly (89 distinct values over 18,559 rows).
+
+**Deliberately NOT done**: nothing reads these fields. There is no distance
+calculation, no radius control, and `tierFields` / `compositeMatchesFilters`
+(`convex/lib/cards.ts`) still decide near/far by exact location-string equality.
+Changing that is a product decision, not an implementation one.

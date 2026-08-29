@@ -13,10 +13,11 @@ import {
  * canonical `formatLocation()` string ("RICHMOND, VIC 3121").
  *
  * That string is the ONLY thing the location filter matches on — free text never
- * will — so anything that stores a location has to come through a picker. This
- * one is the shared version; PostAd and Header still hand-roll their own copies
- * of the same behaviour inline and should be folded into it when either is next
- * touched.
+ * will — so anything that stores a location has to come through a picker. Every
+ * surface that STORES a location uses this component. `Header` still hand-rolls
+ * its own copy, but it only ever filters — Phase 4 of
+ * `.agent/plans/location-model-and-proximity.md` owns replacing it, since it needs
+ * to keep the resolved object rather than a string.
  *
  * `value` is the confirmed selection ("" = nothing picked yet). Typing anything
  * that isn't the confirmed string clears it, so a caller can require a real pick
@@ -34,9 +35,15 @@ export function LocationPicker({
   id,
   inputClassName,
   initialQuery,
+  onQueryChange,
 }: {
   value: string;
-  onChange: (formatted: string) => void;
+  /**
+   * `loc` is the dataset row behind the pick — `undefined` when the value is
+   * free text (dataset unavailable) or when the field was cleared. Callers that
+   * STORE a location must pass it on; a caller that only filters can ignore it.
+   */
+  onChange: (formatted: string, loc?: LocationData) => void;
   id?: string;
   inputClassName?: string;
   /**
@@ -45,6 +52,13 @@ export function LocationPicker({
    * `value` stays empty, so the field is still unconfirmed and submit is blocked.
    */
   initialQuery?: string;
+  /**
+   * The visible text, on every keystroke. For a caller that renders its own
+   * validation affordance next to the field: "typed something but confirmed
+   * nothing" is `query.length > 0 && !value`, and only this component knows the
+   * first half. Purely an output — the picker still owns the text.
+   */
+  onQueryChange?: (query: string) => void;
 }) {
   const [query, setQuery] = useState(value || initialQuery || "");
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
@@ -57,10 +71,15 @@ export function LocationPicker({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
 
+  const updateQuery = (next: string) => {
+    setQuery(next);
+    onQueryChange?.(next);
+  };
+
   const pick = (loc: LocationData) => {
     const formatted = formatLocation(loc);
-    setQuery(formatted);
-    onChange(formatted);
+    updateQuery(formatted);
+    onChange(formatted, loc);
     setShowSuggestions(false);
     setActiveIndex(-1);
   };
@@ -136,7 +155,7 @@ export function LocationPicker({
           if (suggestions.length > 0) setShowSuggestions(true);
         }}
         onChange={(e) => {
-          setQuery(e.target.value);
+          updateQuery(e.target.value);
           if (value && e.target.value !== value) onChange("");
         }}
         onKeyDown={(e) => {

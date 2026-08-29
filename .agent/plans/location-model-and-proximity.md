@@ -1,6 +1,7 @@
 # Plan — Location model & proximity grouping
 
-**Status:** Agreed. Phases 0–2 in progress; 3–5 not started.
+**Status:** Agreed. Phases 0–2 built in PR #368 — the only item left in them is the
+prod migration run. Phases 3–5 not started.
 **Created:** 2026-08-29
 **Owner:** Amir
 **Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
@@ -101,33 +102,51 @@ The shipped `public/australian-postcodes.json` has `id, postcode, locality, stat
 lat, long` and **no SA4 code**. This is the one field the design needs that the data
 lacks, and it is expensive to add after launch (re-resolving every row).
 
-- [ ] Source ABS ASGS SAL→SA4 correspondence (or point-in-polygon the 18,559 centroids
+- [x] Source ABS ASGS SAL→SA4 correspondence (or point-in-polygon the 18,559 centroids
       against SA4 boundaries — pick whichever gives cleaner coverage)
-- [ ] Join into the shipped JSON as a new `sa4` field; keep `id` stable
-- [ ] Report coverage: how many of 18,559 rows resolve, and what the misses look like
-- [ ] Check the size delta — file is 1.8 MB today and is fetched on picker open
+- [x] Join into the shipped JSON as a new `sa4` field; keep `id` stable
+- [x] Report coverage: how many of 18,559 rows resolve, and what the misses look like
+- [x] Check the size delta — file is 1.8 MB today and is fetched on picker open
 
 **Gate:** if SA4 coverage is poor, fall back to `state`+`postcode` as the coarse key
 and log the downgrade here. Weaker adaptivity, still not a name string.
 
+**Outcome (PR #368): no downgrade needed.** 18,552 of 18,559 rows resolved (99.96%).
+The seven misses are six rows whose source coordinate is the `0,0` placeholder and one
+in the Coral Sea. Size: 1.91 MB → 2.13 MB raw, but **245 KB → 250 KB gzipped (+2%)**,
+which is what actually crosses the wire on picker open — SA4 codes compress almost
+perfectly (89 distinct values).
+
+Note: the dataset's upstream source ships its own `SA4_CODE_2021` column and it is
+corrupt (21 distinct values for 108 real regions; Sydney CBD filed under "Sydney -
+Sutherland"). Its `SA2_CODE_2021` prefix disagrees with ABS geometry on ~16% of a
+random sample. Both were rejected; every row was point-in-polygoned against ABS ASGS
+2021 SA4 boundaries instead, which is also self-consistent with the centroid we store.
+Regenerate with `scripts/add-sa4-to-postcodes.mjs`.
+
 ### Phase 1 — stop discarding the record *(one-way door)*
 
-- [ ] `LocationPicker.onChange` passes the whole `LocationData`, not the formatted string
-- [ ] `ads` gains `localityId`, `sa4Code`, `locationSource`; `latitude`/`longitude` get written
-- [ ] Every ad write site populates them (post, edit, sale-item creation, seed)
-- [ ] Degraded path writes `unresolved` with no centroid
-- [ ] Composites gain the parallel arrays, derived on membership change like `locations`
+- [x] `LocationPicker.onChange` passes the whole `LocationData`, not the formatted string
+- [x] `ads` gains `localityId`, `sa4Code`, `locationSource`; `latitude`/`longitude` get written
+- [x] Every ad write site populates them (post, edit, sale-item creation, seed)
+- [x] Degraded path writes `unresolved` with no centroid
+- [x] Composites gain the parallel arrays, derived on membership change like `locations`
+- [x] Fold PostAd's hand-rolled suburb field into the shared `LocationPicker` — it is
+      the one posting path with no degraded fallback, so a failed dataset fetch
+      currently blocks submit outright; folding it in also stops the record contract
+      having two implementations
 
 **Why now:** if we launch storing only a name, we can never determine which Richmond,
 for any existing ad, ever. Migration is free pre-launch and expensive after.
 
 ### Phase 2 — backfill & normalise
 
-- [ ] Migration: resolve existing `location` strings against the dataset, stamp the
+- [x] Migration: resolve existing `location` strings against the dataset, stamp the
       new fields, mark unresolvable rows `unresolved`
-- [ ] Fix the free-text seed rows (`convex/seed.ts:238`, `:362`) — currently
+- [x] Fix the free-text seed rows (`convex/seed.ts:238`, `:362`) — currently
       unreachable by any location filter
-- [ ] Run on dev first, then prod (`resilient-pheasant-112`)
+- [x] Run on dev — dry run and real run reported identical numbers; re-run was a no-op
+- [ ] Run on prod (`resilient-pheasant-112`) — **outstanding, Amir**
 
 ### Phase 3 — one feed pipeline with a stable boundary *(do before Phase 4)*
 

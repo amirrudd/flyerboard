@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchLocations, searchLocations, formatLocation, displayLocation, type LocationData } from './locationService';
+import { fetchLocations, searchLocations, formatLocation, displayLocation, toLocationMeta, type LocationData } from './locationService';
 import { toast } from 'sonner';
 
 // Mock sonner toast
@@ -112,4 +112,44 @@ describe('locationService', () => {
             expect(displayLocation('Richmond, VIC')).toBe('Richmond, VIC');
         });
     });
+
+    describe('toLocationMeta — the record stored alongside the location string', () => {
+        /** A dataset row; the picker passes the whole LocationData, the backfill a PostcodeRow. */
+        const row = (over: Partial<LocationData>): LocationData => ({
+            id: 1, postcode: '3121', locality: 'RICHMOND', state: 'VIC', lat: -37.8, long: 145, ...over,
+        });
+        it('keeps the picked row id, coordinates and region', () => {
+            expect(toLocationMeta(row({ id: 4719, lat: -37.823303, long: 145.001788, sa4: '206' }))).toEqual({
+                localityId: 4719,
+                latitude: -37.823303,
+                longitude: 145.001788,
+                sa4Code: '206',
+                locationSource: 'picked',
+            });
+        });
+
+        it('writes NO coordinates when there is no picked row (the degraded free-text path)', () => {
+            const meta = toLocationMeta(undefined);
+            expect(meta).toEqual({ locationSource: 'unresolved' });
+            expect(meta.latitude).toBeUndefined();
+            expect(meta.longitude).toBeUndefined();
+            expect(meta.localityId).toBeUndefined();
+        });
+
+        it('writes NO coordinates for a dataset row whose point is the (0, 0) placeholder', () => {
+            // Six of the 18,559 rows carry (0, 0) as their own "no coordinate"
+            // marker. Storing it would put the ad in the Gulf of Guinea, and a
+            // wrong coordinate is indistinguishable from a right one forever.
+            const meta = toLocationMeta(row({ id: 24304, lat: 0, long: 0 }));
+            expect(meta.latitude).toBeUndefined();
+            expect(meta.longitude).toBeUndefined();
+            expect(meta.localityId).toBe(24304);
+            expect(meta.locationSource).toBe('picked');
+        });
+
+        it('leaves the region absent when the dataset row has none', () => {
+            expect(toLocationMeta(row({ id: 24156, lat: -22.5094, long: 151.7322 })).sa4Code).toBeUndefined();
+        });
+    });
+
 });

@@ -2,11 +2,22 @@ import { useState } from "react";
 import { CircleNotch, Check } from "@phosphor-icons/react";
 import { getPickupPresets, toDateTimeLocal } from "../saleHelpers";
 import { LocationPicker } from "../../../components/ui/LocationPicker";
-import { isCanonicalLocation } from "../../../lib/locationService";
+import {
+  isCanonicalLocation,
+  toLocationMeta,
+  type LocationData,
+  type LocationMeta,
+} from "../../../lib/locationService";
 
 export interface SetupValues {
   title: string;
   suburb: string;
+  /**
+   * The picker's record behind `suburb`, or `undefined` when the suburb wasn't
+   * touched this session — the server then leaves the stored record alone rather
+   * than downgrading it. Same convention as PostAd, which is why it's optional.
+   */
+  suburbMeta?: LocationMeta;
   note: string;
   pickupWindowStart: number;
   pickupWindowEnd: number;
@@ -40,6 +51,10 @@ export function SetupStep({
   const [suburb, setSuburb] = useState(
     initial?.suburb && isCanonicalLocation(initial.suburb) ? initial.suburb : ""
   );
+  // The dataset row behind `suburb`. Resuming a draft gives us the string back but
+  // not the row, so this stays undefined until the seller picks again — and an
+  // unpicked suburb is reported as "unresolved" rather than guessed from the name.
+  const [suburbRow, setSuburbRow] = useState<LocationData | undefined>();
   const [note, setNote] = useState(initial?.note ?? "");
   const [presetId, setPresetId] = useState<string>(
     initial?.pickupWindowStart ? "custom" : presets[0].id
@@ -75,6 +90,13 @@ export function SetupStep({
     onSubmit({
       title: title.trim() || `${defaultFirstName}'s Moving Sale`,
       suburb: suburb.trim(),
+      // Picked this session, or typed a different suburb (the free-text fallback
+      // when the dataset is down) -> say what we know, "unresolved" included.
+      // Untouched -> say nothing.
+      suburbMeta:
+        suburbRow || suburb.trim() !== initial?.suburb
+          ? toLocationMeta(suburbRow)
+          : undefined,
       note: note.trim(),
       pickupWindowStart: start,
       pickupWindowEnd: end,
@@ -113,7 +135,10 @@ export function SetupStep({
           <LocationPicker
             id="sale-suburb"
             value={suburb}
-            onChange={setSuburb}
+            onChange={(formatted, loc) => {
+              setSuburb(formatted);
+              setSuburbRow(loc);
+            }}
             initialQuery={legacySuburb}
             inputClassName={inputClass}
           />

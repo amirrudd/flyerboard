@@ -222,6 +222,9 @@ async function expectAllCompositesDerived(t: World["t"], label: string) {
           categoryIds: bundle.categoryIds,
           searchText: bundle.searchText,
           locations: bundle.locations,
+          localityIds: bundle.localityIds,
+          points: bundle.points,
+          sa4Codes: bundle.sa4Codes,
           label: bundle.label,
         },
         `${label}: bundle ${bundle._id} is stale`
@@ -235,6 +238,9 @@ async function expectAllCompositesDerived(t: World["t"], label: string) {
           categoryIds: sale.categoryIds,
           searchText: sale.searchText,
           locations: sale.locations,
+          localityIds: sale.localityIds,
+          points: sale.points,
+          sa4Codes: sale.sa4Codes,
         },
         `${label}: sale ${sale._id} is stale`
       ).toEqual(deriveFromMembers(members, sale.title));
@@ -441,6 +447,29 @@ const MUTATIONS: Record<string, Record<string, Case>> = {
     },
     backfillCompositeDerived: { writesAds: false }, // writes composites via the shared refresh
     renameFeatureFlag: { writesAds: false },
+    applyAdLocationRecords: {
+      writesAds: true, // patches member localityId/lat/long/sa4Code — all derived
+      exercise: (w) =>
+        w.t.mutation(internal.migrations.applyAdLocationRecords, {
+          updates: [
+            {
+              adId: w.a1,
+              meta: {
+                localityId: 4719,
+                latitude: -37.823303,
+                longitude: 145.001788,
+                sa4Code: "206",
+                locationSource: "picked" as const,
+              },
+            },
+          ],
+        }),
+    },
+    applyCompositeLocationRecords: {
+      writesAds: false, // stamps saleEvents.suburbMeta, then re-derives every composite
+      exercise: (w) =>
+        w.t.mutation(internal.migrations.applyCompositeLocationRecords, { saleMeta: [] }),
+    },
     applySaleLocations: {
       writesAds: true, // patches member `location` (derived!) — must refresh
       exercise: (w) =>
@@ -602,5 +631,72 @@ describe("adIsVisible", () => {
     expect(adIsVisible({ ...base, isDeleted: true } as unknown as Ad)).toBe(false);
     expect(adIsVisible({ ...base, isSold: true } as unknown as Ad)).toBe(false);
     expect(adIsVisible({ ...base, isActive: false } as unknown as Ad)).toBe(false);
+  });
+});
+
+describe("deriveFromMembers — the members' location records (rule 1)", () => {
+  const member = (over: Partial<Parameters<typeof deriveFromMembers>[0][number]>) =>
+    ({
+      title: "Desk",
+      categoryId: "cat1" as Id<"categories">,
+      location: "RICHMOND, VIC 3121",
+      localityId: 4719,
+      latitude: -37.823303,
+      longitude: 145.001788,
+      sa4Code: "206",
+      ...over,
+    }) as Parameters<typeof deriveFromMembers>[0][number];
+
+  test("each record list is a distinct set, like categoryIds and locations", () => {
+    const d = deriveFromMembers([
+      member({}),
+      member({ title: "Chair" }), // same suburb — contributes nothing new
+      member({
+        title: "Lamp",
+        location: "BONDI, NSW 2026",
+        localityId: 1234,
+        latitude: -33.89,
+        longitude: 151.27,
+        sa4Code: "118",
+      }),
+    ]);
+    expect(d.localityIds).toEqual([4719, 1234]);
+    expect(d.sa4Codes).toEqual(["206", "118"]);
+    expect(d.points).toEqual([
+      { lat: -37.823303, lng: 145.001788 },
+      { lat: -33.89, lng: 151.27 },
+    ]);
+  });
+
+  test("a member with no record contributes to none of the lists but still to `locations`", () => {
+    // The degraded path: a seller published while the suburb dataset was down.
+    // The card must still match that suburb's location filter (rule 4) — it just
+    // has no point behind it.
+    const d = deriveFromMembers([
+      member({}),
+      member({
+        title: "Mystery",
+        location: "Somewhere the picker never resolved",
+        localityId: undefined,
+        latitude: undefined,
+        longitude: undefined,
+        sa4Code: undefined,
+      }),
+    ]);
+    expect(d.locations).toHaveLength(2);
+    expect(d.localityIds).toEqual([4719]);
+    expect(d.points).toHaveLength(1);
+    expect(d.sa4Codes).toEqual(["206"]);
+  });
+
+  test("(0, 0) is the dataset's no-coordinate placeholder, not a point", () => {
+    const d = deriveFromMembers([member({ latitude: 0, longitude: 0, localityId: 24304 })]);
+    expect(d.points).toEqual([]);
+    expect(d.localityIds).toEqual([24304]);
+  });
+
+  test("no members means no records at all", () => {
+    const d = deriveFromMembers([]);
+    expect(d).toMatchObject({ locations: [], localityIds: [], points: [], sa4Codes: [] });
   });
 });

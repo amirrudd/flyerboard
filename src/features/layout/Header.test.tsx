@@ -23,6 +23,17 @@ vi.mock('../../lib/locationService', () => ({
     // its own hand-rolled suburb box.
     locationsUnavailable: vi.fn(() => false),
     isCanonicalLocation: vi.fn((location: string) => /,\s*[A-Z]{2,3}\s+\d{4}$/.test(location.trim())),
+    // The REAL mapping (re-exported from convex/lib/location) — the header's job
+    // is to hand the picked row on, and a stub would hide it dropping fields.
+    toLocationMeta: (row?: { id: number; lat?: number; long?: number; sa4?: string }) =>
+        row
+            ? {
+                  localityId: row.id,
+                  ...(row.lat && row.long ? { latitude: row.lat, longitude: row.long } : {}),
+                  sa4Code: row.sa4,
+                  locationSource: "picked" as const,
+              }
+            : { locationSource: "unresolved" as const },
 }));
 
 // Mock performance utils (debounce)
@@ -116,8 +127,17 @@ describe('Header', () => {
         fireEvent.click(screen.getAllByText('All Locations')[0]);
         fireEvent.click(screen.getByText('Detect my location'));
 
+        // The RECORD of the row detection matched travels with the string. It is
+        // never re-derived from it later: two dataset rows can share one string
+        // and sit 80 km apart (convex/lib/nearby.ts).
         await waitFor(() =>
-            expect(setSelectedLocation).toHaveBeenCalledWith('RICHMOND, VIC 3121')
+            expect(setSelectedLocation).toHaveBeenCalledWith('RICHMOND, VIC 3121', {
+                localityId: 2,
+                latitude: -37.8,
+                longitude: 145.0,
+                sa4Code: undefined,
+                locationSource: 'picked',
+            })
         );
 
         vi.unstubAllGlobals();

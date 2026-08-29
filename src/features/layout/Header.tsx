@@ -5,9 +5,18 @@ import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass 
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
-import { searchLocations, formatLocation, fetchLocations, displayLocation, isCanonicalLocation } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, displayLocation, isCanonicalLocation, toLocationMeta, type LocationMeta } from "../../lib/locationService";
 import { LocationPicker } from "../../components/ui/LocationPicker";
 import { debounce } from "../../lib/performanceUtils";
+
+/**
+ * A pick sets the suburb AND the dataset record behind it. The record is only
+ * ever captured HERE, where the row is in hand — never re-resolved from the
+ * stored string: 24 locality+state+postcode groups in the dataset hold two rows
+ * with different coordinates (O'CONNELL QLD 4680's are 80 km apart), so a
+ * lookup by string is a coin flip. See convex/lib/nearby.ts.
+ */
+type SetSelectedLocation = (location: string, meta?: LocationMeta) => void;
 
 interface HeaderProps {
   sidebarCollapsed?: boolean;
@@ -17,7 +26,7 @@ interface HeaderProps {
   user?: any;
   setShowAuthModal?: (show: boolean) => void;
   selectedLocation?: string;
-  setSelectedLocation?: (location: string) => void;
+  setSelectedLocation?: SetSelectedLocation;
   leftNode?: React.ReactNode;
   centerNode?: React.ReactNode;
   rightNode?: React.ReactNode;
@@ -26,7 +35,7 @@ interface HeaderProps {
 // Location selector component
 const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, align = 'left', compact = false }: {
   selectedLocation: string;
-  setSelectedLocation: (location: string) => void;
+  setSelectedLocation: SetSelectedLocation;
   align?: 'left' | 'right';
   compact?: boolean;
 }) {
@@ -80,7 +89,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
             const match = results.find((loc) => loc.postcode === postcode) ?? results[0];
 
             if (match) {
-              setSelectedLocation(formatLocation(match));
+              setSelectedLocation(formatLocation(match), toLocationMeta(match));
               setIsDetectingLocation(false);
               setIsOpen(false);
               return;
@@ -160,11 +169,11 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
             <LocationPicker
               id={inputId}
               value=""
-              onChange={(formatted) => {
+              onChange={(formatted, loc) => {
                 // Free text (dataset offline) matches no ad, so it isn't a
                 // value this filter can hold — only a real pick sets it.
                 if (!isCanonicalLocation(formatted)) return;
-                setSelectedLocation(formatted);
+                setSelectedLocation(formatted, loc && toLocationMeta(loc));
                 setIsOpen(false);
               }}
               inputClassName="w-full px-3 py-2 text-base rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
@@ -218,7 +227,7 @@ const MobileHeader = memo(function MobileHeader({
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedLocation: string;
-  setSelectedLocation: (location: string) => void;
+  setSelectedLocation: SetSelectedLocation;
   user: any;
   setShowAuthModal: (show: boolean) => void;
   navigate: (path: string) => void;

@@ -13,6 +13,8 @@ import {
   type FeedSourceEntry,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
+import { locationMetaValidator } from "./lib/location";
+import { resolveBuyer, isNearAd, type BuyerLocation } from "./lib/nearby";
 
 const SEARCH_LIMIT = 50;
 
@@ -40,7 +42,7 @@ const COMPOSITE_LIMIT = 500;
  */
 async function compositeHits(
   ctx: QueryCtx,
-  args: { categoryId?: Doc<"ads">["categoryId"]; location?: string },
+  args: { categoryId?: Doc<"ads">["categoryId"]; buyer?: BuyerLocation },
   buildBundles: () => Promise<Doc<"saleBundles">[]>,
   buildSales: () => Promise<Doc<"saleEvents">[]>
 ): Promise<FeedSourceEntry[]> {
@@ -60,7 +62,7 @@ async function compositeHits(
   // here was always a JS predicate below the `.take(cap)`, never a DB cut, so
   // the same predicate now stamps the section instead of dropping the row.
   const sectionOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
-    sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location }));
+    sectionFields(args.buyer?.location, compositeMatchesFilters(doc, { buyer: args.buyer }));
   return [
     ...bundles
       .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId }))
@@ -75,25 +77,38 @@ async function compositeHits(
  * Rule 5 two-pass ads fetch, shared by search and the rail. Both cut with a
  * `.take()` INSIDE the DB query (by relevance for search, by date for the
  * rail), so one unpinned pass can lose near rows before any JS runs — a
- * post-hoc partition cannot resurrect them. With a location set: a
- * location-pinned "near" pass plus an unpinned "far" pass, deduped on `_id`.
- * With none: one unpinned pass, no section.
+ * post-hoc partition cannot resurrect them. Hence a second pass pinned to the
+ * buyer's suburb, unioned with the unpinned one and deduped on `_id`. With no
+ * location: one unpinned pass, no section.
+ *
+ * The SECTION of every row is then stamped by `isNearAd` — the pinned pass only
+ * decides what is fetched, never what is near.
+ *
+ * ponytail: the pinned pass is `.eq("location", …)`, so since Phase 4 it
+ * guarantees survival for the SAME-SUBURB near rows only. A row that is near by
+ * distance or by SA4 reaches the pool through the unpinned pass and is lost if
+ * it ranks below the cut (50 by relevance in search, `limit` by date on the
+ * rail), which can leave a far row rendered above a near one that was never
+ * fetched. The main feed (`feed.getFeed`) is unaffected — it paginates, it
+ * doesn't cut. Fixing it means a server-side near lane (a pass pinned on
+ * `sa4Code`, which needs an index and a search filterField); the plan lists that
+ * as deliberately not built, triggered by page size. Same class as the composite
+ * ceiling recorded on `latestComposites` below.
  */
 async function sectionedAdHits(
-  location: string | undefined,
+  buyer: BuyerLocation | undefined,
   pass: (location?: string) => Promise<Doc<"ads">[]>
 ): Promise<FeedSourceEntry[]> {
-  if (!location) {
+  if (!buyer) {
     return (await pass()).map((doc) => ({ kind: "ad" as const, doc }));
   }
-  const [near, unpinned] = await Promise.all([pass(location), pass()]);
-  const nearIds = new Set(near.map((d) => d._id));
-  return [
-    ...near.map((doc) => ({ kind: "ad" as const, doc, section: "near" as const })),
-    ...unpinned
-      .filter((d) => !nearIds.has(d._id))
-      .map((doc) => ({ kind: "ad" as const, doc, section: "far" as const })),
-  ];
+  const [sameSuburb, unpinned] = await Promise.all([pass(buyer.location), pass()]);
+  const seen = new Set(sameSuburb.map((d) => d._id));
+  return [...sameSuburb, ...unpinned.filter((d) => !seen.has(d._id))].map((doc) => ({
+    kind: "ad" as const,
+    doc,
+    ...sectionFields(buyer.location, isNearAd(buyer, doc)),
+  }));
 }
 
 /**
@@ -115,7 +130,7 @@ async function searchAllTypes(
   args: {
     search: string;
     categoryId?: Doc<"ads">["categoryId"];
-    location?: string;
+    buyer?: BuyerLocation;
     sinceTimestamp?: number;
     limit: number;
   }
@@ -146,7 +161,7 @@ async function searchAllTypes(
       )
       .take(args.limit);
   const [ads, composites] = await Promise.all([
-    sectionedAdHits(args.location, searchAdsPass),
+    sectionedAdHits(args.buyer, searchAdsPass),
     compositeHits(
       ctx,
       args,
@@ -193,7 +208,7 @@ async function latestComposites(
   ctx: QueryCtx,
   args: {
     categoryId?: Doc<"ads">["categoryId"];
-    location?: string;
+    buyer?: BuyerLocation;
     sinceTimestamp: number;
     limit: number;
   }
@@ -244,8 +259,10 @@ async function latestComposites(
  *
  * @param args.search - Search term (ad titles; composites' member titles)
  * @param args.categoryId - Filter by specific category (optional)
- * @param args.location - Location preference (optional, exact match): groups
- *   results into the near/far sections instead of filtering (rule 5)
+ * @param args.location - Location preference (optional): groups results into
+ *   the near/far sections instead of filtering (rule 5)
+ * @param args.locationMeta - The record behind that suburb, captured where the
+ *   buyer picked it — what makes "near" a distance (convex/lib/nearby.ts)
  * @param args.paginationOpts - Pagination envelope (results are one page)
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
@@ -257,10 +274,12 @@ export const getAds = query({
     categoryId: v.optional(v.id("categories")),
     search: v.string(),
     location: v.optional(v.string()),
+    locationMeta: v.optional(locationMetaValidator),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const hits = await searchAllTypes(ctx, { ...args, limit: SEARCH_LIMIT });
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
+    const hits = await searchAllTypes(ctx, { ...args, buyer, limit: SEARCH_LIMIT });
 
     return {
       page: await assembleFeedPage(ctx, hits, SEARCH_LIMIT),
@@ -376,17 +395,19 @@ export const getLatestAds = query({
     categoryId: v.optional(v.id("categories")),
     search: v.optional(v.string()),
     location: v.optional(v.string()),
+    locationMeta: v.optional(locationMetaValidator),
     sinceTimestamp: v.number(),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
 
     if (args.search) {
       const hits = await searchAllTypes(ctx, {
         search: args.search,
         categoryId: args.categoryId,
-        location: args.location,
+        buyer,
         sinceTimestamp: args.sinceTimestamp,
         limit,
       });
@@ -424,10 +445,10 @@ export const getLatestAds = query({
       // The rail is the ONLY path that re-injects new arrivals into the feed,
       // which is frozen at `maxSortTime` from mount — so composites ride it too.
       const [ads, composites] = await Promise.all([
-        sectionedAdHits(args.location, latestAdsPass),
+        sectionedAdHits(buyer, latestAdsPass),
         latestComposites(ctx, {
           categoryId: args.categoryId,
-          location: args.location,
+          buyer,
           sinceTimestamp: args.sinceTimestamp,
           limit,
         }),

@@ -14,7 +14,7 @@ import {
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
 import { locationMetaValidator } from "./lib/location";
-import { resolveBuyer, isNearAd, type BuyerLocation } from "./lib/nearby";
+import { resolveBuyer, isNearAd, isNearComposite, atWidestRadius, type BuyerLocation } from "./lib/nearby";
 
 const SEARCH_LIMIT = 50;
 
@@ -63,13 +63,20 @@ async function compositeHits(
   // the same predicate now stamps the section instead of dropping the row.
   const sectionOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
     sectionFields(args.buyer?.location, compositeMatchesFilters(doc, { buyer: args.buyer }));
+  // A composite earns the same protection from the trim as an ad does, on the
+  // same any-member test — rule 1: a card inherits from its members, and rule 4
+  // has no carve-out for a card type. Judged at the widest selectable radius so
+  // the buyer's own pick can't change who survives the cut.
+  const widest = args.buyer && atWidestRadius(args.buyer);
+  const pinnedOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
+    widest ? isNearComposite(widest, doc) : false;
   return [
     ...bundles
       .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId }))
-      .map((doc) => ({ kind: "bundle" as const, doc, ...sectionOf(doc) })),
+      .map((doc) => ({ kind: "bundle" as const, doc, pinned: pinnedOf(doc), ...sectionOf(doc) })),
     ...sales
       .filter((s) => saleIsLive(s, now) && compositeMatchesFilters(s, { categoryId: args.categoryId }))
-      .map((doc) => ({ kind: "sale" as const, doc, ...sectionOf(doc) })),
+      .map((doc) => ({ kind: "sale" as const, doc, pinned: pinnedOf(doc), ...sectionOf(doc) })),
   ];
 }
 
@@ -84,13 +91,24 @@ async function compositeHits(
  * The SECTION of every row is then stamped by `isNearAd` — the pinned pass only
  * decides what is fetched, never what is near.
  *
- * ponytail: the pinned pass is `.eq("location", …)`, so since Phase 4 it
- * guarantees survival for the SAME-SUBURB near rows only. A row that is near by
- * distance or by SA4 reaches the pool through the unpinned pass and is lost if
- * it ranks below the cut (50 by relevance in search, `limit` by date on the
- * rail), which can leave a far row rendered above a near one that was never
- * fetched. The main feed (`feed.getFeed`) is unaffected — it paginates, it
- * doesn't cut. Fixing it means a server-side near lane (a pass pinned on
+ * **"Pinned" means two different things here, at two levels. Keep them apart:**
+ *
+ * - The pinned PASS (this function, `.eq("location", …)`) decides what the DB
+ *   hands us. Exact-string, so it only rescues same-suburb rows from the
+ *   `.take()`.
+ * - The `pinned` FIELD stamped below decides what survives the JS trim in
+ *   `assembleFeedPage`. It is wider: near at the widest rung the buyer's control
+ *   offers (`atWidestRadius`), plus everything the pass fetched.
+ *
+ * ponytail: the still-open ceiling is the first level only. A row near by
+ * distance or SA4 alone is not matched by `.eq("location", …)`, so if it ranks
+ * below the DB cut (50 by relevance in search, `limit` by date on the rail) it
+ * is never fetched, and no JS can resurrect it — leaving a far row rendered
+ * above a near one that was never in the pool. Once a row IS in the pool the
+ * `pinned` field protects it, so do not read this as "distance-near rows lose
+ * the trim"; they don't, and Phase 5's tests fail if that changes. The main feed
+ * (`feed.getFeed`) is unaffected at both levels — it paginates, it doesn't cut.
+ * Fixing the first level means a server-side near lane (a pass pinned on
  * `sa4Code`, which needs an index and a search filterField); the plan lists that
  * as deliberately not built, triggered by page size. Same class as the composite
  * ceiling recorded on `latestComposites` below.
@@ -104,9 +122,20 @@ async function sectionedAdHits(
   }
   const [sameSuburb, unpinned] = await Promise.all([pass(buyer.location), pass()]);
   const seen = new Set(sameSuburb.map((d) => d._id));
-  return [...sameSuburb, ...unpinned.filter((d) => !seen.has(d._id))].map((doc) => ({
+  // The `pinned` FIELD (not the pass above): what survives the JS trim in
+  // assembleFeedPage. Everything that could be near at ANY rung of the buyer's
+  // control — judged at the widest one — plus the rows the pass fetched. Judging
+  // it at a CONSTANT radius is the point: it does not move when the buyer
+  // narrows theirs, so the radius decides which group an ad sits in and never
+  // which ads exist (rule 5: it never hides). See assembleFeedPage's contract.
+  const widest = atWidestRadius(buyer);
+  return [
+    ...sameSuburb.map((doc) => ({ doc, sameSuburb: true })),
+    ...unpinned.filter((d) => !seen.has(d._id)).map((doc) => ({ doc, sameSuburb: false })),
+  ].map(({ doc, sameSuburb: fromPinnedPass }) => ({
     kind: "ad" as const,
     doc,
+    pinned: fromPinnedPass || isNearAd(widest, doc),
     ...sectionFields(buyer.location, isNearAd(buyer, doc)),
   }));
 }
@@ -263,6 +292,10 @@ async function latestComposites(
  *   the near/far sections instead of filtering (rule 5)
  * @param args.locationMeta - The record behind that suburb, captured where the
  *   buyer picked it — what makes "near" a distance (convex/lib/nearby.ts)
+ * @param args.radiusKm - How far from that suburb still counts as "in the
+ *   area", chosen by the buyer in the header. Absent = the admin-tuned
+ *   `appSettings` default. It only ever decides which SECTION an entry lands
+ *   in — narrowing it regroups ads, it never removes one (rule 5).
  * @param args.paginationOpts - Pagination envelope (results are one page)
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
@@ -275,10 +308,11 @@ export const getAds = query({
     search: v.string(),
     location: v.optional(v.string()),
     locationMeta: v.optional(locationMetaValidator),
+    radiusKm: v.optional(v.number()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta, args.radiusKm);
     const hits = await searchAllTypes(ctx, { ...args, buyer, limit: SEARCH_LIMIT });
 
     return {
@@ -396,12 +430,13 @@ export const getLatestAds = query({
     search: v.optional(v.string()),
     location: v.optional(v.string()),
     locationMeta: v.optional(locationMetaValidator),
+    radiusKm: v.optional(v.number()),
     sinceTimestamp: v.number(),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
-    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta);
+    const buyer = await resolveBuyer(ctx, args.location, args.locationMeta, args.radiusKm);
 
     if (args.search) {
       const hits = await searchAllTypes(ctx, {

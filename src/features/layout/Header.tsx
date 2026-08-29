@@ -7,6 +7,7 @@ import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { searchLocations, formatLocation, fetchLocations, displayLocation, isCanonicalLocation, toLocationMeta, type LocationMeta } from "../../lib/locationService";
 import { LocationPicker } from "../../components/ui/LocationPicker";
+import { DEFAULT_NEAR_RADIUS_KM, NEAR_RADIUS_OPTIONS_KM } from "../../../convex/lib/appConfig";
 import { debounce } from "../../lib/performanceUtils";
 
 /**
@@ -27,21 +28,26 @@ interface HeaderProps {
   setShowAuthModal?: (show: boolean) => void;
   selectedLocation?: string;
   setSelectedLocation?: SetSelectedLocation;
+  selectedRadiusKm?: number;
+  setSelectedRadiusKm?: (km: number) => void;
   leftNode?: React.ReactNode;
   centerNode?: React.ReactNode;
   rightNode?: React.ReactNode;
 }
 
 // Location selector component
-const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, align = 'left', compact = false }: {
+const LocationSelector = memo(function LocationSelector({ selectedLocation, setSelectedLocation, selectedRadiusKm, setSelectedRadiusKm, align = 'left', compact = false }: {
   selectedLocation: string;
   setSelectedLocation: SetSelectedLocation;
+  selectedRadiusKm: number;
+  setSelectedRadiusKm: (km: number) => void;
   align?: 'left' | 'right';
   compact?: boolean;
 }) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const inputId = useId();
+  const radiusId = useId();
 
   const detectLocation = async () => {
     setIsDetectingLocation(true);
@@ -180,6 +186,31 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
             />
           </div>
 
+          {/* Only with a suburb chosen: with no centre point there is nothing
+              for a distance to be measured from, and the feed is one
+              continuous run. A native <select> on purpose — the platform's own
+              picker is the right control for five fixed values, it reads as
+              part of the panel, and it needs no outside-click handling of its
+              own. Changing it re-sections the feed; it never closes the panel,
+              so a buyer can try two distances without reopening. */}
+          {selectedLocation && (
+            <div className="px-2.5 py-2 border-b border-border/70 flex items-center justify-between gap-2">
+              <label htmlFor={radiusId} className="text-sm text-muted-foreground">
+                Show as nearby within
+              </label>
+              <select
+                id={radiusId}
+                value={selectedRadiusKm}
+                onChange={(e) => setSelectedRadiusKm(Number(e.target.value))}
+                className="text-sm font-medium rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none px-2 py-1.5 text-foreground"
+              >
+                {NEAR_RADIUS_OPTIONS_KM.map((km) => (
+                  <option key={km} value={km}>{km} km</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             onClick={() => {
               setSelectedLocation("");
@@ -218,6 +249,8 @@ const MobileHeader = memo(function MobileHeader({
   setSearchQuery,
   selectedLocation,
   setSelectedLocation,
+  selectedRadiusKm,
+  setSelectedRadiusKm,
   user,
   setShowAuthModal,
   navigate,
@@ -228,6 +261,8 @@ const MobileHeader = memo(function MobileHeader({
   setSearchQuery: (query: string) => void;
   selectedLocation: string;
   setSelectedLocation: SetSelectedLocation;
+  selectedRadiusKm: number;
+  setSelectedRadiusKm: (km: number) => void;
   user: any;
   setShowAuthModal: (show: boolean) => void;
   navigate: (path: string) => void;
@@ -326,6 +361,8 @@ const MobileHeader = memo(function MobileHeader({
                 <LocationSelector
                   selectedLocation={selectedLocation}
                   setSelectedLocation={setSelectedLocation}
+                  selectedRadiusKm={selectedRadiusKm}
+                  setSelectedRadiusKm={setSelectedRadiusKm}
                   align="right"
                   compact={true}
                 />
@@ -376,6 +413,8 @@ export const Header = memo(function Header({
   setShowAuthModal = () => { },
   selectedLocation = "",
   setSelectedLocation = () => { },
+  selectedRadiusKm = DEFAULT_NEAR_RADIUS_KM,
+  setSelectedRadiusKm = () => { },
   leftNode,
   centerNode,
   rightNode,
@@ -425,6 +464,8 @@ export const Header = memo(function Header({
                 <LocationSelector
                   selectedLocation={selectedLocation}
                   setSelectedLocation={setSelectedLocation}
+                  selectedRadiusKm={selectedRadiusKm}
+                  setSelectedRadiusKm={setSelectedRadiusKm}
                 />
               </>
             )}
@@ -494,6 +535,8 @@ export const Header = memo(function Header({
               setSearchQuery={setSearchQuery}
               selectedLocation={selectedLocation}
               setSelectedLocation={setSelectedLocation}
+              selectedRadiusKm={selectedRadiusKm}
+              setSelectedRadiusKm={setSelectedRadiusKm}
               user={user}
               setShowAuthModal={setShowAuthModal}
               navigate={(path) => { void navigate(path); }}

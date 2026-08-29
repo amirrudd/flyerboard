@@ -35,6 +35,7 @@ import type * as lib_emailUtils from "../lib/emailUtils.js";
 import type * as lib_feedSections from "../lib/feedSections.js";
 import type * as lib_location from "../lib/location.js";
 import type * as lib_logger from "../lib/logger.js";
+import type * as lib_nearby from "../lib/nearby.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_rateLimitConfig from "../lib/rateLimitConfig.js";
 import type * as lib_unread from "../lib/unread.js";
@@ -95,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   "lib/feedSections": typeof lib_feedSections;
   "lib/location": typeof lib_location;
   "lib/logger": typeof lib_logger;
+  "lib/nearby": typeof lib_nearby;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/rateLimitConfig": typeof lib_rateLimitConfig;
   "lib/unread": typeof lib_unread;

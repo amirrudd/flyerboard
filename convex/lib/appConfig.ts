@@ -46,8 +46,22 @@ export const DEFAULT_SALE_MAX_ITEMS = 100;
 export const DEFAULT_SALE_EXPIRY_BUFFER_DAYS = 2;
 export const DEFAULT_FEED_SALE_MEMBER_CAP = 3;
 export const DEFAULT_FEED_BUNDLE_MEMBER_CAP = 2;
-/** ~how far an Australian drives to collect furniture (Newtown→Parramatta is 22 km). */
-export const DEFAULT_NEAR_RADIUS_KM = 25;
+/**
+ * The starting point for a buyer who has never chosen a distance. 15 km is the
+ * middle rung of {@link NEAR_RADIUS_OPTIONS_KM} — a short drive across a city
+ * (Newtown→Parramatta is 22 km, so 15 km stays inside "my part of town").
+ * A buyer's own pick, when they have made one, wins over this.
+ */
+export const DEFAULT_NEAR_RADIUS_KM = 15;
+
+/**
+ * The distances a buyer can pick from, in the header's location panel. A fixed
+ * ladder, not a free slider: fewer values to reason about, and it matches the
+ * shape Facebook Marketplace uses. Must stay inside the SETTING_NEAR_RADIUS_KM
+ * spec's [min, max] below, and must contain DEFAULT_NEAR_RADIUS_KM so the
+ * unchosen state is a real option rather than a blank.
+ */
+export const NEAR_RADIUS_OPTIONS_KM = [5, 10, 15, 25, 50] as const;
 
 export interface AppSettingSpec {
     key: string;

@@ -32,6 +32,8 @@ function PersistentHeader({
         setSearchQuery,
         selectedLocation,
         setSelectedLocation,
+        selectedRadiusKm,
+        setSelectedRadiusKm,
         sidebarCollapsed,
         setSidebarCollapsed,
     } = useMarketplace();
@@ -51,6 +53,8 @@ function PersistentHeader({
             setShowAuthModal={setShowAuthModal}
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
+            selectedRadiusKm={selectedRadiusKm}
+            setSelectedRadiusKm={setSelectedRadiusKm}
             leftNode={slots?.leftNode}
             centerNode={slots?.centerNode}
             rightNode={slots?.rightNode}

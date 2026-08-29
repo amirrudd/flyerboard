@@ -113,9 +113,9 @@ export function sectionFields(
  * and `ads.getAds` must produce byte-identical page shapes.
  */
 export type FeedSourceEntry =
-  | { kind: "ad"; doc: Doc<"ads">; section?: FeedSection }
-  | { kind: "bundle"; doc: Doc<"saleBundles">; section?: FeedSection }
-  | { kind: "sale"; doc: Doc<"saleEvents">; section?: FeedSection };
+  | { kind: "ad"; doc: Doc<"ads">; section?: FeedSection; pinned?: boolean }
+  | { kind: "bundle"; doc: Doc<"saleBundles">; section?: FeedSection; pinned?: boolean }
+  | { kind: "sale"; doc: Doc<"saleEvents">; section?: FeedSection; pinned?: boolean };
 
 /** Standalone, live bundle (sale-suggestion bundles never feed). */
 export const bundleIsLive = (b: Doc<"saleBundles">) => !b.saleEventId && b.isDeleted !== true;
@@ -185,21 +185,59 @@ async function hydrateEntries(
  * `ads.getLatestAds` — hands its source entries to this function and returns
  * what comes back; nothing else orders, cuts or hydrates a page.
  *
- * Order is section rank first, then `bumpedAt` desc WITHIN each section. That
- * is grouping, not ordering (rule 2): newest is still on top of every group,
- * and no distance or score exists to sort on. Section-first is load-bearing
- * wherever `limit` applies — search pools up to 2×limit rows across a pinned
- * and an unpinned pass, and the trim must eat the last section first or the cut
- * drops a near entry exactly as the DB cut would have (rule 5).
+ * WHICH entries survive and WHAT ORDER they render in are decided separately,
+ * and they have to be:
+ *
+ * - **The cut ignores the section.** Search and the rail pool up to 2×limit rows
+ *   across a pinned and an unpinned pass, so the trim has to drop some. If it
+ *   dropped by section, the buyer's radius would decide which ads EXIST rather
+ *   than which group they sit in — narrowing 25 km to 5 km would push an ad into
+ *   the far group and straight off the end of the page. Rule 5 says location
+ *   groups and never hides, so the cut ranks on `pinned` then `bumpedAt`, and
+ *   the section is consulted only for the order below.
+ * - **The order is section rank, then `bumpedAt` desc within each.** Grouping,
+ *   not ordering (rule 2): newest is still on top of every group, and no
+ *   distance or score exists to sort on.
+ *
+ * `pinned` is stamped by the callers (`sectionedAdHits` / `compositeHits`,
+ * convex/ads.ts) and means **near at the WIDEST rung the buyer's control offers**
+ * — `atWidestRadius`, a constant — plus whatever the same-suburb pass fetched.
+ * A constant threshold is what makes this work in both directions at once:
+ *
+ * - It does not move when the buyer narrows their radius, so the surviving SET
+ *   is radius-independent — changing the distance regroups, never removes.
+ * - Everything near at the buyer's own radius is near at the widest one, so an
+ *   in-area entry is not cut in favour of a newer out-of-area entry.
+ *
+ * Do not "simplify" `pinned` back to a location-string match. It reads like the
+ * obvious definition and it silently drops the second guarantee.
+ * `nearby.test.ts` is the contract for both — it fails on a section-ranked cut,
+ * on a string-only `pinned`, and on a threshold that follows the buyer's radius.
+ *
+ * ponytail: this protects rows that REACHED the pool. It does not widen the DB
+ * pass — that is still `.eq("location", …)`, so a row near only by distance or
+ * SA4 can be cut by the `.take()` before any of this runs. Two different levels;
+ * only the second is still open. It is the known ceiling recorded on
+ * `sectionedAdHits`, and the fix is a server-side near lane pinned on `sa4Code`.
  */
 export async function assembleFeedPage(
   ctx: QueryCtx,
   entries: FeedSourceEntry[],
   limit?: number
 ): Promise<FeedPageEntry[]> {
-  const ordered = [...entries].sort(
+  const kept =
+    limit === undefined
+      ? entries
+      : [...entries]
+          .sort(
+            (a, b) =>
+              Number(b.pinned ?? false) - Number(a.pinned ?? false) ||
+              b.doc.bumpedAt - a.doc.bumpedAt
+          )
+          .slice(0, limit);
+  const ordered = [...kept].sort(
     (a, b) =>
       sectionRank(a.section) - sectionRank(b.section) || b.doc.bumpedAt - a.doc.bumpedAt
   );
-  return hydrateEntries(ctx, limit === undefined ? ordered : ordered.slice(0, limit));
+  return hydrateEntries(ctx, ordered);
 }

@@ -6,7 +6,7 @@ import schema from "./schema";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { locationMetaFromRow, type LocationMeta } from "./lib/location";
-import { SETTING_NEAR_RADIUS_KM } from "./lib/appConfig";
+import { NEAR_RADIUS_OPTIONS_KM, SETTING_NEAR_RADIUS_KM } from "./lib/appConfig";
 
 /**
  * The near/far test (convex/lib/nearby.ts) as the feed actually applies it.
@@ -329,5 +329,167 @@ describe("a composite is near when ANY member is (rule 1)", () => {
     });
     const bundle = result.page.find((e) => e.kind === "bundle" && e.card._id === bundleId);
     expect(bundle?.section).toBe("near");
+  });
+});
+
+/**
+ * Phase 5 — the buyer's own radius, and the invariant it must not break.
+ *
+ * Rule 5: location GROUPS, it never hides. The radius control hands a buyer a
+ * one-click way to change the near/far test, so the thing worth proving is that
+ * changing it moves ads between sections and never removes one. Asserted as a
+ * set comparison on ids, per path, because each path cuts differently:
+ * `feed.getFeed` paginates (no cut), while `ads.getAds` and `ads.getLatestAds`
+ * trim to a limit — and a trim that ranks section-first is exactly where a
+ * regrouped ad could fall off the end.
+ */
+
+/** Every ad id a page contains, order-independent. */
+const idsOf = (page: { kind: string; ad?: { _id: string } }[]) =>
+  new Set(page.filter((e) => e.kind === "ad").map((e) => e.ad!._id));
+
+/**
+ * Three ads around the buyer's O'CONNELL row A: one in the same suburb, one
+ * ~10 km out (near at 25 km, far at 5 km — the ad the radius actually moves),
+ * and one ~200 km out that no clause can reach. Bumped oldest-first in that
+ * order, so the 10 km ad is the one a section-first trim would drop when it
+ * stops being near.
+ */
+async function threeAdsAround(t: T, userId: Id<"users">, categoryId: Id<"categories">) {
+  // OLDEST, and the only row carrying the buyer's location string — so a
+  // date-ordered `.take(2)` cuts it and only the pinned same-suburb pass brings
+  // it back, which is what makes the pool (3) exceed the rail's limit (2).
+  const sameSuburb = await insertAd(t, {
+    userId, categoryId, bumpedAt: T0 + 10,
+    localityId: OCONNELL_A.id, latitude: OCONNELL_A.lat, longitude: OCONNELL_A.long,
+  });
+  // The ad the radius actually moves: near at 15/25/50 km, far at 5/10 km.
+  const tenKm = await insertAd(t, {
+    userId, categoryId, bumpedAt: T0 + 20,
+    location: "SOMEWHERE, QLD 4680", ...NEAR_A_ONLY,
+  });
+  // NEWEST and always far — the row `tenKm` loses to once it stops being near.
+  const twoHundredKm = await insertAd(t, {
+    userId, categoryId, bumpedAt: T0 + 40,
+    location: "FARAWAY, QLD 4700",
+    localityId: 90002, latitude: -25.25, longitude: 151.917285,
+  });
+  return { tenKm, sameSuburb, twoHundredKm };
+}
+
+const BUYER = { location: OCONNELL, locationMeta: locationMetaFromRow(OCONNELL_A) };
+
+describe("the buyer's chosen radius", () => {
+  test("a narrower radius regroups the middle ad — it does not remove it", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const { tenKm } = await threeAdsAround(t, userId, categoryId);
+
+    const at = async (radiusKm: number) =>
+      await t.query(api.feed.getFeed, {
+        paginationOpts: { numItems: 20, cursor: null },
+        ...BUYER, radiusKm, maxSortTime: T0 + 1000,
+      });
+
+    const wide = await at(25);
+    const narrow = await at(5);
+
+    // The section moved...
+    const sectionOf = (r: Awaited<ReturnType<typeof at>>, id: string) =>
+      r.page.find((e) => e.kind === "ad" && e.ad._id === id)?.section;
+    expect(sectionOf(wide, tenKm)).toBe("near");
+    expect(sectionOf(narrow, tenKm)).toBe("far");
+    // ...and nothing left the feed.
+    expect(idsOf(narrow.page)).toEqual(idsOf(wide.page));
+  });
+
+  test("no radius, however narrow, drops an ad from any feed path", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const { tenKm, sameSuburb, twoHundredKm } = await threeAdsAround(t, userId, categoryId);
+    const all = new Set([tenKm, sameSuburb, twoHundredKm]);
+
+    for (const radiusKm of NEAR_RADIUS_OPTIONS_KM) {
+      const feed = await t.query(api.feed.getFeed, {
+        paginationOpts: { numItems: 20, cursor: null },
+        ...BUYER, radiusKm, maxSortTime: T0 + 1000,
+      });
+      expect(idsOf(feed.page), `getFeed @ ${radiusKm}km`).toEqual(all);
+
+      // `limit: 2` against a pool of 3 ON PURPOSE: it forces the trim to
+      // choose, which is the only place a regrouped ad can be lost. The pool
+      // exceeds the limit because the same-suburb pinned pass fetches a row the
+      // date-ordered pass had already cut — see sectionedAdHits. What must hold
+      // is that the SAME two survive at every rung: the cut may not depend on
+      // the buyer's distance preference.
+      //
+      // Before the radius-independent cut, this failed at 5 km — `tenKm` moved
+      // to the far group, lost the tie to the newer `twoHundredKm`, and fell
+      // off the end of the page. That is the regression this asserts against.
+      const rail = await t.query(api.ads.getLatestAds, {
+        ...BUYER, radiusKm, sinceTimestamp: T0, limit: 2,
+      });
+      expect(idsOf(rail), `getLatestAds @ ${radiusKm}km`).toEqual(
+        new Set([sameSuburb, tenKm])
+      );
+
+      const search = await t.query(api.ads.getAds, {
+        ...BUYER, radiusKm, search: "Item",
+        paginationOpts: { numItems: 20, cursor: null },
+      });
+      expect(idsOf(search.page), `getAds @ ${radiusKm}km`).toEqual(all);
+    }
+  });
+
+  test("an in-area ad is not cut in favour of a newer out-of-area one", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const { tenKm, twoHundredKm } = await threeAdsAround(t, userId, categoryId);
+
+    // `tenKm` is near by DISTANCE only — a different suburb string, so the
+    // pinned same-suburb pass never fetches it, and it is older than the
+    // always-far `twoHundredKm`. With room for two of the three, rule 5 says the
+    // in-area one goes above the out-of-area one, which means it survives.
+    const rail = await t.query(api.ads.getLatestAds, {
+      ...BUYER, radiusKm: 25, sinceTimestamp: T0, limit: 2,
+    });
+    expect(idsOf(rail)).toContain(tenKm);
+
+    // And a card is protected on the same terms an ad is (rules 1 and 4): the
+    // far ad is what gets cut, not the nearer listing.
+    expect(idsOf(rail)).not.toContain(twoHundredKm);
+  });
+
+  test("the buyer's pick beats the admin default; no pick falls back to it", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const { tenKm } = await threeAdsAround(t, userId, categoryId);
+    await t.run(async (ctx) =>
+      ctx.db.insert("appSettings", {
+        key: SETTING_NEAR_RADIUS_KM, value: 50, description: "admin default",
+      })
+    );
+
+    const sectionOfTenKm = async (radiusKm?: number) => {
+      const r = await t.query(api.feed.getFeed, {
+        paginationOpts: { numItems: 20, cursor: null },
+        ...BUYER, ...(radiusKm === undefined ? {} : { radiusKm }),
+        maxSortTime: T0 + 1000,
+      });
+      return r.page.find((e) => e.kind === "ad" && e.ad._id === tenKm)?.section;
+    };
+
+    // Admin says 50 km, so an unchosen buyer sees the 10 km ad as near.
+    expect(await sectionOfTenKm()).toBe("near");
+    // The buyer picking 5 km overrides that.
+    expect(await sectionOfTenKm(5)).toBe("far");
+  });
+
+  test("an out-of-range radius from the client is clamped, not trusted", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const { twoHundredKm } = await threeAdsAround(t, userId, categoryId);
+    const r = await t.query(api.feed.getFeed, {
+      paginationOpts: { numItems: 20, cursor: null },
+      // 0 is below the setting's minimum of 1 — clamped, not taken literally.
+      ...BUYER, radiusKm: 0, maxSortTime: T0 + 1000,
+    });
+    // Clamped up to the 1 km minimum: the 200 km ad is still far, and still here.
+    expect(r.page.find((e) => e.kind === "ad" && e.ad._id === twoHundredKm)?.section).toBe("far");
   });
 });

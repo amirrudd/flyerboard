@@ -19,6 +19,10 @@ vi.mock('../../lib/locationService', () => ({
     formatLocation: vi.fn((loc) => `${loc.locality}, ${loc.state} ${loc.postcode}`),
     fetchLocations: vi.fn().mockResolvedValue([]),
     displayLocation: vi.fn((location: string) => location),
+    // Both are used by LocationPicker, which the header now renders in place of
+    // its own hand-rolled suburb box.
+    locationsUnavailable: vi.fn(() => false),
+    isCanonicalLocation: vi.fn((location: string) => /,\s*[A-Z]{2,3}\s+\d{4}$/.test(location.trim())),
 }));
 
 // Mock performance utils (debounce)

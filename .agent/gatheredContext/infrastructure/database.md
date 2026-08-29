@@ -98,33 +98,57 @@ follow this pattern**, not a denormalized feed table (see
   `[..., "bumpedAt"]`, so after the composites' `.eq("status", "active")` every stream
   is ordered by exactly those fields.
 
-## Location tiers, not a filter (rule 5 grouping, Aug 2026)
+## Feed sections, not a filter (rule 5 grouping, Aug 2026 — reworked Phase 3)
 
 Location never narrows a result set. All three list surfaces — `feed.getFeed`,
 `ads.getAds` (search), `ads.getLatestAds` (the 60s rail) — stamp
-`tier: "near" | "far"` on every entry when a location is set (near = matches the
+`section: "near" | "far"` on every entry when a location is set (near = matches the
 selected location; a composite is near when ANY of its derived `locations` matches).
-The client partitions at render (`AdsGrid` filters `tier !== "far"` / `=== "far"` and
-puts `NearbyBoundary` between the groups). Category and search stay requirements.
+Category and search stay requirements.
 
-- **`tier` is per-entry, not a page index** — the fresh rail splices arrivals into the
-  display list, so any positional index would be stale immediately. `freshAdsMerge.ts`
-  needed no change: it's generic over `FeedEntryLike` and passes entries by reference.
-- **Stamp ONLY when a location is set.** An absent `tier` (undefined, dropped before
-  serialisation) keeps the no-location response byte-identical to the pre-tier feed —
+**The extraction/display boundary (Phase 3 of `.agent/plans/location-model-and-proximity.md`).
+Read this before adding anything to a feed page.**
+
+- **What crosses is a card and a SECTION NAME. Never a number.** No distance, match
+  score or match reason may appear on a feed entry. The moment one does, the UI will
+  render, sort or badge it and extraction can never change shape again. If a distance
+  is ever shown, display derives it from data already on the card.
+- **`convex/lib/feedSections.ts` is the ordered section list** (`FEED_SECTIONS`,
+  `sectionRank`). Leaf module, no server imports — both `convex/` and `src/` import it.
+  `AdsGrid` walks `FEED_SECTIONS` and renders whatever arrives under each name, with
+  `NearbyBoundary` before each section after the first (banner form when the first is
+  empty). **Adding, renaming or merging a section is a server-side change**; no
+  component knows what a section means, and nothing hardcodes "there are exactly two".
+- **`assembleFeedPage` (`convex/lib/cards.ts`) is THE assembly step.** Every path ends
+  there: it sorts by section rank then `bumpedAt` desc, applies the search/rail cut if
+  a `limit` is given, and hydrates. `convex/feed.test.ts` ("getFeed and getAds return
+  identical pages for identical input") runs the same rows through both queries and
+  asserts identical pages — the guarantee used to be a comment saying they must match.
+- **`getFeed` pages are section-grouped, not strictly `bumpedAt` desc.** That changed
+  in Phase 3 and is deliberate: grouping, not ordering (rule 2 — newest is still on
+  top inside each section), and the client grouped it that way at render anyway. Don't
+  "fix" the page order back.
+- **`section` is per-entry, not a page index** — the fresh rail splices arrivals into
+  the display list, so any positional index would be stale immediately.
+  `freshAdsMerge.ts` needed no change: it's generic over `FeedEntryLike` and passes
+  entries by reference.
+- **Stamp ONLY when a location is set.** An absent `section` (undefined, dropped before
+  serialisation) keeps the no-location response byte-identical to the pre-section feed —
   a helper that answers "true" with no location would stamp `"near"` everywhere.
-  `hydrateEntries` spreads the tier conditionally for the same reason, and its return
-  type keeps `tier` optional so bare `{ kind: "ad", ad }` test literals still check.
+  `sectionFields` is the one enforcement site; hydration spreads the field
+  conditionally for the same reason, and the return type keeps `section` optional so
+  bare `{ kind: "ad", ad }` test literals still check.
 - **Why search and the rail need TWO ads passes while the feed needs none**: their
   `.take(limit)` sits INSIDE the DB query (by relevance for search, by date for the
   rail), so simply dropping the location clause loses near rows before any JS runs —
   a post-hoc partition can't resurrect them. Each runs a location-pinned "near" pass
-  plus an unpinned "far" pass, deduped on `_id`; `mergeAndHydrate` sorts tier-first
-  (undefined ⇒ near) so its `slice(0, limit)` eats far entries first. The feed's
-  stream `filterWith` has no such cut, so it just tags. Composites need no second
-  pass anywhere — their location narrowing was always a JS predicate below
-  `.take(COMPOSITE_LIMIT)` (no location index on either composite table); the known
-  residual date-cut caveat is documented on `latestComposites`.
+  plus an unpinned "far" pass, deduped on `_id` (`sectionedAdHits`);
+  `assembleFeedPage` sorts section-first (undefined ⇒ first section) so its
+  `slice(0, limit)` eats far entries first. The feed's stream `filterWith` has no such
+  cut, so it just tags. Composites need no second pass anywhere — their location
+  narrowing was always a JS predicate below `.take(COMPOSITE_LIMIT)` (no location index
+  on either composite table); the known residual date-cut caveat is documented on
+  `latestComposites`.
 
 ```typescript
 // convex/feed.ts (condensed)
@@ -236,7 +260,8 @@ explicit cap a read-amplification regression cannot fail a test.
   `saleEvents` carries `suburbMeta` (its own picked record, because sale items are
   created in a LATER wizard step and inherit it). **Nothing reads any of them yet** —
   every filter still compares the `location` STRING exactly as before, and
-  `tierFields` / `compositeMatchesFilters` in `convex/lib/cards.ts` are untouched.
+  `sectionFields` (was `tierFields`) / `compositeMatchesFilters` in
+  `convex/lib/cards.ts` are untouched.
   The point was to stop discarding what the picker already had:
   - **The name is not a key.** `public/australian-postcodes.json` has 726 duplicated
     locality+state pairs and names repeat across states. `localityId` (the dataset's

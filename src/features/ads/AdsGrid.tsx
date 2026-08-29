@@ -2,7 +2,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { ImageDisplay } from "../../components/ui/ImageDisplay";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { MagnifyingGlass, Repeat, House, Package } from '@phosphor-icons/react';
-import { memo, useCallback, useRef } from "react";
+import { Fragment, memo, useCallback, useRef } from "react";
 import { m, LayoutGroup } from "framer-motion";
 import { formatPrice } from "../../lib/priceFormatter";
 import { useMotionPrefs } from "../../hooks/useMotionPrefs";
@@ -13,6 +13,7 @@ import { boostArrivalKey, entryKey } from "../../context/freshAdsMerge";
 import type { FeedEntry } from "../../context/MarketplaceContext";
 import { displayLocation } from "../../lib/locationService";
 import { NearbyBoundary } from "./NearbyBoundary";
+import { FEED_SECTIONS } from "../../../convex/lib/feedSections";
 
 /**
  * A feed cell is either a normal ad, a Sale card, or a Bundle card. The list
@@ -65,8 +66,9 @@ interface AdsGridProps {
   onBundleClick?: (card: BundleFeedCard) => void;
   /**
    * The active location preference (canonical string), if any. Rule 5: with a
-   * location set the server stamps `tier` on every entry and the grid
-   * partitions at render — in-area first, one boundary, out-of-area below.
+   * location set the server stamps a `section` on every entry and the grid
+   * renders the sections in the order the server gave them, with a boundary
+   * before each one after the first.
    */
   selectedLocation?: string;
   onClearLocation?: () => void;
@@ -130,13 +132,19 @@ export const AdsGrid = memo(function AdsGrid({
   const headerTitle = categoryName ? `${categoryName} Flyers` : 'All Flyers';
   const headerKicker = categoryName ? 'Category' : 'Marketplace';
 
-  // Rule 5 (location groups, it doesn't hide): partition at render. A pure
-  // filter of the already-ordered list preserves bumpedAt desc within each
-  // group. Untiered entries (no location set) all land in `near`, so `far`
-  // stays empty and no boundary renders. The header count deliberately spans
-  // both groups — everything shown is a listing.
-  const near = (entries ?? []).filter((e) => e.tier !== "far");
-  const far = (entries ?? []).filter((e) => e.tier === "far");
+  // Rule 5 (location groups, it doesn't hide): the server names each entry's
+  // section and FEED_SECTIONS gives the render order. This grid never asks what
+  // a section MEANS — adding, renaming or merging one is a server-side change.
+  // A pure filter of the already-ordered list preserves bumpedAt desc within
+  // each group. Unsectioned entries (no location set) all land in the first
+  // section, so the rest stay empty and no boundary renders. Empty sections are
+  // KEPT here: "nothing in the first one" is what switches the boundary to its
+  // banner form. The header count deliberately spans every section — everything
+  // shown is a listing.
+  const sections = FEED_SECTIONS.map((key) => ({
+    key,
+    items: (entries ?? []).filter((e) => (e.section ?? FEED_SECTIONS[0]) === key),
+  }));
 
   const renderEntry = (entry: FeedEntry, index: number) => {
   // Whole-Sale card — same shell as an ad card, 2×2 thumbnail slot.
@@ -435,16 +443,25 @@ export const AdsGrid = memo(function AdsGrid({
       ) : (
         <LayoutGroup>
         <div className={`listings-grid ${gridClasses}`}>
-          {near.map((entry, index) => renderEntry(entry, index))}
-          {selectedLocation && far.length > 0 && (
-            <NearbyBoundary
-              location={selectedLocation}
-              hasNearResults={near.length > 0}
-              categoryName={categoryName}
-              onClearLocation={onClearLocation}
-            />
-          )}
-          {far.map((entry, index) => renderEntry(entry, near.length + index))}
+          {sections.map(({ key, items }, sectionIndex) => {
+            // Running index across sections: the stagger reads as one list.
+            const offset = sections
+              .slice(0, sectionIndex)
+              .reduce((n, s) => n + s.items.length, 0);
+            return (
+              <Fragment key={key}>
+                {sectionIndex > 0 && selectedLocation && items.length > 0 && (
+                  <NearbyBoundary
+                    location={selectedLocation}
+                    hasNearResults={offset > 0}
+                    categoryName={categoryName}
+                    onClearLocation={onClearLocation}
+                  />
+                )}
+                {items.map((entry, index) => renderEntry(entry, offset + index))}
+              </Fragment>
+            );
+          })}
 
           {isLoadingMore && (
             [...Array(4)].map((_, i) => (

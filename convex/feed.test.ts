@@ -493,7 +493,7 @@ describe("getFeed — exclusions", () => {
 });
 
 describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
-  test("a location stamps a tier on every ad type; nothing is hidden", async () => {
+  test("a location stamps a section on every ad type; nothing is hidden", async () => {
     const { t, userId, categoryId } = await fresh();
     const richmond = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 }); // "Richmond, VIC"
     const elsewhere = await insertAd(t, { userId, categoryId, bumpedAt: T0 + 20, location: "Perth, WA" });
@@ -515,18 +515,18 @@ describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    // Nothing the unfiltered feed would return is missing, order is untouched
-    // (bumpedAt desc — the client partitions on tier at render).
+    // Nothing the unfiltered feed would return is missing: the page is grouped
+    // by section, newest first inside each (grouping, not ordering — rule 2).
     expect(result.page.map(entryKey)).toEqual([
-      `sale:${remoteSale}`,
       `sale:${localSale}`,
-      `bundle:${remoteBundle}`,
       `bundle:${localBundle}`,
-      `ad:${elsewhere}`,
       `ad:${richmond}`,
+      `sale:${remoteSale}`,
+      `bundle:${remoteBundle}`,
+      `ad:${elsewhere}`,
     ]);
-    const tiers = Object.fromEntries(result.page.map((e) => [entryKey(e), e.tier]));
-    expect(tiers).toEqual({
+    const sections = Object.fromEntries(result.page.map((e) => [entryKey(e), e.section]));
+    expect(sections).toEqual({
       [`ad:${richmond}`]: "near",
       [`ad:${elsewhere}`]: "far",
       [`bundle:${localBundle}`]: "near",
@@ -536,7 +536,7 @@ describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
     });
   });
 
-  test("with no location set the response carries no tier at all", async () => {
+  test("with no location set the response carries no section at all", async () => {
     const { t, userId, categoryId } = await fresh();
     await insertAd(t, { userId, categoryId, bumpedAt: T0 + 10 });
     await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 20, locations: ["Richmond, VIC"] });
@@ -545,13 +545,13 @@ describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
     const result = await getPage(t, { maxSortTime: T0 + 100 });
     expect(result.page).toHaveLength(3);
     // Genuinely absent, not undefined — the no-location response must stay
-    // byte-identical to the pre-tier feed.
+    // byte-identical to the pre-section feed.
     for (const entry of result.page) {
-      expect("tier" in entry).toBe(false);
+      expect("section" in entry).toBe(false);
     }
   });
 
-  test("a composite with no derived location tiers as far, not hidden", async () => {
+  test("a composite with no derived location lands in the far section, not hidden", async () => {
     const { t, userId, categoryId } = await fresh();
     const bundleId = await insertBundle(t, { userId, categoryId, bumpedAt: T0 + 30, locations: null });
     const saleId = await insertSale(t, { userId, categoryId, bumpedAt: T0 + 40, locations: null });
@@ -561,13 +561,13 @@ describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    expect(filtered.page.map((e) => [entryKey(e), e.tier])).toEqual([
+    expect(filtered.page.map((e) => [entryKey(e), e.section])).toEqual([
       [`sale:${saleId}`, "far"],
       [`bundle:${bundleId}`, "far"],
     ]);
   });
 
-  test("category stays a requirement while location only tiers (rule 5)", async () => {
+  test("category stays a requirement while location only sections (rule 5)", async () => {
     const { t, userId, categoryId } = await fresh();
     const otherCategoryId = await t.run(async (ctx) =>
       ctx.db.insert("categories", { name: "Books", slug: "books" })
@@ -582,10 +582,10 @@ describe("getFeed — location groups, it doesn't hide (rule 5)", () => {
       location: "Richmond, VIC",
       maxSortTime: T0 + 100,
     });
-    // The out-of-category ad is gone; the out-of-area one is tiered, not gone.
-    expect(result.page.map((e) => [entryKey(e), e.tier])).toEqual([
-      [`ad:${perth}`, "far"],
+    // The out-of-category ad is gone; the out-of-area one is sectioned, not gone.
+    expect(result.page.map((e) => [entryKey(e), e.section])).toEqual([
       [`ad:${richmond}`, "near"],
+      [`ad:${perth}`, "far"],
     ]);
   });
 });
@@ -660,7 +660,7 @@ describe("getFeed — a composite card never outlives its members", () => {
         location,
         maxSortTime: T0 + 100,
       });
-      expect(result.page.map((e) => [entryKey(e), e.tier]), location).toEqual([
+      expect(result.page.map((e) => [entryKey(e), e.section]), location).toEqual([
         [`bundle:${bundleId}`, "near"],
       ]);
     }
@@ -686,5 +686,80 @@ describe("getFeed — maxSortTime", () => {
       `bundle:${oldBundle}`,
       `ad:${oldAd}`,
     ]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// One page shape, two producers (Phase 3 of
+// .agent/plans/location-model-and-proximity.md).
+//
+// `feed.getFeed` (browse) and `ads.getAds` (search) are separate queries that
+// must return the SAME page shape — until now that was guaranteed by a comment
+// saying so. This is the mechanism the comment was pretending to be: identical
+// rows in, identical page out. It fails the moment either path grows a filter,
+// a field or an order the other doesn't have.
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Make a composite findable by search. The helpers above don't write
+ * `searchText` (browse never reads it), and search matches a composite on its
+ * members' titles through that field alone.
+ */
+async function setSearchText(
+  t: T,
+  id: Id<"saleBundles"> | Id<"saleEvents">,
+  text: string
+) {
+  await t.run(async (ctx) => ctx.db.patch(id, { searchText: text }));
+}
+
+describe("getFeed and getAds return identical pages for identical input", () => {
+  /**
+   * Ads are titled "Sofa"; composite MEMBER ads keep the helpers' "Item", so a
+   * "Sofa" search returns the standalone ads and the composites (via
+   * searchText) and never a member — which is exactly the set browse returns
+   * under `maxSortTime` (members sort above it).
+   */
+  async function bothPaths(location?: string) {
+    const { t, userId, categoryId } = await fresh();
+    const ad = (bumpedAt: number, loc: string) =>
+      insertAd(t, { userId, categoryId, bumpedAt, title: "Sofa", location: loc });
+
+    await ad(T0 + 10, "Richmond, VIC");
+    await ad(T0 + 20, "Perth, WA");
+    await ad(T0 + 25, "Richmond, VIC");
+    const localBundle = await insertBundle(t, {
+      userId, categoryId, bumpedAt: T0 + 30, locations: ["Richmond, VIC"],
+    });
+    const remoteSale = await insertSale(t, {
+      userId, categoryId, bumpedAt: T0 + 40, locations: ["Perth, WA"],
+    });
+    await setSearchText(t, localBundle, "Sofa");
+    await setSearchText(t, remoteSale, "Sofa");
+
+    const browse = await t.query(api.feed.getFeed, {
+      paginationOpts: { numItems: 20, cursor: null },
+      maxSortTime: T0 + 100,
+      ...(location ? { location } : {}),
+    });
+    const search = await t.query(api.ads.getAds, {
+      paginationOpts: { numItems: 20, cursor: null },
+      search: "Sofa",
+      ...(location ? { location } : {}),
+    });
+    return { browse: browse.page, search: search.page };
+  }
+
+  test("with a location set — same entries, same sections, same order", async () => {
+    const { browse, search } = await bothPaths("Richmond, VIC");
+    expect(browse).toEqual(search);
+    // And the guarantee is worth having: the location did something.
+    expect(browse.map((e) => e.section)).toEqual(["near", "near", "near", "far", "far"]);
+  });
+
+  test("with no location set — same entries, and neither carries a section", async () => {
+    const { browse, search } = await bothPaths();
+    expect(browse).toEqual(search);
+    for (const entry of browse) expect("section" in entry).toBe(false);
   });
 });

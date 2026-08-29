@@ -546,6 +546,7 @@ gzipped** (+2%) — which is what actually crosses the wire when the picker open
 codes compress almost perfectly (89 distinct values over 18,559 rows).
 
 **Deliberately NOT done**: nothing reads these fields. There is no distance
-calculation, no radius control, and `tierFields` / `compositeMatchesFilters`
-(`convex/lib/cards.ts`) still decide near/far by exact location-string equality.
+calculation, no radius control, and `sectionFields` (named `tierFields` until the
+Phase 3 refactor) / `compositeMatchesFilters` (`convex/lib/cards.ts`) still decide
+near/far by exact location-string equality.
 Changing that is a product decision, not an implementation one.

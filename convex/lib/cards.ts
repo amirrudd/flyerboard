@@ -8,11 +8,14 @@ import {
 } from "../bundles";
 import { saleItems } from "../saleEvents";
 import { adIsVisible } from "./derive";
+import { sectionRank, type FeedSection } from "./feedSections";
 
 /**
- * Feed card hydration, shared by `feed.getFeed` and `ads.getAds` so a card shape
- * can never diverge between the feed and search. Moved verbatim out of
- * `convex/feed.ts`.
+ * Feed extraction, shared by `feed.getFeed` and `ads.getAds`. Both paths end at
+ * `assembleFeedPage` below — the single assembly step — so a page shape cannot
+ * diverge between the feed and search. `convex/feed.test.ts` runs identical
+ * inputs through both queries and asserts identical output; that test, not this
+ * comment, is what holds them together.
  */
 
 /**
@@ -87,27 +90,21 @@ export async function hydrateSaleCard(ctx: QueryCtx, sale: Doc<"saleEvents">) {
 }
 
 /**
- * Location tier (rule 5, `.agent/PRODUCT-RULES.md`): stamped on every entry
- * when — and only when — a location filter is set. "near" = matches the
- * selected location, "far" = everything else. The server tags; the client
- * partitions at render. Absent (undefined, dropped before serialisation) on
- * an unfiltered feed, so the no-location response is byte-identical to before.
+ * The section fields for one entry — THE single enforcement site of "stamp ONLY
+ * when a location is set" (rule 5, `.agent/PRODUCT-RULES.md`: location groups,
+ * it never hides). An unstamped entry is the default state, and `undefined`
+ * fields are dropped before serialisation, which keeps the no-location response
+ * byte-identical to the pre-section feed. (Fields, not a bare section value: a
+ * helper answering "near" with no location set would break that guarantee.)
+ *
+ * `matches` is a boolean, and a section is a name — no distance or score is
+ * returned, stored or compared anywhere downstream. See `./feedSections`.
  */
-export type FeedTier = "near" | "far";
-
-/**
- * The tier fields for one entry — THE single enforcement site of "stamp ONLY
- * when a location is set". An unstamped entry is the default state, and
- * `undefined` fields are dropped before serialisation, which keeps the
- * no-location response byte-identical to the pre-tier feed. (Fields, not a
- * bare tier value: a helper answering "near" with no location set would break
- * that guarantee.)
- */
-export function tierFields(
+export function sectionFields(
   location: string | undefined,
   matches: boolean
-): { tier?: FeedTier } {
-  return location ? { tier: matches ? "near" : "far" } : {};
+): { section?: FeedSection } {
+  return location ? { section: matches ? "near" : "far" } : {};
 }
 
 /**
@@ -115,9 +112,9 @@ export function tierFields(
  * and `ads.getAds` must produce byte-identical page shapes.
  */
 export type FeedSourceEntry =
-  | { kind: "ad"; doc: Doc<"ads">; tier?: FeedTier }
-  | { kind: "bundle"; doc: Doc<"saleBundles">; tier?: FeedTier }
-  | { kind: "sale"; doc: Doc<"saleEvents">; tier?: FeedTier };
+  | { kind: "ad"; doc: Doc<"ads">; section?: FeedSection }
+  | { kind: "bundle"; doc: Doc<"saleBundles">; section?: FeedSection }
+  | { kind: "sale"; doc: Doc<"saleEvents">; section?: FeedSection };
 
 /** Standalone, live bundle (sale-suggestion bundles never feed). */
 export const bundleIsLive = (b: Doc<"saleBundles">) => !b.saleEventId && b.isDeleted !== true;
@@ -149,35 +146,59 @@ export function compositeMatchesFilters(
  * despawned (a bundle below BUNDLE_MIN_ITEMS visible members, a sale with none).
  * The despawn rule has exactly one enforcement site — this function.
  */
-/** A hydrated feed page entry. `tier` stays OPTIONAL — absent when no location is set. */
+/** A hydrated feed page entry. `section` stays OPTIONAL — absent when no location is set. */
 type FeedPageEntry =
-  | { kind: "ad"; ad: Doc<"ads">; tier?: FeedTier }
-  | { kind: "bundle"; card: NonNullable<Awaited<ReturnType<typeof hydrateBundleCard>>>; tier?: FeedTier }
-  | { kind: "sale"; card: NonNullable<Awaited<ReturnType<typeof hydrateSaleCard>>>; tier?: FeedTier };
+  | { kind: "ad"; ad: Doc<"ads">; section?: FeedSection }
+  | { kind: "bundle"; card: NonNullable<Awaited<ReturnType<typeof hydrateBundleCard>>>; section?: FeedSection }
+  | { kind: "sale"; card: NonNullable<Awaited<ReturnType<typeof hydrateSaleCard>>>; section?: FeedSection };
 
-export async function hydrateEntries(
+async function hydrateEntries(
   ctx: QueryCtx,
   entries: FeedSourceEntry[]
 ): Promise<FeedPageEntry[]> {
   const hydrated = await Promise.all(
     entries.map(async (entry): Promise<FeedPageEntry | null> => {
-      // Spread conditionally: `tier: entry.tier` would make the property a
-      // required `… | undefined`, and an undefined field must stay genuinely
+      // Spread conditionally: `section: entry.section` would make the property
+      // a required `… | undefined`, and an undefined field must stay genuinely
       // absent so the no-location response is byte-identical to before.
-      const tier = entry.tier ? { tier: entry.tier } : {};
+      const section = entry.section ? { section: entry.section } : {};
       switch (entry.kind) {
         case "ad":
-          return { kind: "ad" as const, ad: entry.doc, ...tier };
+          return { kind: "ad" as const, ad: entry.doc, ...section };
         case "bundle": {
           const card = await hydrateBundleCard(ctx, entry.doc);
-          return card ? { kind: "bundle" as const, card, ...tier } : null;
+          return card ? { kind: "bundle" as const, card, ...section } : null;
         }
         case "sale": {
           const card = await hydrateSaleCard(ctx, entry.doc);
-          return card ? { kind: "sale" as const, card, ...tier } : null;
+          return card ? { kind: "sale" as const, card, ...section } : null;
         }
       }
     })
   );
   return hydrated.filter((e): e is NonNullable<typeof e> => e !== null);
+}
+
+/**
+ * THE assembly step. Every feed path — `feed.getFeed`, `ads.getAds`,
+ * `ads.getLatestAds` — hands its source entries to this function and returns
+ * what comes back; nothing else orders, cuts or hydrates a page.
+ *
+ * Order is section rank first, then `bumpedAt` desc WITHIN each section. That
+ * is grouping, not ordering (rule 2): newest is still on top of every group,
+ * and no distance or score exists to sort on. Section-first is load-bearing
+ * wherever `limit` applies — search pools up to 2×limit rows across a pinned
+ * and an unpinned pass, and the trim must eat the last section first or the cut
+ * drops a near entry exactly as the DB cut would have (rule 5).
+ */
+export async function assembleFeedPage(
+  ctx: QueryCtx,
+  entries: FeedSourceEntry[],
+  limit?: number
+): Promise<FeedPageEntry[]> {
+  const ordered = [...entries].sort(
+    (a, b) =>
+      sectionRank(a.section) - sectionRank(b.section) || b.doc.bumpedAt - a.doc.bumpedAt
+  );
+  return hydrateEntries(ctx, limit === undefined ? ordered : ordered.slice(0, limit));
 }

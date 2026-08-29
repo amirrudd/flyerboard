@@ -501,20 +501,21 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
 });
 
 // ============================================================================
-// RULE 5 — location groups, it doesn't hide. Entries arrive tiered from the
-// server; the grid partitions at render: near group, one divider, far group.
+// RULE 5 — location groups, it doesn't hide. Entries arrive with a server-named
+// section; the grid renders the sections in order, with a divider before each
+// one after the first.
 // ============================================================================
 
 describe('AdsGrid - location grouping (rule 5)', () => {
-    const nearAd = { ...mockAds[0], tier: 'near' as const };
-    const farAd = { ...mockAds[1], tier: 'far' as const };
-    const tierEntries = (ads: readonly (AdDoc & { tier?: 'near' | 'far' })[]): FeedEntry[] =>
-        ads.map(({ tier, ...ad }) => ({ kind: 'ad' as const, ad, ...(tier && { tier }) }));
+    const nearAd = { ...mockAds[0], section: 'near' as const };
+    const farAd = { ...mockAds[1], section: 'far' as const };
+    const sectionEntries = (ads: readonly (AdDoc & { section?: 'near' | 'far' })[]): FeedEntry[] =>
+        ads.map(({ section, ...ad }) => ({ kind: 'ad' as const, ad, ...(section && { section }) }));
 
     it('renders exactly one divider, before the first far entry, whatever the interleave', () => {
         render(
             <AdsGrid
-                entries={tierEntries([farAd, nearAd])}
+                entries={sectionEntries([farAd, nearAd])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -537,7 +538,7 @@ describe('AdsGrid - location grouping (rule 5)', () => {
         const onClearLocation = vi.fn();
         render(
             <AdsGrid
-                entries={tierEntries([farAd])}
+                entries={sectionEntries([farAd])}
                 categories={mockCategories}
                 selectedCategory={null}
                 sidebarCollapsed={false}
@@ -557,7 +558,7 @@ describe('AdsGrid - location grouping (rule 5)', () => {
     it('names the active category in the empty-area banner', () => {
         render(
             <AdsGrid
-                entries={tierEntries([farAd])}
+                entries={sectionEntries([farAd])}
                 categories={mockCategories}
                 selectedCategory={'cat1' as Id<'categories'>}
                 sidebarCollapsed={false}
@@ -568,7 +569,7 @@ describe('AdsGrid - location grouping (rule 5)', () => {
         expect(screen.getByText(/No Electronics in Sydney, NSW right now/i)).toBeInTheDocument();
     });
 
-    it('renders no divider when no location is set (untiered entries)', () => {
+    it('renders no divider when no location is set (unsectioned entries)', () => {
         render(
             <AdsGrid
                 entries={adEntries(mockAds)}

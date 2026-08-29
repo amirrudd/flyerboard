@@ -5,11 +5,11 @@ import { stream, mergedStream } from "convex-helpers/server/stream";
 import type { QueryStream } from "convex-helpers/server/stream";
 import schema from "./schema";
 import {
+  assembleFeedPage,
   bundleIsLive,
   compositeMatchesFilters,
-  hydrateEntries,
   saleIsLive,
-  tierFields,
+  sectionFields,
   type FeedSourceEntry,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
@@ -44,10 +44,12 @@ const FEED_ORDER_FIELDS = ["bumpedAt", "_creationTime", "_id"];
  *   and 4, `.agent/PRODUCT-RULES.md`).
  * @param args.location - Location preference (optional, exact match on the ad's
  *   `location`). Rule 5: it GROUPS, it never hides — every entry is stamped
- *   `tier: "near" | "far"` instead of being filtered, and the client partitions
- *   at render. A composite is "near" when ANY of its derived `locations`
- *   matches — a bundle can span suburbs, so it is a list, not one string; a
- *   composite with no derived locations is "far" (rules 1 and 4).
+ *   `section: "near" | "far"` (convex/lib/feedSections.ts) instead of being
+ *   filtered, and the page is grouped by section — newest first inside each,
+ *   which is grouping, not ordering (rule 2). A composite is "near" when ANY of
+ *   its derived `locations` matches — a bundle can span suburbs, so it is a
+ *   list, not one string; a composite with no derived locations is "far"
+ *   (rules 1 and 4).
  * @param args.maxSortTime - Upper bound on the `bumpedAt` sort key for stable
  *   pagination; frozen at mount by the client (see MarketplaceContext).
  * @returns Standard pagination result whose `page` is a discriminated union:
@@ -90,19 +92,19 @@ export const getFeed = query({
         .filterWith(
           async (ad) => ad.isActive && ad.isDeleted !== true && ad.isSold !== true
         )
-        // Rule 5: location TIERS, it never filters (tierFields stamps only
-        // when a location is set).
+        // Rule 5: location SECTIONS an entry, it never filters (sectionFields
+        // stamps only when a location is set).
         .map(async (doc) => ({
           kind: "ad" as const,
           doc,
-          ...tierFields(args.location, doc.location === args.location),
+          ...sectionFields(args.location, doc.location === args.location),
         })),
     ];
 
     if (bundlesEnabled) {
       streams.push(
         // Standalone active bundles only — sale-suggestion bundles never feed.
-        // Category stays a requirement (filtered); location only tiers.
+        // Category stays a requirement (filtered); location only sections.
         stream(ctx.db, schema)
           .query("saleBundles")
           .withIndex("by_status_and_bumped_at", (q) =>
@@ -116,7 +118,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "bundle" as const,
             doc,
-            ...tierFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
+            ...sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
           }))
       );
     }
@@ -138,7 +140,7 @@ export const getFeed = query({
           .map(async (doc) => ({
             kind: "sale" as const,
             doc,
-            ...tierFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
+            ...sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location })),
           }))
       );
     }
@@ -147,7 +149,8 @@ export const getFeed = query({
       args.paginationOpts
     );
 
-    // Hydrate composites per page only (~0–2 per page in practice).
-    return { ...result, page: await hydrateEntries(ctx, result.page) };
+    // One assembly step, shared with search (convex/lib/cards.ts): it groups the
+    // page by section and hydrates the composites (~0–2 per page in practice).
+    return { ...result, page: await assembleFeedPage(ctx, result.page) };
   },
 });

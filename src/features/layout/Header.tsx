@@ -194,15 +194,18 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
               own. Changing it re-sections the feed; it never closes the panel,
               so a buyer can try two distances without reopening. */}
           {selectedLocation && (
-            <div className="px-2.5 py-2 border-b border-border/70 flex items-center justify-between gap-2">
+            <div className="px-4 py-2 border-b border-border/70 flex items-center justify-between gap-3">
               <label htmlFor={radiusId} className="text-sm text-muted-foreground">
-                Show as nearby within
+                Default search radius
               </label>
               <select
                 id={radiusId}
                 value={selectedRadiusKm}
                 onChange={(e) => setSelectedRadiusKm(Number(e.target.value))}
-                className="text-sm font-medium rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none px-2 py-1.5 text-foreground"
+                // pr-3 not px-3: the native chevron is drawn inside the right
+                // padding, so equal padding crowds it against the border and
+                // against the value at the same time.
+                className="text-sm font-medium rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none pl-2.5 pr-3 py-1.5 text-foreground"
               >
                 {NEAR_RADIUS_OPTIONS_KM.map((km) => (
                   <option key={km} value={km}>{km} km</option>

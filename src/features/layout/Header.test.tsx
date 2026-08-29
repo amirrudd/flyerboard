@@ -113,7 +113,7 @@ describe('Header', () => {
             const setSelectedRadiusKm = vi.fn();
             openPanel({ selectedRadiusKm: 15, setSelectedRadiusKm });
 
-            const select = screen.getAllByLabelText('Show as nearby within')[0];
+            const select = screen.getAllByLabelText('Default search radius')[0];
             expect(
                 Array.from((select as HTMLSelectElement).options).map((o) => o.value)
             ).toEqual(['5', '10', '15', '25', '50']);
@@ -129,17 +129,17 @@ describe('Header', () => {
             // the outside-click handler and close it on the first pick. The
             // native <select> does not, and this is what says so.
             openPanel({ selectedRadiusKm: 15, setSelectedRadiusKm: vi.fn() });
-            const select = screen.getAllByLabelText('Show as nearby within')[0];
+            const select = screen.getAllByLabelText('Default search radius')[0];
             fireEvent.change(select, { target: { value: '5' } });
             fireEvent.click(select);
 
-            expect(screen.getAllByLabelText('Show as nearby within').length).toBeGreaterThan(0);
+            expect(screen.getAllByLabelText('Default search radius').length).toBeGreaterThan(0);
         });
 
         it('is absent with no suburb chosen — nothing to measure from', () => {
             renderHeader({ selectedLocation: '' });
             fireEvent.click(screen.getAllByText('All Locations')[0]);
-            expect(screen.queryByLabelText('Show as nearby within')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText('Default search radius')).not.toBeInTheDocument();
         });
     });
 

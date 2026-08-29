@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Header } from './Header';
 import { BrowserRouter } from 'react-router-dom';
+import { searchLocations } from '../../lib/locationService';
 
 // Mock child components to simplify testing
 vi.mock('./HeaderRightActions', () => ({
@@ -15,7 +16,9 @@ vi.mock('../auth/SignOutButton', () => ({
 // Mock location service
 vi.mock('../../lib/locationService', () => ({
     searchLocations: vi.fn().mockResolvedValue([]),
-    formatLocation: vi.fn((loc) => loc.locality),
+    formatLocation: vi.fn((loc) => `${loc.locality}, ${loc.state} ${loc.postcode}`),
+    fetchLocations: vi.fn().mockResolvedValue([]),
+    displayLocation: vi.fn((location: string) => location),
 }));
 
 // Mock performance utils (debounce)
@@ -81,5 +84,38 @@ describe('Header', () => {
         fireEvent.click(menuButtons[0]);
 
         expect(setSidebarCollapsed).toHaveBeenCalled();
+    });
+
+    it('picks the suburb match whose postcode came back from geolocation', async () => {
+        // RICHMOND exists in NSW, VIC and QLD, and the dataset lists NSW first —
+        // only the postcode tells us which one the user is standing in.
+        const richmonds = [
+            { id: 1, postcode: '2753', locality: 'RICHMOND', state: 'NSW', long: 150.6, lat: -33.6 },
+            { id: 2, postcode: '3121', locality: 'RICHMOND', state: 'VIC', long: 145.0, lat: -37.8 },
+        ];
+        vi.mocked(searchLocations).mockResolvedValue(richmonds);
+        vi.stubGlobal('navigator', {
+            ...navigator,
+            geolocation: {
+                getCurrentPosition: (success: PositionCallback) =>
+                    success({ coords: { latitude: -37.82, longitude: 145.0 } } as GeolocationPosition),
+            },
+        });
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ address: { suburb: 'Richmond', postcode: '3121' } }),
+        }));
+
+        const setSelectedLocation = vi.fn();
+        renderHeader({ setSelectedLocation });
+
+        fireEvent.click(screen.getAllByText('All Locations')[0]);
+        fireEvent.click(screen.getByText('Detect my location'));
+
+        await waitFor(() =>
+            expect(setSelectedLocation).toHaveBeenCalledWith('RICHMOND, VIC 3121')
+        );
+
+        vi.unstubAllGlobals();
     });
 });

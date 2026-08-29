@@ -73,24 +73,16 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
           const suburb = address.suburb || address.city || address.town || address.village || address.locality;
           const postcode = address.postcode;
 
-          if (suburb && postcode) {
-            // Search for matching location in Australian postcode database
-            const results = await searchLocations(`${suburb} ${postcode}`);
-
-            if (results.length > 0) {
-              // Use the first (most relevant) match
-              setSelectedLocation(formatLocation(results[0]));
-              setIsDetectingLocation(false);
-              setIsOpen(false);
-              return;
-            }
-          }
-
-          // Fallback: try searching by suburb name only
           if (suburb) {
+            // Suburb names repeat across states (RICHMOND is NSW, VIC and QLD),
+            // and the dataset isn't ordered by anything useful — so the postcode
+            // is what picks the right one. Only fall back to the first name match
+            // when Nominatim gave us no postcode.
             const results = await searchLocations(suburb);
-            if (results.length > 0) {
-              setSelectedLocation(formatLocation(results[0]));
+            const match = results.find((loc) => loc.postcode === postcode) ?? results[0];
+
+            if (match) {
+              setSelectedLocation(formatLocation(match));
               setIsDetectingLocation(false);
               setIsOpen(false);
               return;

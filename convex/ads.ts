@@ -116,12 +116,14 @@ async function compositeHits(
  *
  * ponytail: the still-open ceiling is the first level only. A row near by
  * distance or SA4 alone is not matched by `.eq("location", …)`, so if it ranks
- * below the DB cut (50 by relevance in search, `limit` by date on the rail) it
- * is never fetched, and no JS can resurrect it — leaving a far row rendered
- * above a near one that was never in the pool. Once a row IS in the pool the
- * `pinned` field protects it, so do not read this as "distance-near rows lose
- * the trim"; they don't, and Phase 5's tests fail if that changes. The main feed
- * (`feed.getFeed`) is unaffected at both levels — it paginates, it doesn't cut.
+ * below the DB cut (SEARCH_POOL_LIMIT by relevance in search, `limit` by date on
+ * the rail) it is never fetched, and no JS can resurrect it — leaving a far row
+ * rendered above a near one that was never in the pool. Once a row IS in the
+ * pool the `pinned` field protects it, so do not read this as "distance-near
+ * rows lose the trim"; they don't, and Phase 5's tests fail if that changes.
+ * Search no longer TRIMS at all (it paginates), so on that path this is the only
+ * level left; the rail still trims at both. The main feed (`feed.getFeed`) is
+ * unaffected at both levels — it paginates, it doesn't cut.
  * Fixing the first level means a server-side near lane (a pass pinned on
  * `sa4Code`, which needs an index and a search filterField); the plan lists that
  * as deliberately not built, triggered by page size. Same class as the composite

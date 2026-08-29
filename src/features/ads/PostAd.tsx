@@ -719,8 +719,11 @@ export function PostAd({ onBack, editingAd, origin: _origin = '/' }: PostAdProps
                 </label>
                 <LocationPicker
                   id="post-location"
+                  // No `initialQuery`: unlike SetupStep, `formData.location` is
+                  // prefilled from `editingAd`, so a legacy free-text suburb already
+                  // reads as confirmed and `value` always wins. Passing it would be
+                  // inert and would suggest a behaviour this path doesn't have.
                   value={formData.location}
-                  initialQuery={editingAd?.location}
                   onQueryChange={setLocationQuery}
                   onChange={(formatted, loc) => {
                     setFormData((prev) => ({ ...prev, location: formatted }));

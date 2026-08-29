@@ -300,13 +300,14 @@ async function latestComposites(
  *   `ads.test.ts` "entries sharing a bumpedAt are each returned exactly once"
  *   covers this; bulk-seeded and migrated rows are the realistic way to get a
  *   tie.
- * - `_id` is the last resort and is NOT covered by a test — no fixture can
- *   force it, because `_creationTime` is unique WITHIN a table and every entry
- *   a test can insert into one table gets a distinct one. It is reachable in
- *   production all the same: this pool merges THREE tables, so an ad and a
- *   bundle can share both `bumpedAt` and `_creationTime`. Keep it. It is also
- *   exactly the key `feed.getFeed`'s mergedStream orders on, for the same
- *   reason.
+ * - `_id` is the last resort. `_creationTime` is unique WITHIN a table, so no
+ *   convex-test fixture can force two rows to share one — but this pool merges
+ *   THREE tables, and an ad and a bundle CAN share both `bumpedAt` and
+ *   `_creationTime`. That is why `feed.getFeed`'s mergedStream orders on the
+ *   same three fields; the convex-helpers authors reached the same conclusion
+ *   independently. Covered by the unit test over `pageOfPool` (exported for
+ *   exactly that — it is pure, and an integration fixture cannot reach this
+ *   case).
  */
 type SortKey = { bumpedAt: number; creationTime: number; id: string };
 
@@ -381,7 +382,7 @@ const asSortKey = (value: unknown): SortKey | null => {
     : null;
 };
 
-function pageOfPool(
+export function pageOfPool(
   pool: FeedSourceEntry[],
   paginationOpts: { numItems: number; cursor: string | null }
 ): { entries: FeedSourceEntry[]; isDone: boolean; continueCursor: string } {

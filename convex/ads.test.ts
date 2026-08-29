@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
+import { pageOfPool } from "./ads";
 import type { Id } from "./_generated/dataModel";
 
 // Same loader convention as saleEvents.test.ts / bundles.test.ts.
@@ -870,5 +871,46 @@ describe("getAds pagination", () => {
       paginationOpts: { numItems: 20, cursor: "not-a-cursor" },
     });
     expect(r.page).toHaveLength(1);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// The cursor's LAST tie-breaker, `_id`.
+//
+// No convex-test fixture can reach it: `_creationTime` is unique within a
+// table, so two rows a fixture inserts always differ on it and the comparison
+// never gets to `_id`. Production can reach it — `getAds`' pool merges THREE
+// tables, and `_creationTime` is only unique per table, so an ad and a bundle
+// can share both `bumpedAt` and `_creationTime`.
+//
+// `pageOfPool` is pure (no ctx, no I/O), so a unit test can hand it exactly
+// that pair. Without this the `_id` term is deletable with every test green,
+// and "simplify the cursor" reads like a tidy-up — a comment saying "keep this"
+// is what a refactor deletes. A failing test is the only thing that argues back.
+// ──────────────────────────────────────────────────────────────────────────
+describe("pageOfPool tie-breaks on _id", () => {
+  /** Only the three sort fields are read; the rest of the doc is irrelevant here. */
+  const entry = (id: string, bumpedAt: number, creationTime: number) =>
+    ({ kind: "ad", doc: { _id: id, bumpedAt, _creationTime: creationTime } }) as unknown as
+      Parameters<typeof pageOfPool>[0][number];
+
+  test("two entries sharing bumpedAt AND _creationTime both survive paging", async () => {
+    // Identical on the first two terms — `_id` is the only thing that can order
+    // them, and the only thing that can make the second sort after the cursor.
+    const pool = [entry("ad_a", 500, 500), entry("ad_b", 500, 500)];
+
+    const first = pageOfPool(pool, { numItems: 1, cursor: null });
+    expect(first.entries).toHaveLength(1);
+    expect(first.isDone).toBe(false);
+
+    const second = pageOfPool(pool, { numItems: 1, cursor: first.continueCursor });
+    expect(second.entries).toHaveLength(1);
+    expect(second.isDone).toBe(true);
+
+    // Both, once each. Drop the `_id` term from compareSortKeys and the second
+    // page comes back empty: the remaining entry compares EQUAL to the cursor,
+    // so it never sorts after it and is skipped for good.
+    const seen = [...first.entries, ...second.entries].map((e) => e.doc._id);
+    expect(new Set(seen)).toEqual(new Set(["ad_a", "ad_b"]));
   });
 });

@@ -5,11 +5,11 @@ import type { Doc } from "./_generated/dataModel";
 
 import { paginationOptsValidator } from "convex/server";
 import {
+  assembleFeedPage,
   bundleIsLive,
   compositeMatchesFilters,
-  hydrateEntries,
   saleIsLive,
-  tierFields,
+  sectionFields,
   type FeedSourceEntry,
 } from "./lib/cards";
 import { isFlagEnabled } from "./featureFlags";
@@ -55,19 +55,19 @@ async function compositeHits(
   ]);
 
   const now = Date.now();
-  // Rule 5: category narrows (a requirement); location only TIERS (a
+  // Rule 5: category narrows (a requirement); location only SECTIONS (a
   // preference). Composites need no second DB pass — the location narrowing
   // here was always a JS predicate below the `.take(cap)`, never a DB cut, so
-  // the same predicate now stamps the tier instead of dropping the row.
-  const tierOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
-    tierFields(args.location, compositeMatchesFilters(doc, { location: args.location }));
+  // the same predicate now stamps the section instead of dropping the row.
+  const sectionOf = (doc: Doc<"saleBundles"> | Doc<"saleEvents">) =>
+    sectionFields(args.location, compositeMatchesFilters(doc, { location: args.location }));
   return [
     ...bundles
       .filter((b) => bundleIsLive(b) && compositeMatchesFilters(b, { categoryId: args.categoryId }))
-      .map((doc) => ({ kind: "bundle" as const, doc, ...tierOf(doc) })),
+      .map((doc) => ({ kind: "bundle" as const, doc, ...sectionOf(doc) })),
     ...sales
       .filter((s) => saleIsLive(s, now) && compositeMatchesFilters(s, { categoryId: args.categoryId }))
-      .map((doc) => ({ kind: "sale" as const, doc, ...tierOf(doc) })),
+      .map((doc) => ({ kind: "sale" as const, doc, ...sectionOf(doc) })),
   ];
 }
 
@@ -77,9 +77,9 @@ async function compositeHits(
  * rail), so one unpinned pass can lose near rows before any JS runs — a
  * post-hoc partition cannot resurrect them. With a location set: a
  * location-pinned "near" pass plus an unpinned "far" pass, deduped on `_id`.
- * With none: one unpinned pass, no tier.
+ * With none: one unpinned pass, no section.
  */
-async function tieredAdHits(
+async function sectionedAdHits(
   location: string | undefined,
   pass: (location?: string) => Promise<Doc<"ads">[]>
 ): Promise<FeedSourceEntry[]> {
@@ -89,10 +89,10 @@ async function tieredAdHits(
   const [near, unpinned] = await Promise.all([pass(location), pass()]);
   const nearIds = new Set(near.map((d) => d._id));
   return [
-    ...near.map((doc) => ({ kind: "ad" as const, doc, tier: "near" as const })),
+    ...near.map((doc) => ({ kind: "ad" as const, doc, section: "near" as const })),
     ...unpinned
       .filter((d) => !nearIds.has(d._id))
-      .map((doc) => ({ kind: "ad" as const, doc, tier: "far" as const })),
+      .map((doc) => ({ kind: "ad" as const, doc, section: "far" as const })),
   ];
 }
 
@@ -104,7 +104,7 @@ async function tieredAdHits(
  * holds. Category narrows all three tables (rules 1 and 4,
  * `.agent/PRODUCT-RULES.md`): on `ads` as an index filter field, on composites
  * as a post-search predicate over the derived `categoryIds`. `location` never
- * narrows — it stamps `tier: "near" | "far"` on every hit instead (rule 5).
+ * narrows — it stamps `section: "near" | "far"` on every hit instead (rule 5).
  *
  * `sinceTimestamp`, when given, is a `bumpedAt` lower bound pushed into every
  * query so the per-table cap keeps rows that are relevant AND fresh (a JS
@@ -146,7 +146,7 @@ async function searchAllTypes(
       )
       .take(args.limit);
   const [ads, composites] = await Promise.all([
-    tieredAdHits(args.location, searchAdsPass),
+    sectionedAdHits(args.location, searchAdsPass),
     compositeHits(
       ctx,
       args,
@@ -180,7 +180,7 @@ async function searchAllTypes(
 /**
  * The browse counterpart of `searchAllTypes`: every composite bumped since the
  * watermark, ordered by `bumpedAt` desc via `by_status_and_bumped_at`;
- * `mergeAndHydrate` interleaves them with the ads (rule 2).
+ * `assembleFeedPage` interleaves them with the ads (rule 2).
  *
  * Rule 5 caveat (recorded so it isn't re-derived): this `.take(cap)` IS a
  * DB-level date cut, and no location-pinned pass is possible — neither
@@ -224,25 +224,14 @@ async function latestComposites(
 }
 
 /**
- * Merge hits into one date-ordered page and hydrate the composites into the
- * exact card shapes `feed.getFeed` returns.
+ * Relevance selects the candidates; `assembleFeedPage` (convex/lib/cards.ts)
+ * groups and orders them — the SAME assembly step `feed.getFeed` ends at, so a
+ * page cannot differ between browse and search.
+ *
+ * ponytail: the 50-ad relevance cap is a relevance cut — a very old exact match
+ * can fall out of the pool. Fine at current inventory; revisit if search feels
+ * lossy. (Composites are capped separately, see COMPOSITE_LIMIT.)
  */
-async function mergeAndHydrate(ctx: QueryCtx, hits: FeedSourceEntry[], limit: number) {
-  // Relevance selects the candidates; date orders them (rule 2), WITHIN each
-  // location tier. Tier-first is load-bearing: two passes can pool up to
-  // 2×limit rows, and a plain date sort would let the slice trim an older near
-  // entry exactly as the DB cut would have — the trim must eat far entries
-  // first (rule 5). `undefined ⇒ near` matches the client's `tier !== "far"`.
-  // ponytail: the 50-ad relevance cap is a relevance cut — a very old exact match
-  // can fall out of the pool. Fine at current inventory; revisit if search feels
-  // lossy. (Composites are capped separately, see COMPOSITE_LIMIT.)
-  const tierRank = (e: FeedSourceEntry) => (e.tier === "far" ? 1 : 0);
-  const merged = hits
-    .sort((a, b) => tierRank(a) - tierRank(b) || b.doc.bumpedAt - a.doc.bumpedAt)
-    .slice(0, limit);
-
-  return hydrateEntries(ctx, merged);
-}
 
 /**
  * Full-text search across every ad type, newest first.
@@ -255,8 +244,8 @@ async function mergeAndHydrate(ctx: QueryCtx, hits: FeedSourceEntry[], limit: nu
  *
  * @param args.search - Search term (ad titles; composites' member titles)
  * @param args.categoryId - Filter by specific category (optional)
- * @param args.location - Location preference (optional, exact match): tiers
- *   results near/far instead of filtering (rule 5)
+ * @param args.location - Location preference (optional, exact match): groups
+ *   results into the near/far sections instead of filtering (rule 5)
  * @param args.paginationOpts - Pagination envelope (results are one page)
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
@@ -274,7 +263,7 @@ export const getAds = query({
     const hits = await searchAllTypes(ctx, { ...args, limit: SEARCH_LIMIT });
 
     return {
-      page: await mergeAndHydrate(ctx, hits, SEARCH_LIMIT),
+      page: await assembleFeedPage(ctx, hits, SEARCH_LIMIT),
       isDone: true,
       continueCursor: "",
     };
@@ -359,7 +348,7 @@ export const incrementViews = mutation({
  * 
  * @param args.categoryId - Filter by specific category (optional)
  * @param args.search - Search term for title search (optional)
- * @param args.location - Location preference (optional): tiers results
+ * @param args.location - Location preference (optional): sections results
  *   near/far instead of filtering (rule 5)
  * @param args.sinceTimestamp - Fetch ads created after this timestamp
  * @param args.limit - Maximum number of ads to return (default: 50)
@@ -402,11 +391,11 @@ export const getLatestAds = query({
         limit,
       });
 
-      return await mergeAndHydrate(ctx, hits, limit);
+      return await assembleFeedPage(ctx, hits, limit);
     } else {
       // `sinceTimestamp` is a `bumpedAt` watermark, not a creation time: the
       // rail surfaces brand-new AND boosted rows. The `.take(limit)` is a
-      // DB-level DATE cut — hence `tieredAdHits`' pinned near pass (rule 5).
+      // DB-level DATE cut — hence `sectionedAdHits`' pinned near pass (rule 5).
       const latestAdsPass = (location?: string) => {
         const q = args.categoryId
           ? ctx.db
@@ -435,7 +424,7 @@ export const getLatestAds = query({
       // The rail is the ONLY path that re-injects new arrivals into the feed,
       // which is frozen at `maxSortTime` from mount — so composites ride it too.
       const [ads, composites] = await Promise.all([
-        tieredAdHits(args.location, latestAdsPass),
+        sectionedAdHits(args.location, latestAdsPass),
         latestComposites(ctx, {
           categoryId: args.categoryId,
           location: args.location,
@@ -444,7 +433,7 @@ export const getLatestAds = query({
         }),
       ]);
 
-      return await mergeAndHydrate(ctx, [...ads, ...composites], limit);
+      return await assembleFeedPage(ctx, [...ads, ...composites], limit);
     }
   },
 });

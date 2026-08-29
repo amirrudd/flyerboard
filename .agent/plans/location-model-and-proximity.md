@@ -1,7 +1,8 @@
 # Plan — Location model & proximity grouping
 
 **Status:** Agreed. Phases 0–2 built in PR #368 — the only item left in them is the
-prod migration run. Phases 3–5 not started.
+prod migration run. Phase 3 built (branch `claude/feed-sections-phase3`). Phases 4–5
+not started.
 **Created:** 2026-08-29
 **Owner:** Amir
 **Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
@@ -148,7 +149,13 @@ for any existing ad, ever. Migration is free pre-launch and expensive after.
 - [x] Run on dev — dry run and real run reported identical numbers; re-run was a no-op
 - [ ] Run on prod (`resilient-pheasant-112`) — **outstanding, Amir**
 
-### Phase 3 — one feed pipeline with a stable boundary *(do before Phase 4)*
+### Phase 3 — one feed pipeline with a stable boundary *(BUILT)*
+
+**Outcome.** `convex/lib/feedSections.ts` holds the ordered section list; every path
+ends at `assembleFeedPage` (`convex/lib/cards.ts`); `AdsGrid` walks the section list
+instead of asking "is this one far?"; the wire field is `section`, not `tier`. Note
+`getFeed`'s page is now section-grouped rather than strictly `bumpedAt` desc — the
+client grouped it that way at render anyway, so nothing user-visible changed.
 
 **Why before the radius work:** there are currently two separate feed
 implementations — the home feed, and the one category and search use. They must
@@ -167,13 +174,13 @@ and its section (`AdsGrid.tsx:138-139`). Three things would wreck that:
 match score, or a match reason, the UI will render it, sort on it, or badge it — and
 extraction can never change shape again.
 
-- [ ] Rule: **extraction returns a card and a section name. Never a number.** If
+- [x] Rule: **extraction returns a card and a section name. Never a number.** If
       distance is ever shown, the display layer derives it from data already on the card.
 
 **2. Two producers, one shape, enforced by prose.**
 
-- [ ] Both paths go through a single assembly step
-- [ ] One test runs identical inputs through both and asserts identical output — the
+- [x] Both paths go through a single assembly step
+- [x] One test runs identical inputs through both and asserts identical output — the
       mechanism the comment is currently pretending to be
 
 **3. "How many sections exist" is hardcoded in two places.** The server sorts so near
@@ -181,10 +188,10 @@ items survive the page cut (`convex/ads.ts:240`); the client splits by asking *i
 one far?*. Both assume exactly two sections. A third section would mean editing
 extraction and display together.
 
-- [ ] Extraction emits an **ordered list of named sections** with items under each
-- [ ] Display renders whatever sections arrive, in the order given, without knowing
+- [x] Extraction emits an **ordered list of named sections** with items under each
+- [x] Display renders whatever sections arrive, in the order given, without knowing
       what they mean
-- [ ] Adding, renaming or merging a section becomes a server-only change
+- [x] Adding, renaming or merging a section becomes a server-only change
 
 **Deliberately NOT built:** strategy interfaces, ranker plug-in points, an experiment
 framework. Those are for when a second implementation exists. The freedom comes from
@@ -205,7 +212,8 @@ possible without committing to it.
 ### Phase 4 — swap the near/far test *(unblocked)*
 
 The insertion point already exists and is a single function:
-`tierFields(location, matches)` in `convex/lib/cards.ts:106`. Only `matches` changes —
+`sectionFields(location, matches)` in `convex/lib/cards.ts` (renamed from `tierFields`
+in Phase 3). Only `matches` changes —
 from string equality to the distance rule. Everything downstream (the divider, the
 client partition, the byte-identical no-location response) is untouched.
 
@@ -282,6 +290,6 @@ line at all; it may just keep going. Recommendation:
 
 ## 7. Prior work already landed
 
-- Rule 5 grouping (the divider, `tierFields`, client partition) shipped — PRs #361/#362/#363
+- Rule 5 grouping (the divider, `sectionFields`, client partition) shipped — PRs #361/#362/#363
 - Geolocation detection fixed to disambiguate same-named suburbs by postcode
   (`Header.tsx` — was returning RICHMOND NSW for a user in RICHMOND VIC)

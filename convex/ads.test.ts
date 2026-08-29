@@ -819,6 +819,48 @@ describe("getAds pagination", () => {
     expect(new Set(pages[0].map(sectionOf))).toEqual(new Set(["near"]));
   });
 
+  /**
+   * The cursor's TIE-BREAKERS, which nothing else exercises: every other fixture
+   * gives each entry a distinct `bumpedAt`, so `compareSortKeys` never gets past
+   * its first term and the three-part key means nothing.
+   *
+   * It is load-bearing. A cursor carrying `bumpedAt` alone compares equal to
+   * every entry sharing that millisecond, `compareSortKeys(entry, cursor) > 0`
+   * is false for all of them, and they are filtered out of every subsequent
+   * page — silently skipped at a page boundary by the very mechanism added to
+   * stop ads disappearing (rule 5). `bumpedAt` is epoch ms so ties are unlikely
+   * in the wild, but bulk-seeded and migrated rows can share one, and the
+   * failure makes no noise.
+   *
+   * Ties in BOTH groups, straddling boundaries in each.
+   */
+  test("entries sharing a bumpedAt are each returned exactly once across pages", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const near = "Richmond, VIC";
+    const tied = 7_000; // one millisecond, eight ads
+
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      ids.push(
+        await insertAd(t, { userId, categoryId, title: `Tied desk ${i}`, location: near, bumpedAt: tied })
+      );
+    }
+    for (let i = 0; i < 3; i++) {
+      ids.push(
+        await insertAd(t, { userId, categoryId, title: `Tied far desk ${i}`, location: "Bondi, NSW", bumpedAt: tied })
+      );
+    }
+
+    const pages = await allPages(t, { search: "Tied", location: near }, 2);
+    const seen = pages.flat().map(keyOf);
+
+    // Every one of them, once — none skipped at a boundary, none repeated.
+    expect(seen).toHaveLength(ids.length);
+    expect(new Set(seen)).toEqual(new Set(ids));
+    // And the boundaries were real: this walked more than one page.
+    expect(pages.length).toBeGreaterThan(2);
+  });
+
   test("a cursor we never issued restarts at the top instead of throwing", async () => {
     const { t, userId, categoryId } = await fresh();
     await insertAd(t, { userId, categoryId, title: "Oak desk" });

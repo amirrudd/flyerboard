@@ -290,6 +290,23 @@ async function latestComposites(
  * one sequence and no ad type gets its own lane (rules 1, 2 and 4).
  *
  * Descending on every field: a negative result means `a` comes first.
+ *
+ * All three terms are load-bearing, and they fail differently:
+ *
+ * - `bumpedAt` alone is not enough. A cursor that carried only it would compare
+ *   EQUAL to every entry sharing that millisecond, so none of them would sort
+ *   after it and all would be filtered out of every later page — ads silently
+ *   skipped at a page boundary by the mechanism added to stop ads disappearing.
+ *   `ads.test.ts` "entries sharing a bumpedAt are each returned exactly once"
+ *   covers this; bulk-seeded and migrated rows are the realistic way to get a
+ *   tie.
+ * - `_id` is the last resort and is NOT covered by a test — no fixture can
+ *   force it, because `_creationTime` is unique WITHIN a table and every entry
+ *   a test can insert into one table gets a distinct one. It is reachable in
+ *   production all the same: this pool merges THREE tables, so an ad and a
+ *   bundle can share both `bumpedAt` and `_creationTime`. Keep it. It is also
+ *   exactly the key `feed.getFeed`'s mergedStream orders on, for the same
+ *   reason.
  */
 type SortKey = { bumpedAt: number; creationTime: number; id: string };
 

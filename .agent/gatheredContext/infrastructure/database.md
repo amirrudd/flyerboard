@@ -236,6 +236,15 @@ once, cursor over the ordered pool.
   sequence and no ad type gets its own lane. Keyset, not offset: a row inserted between
   two fetches shifts no page. A cursor we didn't issue restarts at the top rather than
   throwing (it crosses a trust boundary).
+- **All three key terms are load-bearing — don't "simplify" the cursor to `bumpedAt`.**
+  A cursor carrying only `bumpedAt` compares EQUAL to every entry sharing that
+  millisecond, so none sorts after it and all are filtered out of every later page: ads
+  silently skipped at a page boundary, by the mechanism added to stop ads disappearing.
+  Covered by `ads.test.ts` "entries sharing a bumpedAt are each returned exactly once".
+  **`_id` is the exception: it is NOT test-covered**, because `_creationTime` is unique
+  WITHIN a table and no fixture can force two same-table rows to share one. It is
+  reachable in production anyway — this pool merges THREE tables, so an ad and a bundle
+  can share `bumpedAt` AND `_creationTime`. Keep it.
 - **Two cursors, not one, and the near group is FILLED FIRST.** A page takes as much of
   the near group as it can hold; only the leftover room goes to the far group. That is
   rule 5 in the order rule 5 states it — ads in the area, then ads outside it. A single

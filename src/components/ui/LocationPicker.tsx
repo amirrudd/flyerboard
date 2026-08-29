@@ -13,11 +13,10 @@ import {
  * canonical `formatLocation()` string ("RICHMOND, VIC 3121").
  *
  * That string is the ONLY thing the location filter matches on — free text never
- * will — so anything that stores a location has to come through a picker. Every
- * surface that STORES a location uses this component. `Header` still hand-rolls
- * its own copy, but it only ever filters — Phase 4 of
- * `.agent/plans/location-model-and-proximity.md` owns replacing it, since it needs
- * to keep the resolved object rather than a string.
+ * will — so anything that stores a location has to come through a picker. This is
+ * the only suburb autocomplete in the app: every surface that stores a location
+ * (PostAd, SetupStep) and the one that only filters (`Header`) all render it. No
+ * hand-rolled copies remain — don't start one.
  *
  * `value` is the confirmed selection ("" = nothing picked yet). Typing anything
  * that isn't the confirmed string clears it, so a caller can require a real pick

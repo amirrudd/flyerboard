@@ -1,6 +1,65 @@
 # UI Patterns & Components
 
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-08-29
+
+## Suburb picking: one component, no copies (2026-08-29)
+
+`src/components/ui/LocationPicker.tsx` is the **only** suburb autocomplete. Three
+surfaces render it — PostAd and the Moving Sale SetupStep (which STORE a location) and
+`Header`'s location dropdown (which only FILTERS). The last hand-rolled copy, in
+`Header.tsx`, was folded in on 2026-08-29; don't start another.
+
+Why it matters: the picker emits the canonical `formatLocation()` string
+("RICHMOND, VIC 3121"), and that string is the only thing the location filter compares
+on. A second implementation is a second chance to emit something the filter can't match
+— which is exactly how Moving Sales ended up invisible to location filtering in 2026-08.
+
+Two things a filtering caller does differently from a storing one:
+
+- **`value=""`, always.** The header holds no pending pick: the box is a search field
+  that starts empty on every open, and a pick applies the filter and closes the panel.
+  Passing `selectedLocation` as `value` would look tidier and is wrong — the picker
+  fires `onChange("")` as soon as the text diverges from `value`, so typing a new suburb
+  would wipe the live filter mid-keystroke and reflow the feed under the user.
+- **Reject non-canonical values.** The picker's offline fallback commits typed free text
+  as the value so a *posting* flow isn't dead-ended by a failed dataset fetch. Free text
+  is not a value a filter can hold (it matches no ad), so the header guards with
+  `isCanonicalLocation(formatted)` from `locationService` and ignores anything else —
+  which preserves its pre-fold behaviour of simply not applying a filter it can't
+  resolve. No prop was added to the picker for this.
+
+The header keeps its own chrome around the picker (trigger button, panel, "All
+Locations" reset, "Detect my location"). The picker's suggestion list is an absolute
+popover, so the panel must NOT be `overflow-hidden` or the list is clipped.
+
+**The header now says nothing when there is nothing to pick.** Its old results
+container had four branches — spinner / list / "No locations found" (query >= 2 chars,
+no matches) / "All Locations" (fewer than 2 chars). Folding onto the picker changed two
+of them, and both were accepted deliberately on 2026-08-29:
+
+- **"All Locations" went from conditional to permanent** — it used to disappear as soon
+  as you typed two characters. Permanent is better: the reset should always be reachable,
+  and there is no state in which hiding it helps.
+- **"No locations found" is gone, and that is a cost, not a win.** Type "Zzzzz" and the
+  old header told you there was no such suburb; now the dropdown simply doesn't appear.
+  Not restored, because the honest fix is an empty state inside `LocationPicker` — every
+  caller has the same hole — and that is a change to a shared component, not header
+  chrome. **Trigger to fix:** the first time anyone gives the picker a no-results state,
+  do it there and delete this paragraph.
+
+The same silence covers the dataset-offline path, with a wrinkle: the picker shows
+"Suggestions unavailable — type your suburb and continue", which is true for a posting
+form and a promise the header then breaks — the `isCanonicalLocation` guard drops the
+typed text, so nothing continues. **Accepted, not fixed.** Suppressing it needs either a
+prop or a CSS reach-in from the wrapper (`[&_[role=status]]:hidden`), and both buy
+silence, which is what the path already has. The picker's empty-state work above fixes
+this one too, in the same place.
+
+**Detection is separate from picking.** "Detect my location" reverse-geocodes via
+Nominatim, then resolves the suburb name against the dataset **by postcode**
+(`results.find(loc => loc.postcode === postcode) ?? results[0]`). Suburb names repeat
+across states — without the postcode clause a user in RICHMOND VIC gets RICHMOND NSW.
+`Header.test.tsx` guards this; keep it.
 
 ## Icon library policy (2026-07-16)
 Phosphor (`@phosphor-icons/react`) is the app-wide icon library — 16/20/24px. lucide-react survives in exactly one place: category icons, because the DB stores category `icon` as a Lucide PascalCase slug (e.g. `"Car"`). Two files:

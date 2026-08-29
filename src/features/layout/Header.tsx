@@ -1,11 +1,12 @@
 import { SignOutButton } from "../auth/SignOutButton";
 import { HeaderRightActions } from "./HeaderRightActions";
-import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, memo, useCallback, useRef, useMemo, useId } from "react";
 import { List, MapPin, CaretDown, CircleNotch, NavigationArrow, MagnifyingGlass } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@descope/react-sdk";
 import { ThemeToggle } from "../../components/ThemeToggle";
-import { searchLocations, formatLocation, fetchLocations, displayLocation, LocationData } from "../../lib/locationService";
+import { searchLocations, formatLocation, fetchLocations, displayLocation, isCanonicalLocation } from "../../lib/locationService";
+import { LocationPicker } from "../../components/ui/LocationPicker";
 import { debounce } from "../../lib/performanceUtils";
 
 interface HeaderProps {
@@ -31,10 +32,7 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
 }) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<LocationData[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
 
   const detectLocation = async () => {
     setIsDetectingLocation(true);
@@ -125,37 +123,10 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       // fetchLocations() caches/dedupes internally, so repeat opens are free.
       void fetchLocations();
       document.addEventListener('click', handleClickOutside);
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+      document.getElementById(inputId)?.focus();
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [isOpen]);
-
-  // Optimized location search with debouncing
-  const debouncedSearch = useMemo(
-    () => debounce(async (searchQuery: string) => {
-      if (searchQuery.length >= 2) {
-        setIsSearching(true);
-        try {
-          const results = await searchLocations(searchQuery);
-          setSuggestions(results);
-        } catch (error) {
-          console.error("Failed to search locations", error);
-        } finally {
-          setIsSearching(false);
-        }
-      } else {
-        setSuggestions([]);
-      }
-    }, 300),
-    []
-  );
-
-  useEffect(() => {
-    debouncedSearch(query);
-    return () => { }; // Cleanup handled by debounce function
-  }, [query]);
+  }, [isOpen, inputId]);
 
   // Postcode-free view of the canonical filter value — display only.
   const locationLabel = selectedLocation ? displayLocation(selectedLocation) : "All Locations";
@@ -181,53 +152,34 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
       </button>
 
       {isOpen && (
-        <div className={`absolute top-full mt-2 w-80 max-w-[90vw] bg-popover ring-1 ring-border rounded-xl shadow-card-hover z-50 overflow-hidden ${align === 'right' ? 'right-0' : 'left-0'}`}>
+        <div className={`absolute top-full mt-2 w-80 max-w-[90vw] bg-popover ring-1 ring-border rounded-xl shadow-card-hover z-50 ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <div className="p-2.5 border-b border-border/70">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Enter suburb or postcode…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 text-base rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
+            {/* `value=""` on purpose: the header filters, it never holds a
+                pending pick. The box is a search field that starts empty on
+                every open, and a pick applies the filter and closes. */}
+            <LocationPicker
+              id={inputId}
+              value=""
+              onChange={(formatted) => {
+                // Free text (dataset offline) matches no ad, so it isn't a
+                // value this filter can hold — only a real pick sets it.
+                if (!isCanonicalLocation(formatted)) return;
+                setSelectedLocation(formatted);
+                setIsOpen(false);
+              }}
+              inputClassName="w-full px-3 py-2 text-base rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none transition-all placeholder:text-muted-foreground/70 text-foreground"
             />
           </div>
 
-          <div className="max-h-60 overflow-y-auto py-1">
-            {isSearching ? (
-              <div className="px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
-                <CircleNotch className="w-4 h-4 animate-spin" />
-                Searching...
-              </div>
-            ) : suggestions.length > 0 ? (
-              suggestions.map((loc) => (
-                <button
-                  key={loc.id}
-                  onClick={() => {
-                    setSelectedLocation(formatLocation(loc));
-                    setIsOpen(false);
-                    setQuery("");
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors flex flex-col"
-                >
-                  <span className="font-medium text-foreground">{loc.locality}</span>
-                  <span className="text-xs text-muted-foreground">{loc.state} {loc.postcode}</span>
-                </button>
-              ))
-            ) : query.length >= 2 ? (
-              <div className="px-4 py-2 text-sm text-muted-foreground">No locations found</div>
-            ) : (
-              <button
-                onClick={() => {
-                  setSelectedLocation("");
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                All Locations
-              </button>
-            )}
-          </div>
+          <button
+            onClick={() => {
+              setSelectedLocation("");
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
+          >
+            All Locations
+          </button>
 
           <div className="border-t border-border p-1">
             <button

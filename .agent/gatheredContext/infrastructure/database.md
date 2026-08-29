@@ -253,6 +253,11 @@ explicit cap a read-amplification regression cannot fail a test.
     succeeds. `toLocationMeta()` in `src/lib/locationService.ts` is the single
     enforcement site, and it *also* rejects (0, 0) — six dataset rows carry that as
     their own "no coordinate" placeholder.
+    The reason that rejection is load-bearing rather than tidy: HAASTS BLUFF NT 0872
+    appears twice in the dataset, once as a real point and once as the placeholder.
+    Take the placeholder and the haversine between the two comes out at **14,204 km**
+    — so a single accepted (0, 0) doesn't just lose one ad's position, it makes every
+    distance test involving that ad wrong by a planet.
   - **The record is DERIVED onto composites**, so any mutation patching it must
     re-derive (rule 1). The `derive.test.ts` contract caught exactly this when
     `applyAdLocationRecords` first shipped without it.

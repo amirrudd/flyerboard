@@ -392,11 +392,11 @@ export const AdsGrid = memo(function AdsGrid({
   };
 
   return (
-    // data-testid: masked in e2e visual snapshots — everything inside (listing
-    // count, cards, view counts) is live Convex data and changes run-to-run.
+    // data-testid: masked in e2e visual snapshots — everything inside (cards,
+    // view counts) is live Convex data and changes run-to-run.
     <section className="flex-1" data-testid="ads-grid">
-      {/* Editorial header — kicker over serif display title, count on right with hairline */}
-      <header className="mb-7 flex flex-col gap-3 min-h-[92px]">
+      {/* Editorial header — kicker over serif display title, with hairline */}
+      <header className="mb-7 flex flex-col gap-3">
         <div className="flex items-end justify-between gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="kicker">{headerKicker}</span>
@@ -404,33 +404,8 @@ export const AdsGrid = memo(function AdsGrid({
               {headerTitle}
             </h1>
           </div>
-          <div className="hidden sm:flex items-baseline gap-2 text-muted-foreground pb-1">
-            {entries ? (
-              <>
-                <span className="tabular text-2xl font-display font-medium text-foreground">
-                  {entries.length}
-                </span>
-                <span className="text-sm">
-                  {entries.length === 1 ? 'listing' : 'listings'}
-                </span>
-              </>
-            ) : (
-              <div className="h-6 w-24 rounded shimmer" />
-            )}
-          </div>
         </div>
         <div className="hairline" />
-        <div className="text-muted-foreground text-sm tabular sm:hidden">
-          {entries ? (
-            entries.length === 0
-              ? 'No flyers'
-              : entries.length === 1
-                ? '1 flyer'
-                : `${entries.length} flyers`
-          ) : (
-            <div className="h-5 w-20 rounded shimmer" />
-          )}
-        </div>
       </header>
 
       {/* Loading Skeleton (Initial Load) */}

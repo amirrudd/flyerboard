@@ -82,7 +82,6 @@ describe('AdsGrid', () => {
 
         expect(screen.getByText('iPhone 13')).toBeInTheDocument();
         expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-        expect(screen.getByText('2 flyers')).toBeInTheDocument();
     });
 
     it('should render category name when selected', () => {
@@ -495,8 +494,6 @@ describe('AdsGrid - unified feed page (server-interleaved)', () => {
             'Kitchen Starter Bundle',
             'Toyota Camry',
         ]);
-        // Count line includes composite cards.
-        expect(screen.getByText('4 flyers')).toBeInTheDocument();
     });
 });
 

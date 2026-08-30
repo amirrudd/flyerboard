@@ -198,19 +198,29 @@ const LocationSelector = memo(function LocationSelector({ selectedLocation, setS
               <label htmlFor={radiusId} className="text-sm text-muted-foreground">
                 Default search radius
               </label>
-              <select
-                id={radiusId}
-                value={selectedRadiusKm}
-                onChange={(e) => setSelectedRadiusKm(Number(e.target.value))}
-                // pr-3 not px-3: the native chevron is drawn inside the right
-                // padding, so equal padding crowds it against the border and
-                // against the value at the same time.
-                className="text-sm font-medium rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none pl-2.5 pr-3 py-1.5 text-foreground"
-              >
-                {NEAR_RADIUS_OPTIONS_KM.map((km) => (
-                  <option key={km} value={km}>{km} km</option>
-                ))}
-              </select>
+              {/* `appearance-none` plus our own caret: a native select pins its
+                  chevron to the border whatever the padding is, so the arrow sat
+                  hard against the pill's rounded edge. Drawing it ourselves is
+                  the only way to inset it. Still a native select underneath —
+                  same keyboard and screen-reader behaviour — and the caret is
+                  decorative, so it is aria-hidden and ignores pointer events. */}
+              <div className="relative shrink-0">
+                <select
+                  id={radiusId}
+                  value={selectedRadiusKm}
+                  onChange={(e) => setSelectedRadiusKm(Number(e.target.value))}
+                  className="appearance-none text-sm font-medium rounded-lg bg-muted/50 ring-1 ring-transparent focus:ring-ring focus:bg-background focus:outline-none pl-3 pr-7 py-1.5 text-foreground"
+                >
+                  {NEAR_RADIUS_OPTIONS_KM.map((km) => (
+                    <option key={km} value={km}>{km} km</option>
+                  ))}
+                </select>
+                <CaretDown
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+                  weight="bold"
+                  aria-hidden
+                />
+              </div>
             </div>
           )}
 

@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-08-29
+**Last Updated**: 2026-08-30
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -121,7 +121,10 @@ Read this before adding anything to a feed page.**
   component knows what a section means, and nothing hardcodes "there are exactly two".
 - **`assembleFeedPage` (`convex/lib/cards.ts`) is THE assembly step.** Every path ends
   there: it picks the survivors if a `limit` is given, orders them by section rank then
-  `bumpedAt` desc, and hydrates. **The cut and the order are separate on purpose** —
+  `bumpedAt` desc, and hydrates. **Only `ads.getLatestAds` still passes a `limit`** —
+  `feed.getFeed` and `ads.getAds` both paginate, so the `pinned`-first trim is dead on
+  those two paths. It is still load-bearing on the rail; don't delete it (see
+  "Search paginates" below). **The cut and the order are separate on purpose** —
   see "The cut must not depend on the radius" below. `convex/feed.test.ts` ("getFeed and getAds return
   identical pages for identical input") runs the same rows through both queries and
   asserts identical pages — the guarantee used to be a comment saying they must match.
@@ -209,6 +212,84 @@ on a feed entry (the Phase 3 boundary).
 - **The distance outlives the suburb.** Picking a new suburb keeps the radius; only
   `selectedLocationMeta` is cleared with the suburb (a stale record would measure from
   the wrong point, a stale distance would not).
+
+### Search paginates (Aug 2026) — `ads.getAds`
+
+`getAds` used to return ONE page of 50 (`isDone: true`, `continueCursor: ""`). Combined
+with `assembleFeedPage`'s `pinned`-first trim that was a rule 5 break: 50 nearby matches
+removed every out-of-area match and there was no page to scroll to, so setting a
+location strictly shrank what search returned. It now paginates for real.
+
+**Why it can't just `.paginate()` the search index.** A Convex search index answers in
+**relevance order only** — alternative orderings are not supported — and the product
+rule is newest-first, never relevance. Paginating the index gives relevance-ordered
+pages, and sorting each page by date afterwards is worse than useless: page 2 could
+hold newer rows than page 1. So the shape is: pool the matches, sort by `bumpedAt` desc
+once, cursor over the ordered pool.
+
+- **`SEARCH_POOL_LIMIT = 1024`** (was `SEARCH_LIMIT = 50`) is the per-pass `.take()`.
+  It is the whole POOL a paginated search draws from, not a page size — anything
+  outside the pool is unreachable. 1024 is Convex's hard ceiling on search results.
+- **`pageOfPool` (convex/ads.ts) keeps ONE KEYSET CURSOR PER GROUP**, encoded together
+  as `{"near":…,"far":…}`. The key is `(bumpedAt, _creationTime, _id)` desc — the same
+  total order `feed.getFeed`'s mergedStream uses, so ads and composites share one
+  sequence and no ad type gets its own lane. Keyset, not offset: a row inserted between
+  two fetches shifts no page. A cursor we didn't issue restarts at the top rather than
+  throwing (it crosses a trust boundary).
+- **All three key terms are load-bearing — don't "simplify" the cursor to `bumpedAt`.**
+  A cursor carrying only `bumpedAt` compares EQUAL to every entry sharing that
+  millisecond, so none sorts after it and all are filtered out of every later page: ads
+  silently skipped at a page boundary, by the mechanism added to stop ads disappearing.
+  Covered by `ads.test.ts` "entries sharing a bumpedAt are each returned exactly once".
+  **`_id` needed a different kind of test.** `_creationTime` is unique WITHIN a table,
+  so no convex-test fixture can make two rows share one and the comparison never reaches
+  `_id` — but this pool merges THREE tables and `_creationTime` is only unique per
+  table, so an ad and a bundle CAN share both. (Same reason `feed.getFeed`'s mergedStream
+  orders on the same three fields.) `pageOfPool` is pure, so it is **exported solely for
+  a unit test** that hands it that exact pair; a comment saying "keep this" is what a
+  refactor deletes, and "simplify the cursor" would otherwise leave every test green.
+- **Two cursors, not one, and the near group is FILLED FIRST.** A page takes as much of
+  the near group as it can hold; only the leftover room goes to the far group. That is
+  rule 5 in the order rule 5 states it — ads in the area, then ads outside it. A single
+  date-ordered cursor over the whole pool breaks it: an in-area match older than a page
+  of out-of-area ones would not be on page 1 at all, so the buyer's first screen would
+  be the far group. With no location set everything is in the first group and a page is
+  just the next `numItems` newest, exactly as before.
+- **Do NOT reserve a fixed share of each page for the far group.** It was built that way
+  first (a 50/50 split, to guarantee far entries on page 1) and it is worse: later pages
+  then insert near cards ABOVE content the buyer has already scrolled past — the page
+  shifting under them mid-scroll — where a long near group is merely a long list. It is
+  also not what Boost needs. Rule 3 says in terms that a boosted ad at the top of EACH
+  group is the compliant outcome, so a boosted far ad below a long near group is exactly
+  right, not "unreachable"; and the near group is bounded by the pool anyway. Amir
+  decided this on 2026-08-30, against the brief that asked for the split.
+- **This is grouping, not ordering.** Inside each group the sequence is `bumpedAt` desc
+  and nothing else. `assembleFeedPage` orders the page section-first; `AdsGrid` regroups
+  the ACCUMULATED pages into one near run and one far run, each still newest-first.
+- **Contract**: `convex/ads.test.ts` "getAds pagination". The acceptance test walks ≥2
+  page boundaries and asserts every entry on a page is newer than or equal to every
+  entry on the next **within each group** — not merely that each page is internally
+  sorted, which a per-page re-sort would also pass. A second test fails if out-of-area
+  results become unreachable when nearby matches fill the first page, and pins the
+  near-first order (every far entry arrives after every near one; page 1 of a 51-near
+  pool is pure near). Mutation-checked three ways: reserving half the page for far fails
+  the second test, serving far before near fails it and the pinned-pass test, and an
+  ascending sort fails the first.
+
+#### Ceilings, recorded not papered over
+
+1. **1024-row relevance cap.** Past ~1024 live matches for one term the pool is a
+   relevance-selected SUBSET, so a very old exact match can be absent from every page —
+   and re-stamping `bumpedAt` (a Boost) does not change relevance rank, so beyond the
+   cap a boost cannot pull an ad into the search pool. Trigger: any single search term
+   matching more than ~1024 live rows. The fix then is a date-ordered lane (a `bumpedAt`
+   index pass unioned with the relevance pass), not a bigger cap — 1024 is the platform
+   ceiling, not a tuning knob. Not reachable at current inventory.
+2. **The exact-string pinned pass** (unchanged, pre-existing — see "Pinned names two
+   things" above). Raising the pool 50 → 1024 shrinks that window by ~20× but does not
+   close it.
+3. **Cost.** Every page re-reads the whole pool (up to 1024 ads per pass + 500 per
+   composite table). Hydration stays per-page, which is where the expensive work is.
 
 #### The cut must not depend on the radius
 

@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
+import { pageOfPool } from "./ads";
 import type { Id } from "./_generated/dataModel";
 
 // Same loader convention as saleEvents.test.ts / bundles.test.ts.
@@ -443,8 +444,11 @@ describe("search sections results by location instead of hiding them (rule 5)", 
     const { t, userId, categoryId } = await fresh();
     const now = Date.now();
 
-    // 60 newer out-of-area matches would fill the 50-row relevance cap and the
-    // post-merge slice; only the pinned near pass + section-aware trim save it.
+    // 60 newer out-of-area matches would fill the relevance cap; only the
+    // pinned near pass puts the local ad in the pool at all. It is the OLDEST
+    // of the 61, so a page selected purely by date would not hold it — the near
+    // group being filled first is what still puts it on the buyer's first
+    // screen, above all 60.
     for (let i = 0; i < 60; i++) {
       await insertAd(t, {
         userId,
@@ -467,8 +471,7 @@ describe("search sections results by location instead of hiding them (rule 5)", 
       location: "Richmond, VIC",
       paginationOpts: PAGE,
     });
-    const ids = pageKeys(r.page);
-    expect(ids).toContain(localAd);
+    expect(pageKeys(r.page)).toContain(localAd);
     expect(r.page.find((e) => e.kind === "ad" && e.ad._id === localAd)?.section).toBe("near");
   });
 });
@@ -663,5 +666,251 @@ describe("getLatestAds browse branch returns composites", () => {
     const ids = pageKeys(entries);
     expect(ids).toContain(localAd);
     expect(entries.find((e) => e.kind === "ad" && e.ad._id === localAd)?.section).toBe("near");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// getAds paginates (Aug 2026).
+//
+// A Convex search index answers in relevance order and nothing else, so the
+// index can't be cursored newest-first. `getAds` pools the matches, sorts the
+// pool by `bumpedAt` desc once, and walks it with a keyset cursor. These tests
+// are the contract for the two things that buys.
+// ──────────────────────────────────────────────────────────────────────────
+
+type PagedEntry = {
+  kind: string;
+  section?: string;
+  ad?: { _id: string; bumpedAt: number };
+  card?: { _id: string; bumpedAt: number };
+};
+
+const keyOf = (e: PagedEntry) => (e.ad ?? e.card)!._id;
+const bumpOf = (e: PagedEntry) => (e.ad ?? e.card)!.bumpedAt;
+const sectionOf = (e: PagedEntry) => e.section ?? "near";
+
+/** Walk `getAds` to exhaustion at the given page size. */
+async function allPages(
+  t: ReturnType<typeof convexTest>,
+  args: { search: string; location?: string },
+  numItems: number
+): Promise<PagedEntry[][]> {
+  const pages: PagedEntry[][] = [];
+  let cursor: string | null = null;
+  for (let guard = 0; guard < 50; guard++) {
+    const r: { page: PagedEntry[]; isDone: boolean; continueCursor: string } = await t.query(
+      api.ads.getAds,
+      { ...args, paginationOpts: { numItems, cursor } }
+    );
+    pages.push(r.page);
+    if (r.isDone) return pages;
+    cursor = r.continueCursor;
+  }
+  throw new Error("getAds never reported isDone");
+}
+
+describe("getAds pagination", () => {
+  /**
+   * THE acceptance test (Amir, Aug 2026): every entry on a page must be newer
+   * than or equal to every entry on the NEXT page, within a group. That is what
+   * makes paging honest — scrolling further only ever shows older things.
+   *
+   * Asserted at every boundary, not just "each page is internally sorted": a
+   * per-page sort passes that weaker check while still putting a newer item on
+   * page 2 than page 1, which is exactly the failure mode of sorting a
+   * relevance-ordered page after the fact.
+   */
+  test("every entry on a page is newer than every entry on the next, in each group", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await enableFlag(t, "bundleListing");
+    await enableFlag(t, "movingSaleMode");
+
+    // Nine matching entries alternating near/far, so BOTH groups span every
+    // page boundary — a guarantee that only holds inside one group is not the
+    // guarantee. Composites ride the same pool: no ad type is exempt.
+    const near = "Richmond, VIC";
+    const far = "Bondi, NSW";
+    for (let i = 0; i < 7; i++) {
+      await insertAd(t, {
+        userId,
+        categoryId,
+        title: `Teak desk ${i}`,
+        location: i % 2 === 0 ? near : far,
+        bumpedAt: 1_000 + i,
+      });
+    }
+    const member = await insertAd(t, {
+      userId, categoryId, title: "bundled item", location: near, bumpedAt: 10,
+    });
+    const member2 = await insertAd(t, {
+      userId, categoryId, title: "bundled item", location: near, bumpedAt: 11,
+    });
+    await seedBundle(t, {
+      userId, adIds: [member, member2], label: "Desk set",
+      searchText: "Teak desk set", bumpedAt: 1_007, locations: [near],
+    });
+    await seedSale(t, {
+      userId, title: "Moving out", searchText: "Teak desk and more",
+      bumpedAt: 1_008, locations: [far],
+    });
+
+    const pages = await allPages(t, { search: "Teak", location: near }, 3);
+    expect(pages.length).toBeGreaterThanOrEqual(3); // at least two boundaries
+
+    // No entry is served twice, and paging reaches everything the pool holds.
+    const seen = pages.flat().map(keyOf);
+    expect(new Set(seen).size).toBe(seen.length);
+    expect(seen.length).toBe(9);
+
+    for (const section of ["near", "far"]) {
+      for (let i = 0; i + 1 < pages.length; i++) {
+        const here = pages[i].filter((e) => sectionOf(e) === section).map(bumpOf);
+        const next = pages[i + 1].filter((e) => sectionOf(e) === section).map(bumpOf);
+        if (here.length === 0 || next.length === 0) continue;
+        expect(
+          Math.min(...here),
+          `${section}: page ${i + 1} oldest vs page ${i + 2} newest`
+        ).toBeGreaterThanOrEqual(Math.max(...next));
+      }
+    }
+  });
+
+  /**
+   * Rule 5: location groups, it never hides. Before pagination this query
+   * returned ONE page of 50 ranked near-first, so 51 nearby matches removed
+   * every out-of-area match and left no page to scroll to — setting a location
+   * strictly shrank what search returned. This fails if that ever comes back.
+   *
+   * Reachable means REACHABLE BY PAGING, not present on page 1. The near group
+   * is filled first and finished before the far group starts (rule 5's own
+   * order), so with 51 nearby matches the out-of-area ones land on page 3. A
+   * boosted far ad sitting at the top of the far group below them is the
+   * compliant outcome — rule 3 says so in terms.
+   */
+  test("out-of-area matches stay reachable when nearby matches fill the first page", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const near = "Richmond, VIC";
+
+    for (let i = 0; i < 51; i++) {
+      await insertAd(t, {
+        userId, categoryId, title: `Nearby desk ${i}`, location: near, bumpedAt: 5_000 + i,
+      });
+    }
+    // Older than every nearby match, so they sort last — the worst case.
+    const farA = await insertAd(t, {
+      userId, categoryId, title: "Faraway desk A", location: "Bondi, NSW", bumpedAt: 100,
+    });
+    const farB = await insertAd(t, {
+      userId, categoryId, title: "Faraway desk B", location: "Perth, WA", bumpedAt: 101,
+    });
+
+    const pages = await allPages(t, { search: "desk", location: near }, 20);
+    const seen = pages.flat();
+    expect(seen.map(keyOf)).toContain(farA);
+    expect(seen.map(keyOf)).toContain(farB);
+    expect(seen.filter((e) => sectionOf(e) === "far")).toHaveLength(2);
+
+    // Every out-of-area entry arrives AFTER every in-area one. This is the
+    // "fill the near group first" contract, and it is what stops later pages
+    // inserting near cards above content the buyer has already scrolled past.
+    const sections = seen.map(sectionOf);
+    expect(sections.indexOf("far")).toBeGreaterThan(sections.lastIndexOf("near"));
+    // Page 1 is pure near — 51 nearby matches do not leave room for anything
+    // else, and nothing is reserved for the far group.
+    expect(new Set(pages[0].map(sectionOf))).toEqual(new Set(["near"]));
+  });
+
+  /**
+   * The cursor's TIE-BREAKERS, which nothing else exercises: every other fixture
+   * gives each entry a distinct `bumpedAt`, so `compareSortKeys` never gets past
+   * its first term and the three-part key means nothing.
+   *
+   * It is load-bearing. A cursor carrying `bumpedAt` alone compares equal to
+   * every entry sharing that millisecond, `compareSortKeys(entry, cursor) > 0`
+   * is false for all of them, and they are filtered out of every subsequent
+   * page — silently skipped at a page boundary by the very mechanism added to
+   * stop ads disappearing (rule 5). `bumpedAt` is epoch ms so ties are unlikely
+   * in the wild, but bulk-seeded and migrated rows can share one, and the
+   * failure makes no noise.
+   *
+   * Ties in BOTH groups, straddling boundaries in each.
+   */
+  test("entries sharing a bumpedAt are each returned exactly once across pages", async () => {
+    const { t, userId, categoryId } = await fresh();
+    const near = "Richmond, VIC";
+    const tied = 7_000; // one millisecond, eight ads
+
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      ids.push(
+        await insertAd(t, { userId, categoryId, title: `Tied desk ${i}`, location: near, bumpedAt: tied })
+      );
+    }
+    for (let i = 0; i < 3; i++) {
+      ids.push(
+        await insertAd(t, { userId, categoryId, title: `Tied far desk ${i}`, location: "Bondi, NSW", bumpedAt: tied })
+      );
+    }
+
+    const pages = await allPages(t, { search: "Tied", location: near }, 2);
+    const seen = pages.flat().map(keyOf);
+
+    // Every one of them, once — none skipped at a boundary, none repeated.
+    expect(seen).toHaveLength(ids.length);
+    expect(new Set(seen)).toEqual(new Set(ids));
+    // And the boundaries were real: this walked more than one page.
+    expect(pages.length).toBeGreaterThan(2);
+  });
+
+  test("a cursor we never issued restarts at the top instead of throwing", async () => {
+    const { t, userId, categoryId } = await fresh();
+    await insertAd(t, { userId, categoryId, title: "Oak desk" });
+
+    const r = await t.query(api.ads.getAds, {
+      search: "desk",
+      paginationOpts: { numItems: 20, cursor: "not-a-cursor" },
+    });
+    expect(r.page).toHaveLength(1);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// The cursor's LAST tie-breaker, `_id`.
+//
+// No convex-test fixture can reach it: `_creationTime` is unique within a
+// table, so two rows a fixture inserts always differ on it and the comparison
+// never gets to `_id`. Production can reach it — `getAds`' pool merges THREE
+// tables, and `_creationTime` is only unique per table, so an ad and a bundle
+// can share both `bumpedAt` and `_creationTime`.
+//
+// `pageOfPool` is pure (no ctx, no I/O), so a unit test can hand it exactly
+// that pair. Without this the `_id` term is deletable with every test green,
+// and "simplify the cursor" reads like a tidy-up — a comment saying "keep this"
+// is what a refactor deletes. A failing test is the only thing that argues back.
+// ──────────────────────────────────────────────────────────────────────────
+describe("pageOfPool tie-breaks on _id", () => {
+  /** Only the three sort fields are read; the rest of the doc is irrelevant here. */
+  const entry = (id: string, bumpedAt: number, creationTime: number) =>
+    ({ kind: "ad", doc: { _id: id, bumpedAt, _creationTime: creationTime } }) as unknown as
+      Parameters<typeof pageOfPool>[0][number];
+
+  test("two entries sharing bumpedAt AND _creationTime both survive paging", async () => {
+    // Identical on the first two terms — `_id` is the only thing that can order
+    // them, and the only thing that can make the second sort after the cursor.
+    const pool = [entry("ad_a", 500, 500), entry("ad_b", 500, 500)];
+
+    const first = pageOfPool(pool, { numItems: 1, cursor: null });
+    expect(first.entries).toHaveLength(1);
+    expect(first.isDone).toBe(false);
+
+    const second = pageOfPool(pool, { numItems: 1, cursor: first.continueCursor });
+    expect(second.entries).toHaveLength(1);
+    expect(second.isDone).toBe(true);
+
+    // Both, once each. Drop the `_id` term from compareSortKeys and the second
+    // page comes back empty: the remaining entry compares EQUAL to the cursor,
+    // so it never sorts after it and is skipped for good.
+    const seen = [...first.entries, ...second.entries].map((e) => e.doc._id);
+    expect(new Set(seen)).toEqual(new Set(["ad_a", "ad_b"]));
   });
 });

@@ -16,7 +16,21 @@ import { isFlagEnabled } from "./featureFlags";
 import { locationMetaValidator } from "./lib/location";
 import { resolveBuyer, isNearAd, isNearComposite, atWidestRadius, type BuyerLocation } from "./lib/nearby";
 
-const SEARCH_LIMIT = 50;
+/**
+ * How many rows each search pass reads. This is the whole POOL a paginated
+ * search draws from, not a page size — `getAds` sorts it by `bumpedAt` desc and
+ * cursors through it, so anything outside the pool is unreachable.
+ *
+ * 1024 is Convex's hard ceiling on search results, so this is as complete as
+ * the platform allows. Record the ceiling honestly: a search index returns rows
+ * in RELEVANCE order only, so past 1024 matches the pool is a relevance-selected
+ * subset and a very old exact match can be absent from it. What that costs is a
+ * missing row, never a mis-ordered page — everything that reaches the pool is
+ * ordered by date. Trigger to do something about it: any single search term
+ * matching more than ~1024 live rows. The fix then is a date-ordered lane (a
+ * `bumpedAt` index pass unioned with the relevance pass), not a bigger cap.
+ */
+const SEARCH_POOL_LIMIT = 1024;
 
 /**
  * Ceiling on composite rows read per table. `search_composite`'s filterFields
@@ -102,12 +116,14 @@ async function compositeHits(
  *
  * ponytail: the still-open ceiling is the first level only. A row near by
  * distance or SA4 alone is not matched by `.eq("location", …)`, so if it ranks
- * below the DB cut (50 by relevance in search, `limit` by date on the rail) it
- * is never fetched, and no JS can resurrect it — leaving a far row rendered
- * above a near one that was never in the pool. Once a row IS in the pool the
- * `pinned` field protects it, so do not read this as "distance-near rows lose
- * the trim"; they don't, and Phase 5's tests fail if that changes. The main feed
- * (`feed.getFeed`) is unaffected at both levels — it paginates, it doesn't cut.
+ * below the DB cut (SEARCH_POOL_LIMIT by relevance in search, `limit` by date on
+ * the rail) it is never fetched, and no JS can resurrect it — leaving a far row
+ * rendered above a near one that was never in the pool. Once a row IS in the
+ * pool the `pinned` field protects it, so do not read this as "distance-near
+ * rows lose the trim"; they don't, and Phase 5's tests fail if that changes.
+ * Search no longer TRIMS at all (it paginates), so on that path this is the only
+ * level left; the rail still trims at both. The main feed (`feed.getFeed`) is
+ * unaffected at both levels — it paginates, it doesn't cut.
  * Fixing the first level means a server-side near lane (a pass pinned on
  * `sa4Code`, which needs an index and a search filterField); the plan lists that
  * as deliberately not built, triggered by page size. Same class as the composite
@@ -268,23 +284,155 @@ async function latestComposites(
 }
 
 /**
- * Relevance selects the candidates; `assembleFeedPage` (convex/lib/cards.ts)
- * groups and orders them — the SAME assembly step `feed.getFeed` ends at, so a
- * page cannot differ between browse and search.
+ * The total order a paginated search walks: `bumpedAt` desc, then the same two
+ * system tie-breakers `feed.getFeed`'s mergedStream uses. Every entry in the
+ * pool has all three, whichever table it came from, so ads and composites share
+ * one sequence and no ad type gets its own lane (rules 1, 2 and 4).
  *
- * ponytail: the 50-ad relevance cap is a relevance cut — a very old exact match
- * can fall out of the pool. Fine at current inventory; revisit if search feels
- * lossy. (Composites are capped separately, see COMPOSITE_LIMIT.)
+ * Descending on every field: a negative result means `a` comes first.
+ *
+ * All three terms are load-bearing, and they fail differently:
+ *
+ * - `bumpedAt` alone is not enough. A cursor that carried only it would compare
+ *   EQUAL to every entry sharing that millisecond, so none of them would sort
+ *   after it and all would be filtered out of every later page — ads silently
+ *   skipped at a page boundary by the mechanism added to stop ads disappearing.
+ *   `ads.test.ts` "entries sharing a bumpedAt are each returned exactly once"
+ *   covers this; bulk-seeded and migrated rows are the realistic way to get a
+ *   tie.
+ * - `_id` is the last resort. `_creationTime` is unique WITHIN a table, so no
+ *   convex-test fixture can force two rows to share one — but this pool merges
+ *   THREE tables, and an ad and a bundle CAN share both `bumpedAt` and
+ *   `_creationTime`. That is why `feed.getFeed`'s mergedStream orders on the
+ *   same three fields; the convex-helpers authors reached the same conclusion
+ *   independently. Covered by the unit test over `pageOfPool` (exported for
+ *   exactly that — it is pure, and an integration fixture cannot reach this
+ *   case).
  */
+type SortKey = { bumpedAt: number; creationTime: number; id: string };
+
+const sortKeyOf = (e: FeedSourceEntry): SortKey => ({
+  bumpedAt: e.doc.bumpedAt,
+  creationTime: e.doc._creationTime,
+  id: e.doc._id,
+});
+
+const compareSortKeys = (a: SortKey, b: SortKey): number =>
+  b.bumpedAt - a.bumpedAt ||
+  b.creationTime - a.creationTime ||
+  (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+
+/**
+ * Take one page out of the ordered pool — one cursor PER GROUP, near group
+ * first.
+ *
+ * Two properties, and the second is why there are two cursors rather than one
+ * date-ordered cursor over the whole pool:
+ *
+ * - **Newest first, honestly.** Every entry on a page sorts before every entry
+ *   on the next one, so scrolling further only ever shows older things. Keyset,
+ *   not offset: the cursor names the last entry handed out, so a row inserted
+ *   between two fetches shifts no page.
+ * - **The buyer's area comes first, and it is finished before the rest starts.**
+ *   A page takes as much of the near group as it can hold, and only what is left
+ *   over goes to the far group. That is rule 5 in the order rule 5 states it:
+ *   ads in the area, then ads outside it — a buyer with nothing inside their
+ *   distance is TOLD so (the boundary's banner form) and the feed continues
+ *   outward from there.
+ *
+ * Selecting purely by date breaks that: an in-area match older than a page of
+ * out-of-area ones would not be on page 1 at all, so the buyer's first screen
+ * would be the far group.
+ *
+ * **Reserving a fixed share of every page for the far group is worse, and it is
+ * not what Boost needs.** It would make later pages insert near cards ABOVE
+ * content the buyer has already scrolled past — the page shifting under them
+ * mid-scroll — where a long near group is just a long list. Rule 3 says in terms
+ * that a boosted ad at the top of EACH group is the compliant outcome, so a
+ * boosted far ad sitting below a long near group is exactly right; it is not
+ * "unreachable", and the near group is bounded by the pool in any case.
+ *
+ * With no location set everything is in the first group, so a page is just the
+ * next `numItems` newest — exactly as before.
+ *
+ * This is grouping, not ordering (rule 2): inside each group the sequence is
+ * `bumpedAt` desc and nothing else. `assembleFeedPage` then orders the page
+ * section-first, and `AdsGrid` regroups the accumulated pages into one near run
+ * and one far run — each still newest-first, because this selection is.
+ */
+type GroupCursors = { near: SortKey | null; far: SortKey | null };
+
+function parseCursor(raw: string | null): GroupCursors {
+  const empty: GroupCursors = { near: null, far: null };
+  if (!raw) return empty;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return { near: asSortKey(parsed?.near), far: asSortKey(parsed?.far) };
+  } catch {
+    return empty;
+  }
+}
+
+const asSortKey = (value: unknown): SortKey | null => {
+  const k = value as Partial<SortKey> | undefined;
+  return typeof k?.bumpedAt === "number" &&
+    typeof k.creationTime === "number" &&
+    typeof k.id === "string"
+    ? (k as SortKey)
+    : null;
+};
+
+export function pageOfPool(
+  pool: FeedSourceEntry[],
+  paginationOpts: { numItems: number; cursor: string | null }
+): { entries: FeedSourceEntry[]; isDone: boolean; continueCursor: string } {
+  // Unsectioned entries (no location set) all belong to the first group, the
+  // same fallback `sectionRank` and `AdsGrid` use.
+  const after = (section: "near" | "far", from: SortKey | null) =>
+    pool
+      .filter((e) => (e.section ?? "near") === section)
+      .sort((a, b) => compareSortKeys(sortKeyOf(a), sortKeyOf(b)))
+      .filter((e) => from === null || compareSortKeys(sortKeyOf(e), from) > 0);
+
+  const cursor = parseCursor(paginationOpts.cursor);
+  const nearLeft = after("near", cursor.near);
+  const farLeft = after("far", cursor.far);
+
+  // Floor of 1: a page that selects nothing while the pool still holds rows
+  // never advances the cursor, and a client asking for more loops forever.
+  const size = Math.max(1, paginationOpts.numItems);
+  // Near takes the whole page if it can fill it; far gets only what is left.
+  const nearPage = nearLeft.slice(0, size);
+  const farPage = farLeft.slice(0, size - nearPage.length);
+
+  const lastOf = (page: FeedSourceEntry[], fallback: SortKey | null) =>
+    page.length > 0 ? sortKeyOf(page[page.length - 1]) : fallback;
+
+  return {
+    entries: [...nearPage, ...farPage],
+    isDone: nearPage.length === nearLeft.length && farPage.length === farLeft.length,
+    continueCursor: JSON.stringify({
+      near: lastOf(nearPage, cursor.near),
+      far: lastOf(farPage, cursor.far),
+    } satisfies GroupCursors),
+  };
+}
 
 /**
  * Full-text search across every ad type, newest first.
  *
- * Search-only since the unified feed (Phase 3): browsing/pagination lives in
+ * Search-only since the unified feed (Phase 3): browsing lives in
  * `feed.getFeed`; this survives for the home-feed search box and the
- * CommandPalette. Returns the top 50 matches in a single "page" (search
- * indexes don't cursor-paginate) — `paginationOpts` is accepted for
- * `usePaginatedQuery` compatibility but only shapes the response envelope.
+ * CommandPalette.
+ *
+ * **It paginates for real.** A Convex search index answers in relevance order
+ * and nothing else, so the index itself cannot be cursored newest-first (rule
+ * 2). Instead the matches are pooled once (SEARCH_POOL_LIMIT), sorted by
+ * `bumpedAt` desc, and walked with a keyset cursor per group (`pageOfPool`).
+ * Nothing is trimmed away, which is the point: before this the
+ * query returned a single page of 50 ranked near-first, so 50 nearby matches
+ * removed every out-of-area one and left no page to scroll to — location was
+ * shrinking the result set, which rule 5 forbids.
  *
  * @param args.search - Search term (ad titles; composites' member titles)
  * @param args.categoryId - Filter by specific category (optional)
@@ -296,7 +444,7 @@ async function latestComposites(
  *   area", chosen by the buyer in the header. Absent = the admin-tuned
  *   `appSettings` default. It only ever decides which SECTION an entry lands
  *   in — narrowing it regroups ads, it never removes one (rule 5).
- * @param args.paginationOpts - Pagination envelope (results are one page)
+ * @param args.paginationOpts - Page size and keyset cursor over the ordered pool
  *
  * Excludes `isSold` ads (same as `isDeleted`) — a sold item, standalone or bundled,
  * shouldn't browse as available. Direct links (e.g. a seller's own dashboard) still
@@ -313,13 +461,13 @@ export const getAds = query({
   },
   handler: async (ctx, args) => {
     const buyer = await resolveBuyer(ctx, args.location, args.locationMeta, args.radiusKm);
-    const hits = await searchAllTypes(ctx, { ...args, buyer, limit: SEARCH_LIMIT });
+    const pool = await searchAllTypes(ctx, { ...args, buyer, limit: SEARCH_POOL_LIMIT });
+    const { entries, isDone, continueCursor } = pageOfPool(pool, args.paginationOpts);
 
-    return {
-      page: await assembleFeedPage(ctx, hits, SEARCH_LIMIT),
-      isDone: true,
-      continueCursor: "",
-    };
+    // No `limit`: this path no longer cuts, so `assembleFeedPage` only orders
+    // and hydrates. Its `pinned`-first trim is dead here and still load-bearing
+    // on `getLatestAds`, which does cut — don't delete it.
+    return { page: await assembleFeedPage(ctx, entries), isDone, continueCursor };
   },
 });
 

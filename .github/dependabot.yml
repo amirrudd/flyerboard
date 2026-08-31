@@ -18,6 +18,10 @@ updates:
       # convex-helpers widens its typescript peer range.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # @vercel/og 1.0.2 ships a broken bundled harfbuzzjs (dynamic require of
+      # "fs" / missing hb.wasm) that crashes the OG asset build step. Pinned to
+      # 1.0.1 in package.json; unpin when a fixed release lands.
+      - dependency-name: "@vercel/og"
     groups:
       # Group ALL non-major production dependencies
       production-dependencies:

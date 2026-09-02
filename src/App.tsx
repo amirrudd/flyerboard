@@ -12,6 +12,7 @@ import { UserSyncProvider } from "./context/UserSyncContext";
 
 import { useSession } from "@descope/react-sdk";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy: Load on-demand when navigating to these routes
 const AdDetailPage = lazy(() => import("./pages/AdDetailPage"));
@@ -47,6 +48,7 @@ export default function App() {
           <LazyMotion features={() => import("@/lib/motionFeatures").then((m) => m.default)} strict>
           <BrowserRouter>
             <SpeedInsights />
+            <Analytics />
             <Routes>
               {/* Immersive seller flow — full screen, outside the app shell */}
               <Route path="/sell/moving-sale" element={

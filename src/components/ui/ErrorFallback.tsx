@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Warning, House, ArrowsClockwise, SignOut } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
 import { isAuthError } from '../../lib/useAuthRecovery';
 import { useDescope } from '@descope/react-sdk';
 
@@ -18,7 +17,6 @@ interface ErrorFallbackProps {
  * recover from stuck auth states (expired tokens, sync failures, etc).
  */
 export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackProps) {
-    const navigate = useNavigate();
     const sdk = useDescope();
     const isDevelopment = import.meta.env.DEV;
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -26,9 +24,11 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
     // Check if this is an authentication-related error
     const isAuthRelatedError = isAuthError(error);
 
+    // Hard navigation, not useNavigate(): the outermost ErrorBoundary sits outside
+    // <BrowserRouter> (src/App.tsx), so router hooks throw here and blank the page.
     const handleGoHome = () => {
         resetError();
-        void navigate('/');
+        window.location.assign('/');
     };
 
     const handleTryAgain = () => {
@@ -48,7 +48,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
             console.error('Logout failed during error recovery:', e);
         }
         resetError();
-        void navigate('/');
+        window.location.assign('/');
     };
 
     return (

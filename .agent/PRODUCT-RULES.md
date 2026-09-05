@@ -48,7 +48,9 @@ by how far away they are; any ML/scoring re-rank.
 ## 3. Visibility is the product we sell.
 
 Because newest wins, being seen fades over time. Paying to make an ad **new again**
-("Boost") is the monetisation. **Not yet built.**
+("Boost") is the monetisation. **Status (2026-09-05): the refresh mechanism is
+built and merged (PR #288), shipped dark behind the `boostToTop` feature flag —
+currently DISABLED by default. No payment is wired: boosting is free today.**
 
 **Boost is a refresh, not a pin.** It re-stamps the ad's `bumpedAt` to now, so rule 2
 carries it to the top on its own. It then sinks again as other ads arrive — ten new

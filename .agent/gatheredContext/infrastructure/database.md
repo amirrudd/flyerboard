@@ -1,6 +1,6 @@
 # Database Patterns & Convex
 
-**Last Updated**: 2026-08-30
+**Last Updated**: 2026-09-05
 
 ## Boost feed ordering (Phase 1B, Jul 2026) — READ FIRST if touching the feed
 
@@ -9,7 +9,10 @@
   search: `convex/ads.ts` `getAds` (search-only since the /simplify pass); fresh-rail:
   `getLatestAds`) orders by `bumpedAt`
   desc via the `by_bumped_at` and `by_category_and_bumped_at` indexes — NOT
-  `_creationTime`. `_creationTime` is now display-only ("Posted X ago"). A boost
+  `_creationTime`. In the FEED, `_creationTime` is display-only ("Posted X ago").
+  It is still legitimately used as a sort key on **owner-facing management lists**
+  (`convex/bundles.ts` `getMyBundles`, `getEligibleAdsForBundle`) — those are lists you
+  manage, not browse, so a Boost must not reorder them. Don't "fix" those to `bumpedAt`. A boost
   (`convex/posts.ts` `boostAd`) re-stamps `bumpedAt = Date.now()`, lifting the ad to top.
   - `getFeed` arg is `maxSortTime` — a `bumpedAt` upper bound (freeze-at-mount).
     Its category branch applies the `bumpedAt` bound in the **post-filter** (the
@@ -1003,3 +1006,23 @@ const [ads, categories, users] = await Promise.all([
 
 ❌ **Don't**: Hard delete data
 ✅ **Do**: Use soft delete pattern
+
+## Backing up the database (Sep 2026)
+
+`.agent/workflows/backup-and-restore-convex.md` holds the snapshot/restore procedure.
+
+**Check its "Last executed" line before trusting it.** While that line reads
+NOT YET EXECUTED, the project has a *documented* backup, not a *verified* one — nobody
+has proven a snapshot can actually be restored. Run the export + restore-into-dev cycle
+before any prod migration (`npx convex run migrations:<name>`) or any schema change that
+drops or renames a field.
+
+Two CLI gotchas the runbook exists to prevent:
+- `convex export` takes `--path <file>`; `convex import` takes the path **positionally**.
+  They differ, and this is the most common failure.
+- `convex import` needs `--replace-all` whenever the target deployment already has
+  tables, otherwise it refuses rather than merging.
+
+Snapshots contain real user PII (emails, phone numbers, chat messages).
+`.gitignore` excludes `convex-snapshots/` — keep them there.
+

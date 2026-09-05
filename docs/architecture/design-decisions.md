@@ -550,3 +550,85 @@ calculation, no radius control, and `sectionFields` (named `tierFields` until th
 Phase 3 refactor) / `compositeMatchesFilters` (`convex/lib/cards.ts`) still decide
 near/far by exact location-string equality.
 Changing that is a product decision, not an implementation one.
+
+## Vite SPA over Next.js (Sep 2026)
+
+**Decision**: The web app stays a **client-rendered Vite + React Router v7 SPA**
+on Vercel. We are not migrating to Next.js. This is a reviewed decision, not an
+accident of the starter template.
+
+**Why not Next.js**:
+- **The SEO/social gap is already closed without it.** `middleware.ts` (Vercel
+  Edge) intercepts `/ad/:id`, `/bundle/:id`, `/sale/:slug`, `/blog/:slug`, does
+  one Convex read, and injects real Open Graph tags into the static shell before
+  it is served; `api/og/*` renders per-entity share cards, and
+  `scripts/generate-og-assets.ts` renders the blog's at build time. Crawlers that
+  don't run JS get correct `<head>` tags today. See the Open Graph Share Cards
+  decision above.
+- **SSR fights Convex's actual value.** Convex's payoff is reactive client
+  subscriptions — `useQuery` re-rendering on every write. Server Components
+  can't subscribe; using them means `preloadQuery` plumbing per route and a
+  client re-subscribe on hydrate. More moving parts for the same screen.
+- **The other Next.js wins are already covered.** `next/image` → Cloudflare
+  Transformations on `img.flyerboard.com.au` with a zone Cache Rule. API routes →
+  `api/og/*` already deploys as Vercel functions. ISR for the blog → the blog is
+  markdown compiled into the bundle at build time.
+- **Migration cost is real and the payoff is unmeasured.** 24 routes and 16
+  `lazy()` boundaries in `src/App.tsx`, the Descope OIDC + `UserSyncProvider` +
+  `MarketplaceProvider` chain (all client-only today, all needing a new
+  server/client boundary story), plus `vercel.json`, `middleware.ts`, Vite
+  plugins, Vitest and Playwright configs. That reintroduces exactly the
+  auth-race and hydration bug class this repo has already paid down.
+
+**What we'd actually be buying**: true server-rendered HTML for `/ad/:id` and
+`/blog/:slug` — better Googlebot indexing and a faster LCP on cold, shared
+links. That is the *only* genuine gain, and today there is no traffic data
+saying it is a constraint.
+
+**Revisit trigger**: organic search becomes a real acquisition channel for
+listing or blog pages **and** Search Console shows the client-rendered content
+is not being indexed adequately.
+
+**Cheaper first move if that happens**: React Router v7 is Remix — turning on
+its framework/SSR mode keeps every route, provider, and test in place. Try that
+before a Next.js port. This supersedes the "SSR/pre-render is the future upgrade
+path" note in the Blog decision above by naming which path.
+
+## Convex lock-in — verified exit, not a portability layer (Sep 2026)
+
+**Decision**: We accept Convex coupling as a deliberate trade. We keep a
+**tested** data escape hatch and we do **not** build abstraction layers to make
+a hypothetical migration cheaper.
+
+**Why**: The exit cost is dominated by reactivity, not by types. 157 `useQuery`
+call sites assume results update themselves; nothing else on the market
+reproduces that, so the work of leaving is rewriting those expectations, not
+renaming identifiers. Portability shims would add complexity now against a
+migration that may never happen, and would not touch the part that is actually
+expensive.
+
+**What we did instead**:
+- `.agent/workflows/backup-and-restore-convex.md` — a snapshot/restore
+  procedure. Note its "Last executed" line: until someone runs it end to end,
+  the project does not have a verified backup, only a documented one.
+- Collapsed the triplicated `Category` interface into one exported type on
+  `MarketplaceContext`. Taken because it removed live duplication, not for
+  portability.
+
+**Explicitly rejected**:
+- A blanket `Id<"table">` → `string` sweep (113 sites across 38 files). Trades a
+  real compile-time guarantee for an unscheduled migration. Keep the branded ids.
+- Extracting more "pure logic" out of Convex handlers. Already done — six of
+  `convex/lib/`'s 15 modules (`appConfig`, `boost`, `emailUtils`,
+  `feedSections`, `logger`, `rateLimitConfig`) hold zero `ctx` references.
+  The rest take `ctx` because they load documents; that is data access, not
+  logic.
+- Removing `_creationTime` from queries. Its only non-display uses
+  (`convex/bundles.ts:457,532`) sort an owner's own **management** list
+  newest-first. `.agent/PRODUCT-RULES.md` governs the public feed, not these
+  screens; stable creation order is right for a list you manage rather than
+  browse. The public feed already sorts on `bumpedAt` (`convex/feed.ts:38`).
+
+**Revisit trigger**: Convex cost becomes material at real traffic, or a product
+need appears that the document model genuinely fights (reporting joins,
+ad-hoc analytics).

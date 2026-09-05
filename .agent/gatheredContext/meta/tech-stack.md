@@ -5,12 +5,15 @@ description: Technology stack and dependencies
 
 # Tech Stack
 
-**Last Updated**: 2026-01-17
+**Last Updated**: 2026-09-05
 
 ## Frontend
 - **React 19** - UI library
 - **TypeScript** - Type safety
-- **Vite** - Build tool & dev server (using SWC for fast builds)
+- **Vite** - Build tool & dev server (using SWC for fast builds). Deliberately
+  a client-rendered SPA, **not** Next.js — reviewed Sep 2026, see
+  `docs/architecture/design-decisions.md` “Vite SPA over Next.js”. Don't
+  propose a Next.js migration without hitting the revisit trigger there.
 - **React Router v7** - Client-side routing
 - **TailwindCSS** - Utility-first CSS
 

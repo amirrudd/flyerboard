@@ -46,3 +46,7 @@ coverage/
 
 # graphify knowledge-graph output (regenerable)
 graphify-out/
+
+# Convex data snapshots — contain real user PII, never commit
+convex-snapshots/
+*.convex-snapshot.zip

@@ -10,7 +10,7 @@ import { useDeviceInfo } from "../../hooks/useDeviceInfo";
 import { SaleThumbnail } from "../movingSale/SaleThumbnail";
 import { BundleThumbnail } from "../bundles/BundleThumbnail";
 import { boostArrivalKey, entryKey } from "../../context/freshAdsMerge";
-import type { FeedEntry } from "../../context/MarketplaceContext";
+import type { Category, FeedEntry } from "../../context/MarketplaceContext";
 import { displayLocation } from "../../lib/locationService";
 import { NearbyBoundary } from "./NearbyBoundary";
 import { FEED_SECTIONS } from "../../../convex/lib/feedSections";
@@ -29,13 +29,6 @@ type Ad = Extract<FeedEntry, { kind: "ad" }>["ad"];
 export type SaleFeedCard = Extract<FeedEntry, { kind: "sale" }>["card"];
 /** A whole Bundle rendered as one card in the date-sorted feed. */
 export type BundleFeedCard = Extract<FeedEntry, { kind: "bundle" }>["card"];
-
-interface Category {
-  _id: Id<"categories">;
-  name: string;
-  slug: string;
-  parentId?: Id<"categories">;
-}
 
 /** The "New" badge. Composites place it right — top-left holds the type badge. */
 const NewBadge = ({ side = "left" }: { side?: "left" | "right" }) => (

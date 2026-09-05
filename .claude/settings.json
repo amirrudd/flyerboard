@@ -12,5 +12,10 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "additionalDirectories": [
+      "~/flyerboard-vault"
+    ]
   }
 }

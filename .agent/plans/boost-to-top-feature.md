@@ -12,7 +12,7 @@
 > (re-stamp its `bumpedAt`), and its **member ads are permanently boost-ineligible**
 > (generalises Open decision #7 below). Eligibility/cooldown/cap rules for standard ads
 > are unchanged. The pins monetisation model lives in
-> `ResearchLab/ideas/boost-monetisation.md`.
+> the product vault → `Ideas/Boost monetisation.md`.
 
 Each phase below is self-contained and executable in a fresh chat context. Every phase cites the exact files/lines to copy from — **read the cited sources before writing code; do not work from memory.**
 

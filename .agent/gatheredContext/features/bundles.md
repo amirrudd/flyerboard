@@ -4,7 +4,7 @@
 
 Standalone feature: a seller groups a small, fixed set (2–4) of their OWN standalone
 ads at a discounted package price. No sale page / QR / pickup window (that's Moving
-Sale). Design doc: `ResearchLab/ideas/bundle-listing-design.md`.
+Sale). Design record: product vault → `Archive/ResearchLab/ideas/bundle-listing-design.md`; product decisions in `Ideas/Bundle Listing.md`.
 
 Gated behind the `bundleListing` feature flag (seeded in `migrations:seedFeatureFlags`,
 mirrors `movingSaleMode`). Flag OFF hides every entry point; it does not delete data.
@@ -233,8 +233,7 @@ sold-state machine incl. atomic race, detach-on-delete, all queries).
 Founder review found the v1 flaw: the feed card tapped through to `adIds[0]`, so a bundle
 had no page, no shareable URL, and no way to message *about the bundle*. v2 mirrors how
 Moving Sale solved the same "grouping without a duplicate `ads` row" trade-off: grouping
-table + derived feed card + **dedicated public route**. Design: `ResearchLab/ideas/
-bundle-listing-design.md` § "v2 — Bundle becomes a first-class destination".
+table + derived feed card + **dedicated public route**. Design record: product vault → `Archive/ResearchLab/ideas/bundle-listing-design.md` § "v2 — Bundle becomes a first-class destination".
 
 ### Public page — `/bundle/:id`, the "Deal Ticket"
 - Chosen from 3 mocked directions (Storefront / Deal Ticket / Editorial Set). The page

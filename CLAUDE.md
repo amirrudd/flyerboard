@@ -23,6 +23,26 @@ is a copy that will drift. Link to the file; let readers open it.
 
 Rules change only when Amir changes them.
 
+## Product brain — the vault at `~/flyerboard-vault`
+
+Everything about the product that is not code lives in a separate Obsidian vault, added to
+this project as an additional directory: vision, strategy, ideas, research, decisions,
+competitors, market, growth, trust, business. **This repo holds technical material only.**
+
+- **Read** `~/flyerboard-vault/Home.md` before planning any user-facing change, plus the
+  vault note for the feature you touch (`Ideas/<feature>.md`). Do not load the whole vault.
+- **The rules file above stays here** because the guardian reads it in every worktree; the
+  vault's `Product/Product rules.md` is a marked mirror of it.
+- **Write only where `~/flyerboard-vault/Vault rules.md` allows.** Append to
+  `Decisions/Decision log.md`, `Research/Verified & refuted claims.md`, the idea note you
+  touched, a new `Research/` note, or the current `Journal/` week. Never edit `Product/`,
+  `Strategy/`, `Home.md`, or `Vault rules.md` — raise those with Amir. Every line carries a
+  source or `#unverified`. Append; never rewrite or delete.
+- **Vault git**: `git pull` before writing, commit, push to `main` (no branches or PRs
+  there), and name the vault commit in your final message.
+- **No product docs in this repo.** A research pass, competitor observation, product
+  decision, or strategy note written under `docs/` or `.agent/` is in the wrong place.
+
 ## Required session protocol
 
 The `.agent/gatheredContext/` system is the project's accumulated technical memory. **Treat reading and updating it as part of every task — not optional.** Skipping the read step is the most likely cause of regressions; skipping the write step is what causes future sessions to repeat the same investigations.
@@ -103,14 +123,16 @@ Vitest uses `jsdom` and `src/test/setup.ts`; Playwright tests live in `e2e/` and
 - **Port conflict / dev won't start**: `lsof -ti :5173 -sTCP:LISTEN | xargs kill; lsof -ti :3210 -sTCP:LISTEN | xargs kill` (`-sTCP:LISTEN` is load-bearing — without it the kill also hits browser tabs connected to the port). Full procedure: `.agent/workflows/fix-port-conflicts.md`.
 - **CI passes locally but fails on push**: `.agent/workflows/debug-ci-failures.md`.
 
-## Two-track documentation
+## Three-track documentation
 
-This project deliberately separates human docs from agent context. Don't conflate them.
+This project separates product knowledge, human technical docs, and agent context. Don't conflate them.
 
-- **`docs/`** — for human developers. Architecture decisions, setup guides, migration histories. Stable, narrative, audience = a person onboarding. Subfolders: `docs/architecture/` (e.g. `authentication-architecture.md`, `design-decisions.md`, `architecture-review.md`, dated audits), `docs/guides/` (`r2-cors-setup.md`, `r2-cdn-setup.md`, `push-notifications.md`, `blog-content-guideline.md`, `cloudflare-image-transformations-setup.md`), `docs/migrations/` (completed migrations: `storage-migration.md`, `descope-convex-integration.md`, `email-notifications-update.md`). Read these when you need the *why* behind a decision or a one-time setup procedure.
+- **`~/flyerboard-vault/`** — the product brain (see "Product brain" above). Vision, strategy, ideas, research, decisions, competitors, growth. The only place product rationale is written. Read `Home.md`; write per its `Vault rules.md`.
+
+- **`docs/`** — for human developers. Architecture decisions, setup guides, migration histories. Technical only — the product side of any decision goes to the vault. Stable, narrative, audience = a person onboarding. Subfolders: `docs/architecture/` (e.g. `authentication-architecture.md`, `design-decisions.md`, `architecture-review.md`, dated audits), `docs/guides/` (`r2-cors-setup.md`, `r2-cdn-setup.md`, `push-notifications.md`, `blog-content-guideline.md`, `cloudflare-image-transformations-setup.md`), `docs/migrations/` (completed migrations: `storage-migration.md`, `descope-convex-integration.md`, `email-notifications-update.md`). Read these when you need the *why* behind a decision or a one-time setup procedure.
 - **`.agent/gatheredContext/`** — agent-owned semantic memory. Written by agents, for agents. Captures implementation patterns, trade-offs, gotchas, and the "what's actually true in the code right now" snapshot of each domain. Audience = future Claude / AI sessions. **You both read and write this.** When you discover a non-obvious pattern, fix a subtle bug, or make a trade-off mid-task, update the relevant file here so the next session inherits it.
 
-The split is codified in `docs/README.md` ("For AI Agents" vs "For Human Developers") and `.agent/gatheredContext/INDEX.md` (Update Guidelines).
+The technical split is codified in `docs/README.md` ("For AI Agents" vs "For Human Developers") and `.agent/gatheredContext/INDEX.md` (Update Guidelines).
 
 ### Read order before non-trivial work
 
@@ -136,7 +158,7 @@ For human-facing architecture context (the *why*), cross-reference `docs/archite
 - `visual-consistency-auditor/` — `scripts/audit-design-system.sh <file>` flags hardcoded hex/pixel values. Design tokens: brand primary `#dc3626` (the `bg-primary` DEFAULT / `--primary`; `#ef4444` survives only as the lighter `primary-500` shade), neutrals `#242428` / `#71717a` / `#dbdbe4`, fonts `Plus Jakarta Sans` (body) + `Fraunces` (headings, via `font-display`), Phosphor icons at 16/20/24px (the app-wide icon library; lucide-react survives only for DB-slug category icons — see `src/lib/categoryIcons.tsx` and the admin picker). NOTE: the skill's own `SKILL.md` still lists `#ef4444` — treat this line as the source of truth.
 - `test-stress-tester/` — `scripts/run-repeatedly.sh <test-file> <iterations>` for hunting flakes.
 - `pwa-mobile-optimization-manager/`, `mobile-ux-optimizer/`, `kmp-ui-bridge/` (web↔Compose translation table).
-- `blog-writer/` — house voice + plain-language (Grade 6–8) guardrails + SEO/GEO topic-selection for `src/content/blog/` posts. `scripts/audit-readability.mjs <post.md>` scores Flesch reading ease and flags long sentences, passive voice, and jargon. Contract lives in `docs/guides/blog-content-guideline.md` (that guideline wins on any conflict).
+- `blog-writer/` — house voice + plain-language (Grade 6–8) guardrails + SEO/GEO topic-selection for `src/content/blog/` posts. `scripts/audit-readability.mjs <post.md>` scores Flesch reading ease and flags long sentences, passive voice, and jargon. Frontmatter and structure contract lives in `docs/guides/blog-content-guideline.md`; voice, length, and topic rules live in the product vault `Growth/Content & blog guideline.md` (the vault wins on editorial conflicts, the repo guide on parser conflicts).
 
 ### `.agent/workflows/` (procedures)
 - `verify-changed-files.md` — pre-completion checklist.
@@ -150,7 +172,10 @@ For human-facing architecture context (the *why*), cross-reference `docs/archite
 | New implementation pattern, code example, or non-obvious bug fix | `.agent/gatheredContext/<domain>.md` (update existing file; create only if no domain fits) |
 | Coding standard or rule that should always apply | `.agent/rules/` |
 | Repeatable procedure (commands, recovery steps) | `.agent/workflows/` |
-| Architecture decision or design rationale | `docs/architecture/design-decisions.md` |
+| Architecture decision or technical rationale | `docs/architecture/design-decisions.md` (technical side only) |
+| Product decision, product rationale, or rule change | product vault `Decisions/Decision log.md` (a rule change also edits `.agent/PRODUCT-RULES.md`) |
+| Research finding, verified or refuted claim, competitor observation, user interview | product vault `Research/` + `Research/Verified & refuted claims.md` |
+| Idea status, score, or scope change | product vault `Ideas/<idea>.md` |
 | Setup/configuration procedure for humans | `docs/guides/` |
 | Completed migration narrative | `docs/migrations/` |
 

@@ -594,7 +594,7 @@ its framework/SSR mode keeps every route, provider, and test in place. Try that
 before a Next.js port. This supersedes the "SSR/pre-render is the future upgrade
 path" note in the Blog decision above by naming which path.
 
-## Convex lock-in — verified exit, not a portability layer (Sep 2026)
+## Convex lock-in — accepted, with a documented exit (Sep 2026)
 
 **Decision**: We accept Convex coupling as a deliberate trade. We keep a
 **tested** data escape hatch and we do **not** build abstraction layers to make
@@ -608,9 +608,12 @@ migration that may never happen, and would not touch the part that is actually
 expensive.
 
 **What we did instead**:
-- `.agent/workflows/backup-and-restore-convex.md` — a snapshot/restore
-  procedure. Note its "Last executed" line: until someone runs it end to end,
-  the project does not have a verified backup, only a documented one.
+- `.agent/workflows/backup-and-restore-convex.md` — where the exit path is
+  written down. Note what it is NOT: a backup system. Convex's own dashboard
+  does backups (manual and scheduled), so building one here would duplicate a
+  platform feature. The runbook covers the two things the dashboard does not:
+  exporting data out, and the CLI's `export --path` / `import <positional>`
+  asymmetry.
 - Collapsed the triplicated `Category` interface into one exported type on
   `MarketplaceContext`. Taken because it removed live duplication, not for
   portability.

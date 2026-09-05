@@ -33,8 +33,8 @@
 
 Measured on 2026-09-05 against this worktree. Three de-risking items were proposed in conversation; measurement kept one, replaced one, and cut two.
 
-**KEPT — no backup or restore procedure exists.**
-`grep -rli 'convex export|convex import|backup' docs .agent` returns nothing. There is no evidence a production snapshot has ever been taken. This is not only a portability gap; it is a live data-loss risk with 18 tables of real data behind it.
+**KEPT, THEN NARROWED — no *exit* procedure was written down.**
+`grep -rli 'convex export|convex import|backup' docs .agent` returned nothing, and this section originally called that "a live data-loss risk with 18 tables of real data behind it." **That was wrong on both halves** — Convex's dashboard provides backups (see the Task 1 banner), and the project is pre-launch, so the tables hold test data. What was genuinely missing is a written *exit* path: how to get the data out. The runbook now covers that, and nothing else.
 
 **KEPT (narrowed) — `Category` is declared three times.**
 Identical-in-substance `interface Category` blocks at `src/context/MarketplaceContext.tsx:19`, `src/features/ads/AdsGrid.tsx:33`, and `src/features/layout/Sidebar/SidebarContent.tsx:7`. The Sidebar copy additionally has `icon?: string`. This is real duplication today and happens to be the highest-traffic `Id<"categories">` boundary.
@@ -51,6 +51,22 @@ The only two non-display uses are `convex/bundles.ts:457` (`getMyBundles`) and `
 ---
 
 ## Task 1: Backup and restore runbook, executed once
+
+> **DESCOPED 2026-09-05, after this plan was written.** Steps 1-2 (the
+> `.gitignore` PII rule) and a retargeted Step 6 (the runbook) shipped. Steps 3-5
+> — the prod export and restore-into-dev drill — were **cut, not deferred**.
+>
+> Why: the Findings below claim "no backup exists" because no procedure existed
+> *in this repo*. That was the wrong conclusion. Convex Cloud has Backup &
+> Restore built into the dashboard, including scheduled periodic backups (Pro:
+> daily/7-day, weekly/14-day) — verified at
+> https://docs.convex.dev/database/backup-restore. Combined with the project
+> being pre-launch (no real user data), the "live data-loss risk" framing was
+> overstated. The platform covers it.
+>
+> The runbook survives retargeted: it documents the **exit path** (getting data
+> out) and the CLI's `export --path` / `import <positional>` asymmetry — not
+> disaster recovery. Do not re-run Steps 3-5 as written.
 
 **Files:**
 - Create: `.agent/workflows/backup-and-restore-convex.md`
@@ -130,7 +146,7 @@ Create `.agent/workflows/backup-and-restore-convex.md`. Replace every `<...>` wi
 ```markdown
 # Backup and restore the Convex database
 
-**Last executed**: <YYYY-MM-DD> (by <who>) — snapshot <N> tables, <SIZE>, restore into dev verified.
+**Last executed**: (superseded — see the DESCOPED banner on Task 1; the shipped runbook documents the exit path, not a backup drill)
 
 Deployments: prod `resilient-pheasant-112`, dev `doting-dogfish-130`.
 
@@ -361,7 +377,7 @@ Append to `docs/architecture/design-decisions.md`:
 
 ```markdown
 
-## Convex lock-in — verified exit, not a portability layer (Sep 2026)
+## Convex lock-in — accepted, with a documented exit (Sep 2026)
 
 **Decision**: We accept Convex coupling as a deliberate trade. We keep a
 **tested** data escape hatch and we do **not** build abstraction layers to make

@@ -1009,13 +1009,14 @@ const [ads, categories, users] = await Promise.all([
 
 ## Backing up the database (Sep 2026)
 
-`.agent/workflows/backup-and-restore-convex.md` holds the snapshot/restore procedure.
+**Convex does backups for you** — dashboard → Deployment Settings → Backup & Restore,
+manual or scheduled (Pro: daily/7-day or weekly/14-day retention). Do not build a backup
+system in this repo; it would duplicate a platform feature.
 
-**Check its "Last executed" line before trusting it.** While that line reads
-NOT YET EXECUTED, the project has a *documented* backup, not a *verified* one — nobody
-has proven a snapshot can actually be restored. Run the export + restore-into-dev cycle
-before any prod migration (`npx convex run migrations:<name>`) or any schema change that
-drops or renames a field.
+`.agent/workflows/backup-and-restore-convex.md` covers the two things the dashboard does
+not: exporting the data OUT (the portability/exit path) and the CLI gotchas below. Take a
+snapshot before any prod migration (`npx convex run migrations:<name>`) or schema change
+that drops or renames a field — via the dashboard or the CLI, whichever is to hand.
 
 Two CLI gotchas the runbook exists to prevent:
 - `convex export` takes `--path <file>`; `convex import` takes the path **positionally**.

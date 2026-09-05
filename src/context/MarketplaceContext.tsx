@@ -16,11 +16,7 @@ import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark
 /** One unified-feed page entry (ad | bundle card | sale card), server-interleaved on `bumpedAt` desc; rendered verbatim. */
 export type FeedEntry = FunctionReturnType<typeof api.feed.getFeed>["page"][number];
 
-/**
- * The category shape every consumer uses. Declared here because this provider
- * is what loads categories. `icon` is optional — only the sidebar renders it
- * (via `getCategoryIcon`); the feed and grid ignore it.
- */
+/** Owned here: this provider loads categories. `icon` optional, sidebar-only */
 export interface Category {
     _id: Id<"categories">;
     name: string;

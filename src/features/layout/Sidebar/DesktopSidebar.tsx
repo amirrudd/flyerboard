@@ -1,13 +1,6 @@
 import { Id } from '../../../../convex/_generated/dataModel';
 import { SidebarContent } from './SidebarContent';
-
-interface Category {
-    _id: Id<"categories">;
-    name: string;
-    slug: string;
-    icon?: string;
-    parentId?: Id<"categories">;
-}
+import type { Category } from '../../../context/MarketplaceContext';
 
 interface DesktopSidebarProps {
     categories: Category[];

@@ -16,6 +16,9 @@ The CLI commands below exist for two things the dashboard does not cover.
 The exit path if Convex ever has to be left. See
 `docs/architecture/design-decisions.md` § "Convex lock-in".
 
+The dashboard can download a backup too — this is the scriptable equivalent, not
+the only way out.
+
     npx convex export --prod --include-file-storage --path convex-snapshots/prod-$(date +%Y-%m-%d).zip
 
 Produces a ZIP with one `documents.jsonl` per table, plus a `_storage/` folder.
@@ -34,15 +37,23 @@ just as well — use whichever is in front of you.
 
 ## Restoring
 
-    npx convex import --replace-all convex-snapshots/<file>.zip           # -> dev
-    npx convex import --prod --replace-all convex-snapshots/<file>.zip    # -> PROD, destructive
+    npx convex import --deployment doting-dogfish-130 --replace-all convex-snapshots/<file>.zip   # -> dev
+    npx convex import --prod --replace-all convex-snapshots/<file>.zip                            # -> PROD, destructive
 
-Two gotchas that cost time if you hit them cold:
+**Always name the target.** These commands replace every table in whatever
+deployment they hit, and `import` with no flag silently defaults to "your dev
+deployment" — which is a guess about your shell state, not a decision you made.
+Spell it out: `--deployment doting-dogfish-130` for dev, `--prod` for prod.
+(The flag is `--deployment`, not `--deployment-name`; it takes a deployment name
+like `doting-dogfish-130`.)
+
+Three gotchas that cost time if you hit them cold:
 
 - `export` takes `--path <file>`. `import` takes the path **positionally**. They
   differ, and this is the most common failure.
 - `import` needs `--replace-all` when the target deployment already has tables.
   Without it the import refuses rather than merging.
+- Neither command asks which deployment you meant. Pin it explicitly, every time.
 
 The `--prod` form replaces production data. It is for a real recovery only, and
 the dashboard's restore is the friendlier route to the same place.

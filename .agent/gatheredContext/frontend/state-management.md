@@ -13,8 +13,11 @@ description: State management and data flow
 The provider is what loads categories, so it owns the type:
 `{ _id: Id<"categories">; name: string; slug: string; icon?: string; parentId?: Id<"categories"> }`.
 `icon` is optional because only the sidebar renders it (via `getCategoryIcon`).
-Until Sep 2026 the same interface was declared three times (here, `AdsGrid.tsx`,
-`SidebarContent.tsx`) and had already drifted — only the sidebar copy carried `icon`.
+Until Sep 2026 the same interface was declared **seven** times — here, `AdsGrid.tsx`,
+`SidebarContent.tsx`, `Sidebar/index.tsx`, `DesktopSidebar.tsx`, `MobileSidebar.tsx`,
+and `admin/CategoriesTab.tsx` — and had drifted: the feed-side copies were missing
+`icon`. A first pass caught only three of them; PR review caught the rest. If you add
+a component that takes categories, import the type.
 Consumers use `import type { Category } from ".../context/MarketplaceContext"`; the
 import is type-only, so it cannot create a runtime cycle even from components rendered
 beneath the provider.

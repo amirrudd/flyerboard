@@ -2,14 +2,7 @@ import { Id } from '../../../../convex/_generated/dataModel';
 import { useDeviceInfo } from '../../../hooks/useDeviceInfo';
 import { MobileSidebar } from './MobileSidebar';
 import { DesktopSidebar } from './DesktopSidebar';
-
-interface Category {
-    _id: Id<"categories">;
-    name: string;
-    slug: string;
-    icon?: string;
-    parentId?: Id<"categories">;
-}
+import type { Category } from '../../../context/MarketplaceContext';
 
 interface SidebarProps {
     sidebarCollapsed: boolean;

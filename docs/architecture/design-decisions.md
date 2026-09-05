@@ -610,10 +610,11 @@ expensive.
 **What we did instead**:
 - `.agent/workflows/backup-and-restore-convex.md` — where the exit path is
   written down. Note what it is NOT: a backup system. Convex's own dashboard
-  does backups (manual and scheduled), so building one here would duplicate a
-  platform feature. The runbook covers the two things the dashboard does not:
-  exporting data out, and the CLI's `export --path` / `import <positional>`
-  asymmetry.
+  does backups, manual and scheduled, and can download them, so building one
+  here would duplicate a platform feature. The runbook documents the CLI path
+  instead — scriptable, pinnable to a named deployment, and the place to record
+  the `export --path` / `import <positional>` asymmetry that otherwise costs an
+  afternoon.
 - Collapsed the triplicated `Category` interface into one exported type on
   `MarketplaceContext`. Taken because it removed live duplication, not for
   portability.

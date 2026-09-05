@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import type { Category } from "../../context/MarketplaceContext";
 import {
     Plus,
     PencilSimple,
@@ -16,14 +17,6 @@ import {
 import { getCategoryIcon, hasIcon, getIconCdnUrl } from "../../lib/categoryIcons";
 import { iconMap } from "../../lib/adminIconMap";
 import { LucideIconPicker } from "../../components/ui/LucideIconPicker";
-
-interface Category {
-    _id: Id<"categories">;
-    name: string;
-    slug: string;
-    icon?: string;
-    parentId?: Id<"categories">;
-}
 
 interface CategoryFormData {
     name: string;

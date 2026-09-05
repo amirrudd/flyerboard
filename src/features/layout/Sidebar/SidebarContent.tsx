@@ -3,14 +3,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { memo, useCallback } from "react";
 import { GridFour, X } from '@phosphor-icons/react';
 import { getCategoryIcon } from "../../../lib/categoryIcons";
-
-interface Category {
-    _id: Id<"categories">;
-    name: string;
-    slug: string;
-    icon?: string;
-    parentId?: Id<"categories">;
-}
+import type { Category } from "../../../context/MarketplaceContext";
 
 interface SidebarContentProps {
     categories: Category[];

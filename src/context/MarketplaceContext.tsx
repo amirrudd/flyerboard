@@ -16,10 +16,12 @@ import { classifyLatestEntries, mergeFreshRail, mergeAheadOfQuery, nextWatermark
 /** One unified-feed page entry (ad | bundle card | sale card), server-interleaved on `bumpedAt` desc; rendered verbatim. */
 export type FeedEntry = FunctionReturnType<typeof api.feed.getFeed>["page"][number];
 
-interface Category {
+/** Owned here: this provider loads categories. `icon` optional, sidebar-only */
+export interface Category {
     _id: Id<"categories">;
     name: string;
     slug: string;
+    icon?: string;
     parentId?: Id<"categories">;
 }
 

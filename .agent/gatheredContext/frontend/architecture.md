@@ -5,7 +5,7 @@ description: FlyerBoard project architecture overview
 
 # Architecture
 
-**Last Updated**: 2026-07-02
+**Last Updated**: 2026-09-05
 
 ## Stack
 - **Frontend**: React 19 + TypeScript + Vite
@@ -39,6 +39,7 @@ convex/               # Backend functions and schema
 - **Responsive design**: Mobile-first, sidebar collapses on mobile (<768px)
 - **Route-based code splitting**: React.lazy() for all routes except HomePage to reduce initial bundle size
 - **Persistent app-shell header (2026-07-02)**: `Layout` renders the single `<Header>` instance inside `<main>` before the `<Outlet/>`; it survives route changes and Suspense chunk loads. Pages customise it by registering slots with `useHeaderSlots({ leftNode, centerNode, rightNode, hidden? })` from `src/features/layout/HeaderSlots.tsx` — an external store + `useSyncExternalStore` host, re-registered every render so slot JSX never closes over stale state; registrations stack in mount order (last mounted wins, so inline sub-screens like dashboard→AdDetail override then restore). Never render `<Header>` from a page. Full pattern + gotchas: `ui-patterns.md` → "Header — persistent app shell".
+- **ErrorFallback must not use router hooks (2026-09-05)**: `App.tsx` puts the outermost `<ErrorBoundary>` *outside* `<BrowserRouter>` on purpose, so it can catch provider-level failures. That means `src/components/ui/ErrorFallback.tsx` renders with no router in scope. It used `useNavigate()`, which threw `useNavigate() may be used only in the context of a <Router> component` and unmounted the whole tree — every provider-level crash showed a blank white page instead of the recovery UI. Recovery is now `window.location.assign('/')` (a hard reload is what a crash screen wants anyway). `useDescope()` is safe here because Descope's `AuthProvider` lives above `<App>` in `main.tsx`. Regression test: `ErrorFallback.test.tsx` → "renders the recovery UI with no Router in scope" renders the component unwrapped. Don't add router hooks, `<Link>`, or any hook from a provider mounted inside `App` to this component.
 - **PWA support**: Installable app with push notifications
 - **Rate limiting**: Mutation-level rate limits via `convex/lib/rateLimit.ts`
 - **Image compression**: Client-side WebP compression via browser-image-compression

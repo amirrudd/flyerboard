@@ -3,14 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ErrorFallback } from './ErrorFallback';
 
-// Mock useNavigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual('react-router-dom');
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
+// The fallback recovers with a hard navigation (it renders outside the Router).
+const mockAssign = vi.fn();
+Object.defineProperty(window, 'location', {
+    value: { ...window.location, assign: mockAssign },
+    writable: true,
 });
 
 // Mock Descope SDK
@@ -38,6 +35,14 @@ const authErrorProps = {
 };
 
 describe('ErrorFallback', () => {
+    // The outermost ErrorBoundary sits OUTSIDE <BrowserRouter> (src/App.tsx), so the
+    // fallback must render with no router in scope. Deliberately unwrapped here.
+    it('renders the recovery UI with no Router in scope', () => {
+        render(<ErrorFallback {...defaultProps} />);
+        expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument();
+        expect(screen.getByText('Go Home')).toBeInTheDocument();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -105,7 +110,7 @@ describe('ErrorFallback', () => {
             fireEvent.click(goHomeButton);
 
             expect(resetError).toHaveBeenCalledTimes(1);
-            expect(mockNavigate).toHaveBeenCalledWith('/');
+            expect(mockAssign).toHaveBeenCalledWith('/');
         });
     });
 
@@ -152,7 +157,7 @@ describe('ErrorFallback', () => {
             await waitFor(() => {
                 expect(mockLogout).toHaveBeenCalled();
                 expect(resetError).toHaveBeenCalled();
-                expect(mockNavigate).toHaveBeenCalledWith('/');
+                expect(mockAssign).toHaveBeenCalledWith('/');
             });
         });
 
@@ -290,7 +295,7 @@ describe('ErrorFallback', () => {
             // Should still reset and navigate even if logout fails
             await waitFor(() => {
                 expect(resetError).toHaveBeenCalled();
-                expect(mockNavigate).toHaveBeenCalledWith('/');
+                expect(mockAssign).toHaveBeenCalledWith('/');
             });
         });
     });

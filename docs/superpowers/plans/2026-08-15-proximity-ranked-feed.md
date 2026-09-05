@@ -13,7 +13,7 @@ tiers `near`/`far` instead of hiding, verified live in browse, search, and the
 the condition that unparks it.
 
 **Rules:** `.agent/PRODUCT-RULES.md` — binding. Rule 5 is what this closes.
-**Research:** `ResearchLab/ideas/proximity-ranked-feed.md` — read the OVERRIDING
+**Research:** product vault → `Ideas/Proximity feed & location.md` (raw: `Archive/ResearchLab/ideas/proximity-ranked-feed.md`) — read the OVERRIDING
 CONTEXT block before touching Phase C.
 
 ---
@@ -356,7 +356,7 @@ pays off metro-first.
 
 ## Deferred
 
-- **Fuzzy search** — `ResearchLab/ideas/fuzzy-search.md`. "bike" should find
+- **Fuzzy search** — product vault → `Ideas/Fuzzy search.md`. "bike" should find
   "bicycle". Independent of this plan and composes cleanly: it changes *which*
   rows search returns; ordering is already `bumpedAt`. ~2 days, no migration.
   **This is the better next thing to build.**

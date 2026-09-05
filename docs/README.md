@@ -15,6 +15,8 @@
 
 ## Documentation Structure
 
+Product documentation (vision, strategy, research, roadmap, product decisions) does **not** live here. It lives in the product vault at `~/flyerboard-vault` (see `CLAUDE.md` → "Product brain"). This folder is technical only.
+
 ```
 docs/
 ├── README.md                    # This file - project overview

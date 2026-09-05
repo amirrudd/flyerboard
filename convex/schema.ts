@@ -299,7 +299,7 @@ const applicationTables = {
   // against the pre-existing Moving Sale rows that predate these fields; every
   // NEW write populates both, a backfill migration fills the old rows
   // (`migrations:backfillSaleBundles`), and reads treat a missing `status` as
-  // "active". See ResearchLab/ideas/bundle-listing-design.md → "Schema — reconciliation".
+  // "active". See the product vault (~/flyerboard-vault) → Archive/ResearchLab/ideas/bundle-listing-design.md → "Schema — reconciliation".
   saleBundles: defineTable({
     sellerId: v.optional(v.id("users")),   // Owner. Always set on new rows; backfilled from saleEvent.userId on legacy rows.
     saleEventId: v.optional(v.id("saleEvents")), // FK → saleEvents; undefined = standalone bundle

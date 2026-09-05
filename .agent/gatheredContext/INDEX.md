@@ -314,7 +314,7 @@ When completing a task, update the relevant context files:
 1. **Code changes** → Update `.agent/gatheredContext/` with implementation details
 2. **Architecture decisions** → Update `../../docs/architecture/design-decisions.md`
 3. **New patterns/standards** → Update `.agent/rules/`
-4. **Repeatable procedures** → Create/update `.agent/workflows/`
+5. **Product decisions, research findings, competitor observations** → the product vault at `~/flyerboard-vault` (per its `Vault rules.md`), never here
 
 ---
 

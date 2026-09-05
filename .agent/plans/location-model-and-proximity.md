@@ -9,7 +9,7 @@ dropped, **nothing unresolved**. What is deliberately NOT built is in
 condition that is already true.
 **Created:** 2026-08-29
 **Owner:** Amir
-**Supersedes:** `ResearchLab/ideas/proximity-ranked-feed.md`
+**Supersedes:** product vault → `Archive/ResearchLab/ideas/proximity-ranked-feed.md` (curated: `Ideas/Proximity feed & location.md`)
 
 ---
 

@@ -140,7 +140,7 @@ its own `createdAt` position (sort rule unchanged — sale cards just interleave
 
 ## ⚠️ v2 update (2026-06-30) — READ FIRST, supersedes parts below
 
-The design doc was revised (`ResearchLab/ideas/moving-sale-mode-design.md`, v2). Key changes
+The design doc was revised (product vault → `Archive/ResearchLab/ideas/moving-sale-mode-design.md`, v2). Key changes
 now reflected in the code:
 
 - **The mode is FREE — no paywall.** The $9 publish gate is gone. `publishSaleEvent`
@@ -180,7 +180,7 @@ Everything below predates v2 — treat the v2 notes above as authoritative where
 Multi-item "run a moving sale" flow: a seller bulk-uploads photos, reviews
 AI-drafted listings card-by-card, optionally bundles them, previews a public sale
 page, pays (stubbed), and shares it (link / QR / printable flyer). Spec lives in
-`ResearchLab/ideas/moving-sale-mode-design.md` (separate worktree).
+product vault → `Archive/ResearchLab/ideas/moving-sale-mode-design.md`.
 
 ## Status of the two external dependencies (READ THIS FIRST)
 

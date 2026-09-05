@@ -31,7 +31,7 @@ export { hydrateBundleItems };
  * A "bundle" groups a small, fixed number of the seller's own standalone ads at a
  * discounted package price. It reuses the `saleBundles` table that Moving Sale Mode
  * shipped (Sale-scoped bundle suggestions) — a standalone bundle simply leaves
- * `saleEventId` undefined. See ResearchLab/ideas/bundle-listing-design.md.
+ * `saleEventId` undefined. See the product vault (~/flyerboard-vault) → Archive/ResearchLab/ideas/bundle-listing-design.md.
  *
  * Invariants held here (not in the validator):
  *   • An ad belongs to at most ONE bundle (`ads.bundleId` is singular).
